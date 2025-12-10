@@ -125,6 +125,13 @@ This may be so for variables of composite types.
 In such cases already initialized members of composite variables should be properly destroyed.
 Similar behavior is already present with `await` keyword (since a suspended `async` function may not be resumed and may be destroyed instead), block initializers may add more cases where such partial initialization should be properly handled.
 
+It should be considered how variables in `block_return` statement should be moved.
+It may require using `move` operator for moving named variables (instead of copying them) to assign them to the result variable.
+Or maybe a more advanced approach may be used - similar to current `return`, which is able to automatically move all local variables and arguments.
+
+Such initializer should be forbidden or at least restricted for global variables.
+It's necessary, since current compiler code can't create all blocks elements in a non-function context, which includes branching and loops.
+
 
 ### Typical use-cases
 
