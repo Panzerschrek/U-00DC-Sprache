@@ -95,6 +95,37 @@ fn Foo( i32 x ) : i32
 }
 ```
 
+#### Implementation considerations
+
+The exact syntax of such initializer isn't clear yet.
+The statement ending initializer block may look like `return`, but with `block_return` keyword, or maybe it may look different, maybe even without a keyword but with something like `=>` or `->`.
+
+It may be useful to initialize members of composite type variables using block initializer.
+This possibility should be considered.
+This includes members of sequential types (arrays and tuples) and fields of structs.
+Implementing block initializer for such case may require slightly different syntax.
+But maybe it shouldn't be allowed at all, since struct initializers are allowed within expression context and we should avoid introducing block elements within expressions.
+
+Auto-variables should ideally support block initializers too.
+But this may require some extra work, like for functions with `auto` return type, where type is determined on the type of first `return` (`block_return`) statement.
+
+Special considerations should be taken to avoid ambiguous syntax for block initializers.
+If the approach with initializer block placed before a variable is selected, it should be distinct from [decompose declaration](https://panzerschrek.github.io/U-00DC-Sprache-site/docs/en/variables.html#variables-declaration-with-decomposition) (starting with `auto`).
+
+Reference graph managing within initializer blocks may be tricky.
+Usually some special/temporary reference graph nodes are created for variables being initialized.
+Such nodes should be handled properly in any possible block elements including elements with branching and loops.
+
+Using block initializers in constructor initializer list is questionable.
+At least it shouldn't be allowed to use `return` within it.
+Also it may require syntax different from normal case.
+
+It should be considered that with block initializers a variable can be initialized only partially before `return` or other control flow transfer statement is triggered.
+This may be so for variables of composite types.
+In such cases already initialized members of composite variables should be properly destroyed.
+Similar behavior is already present with `await` keyword (since a suspended `async` function may not be resumed and may be destroyed instead), block initializers may add more cases where such partial initialization should be properly handled.
+
+
 ### Typical use-cases
 
 Simplifying success path code when using `ust::optional`:
