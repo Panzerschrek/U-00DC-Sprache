@@ -1880,7 +1880,37 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				return ErrorValue();
 			}
 
-			var LLVMValueRef index_value= CreateMoveToLLVMRegisterInstruction( index, function_context );
+			var LLVMValueRef mut index_value= CreateMoveToLLVMRegisterInstruction( index, function_context );
+
+			// Extend indices less than pointer size.
+			// Truncate indices greater than pointer size.
+			// Extension is important for indices of small types like u8, since LLVM performs sign extension internally, which isn't correct.
+			auto index_type_size= GetFundamentalTypeSize( index_fundamental_type.fundamental_type );
+			auto size_type_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
+
+			if( index.constexpr_value != Null::LLVMValueRef )
+			{
+				if( index_type_size > size_type_size )
+				{
+					index_value= unsafe( LLVMBuildTrunc( function_context.llvm_ir_builder, index.constexpr_value, fundamental_llvm_types_.size_type_, g_null_string ) );
+				}
+				else if( index_type_size < size_type_size )
+				{
+					index_value= unsafe( LLVMBuildZExt( function_context.llvm_ir_builder, index.constexpr_value, fundamental_llvm_types_.size_type_, g_null_string ) );
+				}
+			}
+			else if( !function_context.is_functionless_context )
+			{
+				if( index_type_size > size_type_size )
+				{
+					index_value= unsafe( LLVMBuildTrunc( function_context.llvm_ir_builder, index_value, fundamental_llvm_types_.size_type_, g_null_string ) );
+				}
+				else if( index_type_size < size_type_size )
+				{
+					index_value= unsafe( LLVMBuildZExt( function_context.llvm_ir_builder, index_value, fundamental_llvm_types_.size_type_, g_null_string ) );
+				}
+			}
+
 			DestroyUnusedTemporaryVariables( names_scope, function_context, subscript_operator.src_loc ); // Destroy index.
 			if( index.constexpr_value != Null::LLVMValueRef )
 			{
@@ -1897,20 +1927,8 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				// Dynamically check index.
 				unsafe
 				{
-					auto mut index_value_for_compare= index_value;
-					auto index_type_size= GetFundamentalTypeSize( index_fundamental_type.fundamental_type );
-					auto size_type_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
-					if( index_type_size > size_type_size )
-					{
-						index_value_for_compare= LLVMBuildTrunc( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.size_type_, g_null_string );
-					}
-					else if( index_type_size < size_type_size )
-					{
-						index_value_for_compare= LLVMBuildZExt( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.size_type_, g_null_string );
-					}
-
 					auto size_value= LLVMConstInt( fundamental_llvm_types_.size_type_, variable_array_type.element_count, LLVMBool::False );
-					auto condition= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, index_value_for_compare, size_value, g_null_string );
+					auto condition= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, index_value, size_value, g_null_string );
 					auto halt_block = LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 					auto ok_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
