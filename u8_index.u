@@ -1,0 +1,19 @@
+import "source/ustlib/imports/stdout.u"
+import "source/ustlib/imports/string_conversions.u"
+
+fn nomangle Foo( [ i32, 256 ]& arr, u8 x ) : i32
+{
+	return arr[x];
+}
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	var [ i32, 256 ] mut arr= zero_init;
+	arr[ 158 ]= 66;
+
+	var i32 x= Foo( arr, 158u8 );
+
+	ust::stdout_print( ust::concat( "X: ", ust::to_string8(x), "\n" ) );
+
+	return 0;
+}
