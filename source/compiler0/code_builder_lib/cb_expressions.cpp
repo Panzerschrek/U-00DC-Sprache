@@ -320,8 +320,28 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			}
 		}
 
-		// Make first index = 0 for array to pointer conversion.
 		llvm::Value* index_value= CreateMoveToLLVMRegisterInstruction( *index, function_context );
+
+		// Extend indices less than pointer size.
+		// Truncate indices greater than pointer size.
+		// Extension is important for indices of small types like u8, since LLVM performs sign extension internally, which isn't correct.
+		const uint64_t index_size= GetFundamentalTypeSize( index_fundamental_type->fundamental_type );
+		const uint64_t size_type_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
+
+		if( index->constexpr_value != nullptr )
+		{
+			if( index_size > size_type_size )
+				index_value= llvm::ConstantExpr::getTrunc( index->constexpr_value, fundamental_llvm_types_.size_type_ );
+			else if( index_size < size_type_size )
+				index_value= llvm::ConstantExpr::getZExt( index->constexpr_value, fundamental_llvm_types_.size_type_ );
+		}
+		else if( !function_context.is_functionless_context )
+		{
+			if( index_size > size_type_size )
+				index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, fundamental_llvm_types_.size_type_ );
+			else if( index_size < size_type_size )
+				index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.size_type_ );
+		}
 
 		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), subscript_operator.src_loc ); // Destroy temporaries of index expression.
 
@@ -338,17 +358,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// If index is not constant - check bounds.
 		if( index->constexpr_value == nullptr && !function_context.is_functionless_context )
 		{
-			const uint64_t index_size= GetFundamentalTypeSize( index_fundamental_type->fundamental_type );
-			const uint64_t size_type_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
-			if( index_size > size_type_size )
-				index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, fundamental_llvm_types_.size_type_ );
-			else if( index_size < size_type_size )
-				index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.size_type_ );
+			// if( index >= array_size ) {halt;}
 
 			llvm::Value* const condition=
-				function_context.llvm_ir_builder.CreateICmpUGE( // if( index >= array_size ) {halt;}
+				function_context.llvm_ir_builder.CreateICmpUGE(
 					index_value,
-					llvm::Constant::getIntegerValue( fundamental_llvm_types_.size_type_, llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), array_type->element_count ) ) );
+					llvm::Constant::getIntegerValue(
+						fundamental_llvm_types_.size_type_,
+						llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), array_type->element_count ) ) );
 
 			llvm::BasicBlock* const halt_block= llvm::BasicBlock::Create( llvm_context_ );
 			llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
