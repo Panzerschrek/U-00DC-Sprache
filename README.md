@@ -175,4 +175,4 @@ It's recommended to use one of the latest builds of the *master* branch.
 
 ### Authors
 
-Copyright © 2016-2025 "Panzerschrek".
+Copyright © 2016-2026 "Panzerschrek".
