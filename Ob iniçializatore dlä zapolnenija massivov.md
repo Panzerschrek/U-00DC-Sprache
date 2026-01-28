@@ -64,3 +64,32 @@ Vyšeopisannyj iniçializator dolžen takže rabotatj dlä polej struktur.
 Rabota v "constexpr" kontekste tože neobhodima, no poka cto s ogranicenijem, cto "mut this" funktora ne podderživajetsä.
 Neobhodimo udostoveritjsä, cto pri ispoljzovanii etogo iniçializatora osuscestvläjetsä peremescenije rezuljtata vyzova-znacenija (jesli tip sovpadajet), a ne kopirovanije.
 Takže nado proverätj, cto ne osuscestvläjetsä sozdanije ekzemplärov abstraktnyh klassov.
+
+
+### Vozmožnyj sintaksis
+
+Možno vvesti klücevoje slovo `fn_init`, v skobkah posle kotorogo ukazyvajetsä vyraženije funktora.
+Sintaksis shož s `zero_init`.
+
+```
+var [ i32, 4 ] = fn_init( Foo );
+fn Foo() : i32 { return 123; }
+```
+
+```
+var tup[ bool, [ f32, 10 ], char8 ] t[ false, fn_init( Bar ), 'q' ];
+fn Bar() : f32 { return -1.0f; }
+```
+
+```
+var [ i32, 16 ] nums=
+	fn_init(
+		lambda[i= 0] mut() : i32
+		{
+			var i32 res= i;
+			++i;
+			return res;
+		} );
+```
+
+Dlä iniçializaçii s indeksom možno ispoljzovatj klücevoje slovo vrode `fn_init_index`.
