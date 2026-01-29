@@ -114,6 +114,7 @@ class SpracheLexer(RegexLexer):
 			(r'constexpr(?![a-zA-Z_0-9])', token.Keyword),
 			(r'const(?![a-zA-Z_0-9])', token.Keyword),
 			(r'zero_init(?![a-zA-Z_0-9])', token.Keyword),
+			(r'fn_init(?![a-zA-Z_0-9])', token.Keyword),
 			(r'uninitialized(?![a-zA-Z_0-9])', token.Keyword),
 			(r'this(?![a-zA-Z_0-9])', token.Keyword),
 			(r'base(?![a-zA-Z_0-9])', token.Keyword),

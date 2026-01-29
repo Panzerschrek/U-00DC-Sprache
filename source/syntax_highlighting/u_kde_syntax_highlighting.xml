@@ -60,6 +60,7 @@
 			<item>constexpr</item>
 			<item>const</item>
 			<item>zero_init</item>
+			<item>fn_init</item>
 			<item>this</item>
 			<item>base</item>
 			<item>constructor</item>

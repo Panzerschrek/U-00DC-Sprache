@@ -70,7 +70,7 @@
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>(?&lt;![A-Za-z_0-9_])(fn|op|var|auto|return|yield|label|while|loop|break|continue|if|static_if|enable_if|if_coro_advance|else|move|take|byval|tup|struct|class|final|polymorph|interface|abstract|non_sync|ordered|nodiscard|nomangle|call_conv|virtual|override|pure|generator|async|await|namespace|public|private|protected|true|false|mut|imut|constexpr|const|zero_init|this|base|constructor|destructor|conversion_constructor|static_assert|halt|safe|type|typeinfo|same_type|typeof|template|enum|cast_ref|cast_imut|alloca|as|is|import|export|embed|default|delete|for|with|do|switch|case|typename|lambda|static|package|module|mixin|thread_local)(?![A-Za-z_0-9_])</string>
+			<string>(?&lt;![A-Za-z_0-9_])(fn|op|var|auto|return|yield|label|while|loop|break|continue|if|static_if|enable_if|if_coro_advance|else|move|take|byval|tup|struct|class|final|polymorph|interface|abstract|non_sync|ordered|nodiscard|nomangle|call_conv|virtual|override|pure|generator|async|await|namespace|public|private|protected|true|false|mut|imut|constexpr|const|zero_init|fn_init|this|base|constructor|destructor|conversion_constructor|static_assert|halt|safe|type|typeinfo|same_type|typeof|template|enum|cast_ref|cast_imut|alloca|as|is|import|export|embed|default|delete|for|with|do|switch|case|typename|lambda|static|package|module|mixin|thread_local)(?![A-Za-z_0-9_])</string>
 			<key>name</key>
 			<string>keyword</string>
 		</dict>
