@@ -394,6 +394,20 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const VariablePtr& variable,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
+	const Synt::ArrayFunctionInitializer& initializer )
+{
+	// TODO
+	(void)variable;
+	(void)names_scope;
+	(void)function_context;
+	(void)initializer;
+	return nullptr;
+}
+
+llvm::Constant* CodeBuilder::ApplyInitializerImpl(
+	const VariablePtr& variable,
+	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::Expression& initializer )
 {
 	const SrcLoc src_loc= Synt::GetSrcLoc(initializer);

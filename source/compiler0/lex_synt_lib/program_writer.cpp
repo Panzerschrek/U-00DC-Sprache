@@ -722,6 +722,11 @@ void ElementWrite( const Initializer& initializer ) const
 			stream_ << " ]";
 		}
 	}
+	else if( const auto array_function_initializer= std::get_if<ArrayFunctionInitializer>( &initializer ) )
+	{
+		// TODO
+		(void)array_function_initializer;
+	}
 	else
 	{
 		U_ASSERT(false);

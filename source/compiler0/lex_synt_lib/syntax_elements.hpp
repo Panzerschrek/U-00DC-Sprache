@@ -93,6 +93,7 @@ struct SequenceInitializer;
 struct StructNamedInitializer;
 struct ConstructorInitializer;
 struct ConstructorInitializerSignatureHelp;
+struct ArrayFunctionInitializer;
 
 // Block elements
 struct Block;
@@ -241,7 +242,8 @@ using Initializer= std::variant<
 	SequenceInitializer,
 	StructNamedInitializer,
 	ConstructorInitializer,
-	ConstructorInitializerSignatureHelp
+	ConstructorInitializerSignatureHelp,
+	ArrayFunctionInitializer
 	>;
 
 //
@@ -900,6 +902,15 @@ struct ConstructorInitializerSignatureHelp
 
 	SrcLoc src_loc;
 	std::vector<Expression> arguments;
+};
+
+struct ArrayFunctionInitializer
+{
+	explicit ArrayFunctionInitializer( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::unique_ptr<const Expression> function;
 };
 
 struct StructNamedInitializer::MemberInitializer
