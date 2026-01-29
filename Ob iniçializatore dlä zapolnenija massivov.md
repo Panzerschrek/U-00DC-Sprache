@@ -65,6 +65,10 @@ Rabota v "constexpr" kontekste tože neobhodima, no poka cto s ogranicenijem, ct
 Neobhodimo udostoveritjsä, cto pri ispoljzovanii etogo iniçializatora osuscestvläjetsä peremescenije rezuljtata vyzova-znacenija (jesli tip sovpadajet), a ne kopirovanije.
 Takže nado proverätj, cto ne osuscestvläjetsä sozdanije ekzemplärov abstraktnyh klassov.
 
+Nado proverätj, cto etot iniçializator ne osuscestvläjet sväzyvanija ssylok.
+Ibo eto po suti ošibka `ReferencePollutionOfOuterLoopVariable`, t. k. iniçializaçija vyzyvajetsä v çikle.
+Eto delajet nevozmožnym ispoljzovanije etogo iniçializatora dlä iniçializaçii tipov so ssylkami vnutri, kogda pri iniçializaçii takoje sväzyvanije proishodit.
+
 
 ### Vozmožnyj sintaksis
 
@@ -93,3 +97,19 @@ var [ i32, 16 ] nums=
 ```
 
 Dlä iniçializaçii s indeksom možno ispoljzovatj klücevoje slovo vrode `fn_init_index`.
+
+
+### Aljternativnyj podhod
+
+Vmesto funktora možno prosto ispoljzovatj iniçializator, vyzyvajemyj v çikle.
+Naprimer, ukazav `...` v konçe iniçializatora posledovateljnosti.
+
+```
+var [ i32, 10 ] arr[ 1, 2, 3, 100 ... ];
+```
+
+Takoj varinat prosce iniçializatora funktorom.
+Pri etom nemonogo složneje dobitjsä izmenäjemosti - dlä etogo nužno v iniçializatore menätj kakuju-to lokaljnuju peremennuju.
+Eto možet bytj problemnym v spiske iniçializaçii konstruktora.
+
+Dlä etogo varianta iniçializatora takže nužen zapret sväzyvanija ssylok (`ReferencePollutionOfOuterLoopVariable`).
