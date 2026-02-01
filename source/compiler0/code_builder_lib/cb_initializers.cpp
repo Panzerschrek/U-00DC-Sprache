@@ -125,12 +125,15 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), first_index ) );
 
 			// TODO - check no reference pollution in loop happens.
-			// TODO - destroy temporary variables?
 
 			GenerateLoop(
 				num_iterations,
 				[&]( llvm::Value* const loop_index_value )
 				{
+					// Destruction stack for loop internal variables.
+					// Anything that was constructed within a loop iteration, should be destroyed within it.
+					const StackVariablesStorage temp_variables_storage( function_context );
+
 					llvm::Value* const array_index_value=
 						function_context.llvm_ir_builder.CreateAdd( first_index_value, loop_index_value );
 
@@ -149,23 +152,9 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					else
 						is_constant= false;
 
-					if( requires_destruction )
-					{
-						// Create temp variable for initialized member in order to call destructor in case of return or await during further array elements initialization.
-						// Also it's useful for "non_sync" variables detection in coroutines (non_sync types should always have destructors).
-						const VariableMutPtr temp_initialized_variable=
-							Variable::Create(
-								array_type->element_type,
-								ValueType::Value,
-								Variable::Location::Pointer,
-								array_member->name,
-								array_member->llvm_value );
-						function_context.variables_state.AddNode( temp_initialized_variable );
+					CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetSrcLoc( initializer.initializers.back() ) );
 
-						temp_initialized_variable->preserve_temporary= true;
-						RegisterTemporaryVariable( function_context, temp_initialized_variable );
-						temp_initialized_variables.push_back( temp_initialized_variable );
-					}
+					// TODO - deal with return/await and destruction of already constructed members.
 				},
 				function_context );
 		}
