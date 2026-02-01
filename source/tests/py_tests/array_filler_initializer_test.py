@@ -479,3 +479,221 @@ def ArrayFillerInitializerForGlobalMutableVariable_Test4():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForFieldOwnInitializer_Test0():
+	c_program_text= """
+		struct S
+		{
+			[ i32, 4 ] arr[ 776 ... ];
+		}
+		fn Foo()
+		{
+			var S mut s{}; // Own initializer containing array filler initializer should be called within {}.
+			halt if( s.arr[0] != 776 );
+			halt if( s.arr[1] != 776 );
+			halt if( s.arr[2] != 776 );
+			halt if( s.arr[3] != 776 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForFieldOwnInitializer_Test1():
+	c_program_text= """
+		struct S
+		{
+			[ f32, 4 ] arr[ 13.5f ... ];
+		}
+		fn Foo()
+		{
+			var S mut s; // Own initializer containing array filler initializer should be called within default constructor.
+			halt if( s.arr[0] != 13.5f );
+			halt if( s.arr[1] != 13.5f );
+			halt if( s.arr[2] != 13.5f );
+			halt if( s.arr[3] != 13.5f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForFieldOwnInitializer_Test2():
+	c_program_text= """
+		struct S
+		{
+			[ u32, 3 ] arr[ Bar() ... ];
+		}
+		fn Bar() : u32 { return 56712u; }
+		fn Foo()
+		{
+			var S mut s(); // Own initializer containing array filler initializer should be called within called constructor.
+			halt if( s.arr[0] != 56712u );
+			halt if( s.arr[1] != 56712u );
+			halt if( s.arr[2] != 56712u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForFieldOwnInitializer_Test3():
+	c_program_text= """
+		struct S
+		{
+			// "arr" filler initializer is called here.
+			fn constructor()
+			{}
+
+			[ char8, 5 ] arr[ '/' ... ];
+		}
+		fn Foo()
+		{
+			var S mut s;
+			halt if( s.arr[0] != '/' );
+			halt if( s.arr[1] != '/' );
+			halt if( s.arr[2] != '/' );
+			halt if( s.arr[3] != '/' );
+			halt if( s.arr[4] != '/' );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForFieldOwnInitializer_Test4():
+	c_program_text= """
+		struct S
+		{
+			// "arr" filler initializer is called here.
+			fn constructor()
+			()
+			{}
+
+			[ u8, 3 ] arr[ 0u8, 255u8 ... ];
+		}
+		fn Foo()
+		{
+			var S mut s;
+			halt if( s.arr[0] != 0u8 );
+			halt if( s.arr[1] != 255u8 );
+			halt if( s.arr[2] != 255u8 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForFieldOwnInitializer_Test5():
+	c_program_text= """
+		struct S
+		{
+			[ i32, 4 ] arr;
+		}
+		struct T
+		{
+			S a{ .arr[ 6 ... ] };
+			S b{ .arr[ 9 ... ] };
+		}
+		fn Foo()
+		{
+			var T mut t; // Own initializers for fields "a" and "b" are called here, which include array filler initializers.
+			halt if( t.a.arr[0] != 6 );
+			halt if( t.a.arr[1] != 6 );
+			halt if( t.a.arr[2] != 6 );
+			halt if( t.a.arr[3] != 6 );
+			halt if( t.b.arr[0] != 9 );
+			halt if( t.b.arr[1] != 9 );
+			halt if( t.b.arr[2] != 9 );
+			halt if( t.b.arr[3] != 9 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForFieldOwnInitializer_Test6():
+	c_program_text= """
+		struct S
+		{
+			[ i32, 4 ] arr;
+		}
+		struct T
+		{
+			S a{ .arr[ 66 ... ] };
+			S b{ .arr[ 99 ... ] };
+		}
+		fn Foo()
+		{
+			var T mut t{ .b{ .arr[ 1, 2, 3, 4 ] } }; // Own initializers for field "a" is called here. Initializer for field "b" is overriden.
+			halt if( t.a.arr[0] != 66 );
+			halt if( t.a.arr[1] != 66 );
+			halt if( t.a.arr[2] != 66 );
+			halt if( t.a.arr[3] != 66 );
+			halt if( t.b.arr[0] != 1 );
+			halt if( t.b.arr[1] != 2 );
+			halt if( t.b.arr[2] != 3 );
+			halt if( t.b.arr[3] != 4 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForFieldOwnInitializer_Test7():
+	c_program_text= """
+		struct S
+		{
+			[ u32, 3 ] arr[ Bar() ... ];
+		}
+		var u32 mut g_x= 100u;
+		fn Bar() : u32
+		{
+			unsafe
+			{
+				var u32 res= g_x;
+				++g_x;
+				return res;
+			}
+		}
+		fn Foo()
+		{
+			var S mut s; // Own initializer of "arr" field is called here - via generated default constructor call.
+			halt if( s.arr[0] != 100u );
+			halt if( s.arr[1] != 101u );
+			halt if( s.arr[2] != 102u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForFieldOwnInitializer_Test8():
+	c_program_text= """
+		struct S
+		{
+			[ i32, 5 ] arr[ Bar() ... ];
+		}
+		var i32 mut g_x= -3;
+		fn Bar() : i32
+		{
+			unsafe
+			{
+				var i32 res= g_x * g_x * g_x;
+				++g_x;
+				return res;
+			}
+		}
+		fn Foo()
+		{
+			var S mut s{}; // Own initializer of "arr" field is called here.
+			halt if( s.arr[0] != -3 * 3 * 3 );
+			halt if( s.arr[1] != -2 * 2 * 2 );
+			halt if( s.arr[2] != -1 * 1 * 1 );
+			halt if( s.arr[3] !=  0 * 0 * 0 );
+			halt if( s.arr[4] !=  1 * 1 * 1 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
