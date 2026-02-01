@@ -390,7 +390,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 		unsafe
 		{
 			auto polymorph_type_id_table= parent.class_.lock_imut().deref().polymorph_type_id_table;
-			var [ LLVMValueRef, 2 ] mut indices[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
+			var [ LLVMValueRef, 2 ] mut indices[ GetZeroGEPIndex() ... ];
 			var LLVMValueRef first_element_address=
 				LLVMBuildInBoundsGEP2(
 					dummy_function_context.llvm_ir_builder,
@@ -474,7 +474,7 @@ fn CodeBuilder::BuildClassVirtualTable_r( mut this, ClassType& ancestor_class, C
 
 			// Type id
 			auto dummy_function_context= CreateGlobalFunctionContext();
-			var [ LLVMValueRef, 2 ] mut indices[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
+			var [ LLVMValueRef, 2 ] mut indices[ GetZeroGEPIndex() ... ];
 			initializer_values.push_back(
 				LLVMBuildInBoundsGEP2(
 					dummy_function_context.llvm_ir_builder,
@@ -582,7 +582,7 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 	{
 		unsafe
 		{
-			var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
+			var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex() ... ];
 			auto vtable_ptr= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, class_type.llvm_type, this_, $<(indexes[0]), 2u, g_null_string );
 
 			auto store_inst= LLVMBuildStore( function_context.llvm_ir_builder, ptr_to_vtable_ptr, vtable_ptr );

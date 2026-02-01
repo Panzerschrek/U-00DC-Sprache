@@ -409,7 +409,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 			unsafe
 			{
 				auto dummy_function_context= CreateGlobalFunctionContext();
-				var [ LLVMValueRef, 3 ] mut indices[ GetZeroGEPIndex(), GetZeroGEPIndex(), GetZeroGEPIndex() ];
+				var [ LLVMValueRef, 3 ] mut indices[ GetZeroGEPIndex() ... ];
 				var LLVMValueRef address=
 					LLVMBuildInBoundsGEP2(
 						dummy_function_context.llvm_ir_builder,
