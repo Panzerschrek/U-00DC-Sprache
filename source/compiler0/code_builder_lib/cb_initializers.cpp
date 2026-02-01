@@ -115,24 +115,26 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 		if( initializer.filler )
 		{
-			const uint64_t num_iterations= array_type->element_count + 1u - initializer.initializers.size();
+			const uint64_t first_index= initializer.initializers.size() - 1u;
+			const uint64_t num_iterations= array_type->element_count - first_index;
 
-			const auto size_type_llvm= fundamental_llvm_types_.size_type_;
+			llvm::Type* const size_type_llvm= fundamental_llvm_types_.size_type_;
 
-			llvm::Value* const first_index=
+			llvm::Value* const first_index_value=
 				llvm::Constant::getIntegerValue(
-					size_type_llvm,
-					llvm::APInt( size_type_llvm->getIntegerBitWidth(), uint64_t( initializer.initializers.size() - 1u ) ) );
+					size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), first_index ) );
 
 			// TODO - check no reference pollution in loop happens.
+			// TODO - destroy temporary variables?
 
 			GenerateLoop(
 				num_iterations,
-				[&]( llvm::Value* const loop_index )
+				[&]( llvm::Value* const loop_index_value )
 				{
-					llvm::Value* const array_index= function_context.llvm_ir_builder.CreateAdd( first_index, loop_index );
+					llvm::Value* const array_index_value=
+						function_context.llvm_ir_builder.CreateAdd( first_index_value, loop_index_value );
 
-					array_member->llvm_value= CreateArrayElementGEP( function_context, *variable, array_index );
+					array_member->llvm_value= CreateArrayElementGEP( function_context, *variable, array_index_value );
 
 					llvm::Constant* const member_constant=
 						ApplyInitializer( array_member, names_scope, function_context, initializer.initializers.back() );
