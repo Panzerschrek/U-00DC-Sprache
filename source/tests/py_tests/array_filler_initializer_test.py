@@ -306,3 +306,70 @@ def ArrayFillerInitializerConstexpr_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
+
+
+def ArrayFillerInitializerConstexpr_Test8():
+	c_program_text= """
+		// Fill the whole array with single constant value.
+		var [ i32, 4 ] constexpr arr[ 56 ... ];
+		static_assert( arr[0] == 56 );
+		static_assert( arr[1] == 56 );
+		static_assert( arr[2] == 56 );
+		static_assert( arr[3] == 56 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ArrayFillerInitializerConstexpr_Test9():
+	c_program_text= """
+		// First several values are specified one by one, the remaining tail is filled.
+		var [ u32, 8 ] constexpr arr[ 17u, 56u, 901u, 7u ... ];
+		static_assert( arr[0] == 17u );
+		static_assert( arr[1] == 56u );
+		static_assert( arr[2] == 901u );
+		static_assert( arr[3] == 7u );
+		static_assert( arr[4] == 7u );
+		static_assert( arr[5] == 7u );
+		static_assert( arr[6] == 7u );
+		static_assert( arr[7] == 7u );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ArrayFillerInitializerConstexpr_Test10():
+	c_program_text= """
+		// Fill array of constexpr structs.
+		var [ S, 3 ] constexpr arr [ { .x= 'T', .y= -67.5 } ... ];
+		static_assert( arr[0].x == 'T' ); static_assert( arr[0].y == -67.5 );
+		static_assert( arr[1].x == 'T' ); static_assert( arr[1].y == -67.5 );
+		static_assert( arr[2].x == 'T' ); static_assert( arr[2].y == -67.5 );
+		struct S{ char8 x; f64 y; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ArrayFillerInitializerConstexpr_Test11():
+	c_program_text= """
+		// Fill array of constexpr structs, but specify different first element.
+		var [ S, 4 ] constexpr arr[ { .x= '~', .y= -1.8 }, { .x= 'n', .y= 124.25 } ... ];
+		static_assert( arr[0].x == '~' ); static_assert( arr[0].y == -1.8 );
+		static_assert( arr[1].x == 'n' ); static_assert( arr[1].y == 124.25 );
+		static_assert( arr[2].x == 'n' ); static_assert( arr[2].y == 124.25 );
+		static_assert( arr[3].x == 'n' ); static_assert( arr[3].y == 124.25 );
+		struct S{ char8 x; f64 y; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ArrayFillerInitializerConstexpr_Test12():
+	c_program_text= """
+		// Fill large constant array.
+		var [ u64, 1024 * 32 ] constexpr arr[ 783567835673u64 ... ];
+		static_assert( arr[     0 ] == 783567835673u64 );
+		static_assert( arr[    67 ] == 783567835673u64 );
+		static_assert( arr[   230 ] == 783567835673u64 );
+		static_assert( arr[   437 ] == 783567835673u64 );
+		static_assert( arr[ 15435 ] == 783567835673u64 );
+		static_assert( arr[ 32767 ] == 783567835673u64 );
+	"""
+	tests_lib.build_program( c_program_text )
