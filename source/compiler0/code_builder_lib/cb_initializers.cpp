@@ -152,10 +152,33 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 						is_constant= false;
 
 					CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetSrcLoc( filler_initializer ) );
-
-					// TODO - deal with return/await and destruction of already constructed members.
 				},
 				function_context );
+
+			// A hack for async functions.
+			// It's possible to use "await" in such functions including expressions in initializers.
+			// "await" is basically hidden "return" and thus all local and temporary variables should be destroyed in case if an async function isn't resumed but destroyed.
+			// In such case we should destroy members of partially-initialized composites.
+			// But in this particular case we can't do so, since we need to memorize dynamic amount of array elements that were initialized.
+			// So, for now just don't allow using array filler initializer in async functions.
+			//
+			// TODO - maybe detect if "await" is used in the filler initializer?
+			//
+			// This can be also problematic, if we implement some sort of arbitrary return from expression context.
+			//
+			if( function_context.coro_suspend_bb != nullptr )
+			{
+				if( const auto class_type= function_context.function_type.return_type.GetClassType() )
+				{
+					if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
+					{
+						if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
+						{
+							REPORT_ERROR( NotImplemented, names_scope.GetErrors(), Synt::GetSrcLoc( filler_initializer ), "array filler initializer in async functions" );
+						}
+					}
+				}
+			}
 		}
 
 		function_context.variables_state.RemoveNode( array_member );

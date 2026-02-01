@@ -88,3 +88,62 @@ def DestroyedVariableStillHasReferences_ForTemporaryInArrayFilleInitializer_Test
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 9 ) )
+
+
+def ArrayFillerInitializerInAsyncFunction_Test0():
+	c_program_text= """
+		fn async Foo()
+		{
+			// Filler initializer can't be used in async functions,
+			// since "await" is possible and it can return and thus leave the remaining array in partially-initialized state,
+			// without any way to destroy only members which were actually initialized.
+			var [ i32, 4 ] arr[ 1 ... ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NotImplemented", 7 ) )
+	assert( errors_list[0].text.find( "array filler initializer in async functions" ) != -1 )
+
+
+def ArrayFillerInitializerInAsyncFunction_Test1():
+	c_program_text= """
+		fn async Foo()
+		{
+			// Filler initializer can't be used in async functions,
+			// since "await" is possible and it can return and thus leave the remaining array in partially-initialized state,
+			// without any way to destroy only members which were actually initialized.
+			var [ i32, 4 ] arr[ Bar().await ... ];
+		}
+		fn async Bar() : i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NotImplemented", 7 ) )
+	assert( errors_list[0].text.find( "array filler initializer in async functions" ) != -1 )
+
+
+def ArrayFillerInitializerInAsyncFunction_Test2():
+	c_program_text= """
+		fn Foo() : ( async : i32 )
+		{
+			// Fine - this isn't an async function but function returning async function object.
+			// Using array filler initializer is allowed.
+			var [ i32, 4 ] arr[ 3 ... ];
+			return Bar();
+		}
+		fn async Bar() : i32;
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ArrayFillerInitializerInAsyncFunction_Test3():
+	c_program_text= """
+		fn generator Foo()
+		{
+			// Fine - this isn't an async function but a generator.
+			// Using array filler initializer is allowed.
+			var [ i32, 4 ] arr[ 3 ... ];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
