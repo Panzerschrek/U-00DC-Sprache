@@ -128,7 +128,7 @@ Overloaded ``<=>`` is not required to return only -1 or +1 for less/more, only t
 Postifx operators are somewhat special.
 All postfix operators should have first parameter of struct or class type where this operator is defined.
 
-Indexation operator ``[]`` allows to access struct or class like it is an array.
+Subscript operator ``[]`` allows to access struct or class like it is an array.
 Any type may be used as index type.
 This allows, for example, to implement associative containers with key access via this operator.
 
