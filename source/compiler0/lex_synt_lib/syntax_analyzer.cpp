@@ -214,7 +214,7 @@ private:
 
 	Initializer ParseInitializer( bool parse_expression_initializer );
 	Initializer ParseVariableInitializer();
-	Initializer ParseArrayInitializer();
+	Initializer ParseSequenceInitializer();
 	Initializer ParseStructNamedInitializer();
 	Initializer ParseConstructorInitializer();
 
@@ -2075,7 +2075,7 @@ Initializer SyntaxAnalyzer::ParseInitializer( const bool parse_expression_initia
 {
 	if( it_->type == Lexem::Type::SquareBracketLeft )
 	{
-		return ParseArrayInitializer();
+		return ParseSequenceInitializer();
 	}
 	else if( it_->type == Lexem::Type::BracketLeft )
 	{
@@ -2144,7 +2144,7 @@ Initializer SyntaxAnalyzer::ParseVariableInitializer()
 	return initializer;
 }
 
-Initializer SyntaxAnalyzer::ParseArrayInitializer()
+Initializer SyntaxAnalyzer::ParseSequenceInitializer()
 {
 	U_ASSERT( it_->type == Lexem::Type::SquareBracketLeft );
 
