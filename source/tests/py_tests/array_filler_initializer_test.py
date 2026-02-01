@@ -373,3 +373,109 @@ def ArrayFillerInitializerConstexpr_Test12():
 		static_assert( arr[ 32767 ] == 783567835673u64 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ArrayFillerInitializerForGlobalMutableVariable_Test0():
+	c_program_text= """
+		// Fill the whole array with single constant value.
+		var [ i32, 4 ] mut arr[ 78431 ... ];
+		fn Foo()
+		{
+			unsafe
+			{
+				halt if( arr[0] != 78431 );
+				halt if( arr[1] != 78431 );
+				halt if( arr[2] != 78431 );
+				halt if( arr[3] != 78431 );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForGlobalMutableVariable_Test1():
+	c_program_text= """
+		// First several values are specified one by one, the remaining tail is filled.
+		var [ u32, 8 ] mut arr[ 17u, 56u, 901u, 78423u ... ];
+		fn Foo()
+		{
+			unsafe
+			{
+				halt if( arr[0] != 17u );
+				halt if( arr[1] != 56u );
+				halt if( arr[2] != 901u );
+				halt if( arr[3] != 78423u );
+				halt if( arr[4] != 78423u );
+				halt if( arr[5] != 78423u );
+				halt if( arr[6] != 78423u );
+				halt if( arr[7] != 78423u );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForGlobalMutableVariable_Test2():
+	c_program_text= """
+		struct S{ char8 x; f64 y; }
+		// Fill array of structs.
+		var [ S, 3 ] mut arr[ { .x= 'k', .y= 744.3 } ... ];
+		fn Foo()
+		{
+			unsafe
+			{
+				halt if( arr[0].x != 'k' ); halt if( arr[0].y != 744.3 );
+				halt if( arr[1].x != 'k' ); halt if( arr[1].y != 744.3 );
+				halt if( arr[2].x != 'k' ); halt if( arr[2].y != 744.3 );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForGlobalMutableVariable_Test3():
+	c_program_text= """
+		struct S{ char8 x; f64 y; }
+		// Fill array of structs, but specify different first element.
+		var [ S, 4 ] mut arr[ { .x= '~', .y= -1.8 }, { .x= '@', .y= 6124.25 } ... ];
+		fn Foo()
+		{
+			unsafe
+			{
+				halt if( arr[0].x != '~' ); halt if( arr[0].y != -1.8 );
+				halt if( arr[1].x != '@' ); halt if( arr[1].y != 6124.25 );
+				halt if( arr[2].x != '@' ); halt if( arr[2].y != 6124.25 );
+				halt if( arr[3].x != '@' ); halt if( arr[3].y != 6124.25 );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerForGlobalMutableVariable_Test4():
+	c_program_text= """
+		// Fill large constant array.
+		var [ i64, 1024 * 8 ] mut arr[ 85588654653456 ... ];
+		fn Foo()
+		{
+			unsafe
+			{
+				halt if( arr[    0 ] != 85588654653456 );
+				halt if( arr[   67 ] != 85588654653456 );
+				halt if( arr[  230 ] != 85588654653456 );
+				halt if( arr[  437 ] != 85588654653456 );
+				halt if( arr[ 2673 ] != 85588654653456 );
+				halt if( arr[ 8191 ] != 85588654653456 );
+				for( auto mut i= 0s; i < 1024s * 8s; ++i )
+				{
+					halt if( arr[i] != 85588654653456 );
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
