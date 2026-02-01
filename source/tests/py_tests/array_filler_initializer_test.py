@@ -173,6 +173,63 @@ def ArrayFillerInitializer_Test8():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def ArrayFillerInitializer_Test9():
+	c_program_text= """
+		struct S
+		{
+			fn conversion_constructor( i32 in_x )
+				( x= in_x )
+			{}
+
+			i32 x;
+		}
+		fn Foo()
+		{
+			// Perform type conversion in array filler initializer.
+			var [ S, 5 ] mut arr[ 67, 123 ... ];
+			halt if( arr[0].x != 67 );
+			halt if( arr[1].x != 123 );
+			halt if( arr[2].x != 123 );
+			halt if( arr[3].x != 123 );
+			halt if( arr[4].x != 123 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializer_Test10():
+	c_program_text= """
+		// zero_init works for array filler initializer.
+		var [ char8, 6 ] constexpr arr[ 'r', '!', zero_init ... ];
+		static_assert( arr[0] == 'r' );
+		static_assert( arr[1] == '!' );
+		static_assert( arr[2] == '\\0' );
+		static_assert( arr[3] == '\\0' );
+		static_assert( arr[4] == '\\0' );
+		static_assert( arr[5] == '\\0' );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ArrayFillerInitializer_Test11():
+	c_program_text= """
+		fn Foo()
+		{
+			unsafe
+			{
+				// "uninitialized" for filler initializer.
+				var[ u32, 1024 ] mut arr[ 13u, 76u, 677u, uninitialized ... ];
+				halt if( arr[0] != 13u );
+				halt if( arr[1] != 76u );
+				halt if( arr[2] != 677u );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def ArrayFillerInitializerConstexpr_Test0():
 	c_program_text= """
 		fn Foo()
