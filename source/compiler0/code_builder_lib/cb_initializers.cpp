@@ -47,7 +47,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 {
 	if( const ArrayType* const array_type= variable->type.GetArrayType() )
 	{
-		if( initializer.initializers.size() != array_type->element_count )
+		const bool initializer_count_matches=
+			initializer.filler
+				? ( initializer.initializers.size() <= array_type->element_count )
+				: ( initializer.initializers.size() == array_type->element_count );
+
+		if( !initializer_count_matches )
 		{
 			REPORT_ERROR( ArrayInitializersCountMismatch,
 				names_scope.GetErrors(),
@@ -74,7 +79,10 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		const bool requires_destruction= array_type->element_type.HasDestructor();
 		llvm::SmallVector<VariablePtr, 8> temp_initialized_variables;
 
-		for( size_t i= 0u; i < initializer.initializers.size(); i++ )
+		const size_t num_regular_initilizers=
+			initializer.filler ? ( initializer.initializers.size() - 1 ) : initializer.initializers.size();
+
+		for( size_t i= 0u; i < num_regular_initilizers; i++ )
 		{
 			array_member->llvm_value= CreateArrayElementGEP( function_context, *variable, i );
 
@@ -105,6 +113,54 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			}
 		}
 
+		if( initializer.filler )
+		{
+			const uint64_t num_iterations= array_type->element_count + 1u - initializer.initializers.size();
+
+			const auto size_type_llvm= fundamental_llvm_types_.size_type_;
+
+			llvm::Value* const first_index=
+				llvm::Constant::getIntegerValue(
+					size_type_llvm,
+					llvm::APInt( size_type_llvm->getIntegerBitWidth(), uint64_t( initializer.initializers.size() - 1u ) ) );
+
+			// TODO - check no reference pollution in loop happens.
+
+			GenerateLoop(
+				num_iterations,
+				[&]( llvm::Value* const loop_index )
+				{
+					llvm::Value* const array_index= function_context.llvm_ir_builder.CreateAdd( first_index, loop_index );
+
+					array_member->llvm_value= CreateArrayElementGEP( function_context, *variable, array_index );
+
+					llvm::Constant* const member_constant=
+						ApplyInitializer( array_member, names_scope, function_context, initializer.initializers.back() );
+
+					(void)member_constant;
+					// TODO - set member constants?
+
+					if( requires_destruction )
+					{
+						// Create temp variable for initialized member in order to call destructor in case of return or await during further array elements initialization.
+						// Also it's useful for "non_sync" variables detection in coroutines (non_sync types should always have destructors).
+						const VariableMutPtr temp_initialized_variable=
+							Variable::Create(
+								array_type->element_type,
+								ValueType::Value,
+								Variable::Location::Pointer,
+								array_member->name,
+								array_member->llvm_value );
+						function_context.variables_state.AddNode( temp_initialized_variable );
+
+						temp_initialized_variable->preserve_temporary= true;
+						RegisterTemporaryVariable( function_context, temp_initialized_variable );
+						temp_initialized_variables.push_back( temp_initialized_variable );
+					}
+				},
+				function_context );
+		}
+
 		function_context.variables_state.RemoveNode( array_member );
 
 		for( const VariablePtr& temp_initialized_variable : temp_initialized_variables )
@@ -117,6 +173,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	}
 	else if( const TupleType* const tuple_type= variable->type.GetTupleType() )
 	{
+		// TODO - handle here filler.
+
 		if( initializer.initializers.size() != tuple_type->element_types.size() )
 		{
 			REPORT_ERROR( TupleInitializersCountMismatch,
