@@ -697,3 +697,89 @@ def ArrayFillerInitializerForFieldOwnInitializer_Test8():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerInConstructorInitializer_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn constructor()
+				( arr[ 1.0f, -1.0f ... ] )
+			{}
+
+			[ f32, 4 ] arr;
+		}
+
+		fn Foo()
+		{
+			var S mut s;
+			halt if( s.arr[0] != 1.0f );
+			halt if( s.arr[1] != -1.0f );
+			halt if( s.arr[2] != -1.0f );
+			halt if( s.arr[3] != -1.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerInConstructorInitializer_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn constructor()
+				( arr[ Bar() ... ] )
+			{}
+
+			[ i32, 5 ] arr;
+		}
+		var i32 mut g_x= -3;
+		fn Bar() : i32
+		{
+			unsafe
+			{
+				var i32 res= g_x * g_x * g_x;
+				++g_x;
+				return res;
+			}
+		}
+		fn Foo()
+		{
+			var S mut s;
+			halt if( s.arr[0] != -3 * 3 * 3 );
+			halt if( s.arr[1] != -2 * 2 * 2 );
+			halt if( s.arr[2] != -1 * 1 * 1 );
+			halt if( s.arr[3] !=  0 * 0 * 0 );
+			halt if( s.arr[4] !=  1 * 1 * 1 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerInConstructorInitializer_Test2():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( u32 mut x )
+				( arr[ Next( x ) ... ] )
+			{}
+
+			[ u32, 3 ] arr;
+		}
+		fn Next( u32 &mut x ) : u32
+		{
+			var u32 res= x * x;
+			++x;
+			return res;
+		}
+		fn Foo()
+		{
+			var S mut s( 3u );
+			halt if( s.arr[0] != 3u * 3u );
+			halt if( s.arr[1] != 4u * 4u );
+			halt if( s.arr[2] != 5u * 5u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

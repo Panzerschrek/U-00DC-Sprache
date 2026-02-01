@@ -38,6 +38,23 @@ def ArrayInitializersCountMismatch_ForArrayFiller_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def ArrayInitializersCountMismatch_ForArrayFiller_Test3():
+	c_program_text= """
+		struct S
+		{
+			fn constructor()
+				// Has too many initializers.
+				( arr[ 1, 2, 3, 4, 5 ... ] )
+			{}
+
+			[ i32, 3 ] arr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ArrayInitializersCountMismatch", 6 ) )
+
+
 def DestroyedVariableStillHasReferences_ForTemporaryInArrayFilleInitializer_Test0():
 	c_program_text= """
 		struct R{ i32& r; }
@@ -230,6 +247,44 @@ def ReferencePollutionOfOuterLoopVariable_ForArrayFillerInitializer_Test4():
 	assert( HasError( errors_list, "ReferencePollutionOfOuterLoopVariable", 7 ) )
 
 
+def ReferencePollutionOfOuterLoopVariable_ForArrayFillerInitializer_Test5():
+	c_program_text= """
+		struct R{ i32& x; }
+		struct T
+		{
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( i32& x ) @( pollution )
+				// Error here - we create immutable references to variable "x" inside "arr" inside filler loop,.
+				( arr[ { .x= x } ... ] )
+			{ }
+
+			[ R, 4 ] arr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferencePollutionOfOuterLoopVariable", 8 ) )
+
+
+def ReferencePollutionOfOuterLoopVariable_ForArrayFillerInitializer_Test6():
+	c_program_text= """
+		struct R{ i32 &mut x; }
+		struct T
+		{
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+			fn constructor( i32 &mut x ) @( pollution )
+				// Error here - we create immutable references to variable "x" inside "arr" inside filler loop,.
+				( arr[ { .x= x } ... ] )
+			{ }
+
+			[ R, 4 ] arr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferencePollutionOfOuterLoopVariable", 8 ) )
+
+
 def OuterVariableMoveInsideLoop_ForArrayFillerInitializer_Test0():
 	c_program_text= """
 		fn Foo()
@@ -255,3 +310,20 @@ def OuterVariableMoveInsideLoop_ForArrayFillerInitializer_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "OuterVariableMoveInsideLoop", 5 ) )
+
+
+def OuterVariableMoveInsideLoop_ForArrayFillerInitializer_Test2():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( f64 mut x )
+				// Error here - "x" moved multiple times, since "..." creates a loop, even if this loop has only single iteration.
+				( arr[ move(x) ... ] )
+			{}
+
+			[ f64, 64 ] arr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "OuterVariableMoveInsideLoop", 6 ) )
