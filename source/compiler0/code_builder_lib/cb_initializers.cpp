@@ -121,6 +121,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			const uint64_t num_iterations= array_type->element_count - first_index;
 
 			const Synt::Initializer& filler_initializer= initializer.initializers.back();
+			const SrcLoc filler_initializer_src_loc= Synt::GetSrcLoc( filler_initializer );
 
 			llvm::Type* const size_type_llvm= fundamental_llvm_types_.size_type_;
 
@@ -128,7 +129,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				llvm::Constant::getIntegerValue(
 					size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), first_index ) );
 
-			// TODO - check no reference pollution in loop happens.
+			const ReferencesGraph variables_state_before_loop= function_context.variables_state;
 
 			GenerateLoop(
 				num_iterations,
@@ -153,7 +154,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					else
 						is_constant= false;
 
-					CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetSrcLoc( filler_initializer ) );
+					CallDestructors( temp_variables_storage, names_scope, function_context, filler_initializer_src_loc );
 				},
 				function_context );
 
@@ -176,11 +177,15 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					{
 						if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
 						{
-							REPORT_ERROR( NotImplemented, names_scope.GetErrors(), Synt::GetSrcLoc( filler_initializer ), "array filler initializer in async functions" );
+							REPORT_ERROR( NotImplemented, names_scope.GetErrors(), filler_initializer_src_loc, "array filler initializer in async functions" );
 						}
 					}
 				}
 			}
+
+			// Don't allow reference pollution and moving in array filler initializer, since it's a loop.
+			const auto errors= ReferencesGraph::CheckVariablesStateAfterLoop( variables_state_before_loop, function_context.variables_state, filler_initializer_src_loc );
+			names_scope.GetErrors().insert( names_scope.GetErrors().end(), errors.begin(), errors.end() );
 		}
 
 		function_context.variables_state.RemoveNode( array_member );
