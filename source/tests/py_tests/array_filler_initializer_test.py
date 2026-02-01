@@ -13,7 +13,7 @@ def ArrayFillerInitializer_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializer_Test1():
@@ -30,7 +30,7 @@ def ArrayFillerInitializer_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializer_Test2():
@@ -48,7 +48,7 @@ def ArrayFillerInitializer_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializer_Test3():
@@ -64,7 +64,7 @@ def ArrayFillerInitializer_Test3():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializer_Test4():
@@ -80,7 +80,7 @@ def ArrayFillerInitializer_Test4():
 		struct S{ i32 x; f32 y; }
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializer_Test5():
@@ -96,7 +96,7 @@ def ArrayFillerInitializer_Test5():
 		struct S{ i32 x; f32 y; }
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializer_Test6():
@@ -121,7 +121,7 @@ def ArrayFillerInitializer_Test6():
 		struct S{ i32 x; f32 y; }
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializer_Test7():
@@ -145,7 +145,7 @@ def ArrayFillerInitializer_Test7():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializer_Test8():
@@ -170,7 +170,7 @@ def ArrayFillerInitializer_Test8():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializerConstexpr_Test0():
@@ -186,7 +186,7 @@ def ArrayFillerInitializerConstexpr_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializerConstexpr_Test1():
@@ -206,7 +206,7 @@ def ArrayFillerInitializerConstexpr_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializerConstexpr_Test2():
@@ -222,7 +222,7 @@ def ArrayFillerInitializerConstexpr_Test2():
 		struct S{ char8 x; f64 y; }
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializerConstexpr_Test3():
@@ -239,7 +239,7 @@ def ArrayFillerInitializerConstexpr_Test3():
 		struct S{ char8 x; f64 y; }
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializerConstexpr_Test4():
@@ -257,7 +257,7 @@ def ArrayFillerInitializerConstexpr_Test4():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def ArrayFillerInitializerConstexpr_Test5():
