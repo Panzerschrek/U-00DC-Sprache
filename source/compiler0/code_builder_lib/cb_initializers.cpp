@@ -137,8 +137,15 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					llvm::Constant* const member_constant=
 						ApplyInitializer( array_member, names_scope, function_context, initializer.initializers.back() );
 
-					(void)member_constant;
-					// TODO - set member constants?
+					// Assume that constexpr value is the same for all filled elements.
+					// But avoid processing too large arrays.
+					if( is_constant && member_constant != nullptr && num_iterations <= ( 1u << 20 ) )
+					{
+						for( uint64_t i= 0u; i < num_iterations; ++i )
+							members_constants.push_back( member_constant );
+					}
+					else
+						is_constant= false;
 
 					if( requires_destruction )
 					{
@@ -166,7 +173,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		for( const VariablePtr& temp_initialized_variable : temp_initialized_variables )
 			function_context.variables_state.MoveNode( temp_initialized_variable );
 
-		U_ASSERT( members_constants.size() == initializer.initializers.size() || !is_constant );
+		U_ASSERT( members_constants.size() == array_type->element_count || !is_constant );
 
 		if( is_constant )
 			return llvm::ConstantArray::get( array_type->llvm_type, members_constants );

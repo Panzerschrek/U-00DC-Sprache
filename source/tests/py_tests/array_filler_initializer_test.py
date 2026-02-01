@@ -6,7 +6,7 @@ def ArrayFillerInitializer_Test0():
 		fn Foo()
 		{
 			// Only one element filled.
-			var [ i32, 3 ] arr[ 55, 777, 9999 ... ];
+			var [ i32, 3 ] mut arr[ 55, 777, 9999 ... ];
 			halt if( arr[0] != 55 );
 			halt if( arr[1] != 777 );
 			halt if( arr[2] != 9999 );
@@ -21,7 +21,7 @@ def ArrayFillerInitializer_Test1():
 		fn Foo()
 		{
 			// Fill three elements.
-			var [ i32, 5 ] arr[ 2, 45, 78 ... ];
+			var [ i32, 5 ] mut arr[ 2, 45, 78 ... ];
 			halt if( arr[0] != 2 );
 			halt if( arr[1] != 45 );
 			halt if( arr[2] != 78 );
@@ -38,7 +38,7 @@ def ArrayFillerInitializer_Test2():
 		fn Foo()
 		{
 			// Apply constructor initializer (with type conversion).
-			var [ f32, 6 ] arr[ (-5), (42), (1272) ... ];
+			var [ f32, 6 ] mut arr[ (-5), (42), (1272) ... ];
 			halt if( arr[0] != -5.0f );
 			halt if( arr[1] != 42.0f );
 			halt if( arr[2] != 1272.0f );
@@ -171,3 +171,138 @@ def ArrayFillerInitializer_Test8():
 	"""
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerConstexpr_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			// Fill the whole array with single constant value.
+			var [ i32, 4 ] constexpr arr[ 56 ... ];
+			static_assert( arr[0] == 56 );
+			static_assert( arr[1] == 56 );
+			static_assert( arr[2] == 56 );
+			static_assert( arr[3] == 56 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerConstexpr_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			// First several values are specified one by one, the remaining tail is filled.
+			var [ u32, 8 ] constexpr arr[ 17u, 56u, 901u, 7u ... ];
+			static_assert( arr[0] == 17u );
+			static_assert( arr[1] == 56u );
+			static_assert( arr[2] == 901u );
+			static_assert( arr[3] == 7u );
+			static_assert( arr[4] == 7u );
+			static_assert( arr[5] == 7u );
+			static_assert( arr[6] == 7u );
+			static_assert( arr[7] == 7u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerConstexpr_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			// Fill array of constexpr structs.
+			var [ S, 3 ] constexpr arr [ { .x= 'T', .y= -67.5 } ... ];
+			static_assert( arr[0].x == 'T' ); static_assert( arr[0].y == -67.5 );
+			static_assert( arr[1].x == 'T' ); static_assert( arr[1].y == -67.5 );
+			static_assert( arr[2].x == 'T' ); static_assert( arr[2].y == -67.5 );
+		}
+		struct S{ char8 x; f64 y; }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerConstexpr_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			// Fill array of constexpr structs, but specify different first element.
+			var [ S, 4 ] constexpr arr[ { .x= '~', .y= -1.8 }, { .x= 'n', .y= 124.25 } ... ];
+			static_assert( arr[0].x == '~' ); static_assert( arr[0].y == -1.8 );
+			static_assert( arr[1].x == 'n' ); static_assert( arr[1].y == 124.25 );
+			static_assert( arr[2].x == 'n' ); static_assert( arr[2].y == 124.25 );
+			static_assert( arr[3].x == 'n' ); static_assert( arr[3].y == 124.25 );
+		}
+		struct S{ char8 x; f64 y; }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerConstexpr_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			// Fill large constant array.
+			var [ u64, 1024 * 32 ] constexpr arr[ 783567835673u64 ... ];
+			static_assert( arr[     0 ] == 783567835673u64 );
+			static_assert( arr[    67 ] == 783567835673u64 );
+			static_assert( arr[   230 ] == 783567835673u64 );
+			static_assert( arr[   437 ] == 783567835673u64 );
+			static_assert( arr[ 15435 ] == 783567835673u64 );
+			static_assert( arr[ 32767 ] == 783567835673u64 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def ArrayFillerInitializerConstexpr_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			// Error - filler doesn't produce constant expression.
+			var [ i32, 4 ] constexpr arr[ x ... ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
+
+
+def ArrayFillerInitializerConstexpr_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			// Filler is constant, but head element isn't.
+			var [ i32, 4 ] constexpr arr[ x, 0 ... ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
+
+
+def ArrayFillerInitializerConstexpr_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			// Error - filler doesn't produce constant expression, since filler function call mutates an external variable.
+			var [ i32, 4 ] constexpr arr[ Next(x) ... ];
+		}
+		fn constexpr Next( u32 &mut x )
+		{
+			var u32 res= x;
+			++x;
+			return res;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
