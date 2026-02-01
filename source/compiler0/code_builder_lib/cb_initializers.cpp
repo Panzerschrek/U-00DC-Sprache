@@ -118,6 +118,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			const uint64_t first_index= initializer.initializers.size() - 1u;
 			const uint64_t num_iterations= array_type->element_count - first_index;
 
+			const Synt::Initializer& filler_initializer= initializer.initializers.back();
+
 			llvm::Type* const size_type_llvm= fundamental_llvm_types_.size_type_;
 
 			llvm::Value* const first_index_value=
@@ -140,19 +142,16 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					array_member->llvm_value= CreateArrayElementGEP( function_context, *variable, array_index_value );
 
 					llvm::Constant* const member_constant=
-						ApplyInitializer( array_member, names_scope, function_context, initializer.initializers.back() );
+						ApplyInitializer( array_member, names_scope, function_context, filler_initializer );
 
 					// Assume that constexpr value is the same for all filled elements.
 					// But avoid processing too large arrays.
 					if( is_constant && member_constant != nullptr && num_iterations <= ( 1u << 20 ) )
-					{
-						for( uint64_t i= 0u; i < num_iterations; ++i )
-							members_constants.push_back( member_constant );
-					}
+						members_constants.resize( members_constants.size() + size_t( num_iterations ), member_constant );
 					else
 						is_constant= false;
 
-					CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetSrcLoc( initializer.initializers.back() ) );
+					CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetSrcLoc( filler_initializer ) );
 
 					// TODO - deal with return/await and destruction of already constructed members.
 				},
