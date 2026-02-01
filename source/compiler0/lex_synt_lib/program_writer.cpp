@@ -719,6 +719,9 @@ void ElementWrite( const Initializer& initializer ) const
 					stream_ << ", ";
 			}
 
+			if( sequence_initializer->filler )
+				stream_ << " ...";
+
 			stream_ << " ]";
 		}
 	}

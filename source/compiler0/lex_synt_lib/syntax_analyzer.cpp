@@ -2156,6 +2156,12 @@ Initializer SyntaxAnalyzer::ParseSequenceInitializer()
 		result.initializers.push_back( ParseInitializer( true ) );
 		if( it_->type == Lexem::Type::Comma )
 			NextLexem();
+		else if( it_->type == Lexem::Type::Ellipsis )
+		{
+			NextLexem();
+			result.filler= true;
+			break;
+		}
 		else
 			break;
 	}
