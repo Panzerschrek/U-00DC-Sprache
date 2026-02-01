@@ -47,12 +47,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 {
 	if( const ArrayType* const array_type= variable->type.GetArrayType() )
 	{
-		const bool initializer_count_matches=
+		const bool initializer_count_is_expected=
 			initializer.filler
 				? ( initializer.initializers.size() <= array_type->element_count )
 				: ( initializer.initializers.size() == array_type->element_count );
 
-		if( !initializer_count_matches )
+		if( !initializer_count_is_expected )
 		{
 			REPORT_ERROR( ArrayInitializersCountMismatch,
 				names_scope.GetErrors(),
@@ -115,6 +115,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 		if( initializer.filler )
 		{
+			U_ASSERT( !initializer.initializers.empty() );
+
 			const uint64_t first_index= initializer.initializers.size() - 1u;
 			const uint64_t num_iterations= array_type->element_count - first_index;
 
@@ -186,10 +188,11 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		for( const VariablePtr& temp_initialized_variable : temp_initialized_variables )
 			function_context.variables_state.MoveNode( temp_initialized_variable );
 
-		U_ASSERT( members_constants.size() == array_type->element_count || !is_constant );
-
 		if( is_constant )
+		{
+			U_ASSERT( members_constants.size() == array_type->element_count );
 			return llvm::ConstantArray::get( array_type->llvm_type, members_constants );
+		}
 	}
 	else if( const TupleType* const tuple_type= variable->type.GetTupleType() )
 	{
