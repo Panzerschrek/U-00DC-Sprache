@@ -79,10 +79,10 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		const bool requires_destruction= array_type->element_type.HasDestructor();
 		llvm::SmallVector<VariablePtr, 8> temp_initialized_variables;
 
-		const size_t num_regular_initilizers=
+		const size_t num_regular_initializers=
 			initializer.filler ? ( initializer.initializers.size() - 1 ) : initializer.initializers.size();
 
-		for( size_t i= 0u; i < num_regular_initilizers; i++ )
+		for( size_t i= 0u; i < num_regular_initializers; ++i )
 		{
 			array_member->llvm_value= CreateArrayElementGEP( function_context, *variable, i );
 

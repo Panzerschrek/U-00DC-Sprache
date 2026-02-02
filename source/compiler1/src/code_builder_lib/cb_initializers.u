@@ -196,12 +196,12 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 		var bool requires_destruction= array_type.element_type.HasDestructor();
 		var ust::vector</VariablePtr/> mut temp_initialized_variables;
 
-		var size_type num_regular_initilizers=
+		var size_type num_regular_initializers=
 			( sequence_initializer.filler
 				? sequence_initializer.elements_initializers.size() - 1s
 				: sequence_initializer.elements_initializers.size() );
 
-		for( auto mut i= 0s; i < num_regular_initilizers; ++i )
+		for( auto mut i= 0s; i < num_regular_initializers; ++i )
 		{
 			var LLVMValueRef element_llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, u32(i) );
 			var ust::string8 element_name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" );
