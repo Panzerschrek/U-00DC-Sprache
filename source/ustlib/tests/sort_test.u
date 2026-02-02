@@ -317,11 +317,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 	{ // Sort sorted array.
 		auto num= 150;
-		var [ i32, num ] mut arr= zero_init;
-		for( auto mut i= 0; i < num; ++i )
-		{
-			arr[ u32(i) ]= i;
-		}
+		auto mut next= lambda[i = 0] mut () : i32 { auto res= i; ++i; return res; };
+		var [ i32, num ] mut arr[ next() ... ];
 		halt if( !ust::is_sorted( arr ) );
 		ust::sort( arr );
 		halt if( !ust::is_sorted( arr ) );
@@ -340,12 +337,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 	{ // Sort array with only two values - 0 or 1.
 		auto num= 107;
-		var [ i32, num ] mut arr= zero_init;
-		for( auto mut i= 0; i < num; ++i )
-		{
-			arr[ u32(i) ]= i & 1;
-		}
-
+		auto mut next= lambda[i = 0] mut () : i32 { auto res= i & 1; ++i; return res; };
+		var [ i32, num ] mut arr[ next() ... ];
 		ust::sort( arr );
 		halt if( !ust::is_sorted( arr ) );
 	}
@@ -436,42 +429,25 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 	{ // Sort, using custom comparator in form of function pointer.
 		auto num= 113;
-		var[ i32, num ] mut arr= zero_init;
-
 		var RandGenerator mut gen;
-		foreach( &mut i : arr )
-		{
-			i= i32( gen.Next() - 16384u );
-		}
-
+		var[ i32, num ] mut arr[ ( gen.Next() - 16384u ) ... ];
 		ust::sort( IntRange(arr), CompareAbs );
 		halt if( !ust::is_sorted( IntRangeImut(arr), CompareAbs ) );
 	}
 	{ // Sort by key, using custom key provider in form of function pointer.
 		auto num= 113;
-		var[ i32, num ] mut arr= zero_init;
-
 		var RandGenerator mut gen;
-		foreach( &mut i : arr )
-		{
-			i= i32( gen.Next() - 16384u );
-		}
+		var[ i32, num ] mut arr[ (  gen.Next() - 16384u  ) ... ];
 
 		var ( fn( i32 x ) : i32 ) abs_func= ust::abs</i32/>;
-		var ( fn( i32 l, i32 r ) : bool ) comp= CompareAbs;
 
 		ust::sort_by_key( IntRange(arr), abs_func );
 		halt if( !ust::is_sorted( IntRangeImut(arr), CompareAbs ) );
 	}
 	{ // Sort, using custom comparator in form of functional object.
 		auto num= 99;
-		var[ i32, num ] mut arr= zero_init;
-
 		var RandGenerator mut gen;
-		foreach( &mut i : arr )
-		{
-			i= i32(gen.Next());
-		}
+		var[ i32, num ] mut arr[ ( gen.Next() ) ... ];
 
 		var ust::reverse_compare</i32/> comp;
 
@@ -480,14 +456,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 	{ // Sort, using custom comparator in form of lambda.
 		auto num= 99;
-		var[ i32, num ] mut arr= zero_init;
-
 		var RandGenerator mut gen;
-		foreach( &mut i : arr )
-		{
-			i= i32(gen.Next());
-		}
-
+		var[ i32, num ] mut arr[ ( gen.Next() ) ... ];
 		auto greater= lambda( i32 x, i32 y ) : bool { return x > y; };
 		ust::sort( IntRange(arr), greater );
 		halt if( !ust::is_sorted( IntRangeImut(arr), greater ) );
