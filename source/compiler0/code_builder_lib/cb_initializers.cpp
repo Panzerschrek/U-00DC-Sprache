@@ -201,7 +201,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	}
 	else if( const TupleType* const tuple_type= variable->type.GetTupleType() )
 	{
-		// TODO - handle here filler.
+		// TODO - support filler initialzier for tuples.
+		if( initializer.filler )
+		{
+			REPORT_ERROR( NotImplemented, names_scope.GetErrors(), initializer.src_loc, "filler initializer for tuples" );
+			return nullptr;
+		}
 
 		if( initializer.initializers.size() != tuple_type->element_types.size() )
 		{

@@ -374,6 +374,13 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 	}
 	if_var( tuple_type : variable.t.GetTupleType() )
 	{
+		// TODO - support filler initialzier for tuples.
+		if( sequence_initializer.filler )
+		{
+			REPORT_ERROR( NotImplemented, names_scope, sequence_initializer.src_loc, "filler initializer for tuples" )
+			return Null::LLVMValueRef;
+		}
+
 		if( sequence_initializer.elements_initializers.size() != tuple_type.element_types.size() )
 		{
 			REPORT_ERROR( TupleInitializersCountMismatch,

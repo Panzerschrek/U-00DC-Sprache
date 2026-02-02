@@ -327,3 +327,31 @@ def OuterVariableMoveInsideLoop_ForArrayFillerInitializer_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "OuterVariableMoveInsideLoop", 6 ) )
+
+
+def FillerInitializerForTuple_Test0():
+	c_program_text= """
+		fn  Foo()
+		{
+			// For now don't support filler initializer for tuples.
+			var tup[ f32, i32 ] arr[ (0) ... ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NotImplemented", 5 ) )
+	assert( errors_list[0].text.find( "filler initializer for tuples" ) != -1 )
+
+
+def FillerInitializerForTuple_Test1():
+	c_program_text= """
+		fn  Foo()
+		{
+			// For now don't support filler initializer for tuples. Even if no filling takes place.
+			var tup[ f32, i32, u64 ] arr[ 0.0f, 0, 0u64 ... ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NotImplemented", 5 ) )
+	assert( errors_list[0].text.find( "filler initializer for tuples" ) != -1 )
