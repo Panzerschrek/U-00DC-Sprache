@@ -36,6 +36,13 @@ The number of elements in the initializer should be equal to the number of eleme
    var [ [ i32, 2 ], 3 ] arr2[ [ 5, 7 ], [ 50, 70 ], [ 500, 700 ] ]; // Initialize a two-dimensional array
    var tup[ f32, [ i32, 3 ] ] tup1[ 0.0f, [ 0, 0, 0 ] ]; //Initialize a tuple with an array inside
 
+For arrays it's possible to specify ``...`` after the last element initializer.
+This allows to initialize the remaining array with it.
+
+.. code-block:: u_spr
+
+   var [ i32, 5 ] arr[ 5, 7, 9 ... ]; // Will be array with contents 5, 7, 9, 9, 9.
+
 ****************************
 *constructor initialization*
 ****************************
