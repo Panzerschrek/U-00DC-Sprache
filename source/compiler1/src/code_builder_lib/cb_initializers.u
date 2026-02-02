@@ -175,7 +175,12 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 	var VariableLite variable= variable_ptr;
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
-		if( sequence_initializer.elements_initializers.size() != size_type(array_type.element_count) )
+		var bool initializer_count_is_expected=
+			( sequence_initializer.filler
+				? u64( sequence_initializer.elements_initializers.size() ) <= array_type.element_count
+				: u64( sequence_initializer.elements_initializers.size() ) == array_type.element_count );
+
+		if( !initializer_count_is_expected )
 		{
 			REPORT_ERROR( ArrayInitializersCountMismatch,
 				names_scope,
@@ -191,8 +196,12 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 		var bool requires_destruction= array_type.element_type.HasDestructor();
 		var ust::vector</VariablePtr/> mut temp_initialized_variables;
 
-		auto mut i= 0s;
-		foreach( &element_initializer : sequence_initializer.elements_initializers )
+		var size_type num_regular_initilizers=
+			( sequence_initializer.filler
+				? sequence_initializer.elements_initializers.size() - 1s
+				: sequence_initializer.elements_initializers.size() );
+
+		for( auto mut i= 0s; i < num_regular_initilizers; ++i )
 		{
 			var LLVMValueRef element_llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, u32(i) );
 			var ust::string8 element_name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" );
@@ -211,7 +220,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 			function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, sequence_initializer.src_loc );
 
-			auto element_constant= ApplyInitializer( names_scope, function_context, element_variable_ptr, element_initializer );
+			auto element_constant= ApplyInitializer( names_scope, function_context, element_variable_ptr, sequence_initializer.elements_initializers[i] );
 
 			function_context.references_graph.RemoveNode( element_variable_ptr );
 
@@ -246,8 +255,109 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 				RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
 				temp_initialized_variables.push_back( temp_initialized_variable_ptr );
 			}
+		}
 
-			++i;
+		if( sequence_initializer.filler )
+		{
+			var u64 first_index( sequence_initializer.elements_initializers.size() - 1s );
+			var u64 num_iterations= array_type.element_count - first_index;
+
+			var Synt::Initializer& filler_initializer= sequence_initializer.elements_initializers.back();
+			var SrcLoc filler_initializer_src_loc= Synt::GetSrcLoc( filler_initializer );
+
+			var LLVMValueRef first_index_value=
+				unsafe( LLVMConstInt( fundamental_llvm_types_.size_type_, first_index, LLVMBool::False ) );
+
+			var ReferencesGraph references_graph_before_loop= function_context.references_graph;
+
+			GenerateLoop(
+				function_context,
+				num_iterations,
+				lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context, LLVMValueRef loop_index_value )
+				{
+					// Destruction stack for loop internal variables.
+					// Anything that was constructed within a loop iteration, should be destroyed within it.
+					function_context.variables_frames.push_back( VariablesFrame() );
+
+					var LLVMValueRef array_index_value=
+						unsafe( LLVMBuildAdd( function_context.llvm_ir_builder, first_index_value, loop_index_value, "array_index\0"[0] ) );
+
+					var LLVMValueRef element_llvm_value=
+						self.CreateArrayElementGEP( function_context, array_type, variable.llvm_value, array_index_value );
+
+					var VariablePtr element_variable_ptr=
+						Variable
+						{
+							.t= array_type.element_type,
+							.value_type= ValueType::ReferenceMut,
+							.location= Variable::Location::Pointer,
+							.llvm_value= element_llvm_value,
+							.name= ust::concat( variable_ptr.lock_imut().deref().name, "[]" ),
+						}.CreatePtr();
+
+					function_context.references_graph.AddNode( element_variable_ptr );
+					function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+					function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, filler_initializer_src_loc );
+
+					var LLVMValueRef element_constant=
+						self.ApplyInitializer( names_scope, function_context, element_variable_ptr, filler_initializer );
+
+					function_context.references_graph.RemoveNode( element_variable_ptr );
+
+					if( is_constant )
+					{
+						if( element_constant == Null::LLVMValueRef )
+						{
+							is_constant= false;
+						}
+						else if( num_iterations <= ( 1u64 << 20 ) )
+						{
+							// Assume that constexpr value is the same for all filled elements.
+							// But avoid processing too large arrays.
+							elements_constants.push_back( size_type( num_iterations ), element_constant );
+						}
+					}
+
+					self.CallDestructorsForTopVariablesFrame( names_scope, function_context, filler_initializer_src_loc );
+
+					foreach( &variable : function_context.variables_frames.back().variables )
+					{
+						function_context.references_graph.RemoveNode( variable );
+					}
+					function_context.variables_frames.drop_back();
+				} );
+
+			// A hack for async functions.
+			// It's possible to use "await" in such functions including expressions in initializers.
+			// "await" is basically hidden "return" and thus all local and temporary variables should be destroyed in case if an async function isn't resumed but destroyed.
+			// In such case we should destroy members of partially-initialized composites.
+			// But in this particular case we can't do so, since we need to memorize dynamic amount of array elements that were initialized.
+			// So, for now just don't allow using array filler initializer in async functions.
+			//
+			// TODO - maybe detect if "await" is used in the filler initializer?
+			//
+			// This can be also problematic, if we implement some sort of arbitrary return from expression context.
+			//
+			if( function_context.coro_suspend_bb != Null::LLVMBasicBlockRef )
+			{
+				if_var( &class_type_ptr : function_context.function_type.return_type.GetClassType() )
+				{
+					if_var( &coroutine_type_description : class_type_ptr.lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />() )
+					{
+						if( coroutine_type_description.kind == CoroutineKind::AsyncFunc )
+						{
+							REPORT_ERROR( NotImplemented, names_scope, filler_initializer_src_loc, "array filler initializer in async functions" )
+						}
+					}
+				}
+			}
+
+			// Don't allow reference pollution and moving in array filler initializer, since it's a loop.
+			CheckReferencesGraphAfterLoop(
+				references_graph_before_loop,
+				function_context.references_graph,
+				names_scope,
+				filler_initializer_src_loc );
 		}
 
 		foreach( & temp_initialized_variable : temp_initialized_variables )
