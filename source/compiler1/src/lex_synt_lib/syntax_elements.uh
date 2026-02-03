@@ -428,6 +428,8 @@ struct SequenceInitializer
 {
 	SrcLoc src_loc;
 	ust::vector</ Initializer /> elements_initializers;
+	// If true - apply the last initializer for the remaining array.
+	bool filler;
 }
 
 struct StructNamedInitializer

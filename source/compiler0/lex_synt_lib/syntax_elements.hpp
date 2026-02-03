@@ -871,6 +871,8 @@ struct SequenceInitializer
 
 	SrcLoc src_loc;
 	std::vector<Initializer> initializers;
+	// If true - apply the last initializer for the remaining array.
+	bool filler= false;
 };
 
 struct StructNamedInitializer

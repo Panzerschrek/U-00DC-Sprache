@@ -50,6 +50,7 @@ General:
 *) Consider implementing static interfaces - a static interface is a non-polymorph class, which has its implementation
 	specified and redirects all method calls to corresponding implementation method calls. A reference to an
 	implementation class can be converted to reference to one of its static interfaces.
+*) Consider supporting sequence filler initializer ( ... ) for tuples
 
 References:
 *) Support second order inner references for coroutine types

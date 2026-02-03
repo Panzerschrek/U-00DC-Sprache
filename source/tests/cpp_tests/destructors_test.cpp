@@ -5787,6 +5787,320 @@ U_TEST(DecomposeDeclaration_Destruction_Test8)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 77, 5555, -77 } ) );
 }
 
+U_TEST(ArrayFillerInitializer_TemporariesDestruction_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); x= 0x7FFFFFFF; }
+		}
+		fn Next( i32 &mut x ) : i32
+		{
+			var i32 res= x;
+			++x;
+			return res;
+		}
+		fn Foo()
+		{
+			var S s0(500);
+			{
+				var S s1(600);
+			} // Destroy here "s1".
+			var i32 mut x= 100;
+			var [ i32, 3 ] arr[ S( Next(x) ).x ... ]; // Destroy temporaries at each iteration.
+			halt if( arr[0] != 100 );
+			halt if( arr[1] != 101 );
+			halt if( arr[2] != 102 );
+			var S s2(700);
+			// Destroy here s2.
+			// Destriy here s0.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 500, 600, -600, 100, -100, 101, -101, 102, -102, 700, -700, -500 } ) );
+}
+
+U_TEST(ArrayFillerInitializer_TemporariesDestruction_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); x= 0x7FFFFFFF; }
+		}
+		fn Next( i32 &mut x ) : i32
+		{
+			var i32 res= x;
+			++x;
+			return res;
+		}
+		fn Foo()
+		{
+			var S s0(1);
+			{
+				var S s1(2);
+			} // Destroy here "s1".
+			var i32 mut x= 10;
+			var [ S, 3 ] arr[ ( Next(x) ) ... ]; // Call 'Next' function in each iteration within a constructor initializer.
+			halt if( arr[0].x != 10 );
+			halt if( arr[1].x != 11 );
+			halt if( arr[2].x != 12 );
+			var S s2(3);
+			// Destroy here s2.
+			// Destroy here arr.
+			// Destriy here s0.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 1, 2, -2, 10, 11, 12, 3, -3, -10, -11, -12, -1 } ) );
+}
+
+U_TEST(ArrayFillerInitializer_TemporariesDestruction_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); x= 0x7FFFFFFF; }
+		}
+		fn Next( i32 &mut x ) : i32
+		{
+			var i32 res= x;
+			++x;
+			return res;
+		}
+		fn Foo()
+		{
+			var S s0(1);
+			{
+				var S s1(2);
+			} // Destroy here "s1".
+			var i32 mut x= 1000;
+			var [ S, 3 ] arr[ S( Next(x) ) ... ]; // Create a temporary in filler initializer and move it.
+			halt if( arr[0].x != 1000 );
+			halt if( arr[1].x != 1001 );
+			halt if( arr[2].x != 1002 );
+			var S s2(3);
+			// Destroy here s2.
+			// Destroy here arr.
+			// Destriy here s0.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 1, 2, -2, 1000, 1001, 1002, 3, -3, -1000, -1001, -1002, -1 } ) );
+}
+
+U_TEST(ArrayFillerInitializer_TemporariesDestruction_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); x= 0x7FFFFFFF; }
+		}
+		struct T
+		{
+			S a;
+			i32 x;
+			S b;
+			i32 y;
+		}
+		fn Next( i32 &mut x ) : i32
+		{
+			var i32 res= x;
+			++x;
+			return res;
+		}
+		fn Foo()
+		{
+			var S s0(1);
+			{
+				var S s1(2);
+			} // Destroy here "s1".
+			var i32 mut x= 10000;
+			// use filler for struct initializer.
+			var [ T, 3 ] arr[ { .a( Next(x) * 3 ), .x= 67, .b( Next(x) * 5 ), .y= -34 } ... ];
+			halt if( arr[0].a.x != 10000 * 3 );
+			halt if( arr[0].x != 67 );
+			halt if( arr[0].b.x != 10001 * 5 );
+			halt if( arr[0].y != -34 );
+			halt if( arr[1].a.x != 10002 * 3 );
+			halt if( arr[1].x != 67 );
+			halt if( arr[1].b.x != 10003 * 5 );
+			halt if( arr[1].y != -34 );
+			halt if( arr[2].a.x != 10004 * 3 );
+			halt if( arr[2].x != 67 );
+			halt if( arr[2].b.x != 10005 * 5 );
+			halt if( arr[2].y != -34 );
+			var S s2(3);
+			// Destroy here s2.
+			// Destroy here arr.
+			// Destriy here s0.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 1, 2, -2, 10000 * 3, 10001 * 5, 10002 * 3, 10003 * 5, 10004 * 3, 10005 * 5, 3, -3, -10000 * 3, -10001 * 5, -10002 * 3, -10003 * 5, -10004 * 3, -10005 * 5, -1 } ) );
+}
+
+U_TEST(ArrayFillerInitializer_TemporariesDestruction_Test4)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); x= 0x7FFFFFFF; }
+		}
+		fn Next( i32 &mut x ) : i32
+		{
+			var i32 res= x;
+			++x;
+			return res;
+		}
+		fn Sum( S& a, S& b ) : i32
+		{
+			return a.x + b.x;
+		}
+		fn Foo()
+		{
+			var S s0(1);
+			{
+				var S s1(2);
+			} // Destroy here "s1".
+			var i32 mut x= 10;
+			// Temporaries in filler initializer should be properly destroyed.
+			var [ i32, 3 ] arr[ Sum( S( Next(x) ), S( Next(x) ) ) * Sum( S( Next(x) ), S( Next(x) ) ) ... ];
+			halt if( arr[0] != ( 10 + 11 ) * ( 12 + 13 ) );
+			halt if( arr[1] != ( 14 + 15 ) * ( 16 + 17 ) );
+			halt if( arr[2] != ( 18 + 19 ) * ( 20 + 21 ) );
+			var S s2(3);
+			// Destroy here s2.
+			// Destroy here arr.
+			// Destriy here s0.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 1, 2, -2, 10, 11, -10, -11, 12, 13, -12, -13, 14, 15, -14, -15, 16, 17, -16, -17, 18, 19, -18, -19, 20, 21, -20, -21, 3, -3, -1 } ) );
+}
+
+U_TEST(ArrayFillerInitializer_TemporariesDestruction_Test5)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); x= 0x7FFFFFFF; }
+		}
+		fn Next( i32 &mut x ) : i32
+		{
+			var i32 res= x;
+			++x;
+			return res;
+		}
+		fn Max( S& a, S& b ) : S&
+		{
+			if( a.x > b.x ) { return a; } else { return b; }
+		}
+		fn Foo()
+		{
+			var S s0(1);
+			{
+				var S s1(2);
+			} // Destroy here "s1".
+			var i32 mut x= 200;
+			// Temporaries in filler initializer should be properly destroyed.
+			var [ i32, 3 ] arr[ Max( Max( S( Next(x) ), S( Next(x) ) ), Max( S( Next(x) ), S( Next(x) ) ) ).x ... ];
+			halt if( arr[0] != 203 );
+			halt if( arr[1] != 207 );
+			halt if( arr[2] != 211 );
+			var S s2(3);
+			// Destroy here s2.
+			// Destroy here arr.
+			// Destriy here s0.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 1, 2, -2, 200, 201, 202, 203, -200, -201, -202, -203, 204, 205, 206, 207, -204, -205, -206, -207, 208, 209, 210, 211, -208, -209, -210, -211, 3, -3, -1 } ) );
+}
+
 } // namespace
 
 } // namespace U

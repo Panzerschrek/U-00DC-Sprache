@@ -47,7 +47,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 {
 	if( const ArrayType* const array_type= variable->type.GetArrayType() )
 	{
-		if( initializer.initializers.size() != array_type->element_count )
+		const bool initializer_count_is_expected=
+			initializer.filler
+				? ( initializer.initializers.size() <= array_type->element_count )
+				: ( initializer.initializers.size() == array_type->element_count );
+
+		if( !initializer_count_is_expected )
 		{
 			REPORT_ERROR( ArrayInitializersCountMismatch,
 				names_scope.GetErrors(),
@@ -74,7 +79,10 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		const bool requires_destruction= array_type->element_type.HasDestructor();
 		llvm::SmallVector<VariablePtr, 8> temp_initialized_variables;
 
-		for( size_t i= 0u; i < initializer.initializers.size(); i++ )
+		const size_t num_regular_initializers=
+			initializer.filler ? ( initializer.initializers.size() - 1 ) : initializer.initializers.size();
+
+		for( size_t i= 0u; i < num_regular_initializers; ++i )
 		{
 			array_member->llvm_value= CreateArrayElementGEP( function_context, *variable, i );
 
@@ -105,18 +113,101 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			}
 		}
 
+		if( initializer.filler )
+		{
+			U_ASSERT( !initializer.initializers.empty() );
+
+			const uint64_t first_index= initializer.initializers.size() - 1u;
+			const uint64_t num_iterations= array_type->element_count - first_index;
+
+			const Synt::Initializer& filler_initializer= initializer.initializers.back();
+			const SrcLoc filler_initializer_src_loc= Synt::GetSrcLoc( filler_initializer );
+
+			llvm::Type* const size_type_llvm= fundamental_llvm_types_.size_type_;
+
+			llvm::Value* const first_index_value=
+				llvm::Constant::getIntegerValue(
+					size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), first_index ) );
+
+			const ReferencesGraph variables_state_before_loop= function_context.variables_state;
+
+			GenerateLoop(
+				num_iterations,
+				[&]( llvm::Value* const loop_index_value )
+				{
+					// Destruction stack for loop internal variables.
+					// Anything that was constructed within a loop iteration, should be destroyed within it.
+					const StackVariablesStorage temp_variables_storage( function_context );
+
+					llvm::Value* const array_index_value=
+						function_context.llvm_ir_builder.CreateAdd( first_index_value, loop_index_value );
+
+					array_member->llvm_value= CreateArrayElementGEP( function_context, *variable, array_index_value );
+
+					llvm::Constant* const member_constant=
+						ApplyInitializer( array_member, names_scope, function_context, filler_initializer );
+
+					// Assume that constexpr value is the same for all filled elements.
+					// But avoid processing too large arrays.
+					if( is_constant && member_constant != nullptr && num_iterations <= ( 1u << 20 ) )
+						members_constants.resize( members_constants.size() + size_t( num_iterations ), member_constant );
+					else
+						is_constant= false;
+
+					CallDestructors( temp_variables_storage, names_scope, function_context, filler_initializer_src_loc );
+				},
+				function_context );
+
+			// A hack for async functions.
+			// It's possible to use "await" in such functions including expressions in initializers.
+			// "await" is basically hidden "return" and thus all local and temporary variables should be destroyed in case if an async function isn't resumed but destroyed.
+			// In such case we should destroy members of partially-initialized composites.
+			// But in this particular case we can't do so, since we need to memorize dynamic amount of array elements that were initialized.
+			// So, for now just don't allow using array filler initializer in async functions.
+			//
+			// TODO - maybe detect if "await" is used in the filler initializer?
+			//
+			// This can be also problematic, if we implement some sort of arbitrary return from expression context.
+			//
+			if( function_context.coro_suspend_bb != nullptr )
+			{
+				if( const auto class_type= function_context.function_type.return_type.GetClassType() )
+				{
+					if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
+					{
+						if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
+						{
+							REPORT_ERROR( NotImplemented, names_scope.GetErrors(), filler_initializer_src_loc, "array filler initializer in async functions" );
+						}
+					}
+				}
+			}
+
+			// Don't allow reference pollution and moving in array filler initializer, since it's a loop.
+			const auto errors= ReferencesGraph::CheckVariablesStateAfterLoop( variables_state_before_loop, function_context.variables_state, filler_initializer_src_loc );
+			names_scope.GetErrors().insert( names_scope.GetErrors().end(), errors.begin(), errors.end() );
+		}
+
 		function_context.variables_state.RemoveNode( array_member );
 
 		for( const VariablePtr& temp_initialized_variable : temp_initialized_variables )
 			function_context.variables_state.MoveNode( temp_initialized_variable );
 
-		U_ASSERT( members_constants.size() == initializer.initializers.size() || !is_constant );
-
 		if( is_constant )
+		{
+			U_ASSERT( members_constants.size() == array_type->element_count );
 			return llvm::ConstantArray::get( array_type->llvm_type, members_constants );
+		}
 	}
 	else if( const TupleType* const tuple_type= variable->type.GetTupleType() )
 	{
+		// TODO - support filler initialzier for tuples.
+		if( initializer.filler )
+		{
+			REPORT_ERROR( NotImplemented, names_scope.GetErrors(), initializer.src_loc, "filler initializer for tuples" );
+			return nullptr;
+		}
+
 		if( initializer.initializers.size() != tuple_type->element_types.size() )
 		{
 			REPORT_ERROR( TupleInitializersCountMismatch,

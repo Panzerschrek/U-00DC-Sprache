@@ -24,6 +24,8 @@ def GetTestsList( tests_modules_list ):
 def run_tests():
 	tests_modules_list= [
 		"alloca_test",
+		"array_filler_initializer_errors_test",
+		"array_filler_initializer_test",
 		"arrays_test",
 		"async_functions_errors_test",
 		"async_functions_test",

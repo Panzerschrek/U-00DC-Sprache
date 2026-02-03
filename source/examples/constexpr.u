@@ -101,13 +101,13 @@ template</u32 x/> fn RetSingleTempateArg() : u32
 }
 
 // Calculate whole lists of numbers in compile-time.
-var[ f32, 4 ] constexpr squares_f32_4= MakeSquaresList</ f32, 4s />();
+var [ f32, 4 ] constexpr squares_f32_4= MakeSquaresList</ f32, 4s />();
 static_assert( squares_f32_4[0] == 0.0f );
 static_assert( squares_f32_4[1] == 1.0f );
 static_assert( squares_f32_4[2] == 4.0f );
 static_assert( squares_f32_4[3] == 9.0f );
 
-var[ u64, 6 ] constexpr squares_u64_6= MakeSquaresList</ u64, 6s />();
+var [ u64, 6 ] constexpr squares_u64_6= MakeSquaresList</ u64, 6s />();
 static_assert( squares_u64_6[0] ==  0u64 );
 static_assert( squares_u64_6[1] ==  1u64 );
 static_assert( squares_u64_6[2] ==  4u64 );
@@ -118,10 +118,7 @@ static_assert( squares_u64_6[5] == 25u64 );
 template</type T, size_type S/>
 fn constexpr MakeSquaresList() : [ T, S ]
 {
-	var [ T, S ] mut res= zero_init;
-	for( auto mut i= 0s; i < S; ++i )
-	{
-		res[i]= T( i * i );
-	}
+	auto mut next_square= lambda[i= T(0)] mut () : T { auto res= i * i; i += T(1); return res; };
+	var [ T, S ] res[ next_square() ... ];
 	return res;
 }
