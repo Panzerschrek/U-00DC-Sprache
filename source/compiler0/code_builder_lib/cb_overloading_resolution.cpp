@@ -399,7 +399,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 			continue;
 
 		uint32_t param_is_same_count= 0u;
-		for( size_t i= 0u; i < function_type.params.size(); i++ )
+		for( size_t i= 0u; i < function_type.params.size(); ++i )
 		{
 			const FunctionType::Param& param= function_type.params[i];
 			const FunctionType::Param& set_param= set_function_type.params[i];
@@ -408,7 +408,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 				continue;
 
 			if( GetArgOverloadingClass( param ) == GetArgOverloadingClass( set_param ) )
-				param_is_same_count++;
+				++param_is_same_count;
 		} // For args.
 
 		if( param_is_same_count == function_type.params.size() )
@@ -563,7 +563,7 @@ void CodeBuilder::FetchMatchedOverloadedFunctions(
 			continue;
 
 		bool all_args_are_compatible= true;
-		for( uint32_t i= 0u; i < actial_arg_count; i++ )
+		for( uint32_t i= 0u; i < actial_arg_count; ++i )
 		{
 			const ArgOverloadingClass arg_overloading_class= GetArgOverloadingClass( actual_args_begin[i] );
 			const ArgOverloadingClass parameter_overloading_class= GetArgOverloadingClass( function_type.params[i] );

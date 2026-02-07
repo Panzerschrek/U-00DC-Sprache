@@ -21,7 +21,7 @@ U_TEST( TypeConversionTest0 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooa" );
 	U_TEST_ASSERT( function != nullptr );
 
-	for( int i= std::numeric_limits<int8_t>::min(); i <= std::numeric_limits<int8_t>::max(); i++ )
+	for( int i= std::numeric_limits<int8_t>::min(); i <= std::numeric_limits<int8_t>::max(); ++i )
 	{
 		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 8, uint64_t(i) );
 		const llvm::GenericValue result_value=
@@ -48,7 +48,7 @@ U_TEST( TypeConversionTest1 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooa" );
 	U_TEST_ASSERT( function != nullptr );
 
-	for( int i= std::numeric_limits<int8_t>::min(); i <= std::numeric_limits<int8_t>::max(); i++ )
+	for( int i= std::numeric_limits<int8_t>::min(); i <= std::numeric_limits<int8_t>::max(); ++i )
 	{
 		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 8, uint64_t(i) );
 		const llvm::GenericValue result_value=
@@ -75,7 +75,7 @@ U_TEST( TypeConversionTest2 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooh" );
 	U_TEST_ASSERT( function != nullptr );
 
-	for( unsigned int i= std::numeric_limits<uint8_t>::min(); i <= std::numeric_limits<uint8_t>::max(); i++ )
+	for( unsigned int i= std::numeric_limits<uint8_t>::min(); i <= std::numeric_limits<uint8_t>::max(); ++i )
 	{
 		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 8, i );
 		const llvm::GenericValue result_value=
@@ -102,7 +102,7 @@ U_TEST( TypeConversionTest3 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooa" );
 	U_TEST_ASSERT( function != nullptr );
 
-	for( int i= std::numeric_limits<int8_t>::min(); i <= std::numeric_limits<int8_t>::max(); i++ )
+	for( int i= std::numeric_limits<int8_t>::min(); i <= std::numeric_limits<int8_t>::max(); ++i )
 	{
 		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 8, uint64_t(i) );
 		const llvm::GenericValue result_value=

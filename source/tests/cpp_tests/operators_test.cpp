@@ -221,7 +221,7 @@ U_TEST(LeftShiftTest0)
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, uint64_t(value) );
-		for( uint32_t shift= 0u; shift < 32u; shift++ )
+		for( uint32_t shift= 0u; shift < 32u; ++shift )
 		{
 			args[1].IntVal= llvm::APInt( 32, shift );
 
@@ -259,7 +259,7 @@ U_TEST(LeftShiftTest1)
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, value );
-		for( unsigned int shift= 0u; shift < 32u; shift++ )
+		for( unsigned int shift= 0u; shift < 32u; ++shift )
 		{
 			args[1].IntVal= llvm::APInt( 8, shift );
 
@@ -366,7 +366,7 @@ U_TEST(RightShiftTest0)
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, uint64_t(value) );
-		for( unsigned int shift= 0u; shift < 32u; shift++ )
+		for( unsigned int shift= 0u; shift < 32u; ++shift )
 		{
 			args[1].IntVal= llvm::APInt( 32, shift );
 
@@ -404,7 +404,7 @@ U_TEST(RightShiftTest1)
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, value );
-		for( unsigned int shift= 0u; shift < 32u; shift++ )
+		for( unsigned int shift= 0u; shift < 32u; ++shift )
 		{
 			args[1].IntVal= llvm::APInt( 64, shift );
 
@@ -511,7 +511,7 @@ U_TEST(RightShiftAndAssignTest0)
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, value );
-		for( unsigned int shift= 0u; shift < 32u; shift++ )
+		for( unsigned int shift= 0u; shift < 32u; ++shift )
 		{
 			args[1].IntVal= llvm::APInt( 16, shift );
 
@@ -549,7 +549,7 @@ U_TEST(LeftShiftAndAssignTest0)
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, uint64_t(value) );
-		for( uint32_t shift= 0u; shift < 32u; shift++ )
+		for( uint32_t shift= 0u; shift < 32u; ++shift )
 		{
 			args[1].IntVal= llvm::APInt( 32, shift );
 
@@ -765,7 +765,7 @@ U_TEST(LogicalNotTest)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foob" );
 	U_TEST_ASSERT( function != nullptr );
 
-	for( unsigned int i= 0u; i < 2u; i++ )
+	for( unsigned int i= 0u; i < 2u; ++i )
 	{
 		llvm::GenericValue arg;
 		arg.IntVal= llvm::APInt( 1, i );
@@ -1040,7 +1040,7 @@ U_TEST(LazyLogicalAndTest2)
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue args[3];
-	for( unsigned int i= 0u; i < 8u; i++ )
+	for( unsigned int i= 0u; i < 8u; ++i )
 	{
 		const bool a= ( i & 1u ) != 0u;
 		const bool b= ( i & 2u ) != 0u;
@@ -1073,7 +1073,7 @@ U_TEST(LazyLogicalOrTest2)
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue args[3];
-	for( unsigned int i= 0u; i < 8u; i++ )
+	for( unsigned int i= 0u; i < 8u; ++i )
 	{
 		const bool a= ( i & 1u ) != 0u;
 		const bool b= ( i & 2u ) != 0u;
@@ -1166,7 +1166,7 @@ U_TEST(ComparisonSignedOperatorsTest)
 	{
 		"_Z4Lessii", "_Z11LessOrEqualii", "_Z7Greaterii", "_Z14GreaterOrEqualii",
 	};
-	for( unsigned int func_n= 0u; func_n < 4u; func_n++ )
+	for( unsigned int func_n= 0u; func_n < 4u; ++func_n )
 	{
 		llvm::Function* function= engine->FindFunctionNamed( c_func_names[ func_n ] );
 		U_TEST_ASSERT( function != nullptr );
@@ -1232,7 +1232,7 @@ U_TEST(ComparisonUnsignedOperatorsTest)
 	{
 		"_Z4Lessjj", "_Z11LessOrEqualjj", "_Z7Greaterjj", "_Z14GreaterOrEqualjj",
 	};
-	for( unsigned int func_n= 0u; func_n < 4u; func_n++ )
+	for( unsigned int func_n= 0u; func_n < 4u; ++func_n )
 	{
 		llvm::Function* function= engine->FindFunctionNamed( c_func_names[ func_n ] );
 		U_TEST_ASSERT( function != nullptr );
@@ -1298,7 +1298,7 @@ U_TEST(ComparisonFloatOperatorsTest)
 	{
 		"_Z4Lessff", "_Z11LessOrEqualff", "_Z7Greaterff", "_Z14GreaterOrEqualff",
 	};
-	for( unsigned int func_n= 0u; func_n < 4u; func_n++ )
+	for( unsigned int func_n= 0u; func_n < 4u; ++func_n )
 	{
 		llvm::Function* function= engine->FindFunctionNamed( c_func_names[ func_n ] );
 		U_TEST_ASSERT( function != nullptr );

@@ -4512,7 +4512,7 @@ Value CodeBuilder::DoCallFunction(
 			break;
 		}
 
-		for( size_t i= 0u; i < function_type.params.size(); i++ )
+		for( size_t i= 0u; i < function_type.params.size(); ++i )
 		{
 			const auto param_attr_index= uint32_t(i + (return_value_is_sret ? 1u : 0u ));
 

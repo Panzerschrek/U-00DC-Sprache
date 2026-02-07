@@ -30,12 +30,12 @@ int main(int argc, char* argv[])
 		catch( const DisableTestException& )
 		{
 			std::cout << "Test " << func_data.name << " disabled\n";
-			disabled++;
+			++disabled;
 		}
 		catch( const TestException& ex )
 		{
 			std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
-			failed++;
+			++failed;
 		}
 	}
 

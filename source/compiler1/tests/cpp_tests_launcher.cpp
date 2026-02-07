@@ -268,7 +268,7 @@ int main()
 	{
 		if( !FilterTest( func_data.name ) )
 		{
-			filtered++;
+			++filtered;
 			continue;
 		}
 
@@ -280,17 +280,17 @@ int main()
 		catch( const DisableTestException& )
 		{
 			// std::cout << "Test " << func_data.name << " disabled\n";
-			disabled++;
+			++disabled;
 		}
 		catch( const TestException& ex )
 		{
 			std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
-			failed++;
+			++failed;
 		}
 		catch( const HaltException& )
 		{
 			std::cout << "Test " << func_data.name << " halted" << std::endl;
-			failed++;
+			++failed;
 		}
 		catch( const ExecutionEngineException& ex )
 		{
@@ -298,7 +298,7 @@ int main()
 			for( const std::string& e : ex.errors )
 				std::cout << "\n" << e;
 			std::cout << std::endl;
-			failed++;
+			++failed;
 		}
 
 		// We must kill ALL static internal llvm variables after each test.

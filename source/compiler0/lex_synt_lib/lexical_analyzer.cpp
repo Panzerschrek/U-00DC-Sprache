@@ -235,7 +235,7 @@ Lexem ParseCharLiteral( Iterator& it, const Iterator it_end, const SrcLoc& src_l
 				}
 
 				sprache_char char_code= 0u;
-				for( size_t i= 0u; i < 4u; i++ )
+				for( size_t i= 0u; i < 4u; ++i )
 				{
 					const uint32_t digit= TryParseDigit<16>( *it );
 					if( digit == uint32_t(-1) )
@@ -328,7 +328,7 @@ Lexem ParseStringImpl( Iterator& it, const Iterator it_end, const SrcLoc& src_lo
 					}
 
 					sprache_char char_code= 0u;
-					for( size_t i= 0u; i < 4u; i++ )
+					for( size_t i= 0u; i < 4u; ++i )
 					{
 						const uint32_t digit= TryParseDigit<16>( *it );
 						if( digit == uint32_t(-1) )

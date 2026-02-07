@@ -2562,7 +2562,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 
 	const bool first_param_is_sret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
 
-	for( size_t i= 0u; i < function_type.params.size(); i++ )
+	for( size_t i= 0u; i < function_type.params.size(); ++i )
 	{
 		const auto param_attr_index= uint32_t(i + (first_param_is_sret ? 1u : 0u ));
 
@@ -2665,7 +2665,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 
 	const bool first_param_is_sret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
 
-	for( size_t i= 0u; i < function_type.params.size(); i++ )
+	for( size_t i= 0u; i < function_type.params.size(); ++i )
 	{
 		const auto param_attr_index= uint32_t(i + (first_param_is_sret ? 1u : 0u ));
 

@@ -57,7 +57,7 @@ static void DoTest(
 		func_name+= "v";
 	else
 	{
-		for( size_t i= 0u; i < args_set[0].size(); i++ )
+		for( size_t i= 0u; i < args_set[0].size(); ++i )
 		{
 			if( std::is_same<T, int>::value )
 				func_name+= "i";
@@ -77,7 +77,7 @@ static void DoTest(
 	{
 		std::vector<llvm::GenericValue> llvm_args;
 		llvm_args.resize( args.size() );
-		for( size_t i= 0u; i < args.size(); i++ )
+		for( size_t i= 0u; i < args.size(); ++i )
 			FillLLVMVal( llvm_args[i], args[i] );
 
 		const llvm::GenericValue result_value=

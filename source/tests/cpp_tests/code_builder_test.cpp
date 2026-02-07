@@ -481,7 +481,7 @@ U_TEST(RecursiveCallTest)
 	[]( const uint32_t x ) -> uint32_t
 	{
 		uint32_t result= 1u;
-		for( uint32_t i= 2u; i <= x; i++ )
+		for( uint32_t i= 2u; i <= x; ++i )
 			result*= i;
 		return result;
 	};
@@ -1738,7 +1738,7 @@ U_TEST(ReferencesTest9)
 	U_TEST_ASSERT( function != nullptr );
 
 	static const int32_t cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
-	for( uint32_t i= 0u; i < 3u; i++ )
+	for( uint32_t i= 0u; i < 3u; ++i )
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, uint64_t(cases_args[i][0]) );
@@ -1779,7 +1779,7 @@ U_TEST(ReferencesTest10)
 	U_TEST_ASSERT( function != nullptr );
 
 	static const int32_t cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
-	for( uint32_t i= 0u; i < 3u; i++ )
+	for( uint32_t i= 0u; i < 3u; ++i )
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, uint64_t(cases_args[i][0]) );
@@ -1819,7 +1819,7 @@ U_TEST(ReferencesTest11)
 	U_TEST_ASSERT( function != nullptr );
 
 	static const int32_t cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
-	for( uint32_t i= 0u; i < 3u; i++ )
+	for( uint32_t i= 0u; i < 3u; ++i )
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, uint64_t(cases_args[i][0]) );
