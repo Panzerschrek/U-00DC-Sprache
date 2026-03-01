@@ -51,7 +51,7 @@ if( U_BUILD_COMPILER )
 	# Install llvm-rc together with compiler.
 	if( TARGET llvm-rc )
 		add_dependencies( Compiler llvm-rc ) # Create fake dependency to ensure llvm-rc is built.
-		install( TARGETS llvm-rc )
+		install( PROGRAMS $<TARGET_FILE:llvm-rc> TYPE BIN )
 	endif()
 
 endif()
