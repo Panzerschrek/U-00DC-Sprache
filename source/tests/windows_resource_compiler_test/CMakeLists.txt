@@ -2,8 +2,8 @@ if( NOT TARGET llvm-rc )
 	return()
 endif()
 
-# HACK! Compiled resource file isn't really object file, but name it "obj" to make CMake happy.
-# Otherwise it won't likn it against the result executable.
+# HACK! A compiled resource file isn't really object file, but name it "obj" to make CMake happy.
+# Otherwise CMake won't link it against the result executable.
 set( RES_FILE_COMPILED ${CMAKE_CURRENT_BINARY_DIR}/res.rc.obj )
 
 add_custom_command(
