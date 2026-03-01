@@ -48,6 +48,12 @@ if( U_BUILD_COMPILER )
 
 	install( PROGRAMS $<TARGET_FILE:Compiler> TYPE BIN RENAME u.._compiler${CMAKE_EXECUTABLE_SUFFIX} )
 
+	# Install llvm-rc together with compiler.
+	if( TARGET llvm-rc )
+		add_dependencies( Compiler llvm-rc ) # Create fake dependency to ensure llvm-rc is built.
+		install( TARGETS llvm-rc )
+	endif()
+
 endif()
 
 #
