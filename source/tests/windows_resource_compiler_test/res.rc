@@ -1,0 +1,27 @@
+#include <winresrc.h>
+
+MAINICON                ICON       "icon.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 33,44,55,66
+PRODUCTVERSION 33,44,55,66
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "040904b0"
+		BEGIN
+			VALUE "CompanyName", "Some stub company"
+			VALUE "FileDescription", "Some stub file description"
+			VALUE "FileVersion", "33.44.55.66"
+			VALUE "InternalName", "Some internal name"
+			VALUE "LegalCopyright", "Some stub copyright"
+			VALUE "OriginalFilename", "Some original file name"
+			VALUE "ProductName", "Some product name"
+			VALUE "ProductVersion", "Some product version"
+		END
+	END
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", 0x0409, 1200
+	END
+END
