@@ -1,4 +1,4 @@
-import "/stdout.u"
+import "/stdout.iu"
 import "../inc.uh"
 
 fn PrintA()

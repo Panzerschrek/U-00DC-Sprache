@@ -1,7 +1,7 @@
-import "/file_helpers.u"
-import "/main_wrapper.u"
-import "/memory.u"
-import "/stdout.u"
+import "/file_helpers.iu"
+import "/main_wrapper.iu"
+import "/memory.iu"
+import "/stdout.iu"
 
 pretty_main
 {

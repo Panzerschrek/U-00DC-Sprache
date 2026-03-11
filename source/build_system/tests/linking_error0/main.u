@@ -1,4 +1,4 @@
-import "/stdout.u"
+import "/stdout.iu"
 
 // Linking should fail because "main" isn't found.
 
