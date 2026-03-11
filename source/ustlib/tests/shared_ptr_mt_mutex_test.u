@@ -1,8 +1,8 @@
 //##success_test
-import "../imports/binary_heap.u"
-import "../imports/shared_ptr_mt_mutex.u"
-import "../imports/thread.u"
-import "../imports/vector.u"
+import "../imports/binary_heap.iu"
+import "../imports/shared_ptr_mt_mutex.iu"
+import "../imports/thread.iu"
+import "../imports/vector.iu"
 
 type IntPtr= ust::shared_ptr_mt_mutex</i32/>;
 type IntPtrNullable= ust::shared_ptr_mt_mutex_nullable</i32/>;

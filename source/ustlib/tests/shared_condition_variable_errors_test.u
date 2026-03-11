@@ -1,5 +1,5 @@
 //##fail_test
-import "../imports/shared_condition_variable.u"
+import "../imports/shared_condition_variable.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

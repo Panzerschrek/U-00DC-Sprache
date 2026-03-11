@@ -1,4 +1,4 @@
-import "/path.u"
+import "/path.iu"
 import "package_transformation.uh"
 
 namespace BK

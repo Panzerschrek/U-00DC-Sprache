@@ -1,4 +1,4 @@
-import "/path_utils.u"
+import "/path_utils.iu"
 import "make_dep_file.uh"
 
 namespace BK

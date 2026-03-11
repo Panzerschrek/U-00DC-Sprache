@@ -1,4 +1,4 @@
-import "/path_utils.u"
+import "/path_utils.iu"
 import "/build_system.uh"
 
 fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) : BK::PackageInfo

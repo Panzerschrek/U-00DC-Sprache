@@ -1,6 +1,6 @@
-import "/assert.u"
-import "/helpers.u"
-import "/string_conversions.u"
+import "/assert.iu"
+import "/helpers.iu"
+import "/string_conversions.iu"
 import "/CodeBuilderLib/keywords.uh"
 import "mangling.uh"
 

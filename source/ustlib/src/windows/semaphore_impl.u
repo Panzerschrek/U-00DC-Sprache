@@ -1,5 +1,5 @@
-import "../../imports/memory.u"
-import "../../imports/semaphore_impl.u"
+import "../../imports/memory.iu"
+import "../../imports/semaphore_impl.iu"
 import "windows.uh"
 
 namespace ust

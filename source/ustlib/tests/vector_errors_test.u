@@ -1,5 +1,5 @@
 //##fail_test
-import "../imports/vector.u"
+import "../imports/vector.iu"
 
 var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
 

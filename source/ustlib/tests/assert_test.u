@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/assert.u"
+import "../imports/assert.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

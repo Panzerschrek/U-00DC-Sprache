@@ -1,6 +1,6 @@
-import "/math.u"
-import "/string_conversions.u"
-import "/utf.u"
+import "/math.iu"
+import "/string_conversions.iu"
+import "/utf.iu"
 import "lexical_analyzer.uh"
 
 namespace U1

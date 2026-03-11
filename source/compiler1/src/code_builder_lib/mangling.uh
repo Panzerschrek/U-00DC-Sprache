@@ -1,4 +1,4 @@
-import "/string.u"
+import "/string.iu"
 import "structs_combined.uh"
 
 namespace U1

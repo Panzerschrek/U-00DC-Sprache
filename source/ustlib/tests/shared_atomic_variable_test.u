@@ -1,7 +1,7 @@
 //##success_test
-import "../imports/shared_atomic_variable.u"
-import "../imports/thread.u"
-import "../imports/vector.u"
+import "../imports/shared_atomic_variable.iu"
+import "../imports/thread.iu"
+import "../imports/vector.iu"
 
 // Shared atomic variables are copyable.
 static_assert( typeinfo</ ust::shared_atomic_variable</i32/> />.is_copy_constructible );

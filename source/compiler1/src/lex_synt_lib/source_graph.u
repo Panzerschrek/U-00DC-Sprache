@@ -1,4 +1,4 @@
-import "/assert.u"
+import "/assert.iu"
 import "source_graph.uh"
 
 namespace U1

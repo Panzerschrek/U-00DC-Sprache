@@ -1,0 +1,160 @@
+import "file_metadata.iu"
+import "io_result.iu"
+import "path.iu"
+import "type_traits.iu"
+
+namespace ust
+{
+
+class file_readable
+{
+public:
+	// Open existing file for reading.
+	fn open( filesystem_path_view path ) : io_result</file_readable/>;
+
+public:
+	fn constructor( native_file_handle handle ) unsafe; // constructor for internal usage.
+	fn destructor();
+
+public:
+	// Get handle to perform some system-specific file operations with it. Do not try to close it!
+	fn get_native_handle( this ) unsafe : native_file_handle;
+	// Take native handle and destroy this class instance. Caller is responsible for file closing.
+	fn take_native_handle( byval this ) unsafe : native_file_handle;
+
+	fn get_metatada( this ) : io_result</file_metadata/>;
+	fn get_size( this ) : io_result</u64/>;
+
+	fn set_permissions( mut this, file_permissions permissions ) : io_result</void/>;
+
+	// Read into given buffer. May read less than expected and it's not an error. Returns number of bytes read.
+	fn read( mut this, array_view_mut</byte8/> buf ) : io_result</size_type/>;
+
+	// Read to fill given buffer, calling "read" many times, if necessary.
+	fn read_exact( mut this, array_view_mut</byte8/> buf ) : io_result</void/>;
+
+	// May fail if file is not seekable (sequential).
+	fn seek( mut this, u64 offset ) : io_result</void/>;
+
+	// Explicitly close file (by moving this class instance) and return possible error.
+	// This may be necessary to handle errors possible while closing.
+	fn close( byval this ) : io_result</void/>;
+
+private:
+	native_file_handle handle_;
+}
+
+class file_writeable
+{
+public:
+	// Open existing file for writing.
+	fn open( filesystem_path_view path ) : io_result</file_writeable/>;
+	// Create file or open an existing file with trunction for writing.
+	fn create( filesystem_path_view path ) : io_result</file_writeable/>;
+	// Creates file for writing, but only if it doesn't exist.
+	fn create_new( filesystem_path_view path ) : io_result</file_writeable/>;
+
+public:
+	fn constructor( native_file_handle handle ) unsafe; // constructor for internal usage.
+	fn destructor();
+
+public:
+	// Get handle to perform some system-specific file operations with it. Do not try to close it!
+	fn get_native_handle( this ) unsafe : native_file_handle;
+	// Take native handle and destroy this class instance. Caller is responsible for file closing.
+	fn take_native_handle( byval this ) unsafe : native_file_handle;
+
+	fn get_metatada( this ) : io_result</file_metadata/>;
+	fn get_size( this ) : io_result</u64/>;
+
+	fn set_permissions( mut this, file_permissions permissions ) : io_result</void/>;
+
+	// Write given buffer. May write less than expected and it's not an error. Returns number of bytes written.
+	fn write( mut this, array_view_imut</byte8/> buf ) : io_result</size_type/>;
+
+	// Writes all data, calling "write" many times, if necessary.
+	fn write_all( mut this, array_view_imut</byte8/> buf ) : io_result</void/>;
+
+	// Flush all data to the device, ensuring they are safely stored.
+	fn flush( mut this ) : io_result</void/>;
+	// Flush all, including metadata.
+	fn flush_all( mut this ) : io_result</void/>;
+
+	// Truncates or extends file with zeros.
+	fn resize( mut this, u64 new_size ) : io_result</void/>;
+
+	// May fail if file is not seekable (sequential).
+	fn seek( mut this, u64 offset ) : io_result</void/>;
+
+	// Explicitly close file (by moving this class instance) and return possible error.
+	// This may be necessary to handle errors possible while closing.
+	fn close( byval this ) : io_result</void/>;
+
+private:
+	native_file_handle handle_;
+}
+
+class file_readable_writeable
+{
+public:
+	// Open existing file for reading/writing.
+	fn open( filesystem_path_view path ) : io_result</file_readable_writeable/>;
+	// Create file or open an existing file with trunction for reading/writing.
+	fn create( filesystem_path_view path ) : io_result</file_readable_writeable/>;
+	// Creates file for reading/writing, but only if it doesn't exist.
+	fn create_new( filesystem_path_view path ) : io_result</file_readable_writeable/>;
+
+public:
+	fn constructor( native_file_handle handle ) unsafe; // constructor for internal usage.
+	fn destructor();
+
+public:
+	// Get handle to perform some system-specific file operations with it. Do not try to close it!
+	fn get_native_handle( this ) unsafe : native_file_handle;
+	// Take native handle and destroy this class instance. Caller is responsible for file closing.
+	fn take_native_handle( byval this ) unsafe : native_file_handle;
+
+	fn get_metatada( this ) : io_result</file_metadata/>;
+	fn get_size( this ) : io_result</u64/>;
+
+	fn set_permissions( mut this, file_permissions permissions ) : io_result</void/>;
+
+	// Read into given buffer. May read less than expected and it's not an error. Returns number of bytes read.
+	fn read( mut this, array_view_mut</byte8/> buf ) : io_result</size_type/>;
+
+	// Read to fill given buffer, calling "read" many times, if necessary.
+	fn read_exact( mut this, array_view_mut</byte8/> buf ) : io_result</void/>;
+
+	// Write given buffer. May write less than expected and it's not an error. Returns number of bytes written.
+	fn write( mut this, array_view_imut</byte8/> buf ) : io_result</size_type/>;
+
+	// Writes all data, calling "write" many times, if necessary.
+	fn write_all( mut this, array_view_imut</byte8/> buf ) : io_result</void/>;
+
+	// Flush all data to the device, ensuring they are safely stored.
+	fn flush( mut this ) : io_result</void/>;
+	// Flush all, including metadata.
+	fn flush_all( mut this ) : io_result</void/>;
+
+	// Truncates or extends file with zeros.
+	fn resize( mut this, u64 new_size ) : io_result</void/>;
+
+	// May fail if file is not seekable (sequential).
+	fn seek( mut this, u64 offset ) : io_result</void/>;
+
+	// Explicitly close file (by moving this class instance) and return possible error.
+	// This may be necessary to handle errors possible while closing.
+	fn close( byval this ) : io_result</void/>;
+
+private:
+	native_file_handle handle_;
+}
+
+// Native file handle, in platform-specific format.
+type native_file_handle=
+	type_select</
+		constexpr_string_equals( compiler::target::os, "windows" ),
+		$(byte8),
+		i32 />;
+
+} // namespace ust

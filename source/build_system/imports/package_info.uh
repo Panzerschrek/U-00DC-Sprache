@@ -1,6 +1,6 @@
-import "/path.u"
-import "/variant.u"
-import "/vector.u"
+import "/path.iu"
+import "/variant.iu"
+import "/vector.iu"
 import "types.uh"
 
 namespace BK

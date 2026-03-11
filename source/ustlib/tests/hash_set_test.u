@@ -1,6 +1,6 @@
 //##success_test
-import "../imports/hash_set.u"
-import "../imports/string.u"
+import "../imports/hash_set.iu"
+import "../imports/string.iu"
 
 type IntSet = ust::hash_set</i32/>;
 

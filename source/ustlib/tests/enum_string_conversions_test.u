@@ -1,6 +1,6 @@
 //##success_test
-import "../imports/enum_string_conversions.u"
-import "../imports/file.u"
+import "../imports/enum_string_conversions.iu"
+import "../imports/file.iu"
 
 enum Ampel
 {

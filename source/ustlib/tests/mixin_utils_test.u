@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/mixin_utils.u"
+import "../imports/mixin_utils.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

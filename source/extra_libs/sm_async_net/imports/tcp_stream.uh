@@ -1,4 +1,4 @@
-import "/tcp_stream.u"
+import "/tcp_stream.iu"
 import "runner_internal.uh"
 
 namespace sm_async_net

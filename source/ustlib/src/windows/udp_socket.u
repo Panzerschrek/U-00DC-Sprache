@@ -1,4 +1,4 @@
-import "../../imports/udp_socket.u"
+import "../../imports/udp_socket.iu"
 import "socket.uh"
 
 namespace ust

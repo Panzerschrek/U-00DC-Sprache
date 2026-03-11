@@ -1,6 +1,6 @@
 //##success_test
-import "../imports/helpers.u"
-import "../imports/math.u"
+import "../imports/helpers.iu"
+import "../imports/math.iu"
 
 auto constexpr MyNan= ust::nan</f32/>();
 

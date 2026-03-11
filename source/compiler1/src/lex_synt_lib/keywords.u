@@ -1,4 +1,4 @@
-import "/enum_string_conversions.u"
+import "/enum_string_conversions.iu"
 import "/CodeBuilderLib/keywords.uh"
 
 namespace U1

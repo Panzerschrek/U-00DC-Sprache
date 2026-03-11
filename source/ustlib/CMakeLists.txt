@@ -2,7 +2,7 @@
 # This file contains code for building "ustlib" into a cmake library target, which is used in the build system and compiler0.
 #
 
-file( GLOB_RECURSE USTLIB_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/imports/*.u" )
+file( GLOB_RECURSE USTLIB_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/imports/*.iu" )
 file( GLOB_RECURSE USTLIB_TESTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.u" )
 file( GLOB USTLIB_SOURCES_COMMON "${CMAKE_CURRENT_SOURCE_DIR}/src/*.u" )
 file( GLOB USTLIB_INTERNAL_HEADERS_COMMON "${CMAKE_CURRENT_SOURCE_DIR}/src/*.uh" )

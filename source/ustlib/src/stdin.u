@@ -1,4 +1,4 @@
-import "../imports/stdin.u"
+import "../imports/stdin.iu"
 
 namespace ust
 {

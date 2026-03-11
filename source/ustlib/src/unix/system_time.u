@@ -1,4 +1,4 @@
-import "../../imports/system_time.u"
+import "../../imports/system_time.iu"
 import "unix.uh"
 
 namespace ust

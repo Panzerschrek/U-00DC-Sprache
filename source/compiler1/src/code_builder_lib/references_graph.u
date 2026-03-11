@@ -1,4 +1,4 @@
-import "/assert.u"
+import "/assert.iu"
 import "error_reporting.uh"
 import "references_graph.uh"
 

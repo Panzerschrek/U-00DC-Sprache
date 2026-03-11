@@ -1,6 +1,6 @@
-import "/hash_set.u"
-import "/sort.u"
-import "/string_conversions.u"
+import "/hash_set.iu"
+import "/sort.iu"
+import "/string_conversions.iu"
 import "version_unification.uh"
 
 namespace BK

@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/checked_math.u"
+import "../imports/checked_math.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

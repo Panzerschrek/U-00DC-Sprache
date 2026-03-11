@@ -1,4 +1,4 @@
-import "../../imports/bit_math.u"
+import "../../imports/bit_math.iu"
 import "errno.uh"
 import "socket.uh"
 

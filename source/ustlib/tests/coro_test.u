@@ -1,7 +1,7 @@
 //##success_test
-import "../imports/coro.u"
-import "../imports/memory.u"
-import "../imports/helpers.u"
+import "../imports/coro.iu"
+import "../imports/memory.iu"
+import "../imports/helpers.iu"
 
 fn generator EmptyGen() : i32
 {

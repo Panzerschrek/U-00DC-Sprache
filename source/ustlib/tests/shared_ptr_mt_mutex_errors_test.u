@@ -1,6 +1,6 @@
 //##fail_test
-import "../imports/shared_ptr_mt_mutex.u"
-import "../imports/thread.u"
+import "../imports/shared_ptr_mt_mutex.iu"
+import "../imports/thread.iu"
 
 struct S{ i32& r; }
 

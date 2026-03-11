@@ -1,6 +1,6 @@
 //##fail_test
-import "../imports/optional.u"
-import "../imports/random_access_range.u"
+import "../imports/optional.iu"
+import "../imports/random_access_range.iu"
 
 type IntRangeMut = ust::random_access_range_mut </i32/>;
 type IntRangeImut= ust::random_access_range_imut</i32/>;

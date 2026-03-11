@@ -1,4 +1,4 @@
-import "/utf.u"
+import "/utf.iu"
 import "wide_string.uh"
 
 namespace BK

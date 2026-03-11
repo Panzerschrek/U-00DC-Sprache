@@ -1,5 +1,5 @@
-import "../../imports/memory.u"
-import "../../imports/rwlock_impl.u"
+import "../../imports/memory.iu"
+import "../../imports/rwlock_impl.iu"
 import "windows.uh"
 
 namespace ust

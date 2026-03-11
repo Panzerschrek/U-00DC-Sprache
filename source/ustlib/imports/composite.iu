@@ -1,0 +1,194 @@
+import "mixin_utils.iu"
+
+namespace ust
+{
+
+// Create a zeroed value of given type.
+// Works not only for composites, but for scalars too.
+// It doesn't work for types, which don't support zero initializer.
+template</type T/>
+fn make_zeroed() : T
+{
+	var T t= zero_init;
+	return t;
+}
+
+// Use "auto" for return value to deduce return references/return inner references.
+
+//
+// make_array overloads
+//
+
+template</type T/>
+fn make_array() : auto
+{
+	var [T, 0] arr[];
+	return arr;
+}
+
+template</type T/>
+fn make_array(T mut a) : auto
+{
+	var [T, 1] arr[move(a)];
+	return arr;
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b) : auto
+{
+	var [T, 2] arr[move(a), move(b)];
+	return arr;
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b, T mut c) : auto
+{
+	var [T, 3] arr[move(a), move(b), move(c)];
+	return arr;
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b, T mut c, T mut d) : auto
+{
+	var [T, 4] arr[move(a), move(b), move(c), move(d)];
+	return arr;
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e) : auto
+{
+	var [T, 5] arr[move(a), move(b), move(c), move(d), move(e)];
+	return arr;
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e, T mut f) : auto
+{
+	var [T, 6] arr[move(a), move(b), move(c), move(d), move(e), move(f)];
+	return arr;
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e, T mut f, T mut g) : auto
+{
+	var [T, 7] arr[move(a), move(b), move(c), move(d), move(e), move(f), move(g)];
+	return arr;
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e, T mut f, T mut g, T mut h) : auto
+{
+	var [T, 8] arr[move(a), move(b), move(c), move(d), move(e), move(f), move(g), move(h)];
+	return arr;
+}
+
+//
+// make_tuple overloads
+//
+
+fn constexpr make_tuple() : auto
+{
+	var tup[] t;
+	return t;
+}
+
+template</type A/>
+fn make_tuple(A mut a) : auto
+{
+	var tup[A] t[move(a)];
+	return t;
+}
+
+template</type A, type B/>
+fn make_tuple(A mut a, B mut b) : auto
+{
+	var tup[A, B] t[move(a), move(b)];
+	return t;
+}
+
+template</type A, type B, type C/>
+fn make_tuple(A mut a, B mut b, C mut c) : auto
+{
+	var tup[A, B, C] t[move(a), move(b), move(c)];
+	return t;
+}
+
+template</type A, type B, type C, type D/>
+fn make_tuple(A mut a, B mut b, C mut c, D mut d) : auto
+{
+	var tup[A, B, C, D] t[move(a), move(b), move(c), move(d)];
+	return t;
+}
+
+template</type A, type B, type C, type D, type E/>
+fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e) : auto
+{
+	var tup[A, B, C, D, E] t[move(a), move(b), move(c), move(d), move(e)];
+	return t;
+}
+
+template</type A, type B, type C, type D, type E, type F/>
+fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e, F mut f) : auto
+{
+	var tup[A, B, C, D, E, F] t[move(a), move(b), move(c), move(d), move(e), move(f)];
+	return t;
+}
+
+template</type A, type B, type C, type D, type E, type F, type G/>
+fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e, F mut f, G mut g) : auto
+{
+	var tup[A, B, C, D, E, F, G] t[move(a), move(b), move(c), move(d), move(e), move(f), move(g)];
+	return t;
+}
+
+template</type A, type B, type C, type D, type E, type F, type G, type H/>
+fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e, F mut f, G mut g, H mut h) : auto
+{
+	var tup[A, B, C, D, E, F, G, H] t[move(a), move(b), move(c), move(d), move(e), move(f), move(g), move(h)];
+	return t;
+}
+
+//
+// homogeneous_tuple overloads - create tuple of N elements of type T
+//
+
+template</type T/> type homogeneous_tuple</T, 0s/> = tup[];
+template</type T/> type homogeneous_tuple</T, 1s/> = tup[ T ];
+template</type T/> type homogeneous_tuple</T, 2s/> = tup[ T, T ];
+template</type T/> type homogeneous_tuple</T, 3s/> = tup[ T, T, T ];
+template</type T/> type homogeneous_tuple</T, 4s/> = tup[ T, T, T, T ];
+template</type T/> type homogeneous_tuple</T, 5s/> = tup[ T, T, T, T, T ];
+template</type T/> type homogeneous_tuple</T, 6s/> = tup[ T, T, T, T, T, T ];
+template</type T/> type homogeneous_tuple</T, 7s/> = tup[ T, T, T, T, T, T, T ];
+template</type T/> type homogeneous_tuple</T, 8s/> = tup[ T, T, T, T, T, T, T, T ];
+
+// General variant of homogenous tuple - use a mixin to generate it.
+template</type T, size_type size/>
+type homogeneous_tuple</T, size/> = mixin( composite_impl::homogeneous_tuple_gen</size/>() );
+
+namespace composite_impl
+{
+
+// Generate a tuple type name like "tup[T,T,T,T,T]"
+template</size_type size/>
+fn constexpr homogeneous_tuple_gen() : [ char8, 5s + 2s * size ]
+{
+	var mixin_utils::static_string</ 5s + 2s * size /> mut s;
+	s+= "tup[";
+
+	for( auto mut i= 0s; i < size; ++i )
+	{
+		s+= 'T';
+		if( i != size - 1s )
+		{
+			s+= ',';
+		}
+	}
+	s+= ']';
+
+	return s.buffer;
+}
+
+} // namespace composite_impl
+
+} // namespace ust

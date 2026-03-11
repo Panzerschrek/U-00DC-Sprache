@@ -1,4 +1,4 @@
-import "/path.u"
+import "/path.iu"
 import "logger.uh"
 
 namespace BK

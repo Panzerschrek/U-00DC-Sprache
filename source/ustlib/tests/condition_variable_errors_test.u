@@ -1,5 +1,5 @@
 //##fail_test
-import "../imports/condition_variable.u"
+import "../imports/condition_variable.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

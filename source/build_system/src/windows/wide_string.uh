@@ -1,4 +1,4 @@
-import "/string.u"
+import "/string.iu"
 import "windows.uh"
 
 namespace BK

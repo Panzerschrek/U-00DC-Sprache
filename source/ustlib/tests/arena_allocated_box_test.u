@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/arena_allocated_box.u"
+import "../imports/arena_allocated_box.iu"
 
 // arena_allocated_box holds a reference to allocator.
 static_assert( typeinfo</ ust::arena_allocated_box</i32/> />.reference_tag_count == 1s );

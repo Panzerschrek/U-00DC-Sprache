@@ -1,6 +1,6 @@
 //##success_test
-import "../imports/optional_ref.u"
-import "../imports/random_access_range.u"
+import "../imports/optional_ref.iu"
+import "../imports/random_access_range.iu"
 
 type IntRefImut= ust::optional_ref_imut</ i32 />;
 type IntRefMut = ust::optional_ref_mut</ i32 />;

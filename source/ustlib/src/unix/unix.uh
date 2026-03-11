@@ -1,4 +1,4 @@
-import "../../imports/type_traits.u"
+import "../../imports/type_traits.iu"
 
 // Use "embed" in combination with "mixin" to implement some sort of conditional import.
 mixin( embed</char8/>( unix_impl_file_name ) );

@@ -2,8 +2,8 @@
 // This file contains type and function declarations for internal usage.
 //
 
-import "/coro.u"
-import "/native_socket.u"
+import "/coro.iu"
+import "/native_socket.iu"
 
 namespace sm_async_net
 {

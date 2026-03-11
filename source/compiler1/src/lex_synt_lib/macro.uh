@@ -1,7 +1,7 @@
-import "/box_nullable.u"
-import "/hash_map.u"
-import "/shared_ptr_final.u"
-import "/shared_ptr.u"
+import "/box_nullable.iu"
+import "/hash_map.iu"
+import "/shared_ptr_final.iu"
+import "/shared_ptr.iu"
 import "lexical_analyzer.uh"
 
 namespace U1

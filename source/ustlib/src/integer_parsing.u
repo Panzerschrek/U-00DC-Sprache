@@ -1,4 +1,4 @@
-import "../imports/integer_parsing.u"
+import "../imports/integer_parsing.iu"
 
 namespace ust
 {

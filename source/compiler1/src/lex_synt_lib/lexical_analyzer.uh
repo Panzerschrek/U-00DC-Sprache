@@ -1,5 +1,5 @@
-import "/string.u"
-import "/vector.u"
+import "/string.iu"
+import "/vector.iu"
 import "lex_synt_error.uh"
 
 namespace U1

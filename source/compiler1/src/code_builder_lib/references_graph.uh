@@ -1,4 +1,4 @@
-import "/hash_set.u"
+import "/hash_set.iu"
 import "code_builder_errors.uh"
 import "structs_combined.uh"
 

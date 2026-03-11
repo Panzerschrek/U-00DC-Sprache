@@ -1,6 +1,6 @@
-import "../../imports/inet_address_resolve.u"
-import "../../imports/scoped_array.u"
-import "../../imports/sort.u"
+import "../../imports/inet_address_resolve.iu"
+import "../../imports/scoped_array.iu"
+import "../../imports/sort.iu"
 import "socket.uh"
 
 namespace ust

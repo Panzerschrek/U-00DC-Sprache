@@ -1,0 +1,731 @@
+import "alloc.iu"
+import "checked_math.iu"
+import "minmax.iu"
+import "random_access_range.iu"
+
+namespace ust
+{
+
+template</ type char_type />
+class string_base
+{
+	static_assert( typeinfo</ char_type />.is_char, "this containers supports only char types" );
+
+public:
+	type this_type= string_base</char_type/>;
+
+public:
+	// Factory method for creating string from given iterator.
+	template</type Iterator/>
+	fn from_iterator( Iterator mut it ) : auto
+	{
+		var this_type mut result;
+		loop
+		{
+			auto mut next_result= it.next();
+			if( next_result.empty() )
+			{
+				break;
+			}
+			result.push_back( next_result.try_take() );
+		}
+		return result;
+	}
+
+	// Construct string from given range by mapping all elements using given function.
+	// This is the most effective way to create string with fixed size, compared to methods like "from_iterator" or "push_back",
+	// since this function allocates memory in one call and has no capacity check on each insertion.
+	// Mapping function should accept single argument of type "ElementT" (value or immutable reference) and return value or immutable reference of type "T".
+	// Mapping function shouldn't be unsafe.
+	// Mapping function is immutable in order to encourage pure mapping (without modifying internal state in process).
+	template</type ElementT, type Func/>
+	fn from_mapped_range( array_view_imut</ElementT/> r, Func& func ) : this_type
+	{
+		var this_type mut result;
+		unsafe
+		{
+			var size_type size= r.size();
+			result.ensure_capacity( size );
+			for( var size_type mut i= 0s; i < size; ++i )
+			{
+				// Access range element via unsafe indexing (since we know that index is valid),
+				// call mapping function for this element,
+				// move call result directly into string memory.
+				$>( result.ptr_ + i ) = safe( func( unsafe( r.index_unchecked(i) ) ) );
+			}
+			result.size_= size;
+		}
+		return result;
+	}
+
+	// Construct string with given size and fill it with elements obtained via given filler function.
+	// This is the most effective way to create string with fixed size, compared to methods like "from_iterator" or "push_back",
+	// since this function allocates memory in one call and has no capacity check on each insertion.
+	// Filler function should return value or immutable reference of type "T".
+	// Filler function shouldn't be unsafe.
+	// Filler function may mutate itself, in order to have possibility to fill different values.
+	template</type Func/>
+	fn from_filler_function( size_type size, Func mut func ) : this_type
+	{
+		var this_type mut result;
+		unsafe
+		{
+			result.ensure_capacity( size );
+			for( var size_type mut i= 0s; i < size; ++i )
+			{
+				// Call passed function and move call result directly into string memory.
+				$>( result.ptr_ + i ) = safe( func() );
+			}
+			result.size_= size;
+		}
+		return result;
+	}
+
+	// A method for constructing a string by concatenating several other strings.
+	// It's faster compared to chained concatenation via op+.
+	fn concat( array_view_imut</range_imut/> parts ) : this_type
+	{
+		var size_type mut total_size= 0s;
+		foreach( &part : parts )
+		{
+			total_size+= part.size();
+		}
+
+		var this_type mut res;
+
+		unsafe( res.ensure_capacity( total_size ) );
+
+		var size_type mut offset= 0s;
+		foreach( &part : parts )
+		{
+			unsafe( memory_copy_aligned(
+				c_element_alignment_,
+				ptr_cast_to_byte8( res.ptr_ + offset ),
+				ptr_cast_to_byte8( part.data() ),
+				part.size() * c_element_size_ ) );
+
+			offset+= part.size();
+		}
+
+		res.size_= total_size;
+
+		return res;
+	}
+
+public:
+	// Default constructor.
+	fn constructor()= default;
+
+	// Copy constructor.
+	fn constructor( this_type& other )
+		( size_(other.size_) )
+	{
+		if( other.empty() ){ return; }
+
+		unsafe
+		{
+			capacity_= max( c_first_allocation_size_, other.size_ );
+			// Multiplication overflow is not possible here because allocation of source string should not overflow.
+			ptr_= byte_ptr_cast</char_type/>( memory_allocate( capacity_ * c_element_size_ ) );
+
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( ptr_ ), ptr_cast_to_byte8( other.ptr_ ), size_ * c_element_size_ );
+		}
+	}
+
+	// Construct form char array.
+	template</ size_type array_size />
+	fn conversion_constructor( [ char_type, array_size ]& array )
+		( size_(array_size) )
+	{
+		if( array_size == 0s ){ return; }
+
+		unsafe
+		{
+			capacity_= max( c_first_allocation_size_, array_size );
+			// It's impossible to get multiplication overflow here - source array should not occupy more than address space size.
+			ptr_= byte_ptr_cast</char_type/>( memory_allocate( capacity_ * c_element_size_ ) );
+
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( ptr_ ), ptr_cast_to_byte8( $<( cast_mut(array) ) ), size_ * c_element_size_ );
+		}
+	}
+
+	// Construct from char range.
+	fn conversion_constructor( range_imut range )
+		( size_(range.size()) )
+	{
+		if( size_ == 0s ){ return; }
+
+		unsafe
+		{
+			capacity_= max( c_first_allocation_size_, size_ );
+			// It's impossible to get multiplication overflow here - source range should not occupy more than address space size.
+			ptr_= byte_ptr_cast</char_type/>( memory_allocate( capacity_ * c_element_size_ ) );
+
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( ptr_ ), ptr_cast_to_byte8( range.data() ), size_ * c_element_size_ );
+		}
+	}
+
+	// Construct from mutable range.
+	fn conversion_constructor( range_mut range )
+		( size_(range.size()) )
+	{
+		if( size_ == 0s ){ return; }
+
+		unsafe
+		{
+			capacity_= max( c_first_allocation_size_, size_ );
+			// It's impossible to get multiplication overflow here - source range should not occupy more than address space size.
+			ptr_= byte_ptr_cast</char_type/>( memory_allocate( capacity_ * c_element_size_ ) );
+
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( ptr_ ), ptr_cast_to_byte8( range.data() ), size_ * c_element_size_ );
+		}
+	}
+
+	// Fill constructor.
+	fn constructor( size_type count, char_type value )
+		( size_(count) )
+	{
+		if( count == 0s ){ return; }
+
+		unsafe
+		{
+			capacity_= max( c_first_allocation_size_, size_ );
+			// Multiplication overflow check is needed here.
+			ptr_= byte_ptr_cast</char_type/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) );
+
+			for( var size_type mut i(0); i < size_; ++i )
+			{
+				$>(ptr_ + i)= value;
+			}
+		}
+	}
+
+	// Copy assignment operator.
+	op=( mut this, this_type& other )
+	{
+		this = other.range();
+	}
+
+	// Assign char array.
+	template</ size_type array_size />
+	op=( mut this, [ char_type, array_size ]& array )
+	{
+		this = range_imut(array);
+	}
+
+	// Assign char range.
+	op=( mut this, range_imut range )
+	{
+		unsafe
+		{
+			ensure_capacity( range.size() );
+			size_= range.size();
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( this.ptr_ ), ptr_cast_to_byte8( range.data() ), size_ * c_element_size_ );
+		}
+	}
+
+	fn destructor()
+	{
+		if( !is_nullptr(ptr_) )
+		{
+			unsafe( memory_free( ptr_cast_to_byte8( ptr_ ) ) );
+		}
+	}
+
+	fn size( this ) : size_type
+	{
+		return size_;
+	}
+
+	fn empty( this ) : bool
+	{
+		return size_ == 0s;
+	}
+
+	fn capacity( this ) : size_type
+	{
+		return capacity_;
+	}
+
+	// Indexing
+
+	op[](  mut this, size_type index ) : char_type & mut @( reference_notation::return_references::param0 )
+	{
+		halt if( index >= size_ );
+		return unsafe( index_unchecked(index) );
+	}
+
+	op[]( imut this, size_type index ) : char_type &imut @( reference_notation::return_references::param0 )
+	{
+		halt if( index >= size_ );
+		return unsafe( index_unchecked(index) );
+	}
+
+	fn index_unchecked(  mut this, size_type index ) unsafe : char_type & mut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_ + index ) );
+	}
+
+	fn index_unchecked( imut this, size_type index ) unsafe : char_type &imut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_ + index ) );
+	}
+
+	// front/back
+
+	fn front(  mut this ) : char_type & mut @( reference_notation::return_references::param0 )
+	{
+		halt if(empty());
+		return unsafe( front_unchecked() );
+	}
+
+	fn front( imut this ) : char_type &imut @( reference_notation::return_references::param0 )
+	{
+		halt if(empty());
+		return unsafe( front_unchecked() );
+	}
+
+	fn back(  mut this ) : char_type & mut @( reference_notation::return_references::param0 )
+	{
+		halt if(empty());
+		return unsafe( back_unchecked() );
+	}
+
+	fn back( imut this ) : char_type &imut @( reference_notation::return_references::param0 )
+	{
+		halt if(empty());
+		return unsafe( back_unchecked() );
+	}
+
+	fn front_unchecked(  mut this ) unsafe : char_type & mut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_) );
+	}
+
+	fn front_unchecked( imut this ) unsafe : char_type &imut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_) );
+	}
+
+	fn back_unchecked(  mut this ) unsafe : char_type & mut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_ + size_ - 1s) );
+	}
+
+	fn back_unchecked( imut this ) unsafe : char_type &imut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_ + size_ - 1s) );
+	}
+
+	// ranges
+
+	fn range(  mut this ) : range_mut  @( reference_notation::return_inner_references::param0 )
+	{
+		return unsafe( range_mut ( ptr_, size_ ) );
+	}
+
+	fn range( imut this ) : range_imut @( reference_notation::return_inner_references::param0 )
+	{
+		return unsafe( range_imut( ptr_, size_ ) );
+	}
+
+	fn substr( this, size_type start_index, size_type end_index ) : this_type
+	{
+		return this_type( range().subrange( start_index, end_index ) );
+	}
+
+	// "iter" methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of iterator classes where it isn't necessary.
+
+	template<//>
+	fn iter(  mut this ) : auto
+	{
+		return range().iter();
+	}
+
+	template<//>
+	fn iter( imut this ) : auto
+	{
+		return range().iter();
+	}
+
+	template<//>
+	fn iter_reverse(  mut this ) : auto
+	{
+		return range().iter_reverse();
+	}
+
+	template<//>
+	fn iter_reverse( imut this ) : auto
+	{
+		return range().iter_reverse();
+	}
+
+	// Access raw data.
+	fn data( mut this ) unsafe : $(char_type)
+	{
+		return ptr_;
+	}
+
+	// compare
+
+	op==( this_type& l, this_type& r ) : bool
+	{
+		return l == r.range();
+	}
+
+	template</ size_type array_size />
+	op==( this_type& l, [ char_type, array_size ]& array ) : bool
+	{
+		return l == range_imut(array);
+	}
+
+	template</ size_type array_size />
+	op==( [ char_type, array_size ]& array, this_type& r ) : bool
+	{
+		return r == array;
+	}
+
+	op==( this_type& l, range_imut r ) : bool
+	{
+		if( l.size() != r.size() ) { return false; }
+
+		auto size= l.size();
+		return unsafe( memory_equals( ptr_cast_to_byte8( l.ptr_ ), ptr_cast_to_byte8( r.data() ), size * c_element_size_ ) );
+	}
+
+	op==( range_imut l, this_type& r ) : bool
+	{
+		return r == l;
+	}
+
+	op==( this_type& l, range_mut r ) : bool
+	{
+		if( l.size() != r.size() ) { return false; }
+
+		auto size= l.size();
+		return unsafe( memory_equals( ptr_cast_to_byte8( l.ptr_ ), ptr_cast_to_byte8( r.data() ), size * c_element_size_ ) );
+	}
+
+	op==( range_mut l, this_type& r ) : bool
+	{
+		return r == l;
+	}
+
+	// order compare
+	op<=>( this_type& l, this_type& r ) : i32
+	{
+		for( var size_type mut i= 0s, min_s= min( l.size(), r.size() ); i < min_s; ++i )
+		{
+			unsafe
+			{
+				if( $>(l.ptr_ + i) != $>(r.ptr_ + i) )
+				{
+					return $>(l.ptr_ + i) <=> $>(r.ptr_ + i);
+				}
+			}
+		}
+
+		// In case if one string is substring of another, shorter string is less.
+		return l.size() <=> r.size();
+	}
+
+	// Returns true if "other" is prefix of "this".
+	fn starts_with( this, range_imut other ) : bool
+	{
+		if( this.size() < other.size() )
+		{
+			return false;
+		}
+
+		for( auto mut i= 0s; i < other.size(); ++i )
+		{
+			if( unsafe( this.index_unchecked(i) ) != unsafe( other.index_unchecked(i) ) )
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	// Returns true if "other" is suffix of "this".
+	fn ends_with( this, range_imut other ) : bool
+	{
+		if( this.size() < other.size() )
+		{
+			return false;
+		}
+
+		auto offset= this.size() - other.size();
+		for( auto mut i= 0s; i < other.size(); ++i )
+		{
+			if( unsafe( this.index_unchecked( offset + i ) ) != unsafe( other.index_unchecked(i) ) )
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	// hashing
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		range().hash( hasher );
+	}
+
+	// String is hash-compatible with range of chars (mutable and immutable), char arrays of different sizes.
+	// Other types aren't supported.
+	template</type OtherType/>
+	fn constexpr is_hash_compatible_type() : bool
+	{
+		static_if(
+			same_type</ OtherType, this_type /> |
+			same_type</ OtherType, range_imut /> |
+			same_type</ OtherType, range_mut /> )
+		{
+			return true;
+		}
+		else static_if( typeinfo</OtherType/>.is_array )
+		{
+			return same_type</ typeof( typeinfo</OtherType/>.element_type )::src_type, char_type />;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	// modificators
+
+	fn swap( mut this, size_type i0, size_type i1 )
+	{
+		halt if( i0 >= size_ );
+		halt if( i1 >= size_ );
+
+		if( i0 == i1 ){ return; }
+
+		unsafe
+		{
+			var char_type c0= $>(ptr_ + i0);
+			var char_type c1= $>(ptr_ + i1);
+			$>(ptr_ + i0)= c1;
+			$>(ptr_ + i1)= c0;
+		}
+	}
+
+	fn push_back( mut this, char_type val )
+	{
+		unsafe
+		{
+			// It's impossible to get overflow here, because previous size (and allocation) can't be more than half of address space.
+			auto new_size= size_ + 1s;
+			ensure_capacity( new_size );
+			$>(ptr_ + size_)= val;
+			size_= new_size;
+		}
+	}
+
+	fn push_back( mut this, size_type count, char_type val )
+	{
+		unsafe
+		{
+			auto new_size= add_overflow_check_halt( size_, count ); // Overflow check is needed here.
+			ensure_capacity( new_size );
+
+			for( var size_type mut i(0); i < count; ++i )
+			{
+				$>(ptr_ + size_ + i)= val;
+			}
+			size_= new_size;
+		}
+	}
+
+	fn drop_back( mut this )
+	{
+		halt if(empty());
+		--size_;
+	}
+
+	fn drop_back( mut this, size_type count )
+	{
+		halt if( count > size_ );
+		size_-= count;
+	}
+
+	fn nodiscard pop_back( mut this ) : char_type
+	{
+		halt if(empty());
+		--size_;
+		return unsafe( $>(ptr_ + size_) );
+	}
+
+	fn nodiscard pop_back_unchecked( mut this ) unsafe : char_type
+	{
+		--size_;
+		return unsafe( $>(ptr_ + size_) );
+	}
+
+	fn resize( mut this, size_type new_size, char_type val )
+	{
+		if( new_size > size_ )
+		{
+			unsafe
+			{
+				ensure_capacity( new_size );
+
+				for( var size_type mut i= size_; i < new_size; ++i )
+				{
+					$>(ptr_ + i)= val;
+				}
+
+				size_= new_size;
+			}
+		}
+		else if( new_size < size_ )
+		{
+			size_= new_size;
+		}
+	}
+
+	fn clear( mut this )
+	{
+		size_= 0s;
+	}
+
+	fn shrink_to_fit( mut this )
+	{
+		if( capacity_ > size_ )
+		{
+			capacity_= size_;
+			unsafe
+			{
+				if( capacity_ == 0s )
+				{
+					memory_free( ptr_cast_to_byte8( ptr_ ) );
+					ptr_= nullptr</char_type/>();
+				}
+				else
+				{
+					ptr_= byte_ptr_cast</char_type/>( memory_reallocate( ptr_cast_to_byte8( ptr_ ), capacity_ * c_element_size_ ) );
+				}
+			}
+		}
+	}
+
+	// +
+
+	op+( this_type& l, this_type& r ) : this_type
+	{
+		return l + r.range();
+	}
+
+	template</ size_type array_size />
+	op+( this_type& l, [ char_type, array_size ]& array ) : this_type
+	{
+		return l + range_imut(array);
+	}
+
+	template</ size_type array_size />
+	op+( [ char_type, array_size ]& array, this_type& r ) : this_type
+	{
+		return range_imut(array) + r;
+	}
+
+	op+( this_type& l, range_imut range ) : this_type
+	{
+		var this_type mut result;
+		unsafe
+		{
+			// Overflow check is not needed here - size of single string can't be greater than size of half of address space.
+			auto result_size= l.size_ + range.size();
+			result.ensure_capacity( result_size );
+			result.size_= result_size;
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( result.ptr_ ), ptr_cast_to_byte8( l.ptr_ ), l.size_ * c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( result.ptr_ + l.size_ ), ptr_cast_to_byte8( range.data() ), range.size() * c_element_size_ );
+		}
+
+		return result;
+	}
+
+	op+( range_imut range, this_type& r ) : this_type
+	{
+		var this_type mut result;
+		unsafe
+		{
+			// Overflow check is not needed here - size of single string can't be greater than size of half of address space.
+			auto result_size= range.size() + r.size_;
+			result.ensure_capacity( result_size );
+			result.size_= result_size;
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( result.ptr_ ), ptr_cast_to_byte8( range.data() ), range.size() * c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( result.ptr_ + range.size() ), ptr_cast_to_byte8( r.ptr_ ), r.size_ * c_element_size_ );
+		}
+
+		return result;
+	}
+
+	// +=
+
+	op+=( mut this, this_type& other )
+	{
+		this += other.range();
+	}
+
+	template</ size_type array_size />
+	op+=( mut this, [ char_type, array_size ]& array )
+	{
+		this += range_imut(array);
+	}
+
+	op+=( mut this, range_imut range )
+	{
+		unsafe
+		{
+			// Overflow check is not needed here - size of single string can't be greater than size of half of address space.
+			auto new_size= this.size_ + range.size();
+			ensure_capacity( new_size );
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( ptr_ + size_ ), ptr_cast_to_byte8( range.data() ), range.size() * c_element_size_ );
+			size_= new_size;
+		}
+	}
+
+private:
+	type range_mut=  random_access_range_mut </char_type/>;
+	type range_imut= random_access_range_imut</char_type/>;
+	auto constexpr c_element_size_= typeinfo</char_type/>.size_of;
+	auto constexpr c_element_alignment_= typeinfo</char_type/>.align_of;
+	auto constexpr c_first_allocation_size_= get_vector_first_allocation_size( c_element_size_ );
+
+private:
+	fn ensure_capacity( mut this, size_type new_size ) unsafe
+	{
+		unsafe
+		{
+			if( capacity_ >= new_size )
+			{
+				return;
+			}
+			else if( capacity_ == 0s )
+			{
+				capacity_= max( c_first_allocation_size_, new_size );
+				// Multiplication overflow check is needed here.
+				ptr_= byte_ptr_cast</char_type/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) );
+			}
+			else // if( capacity_ < new_size )
+			{
+				// It's impossible to get capacity overflow here, because "new_size" can't be greater than address space size.
+				while( capacity_ < new_size ) { capacity_*= 2s; }
+				// Multiplication overflow check is needed here.
+				ptr_= byte_ptr_cast</char_type/>( memory_reallocate( ptr_cast_to_byte8(ptr_), mul_overflow_check_halt( capacity_, c_element_size_ ) ) );
+			}
+		}
+	}
+
+private:
+	$(char_type) ptr_= zero_init;
+	size_type size_(0);
+	size_type capacity_(0);
+}
+
+} // namespace ust

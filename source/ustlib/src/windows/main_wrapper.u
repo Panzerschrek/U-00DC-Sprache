@@ -1,5 +1,5 @@
-import "../../imports/main_wrapper.u"
-import "../../imports/scoped_array.u"
+import "../../imports/main_wrapper.iu"
+import "../../imports/scoped_array.iu"
 import "wide_string.uh"
 
 namespace ust

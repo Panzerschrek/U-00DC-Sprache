@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/arena_allocated_box_nullable.u"
+import "../imports/arena_allocated_box_nullable.iu"
 
 // arena_allocated_box_nullable holds a reference to allocator.
 static_assert( typeinfo</ ust::arena_allocated_box_nullable</i32/> />.reference_tag_count == 1s );

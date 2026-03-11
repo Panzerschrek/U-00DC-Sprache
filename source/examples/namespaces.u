@@ -1,7 +1,7 @@
 // This example demonstraits namespaces usage.
 
-import "/main_wrapper.u"
-import "/stdout.u"
+import "/main_wrapper.iu"
+import "/stdout.iu"
 
 pretty_main
 {

@@ -1,9 +1,9 @@
 // This example shows basic usage of the UDP socket class.
 
-import "/main_wrapper.u"
-import "/stdout.u"
-import "/string_conversions.u"
-import "/udp_socket.u"
+import "/main_wrapper.iu"
+import "/stdout.iu"
+import "/string_conversions.iu"
+import "/udp_socket.iu"
 
 pretty_main
 {

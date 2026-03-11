@@ -1,6 +1,6 @@
 //##success_test
-import "../imports/composite.u"
-import "../imports/string.u"
+import "../imports/composite.iu"
+import "../imports/string.iu"
 
 class NonCopyable
 {

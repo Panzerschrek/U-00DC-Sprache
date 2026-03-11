@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/ustlib_macros.u"
+import "../imports/ustlib_macros.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

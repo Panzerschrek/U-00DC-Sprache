@@ -1,0 +1,111 @@
+import "hash_apply.iu"
+import "type_traits.iu"
+
+namespace ust
+{
+
+// Time point of the system clock.
+// It's not monotonic.
+// It's used for things like file times.
+class system_time
+{
+public:
+	// Get current time.
+	fn now() : system_time;
+
+	// Get minimum time - which is less than other possible timestams.
+	fn min() : system_time
+	{
+		return unsafe( system_time( impl::min() ) );
+	}
+
+	// Get maximum valid time - which is greater than other possible timestamps.
+	fn max() : system_time
+	{
+		return unsafe( system_time( impl::max() ) );
+	}
+
+public:
+	// Constructor from a platform-specific representation (for internal usage).
+	fn constructor( impl& in_impl ) unsafe
+		( impl_(in_impl) )
+	{}
+
+	// TODO - add default constructor?
+
+	fn constructor( mut this, system_time& other )= default;
+	op=( mut this, system_time& other )= default;
+
+	op==( system_time& l, system_time& r ) : bool = default;
+
+	op<=>( system_time& l, system_time& r ) : i32
+	{
+		return l.impl_ <=> r.impl_;
+	}
+
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		// Just perform field-by-field hashing of an implementation struct.
+		apply_value_to_hasher( hasher, t.impl_ );
+	}
+
+public:
+	struct impl_unix
+	{
+		// Basically "timespec" fields.
+		i64 seconds;
+		i64 nanoseconds;
+
+		op<=>( impl_unix& l, impl_unix& r ) : i32
+		{
+			auto s= l.seconds <=> r.seconds;
+			if( s != 0 )
+			{
+				return s;
+			}
+			return l.nanoseconds <=> r.nanoseconds;
+		}
+
+		fn min() : impl_unix
+		{
+			return impl_unix{ .seconds( 0x8000000000000000u64 ), .nanoseconds(0) };
+		}
+
+		fn max() : impl_unix
+		{
+			return impl_unix{ .seconds( 0x7FFFFFFFFFFFFFFFu64 ), .nanoseconds( 999999999u64 ) };
+		}
+	}
+
+	struct impl_windows
+	{
+		u64 intervals; // each step is 10^-7 seconds, same as FILETIME.
+
+		op<=>( impl_windows& l, impl_windows& r ) : i32
+		{
+			return l.intervals <=> r.intervals;
+		}
+
+		fn min() : impl_windows
+		{
+			return impl_windows{ .intervals= 0u64 };
+		}
+
+		fn max() : impl_windows
+		{
+			return impl_windows{ .intervals= 0xFFFFFFFFFFFFFFFFu64 };
+		}
+	}
+
+	type impl=
+		type_select</
+			constexpr_string_equals( compiler::target::os, "windows" ),
+			impl_windows,
+			impl_unix />;
+
+private:
+	impl impl_;
+}
+
+} // namespace ust

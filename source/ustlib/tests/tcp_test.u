@@ -1,11 +1,11 @@
 //##success_test
-import "../imports/assert.u"
-import "../imports/enum_string_conversions.u"
-import "../imports/semaphore.u"
-import "../imports/string_conversions.u"
-import "../imports/thread.u"
-import "../imports/tcp_listener.u"
-import "../imports/udp_socket.u"
+import "../imports/assert.iu"
+import "../imports/enum_string_conversions.iu"
+import "../imports/semaphore.iu"
+import "../imports/string_conversions.iu"
+import "../imports/thread.iu"
+import "../imports/tcp_listener.iu"
+import "../imports/udp_socket.iu"
 
 // TCP listener and TCP stream class are just thin wrappers around native sockets.
 // And native sockets are just simple handles.

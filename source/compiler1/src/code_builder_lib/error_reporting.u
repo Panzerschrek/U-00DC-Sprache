@@ -1,4 +1,4 @@
-import "/binary_heap.u"
+import "/binary_heap.iu"
 import "/CodeBuilderLib/keywords.uh"
 import "error_reporting.uh"
 

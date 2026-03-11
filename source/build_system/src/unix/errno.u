@@ -1,4 +1,4 @@
-import "/type_traits.u"
+import "/type_traits.iu"
 import "errno.uh"
 
 namespace BK

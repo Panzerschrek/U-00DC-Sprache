@@ -1,5 +1,5 @@
 // Header for pthread library functions, used in "ustlib".
-import "../../imports/type_traits.u"
+import "../../imports/type_traits.iu"
 
 type pthread_t= size_type;
 

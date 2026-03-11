@@ -1,4 +1,4 @@
-import "/box.u"
+import "/box.iu"
 
 namespace sm_async_net
 {

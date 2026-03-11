@@ -1,8 +1,8 @@
 //##success_test
-import "../imports/math.u"
-import "../imports/sort.u"
-import "../imports/string.u"
-import "../imports/vector.u"
+import "../imports/math.iu"
+import "../imports/sort.iu"
+import "../imports/string.iu"
+import "../imports/vector.iu"
 
 type IntRange= ust::random_access_range_mut</i32/>;
 type IntRangeImut= ust::random_access_range_imut</i32/>;

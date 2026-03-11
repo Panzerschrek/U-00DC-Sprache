@@ -1,5 +1,5 @@
-import "/path_utils.u"
-import "/sort.u"
+import "/path_utils.iu"
+import "/sort.iu"
 import "package_transformation.uh"
 import "build_system_paths.uh"
 import "options.uh"

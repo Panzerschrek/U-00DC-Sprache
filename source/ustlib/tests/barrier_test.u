@@ -1,8 +1,8 @@
 //##success_test
-import "../imports/barrier.u"
-import "../imports/shared_ptr_mt.u"
-import "../imports/thread.u"
-import "../imports/vector.u"
+import "../imports/barrier.iu"
+import "../imports/shared_ptr_mt.iu"
+import "../imports/thread.iu"
+import "../imports/vector.iu"
 
 static_assert( !non_sync</ ust::barrier /> ); // Barriers are safe to pass to another thread.
 static_assert( !typeinfo</ ust::barrier />.is_copy_constructible ); // Barriers are non-copyable.

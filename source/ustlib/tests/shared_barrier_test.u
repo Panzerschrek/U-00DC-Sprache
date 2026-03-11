@@ -1,8 +1,8 @@
 //##success_test
-import "../imports/shared_barrier.u"
-import "../imports/shared_ptr_mt.u"
-import "../imports/thread.u"
-import "../imports/vector.u"
+import "../imports/shared_barrier.iu"
+import "../imports/shared_ptr_mt.iu"
+import "../imports/thread.iu"
+import "../imports/vector.iu"
 
 static_assert( !non_sync</ ust::shared_barrier /> ); // Shared barriers are safe to pass to another thread.
 static_assert( typeinfo</ ust::shared_barrier />.is_copy_constructible ); // Shared barriers are copyable.

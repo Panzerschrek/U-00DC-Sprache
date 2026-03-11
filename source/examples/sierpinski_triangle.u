@@ -1,9 +1,9 @@
 // This example program generates a Sierpiński triangle and prints it into the console.
 // Make sure it's wide enough to display it!
 
-import "/main_wrapper.u"
-import "/stdout.u"
-import "/utf.u"
+import "/main_wrapper.iu"
+import "/stdout.iu"
+import "/utf.iu"
 
 pretty_main
 {

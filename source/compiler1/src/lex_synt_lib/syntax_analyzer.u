@@ -1,8 +1,8 @@
-import "/assert.u"
-import "/hash_set.u"
-import "/shared_ptr.u"
-import "/string_conversions.u"
-import "/utf.u"
+import "/assert.iu"
+import "/hash_set.iu"
+import "/shared_ptr.iu"
+import "/string_conversions.iu"
+import "/utf.iu"
 import "/CodeBuilderLib/keywords.uh"
 import "syntax_analyzer.uh"
 

@@ -1,4 +1,4 @@
-import "../../imports/io_result.u"
+import "../../imports/io_result.iu"
 
 namespace ust
 {

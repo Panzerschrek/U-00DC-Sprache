@@ -1,5 +1,5 @@
 //##fail_test
-import "../imports/shared_atomic_variable.u"
+import "../imports/shared_atomic_variable.iu"
 
 // Unsupported types for atomic variable.
 type AtomicVoid= ust::shared_atomic_variable</void/>; //##expect_error TemplateContext

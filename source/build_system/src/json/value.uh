@@ -1,8 +1,8 @@
-import "/box.u"
-import "/hash_map.u"
-import "/string.u"
-import "/variant.u"
-import "/vector.u"
+import "/box.iu"
+import "/hash_map.iu"
+import "/string.iu"
+import "/variant.iu"
+import "/vector.iu"
 
 namespace BK
 {

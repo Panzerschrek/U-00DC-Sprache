@@ -1,10 +1,10 @@
 // Crossplatform filesystem-related functions.
 
-import "/enum_string_conversions.u"
-import "/file.u"
-import "/file_helpers.u"
-import "/filesystem.u"
-import "/path_utils.u"
+import "/enum_string_conversions.iu"
+import "/file.iu"
+import "/file_helpers.iu"
+import "/filesystem.iu"
+import "/path_utils.iu"
 import "filesystem.uh"
 
 namespace BK

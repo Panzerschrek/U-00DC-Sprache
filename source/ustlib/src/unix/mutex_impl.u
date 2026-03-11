@@ -1,4 +1,4 @@
-import "../../imports/mutex_impl.u"
+import "../../imports/mutex_impl.iu"
 import "pthread.uh"
 
 namespace ust

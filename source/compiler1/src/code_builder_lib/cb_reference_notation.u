@@ -1,5 +1,5 @@
-import "/scoped_array.u"
-import "/binary_heap.u"
+import "/scoped_array.iu"
+import "/binary_heap.iu"
 import "error_reporting.uh"
 import "code_builder.uh"
 

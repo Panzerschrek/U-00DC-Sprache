@@ -1,4 +1,4 @@
-import "/hash_map.u"
+import "/hash_map.iu"
 import "../imports/package_info.uh"
 import "logger.uh"
 

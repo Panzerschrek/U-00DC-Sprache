@@ -1,5 +1,5 @@
-import "/path.u"
-import "/string.u"
+import "/path.iu"
+import "/string.iu"
 import "../imports/types.uh"
 
 namespace BK

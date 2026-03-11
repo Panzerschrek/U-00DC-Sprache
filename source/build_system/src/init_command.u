@@ -1,4 +1,4 @@
-import "/path_utils.u"
+import "/path_utils.iu"
 import "init_command.uh"
 import "filesystem.uh"
 

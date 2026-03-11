@@ -1,7 +1,7 @@
 //##success_test
-import "../imports/variant.u"
-import "../imports/box.u"
-import "../imports/string.u"
+import "../imports/variant.iu"
+import "../imports/box.iu"
+import "../imports/string.iu"
 
 class S
 {

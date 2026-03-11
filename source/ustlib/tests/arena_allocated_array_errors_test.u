@@ -1,5 +1,5 @@
 //##fail_test
-import "../imports/arena_allocated_array.u"
+import "../imports/arena_allocated_array.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

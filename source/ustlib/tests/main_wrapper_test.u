@@ -1,7 +1,7 @@
 //##success_test
-import "../imports/main_wrapper.u"
-import "../imports/stdout.u"
-import "../imports/string_conversions.u"
+import "../imports/main_wrapper.iu"
+import "../imports/stdout.iu"
+import "../imports/string_conversions.iu"
 
 pretty_main
 {

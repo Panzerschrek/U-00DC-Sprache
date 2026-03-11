@@ -1,9 +1,9 @@
 //##success_test
-import "../imports/semaphore.u"
-import "../imports/shared_ptr_mt.u"
-import "../imports/stdout.u"
-import "../imports/thread.u"
-import "../imports/vector.u"
+import "../imports/semaphore.iu"
+import "../imports/shared_ptr_mt.iu"
+import "../imports/stdout.iu"
+import "../imports/thread.iu"
+import "../imports/vector.iu"
 
 
 fn nomangle main() call_conv( "C" ) : i32

@@ -1,4 +1,4 @@
-import "../../imports/barrier_impl.u"
+import "../../imports/barrier_impl.iu"
 import "windows.uh"
 
 namespace ust

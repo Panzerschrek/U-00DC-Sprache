@@ -1,4 +1,4 @@
-import "/string.u"
+import "/string.iu"
 
 namespace BK
 {

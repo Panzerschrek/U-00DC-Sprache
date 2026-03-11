@@ -1,5 +1,5 @@
-import "/optional_ref.u"
-import "/random_access_range.u"
+import "/optional_ref.iu"
+import "/random_access_range.iu"
 
 //
 // Case 0 - create optional ref for first element of array view.

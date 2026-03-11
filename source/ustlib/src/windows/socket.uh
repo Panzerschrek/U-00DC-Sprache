@@ -1,7 +1,7 @@
-import "../../imports/duration.u"
-import "../../imports/inet_address.u"
-import "../../imports/io_result.u"
-import "../../imports/native_socket.u"
+import "../../imports/duration.iu"
+import "../../imports/inet_address.iu"
+import "../../imports/io_result.iu"
+import "../../imports/native_socket.iu"
 import "windows.uh"
 
 namespace ust

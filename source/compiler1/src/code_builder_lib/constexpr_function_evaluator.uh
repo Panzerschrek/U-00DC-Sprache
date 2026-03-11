@@ -1,6 +1,6 @@
-import "/result.u"
-import "/string.u"
-import "/vector.u"
+import "/result.iu"
+import "/string.iu"
+import "/vector.iu"
 import "constexpr_function_evaluator_bindings.uh"
 
 namespace U1

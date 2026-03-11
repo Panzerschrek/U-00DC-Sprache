@@ -1,4 +1,4 @@
-import "../../imports/utf.u"
+import "../../imports/utf.iu"
 import "windows.uh"
 
 namespace ust

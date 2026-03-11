@@ -1,9 +1,9 @@
 // This example demonstraits basic structs and methods usage, basic initialization.
 
-import "/assert.u"
-import "/main_wrapper.u"
-import "/stdout.u"
-import "/string.u"
+import "/assert.iu"
+import "/main_wrapper.iu"
+import "/stdout.iu"
+import "/string.iu"
 
 pretty_main
 {

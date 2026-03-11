@@ -1,4 +1,4 @@
-import "../../imports/tcp_stream.u"
+import "../../imports/tcp_stream.iu"
 import "socket.uh"
 
 namespace ust

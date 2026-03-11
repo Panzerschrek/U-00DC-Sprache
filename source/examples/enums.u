@@ -1,8 +1,8 @@
 // This example demonstraits usage of enums and "switch" operator for them/.
 
-import "/assert.u"
-import "/main_wrapper.u"
-import "/stdout.u"
+import "/assert.iu"
+import "/main_wrapper.iu"
+import "/stdout.iu"
 
 pretty_main
 {

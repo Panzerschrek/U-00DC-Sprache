@@ -1,6 +1,6 @@
-import "/shared_ptr.u"
-import "/string.u"
-import "/vector.u"
+import "/shared_ptr.iu"
+import "/string.iu"
+import "/vector.iu"
 import "/CodeBuilderLib/code_builder_error_code.uh"
 import "../lex_synt_lib/src_loc.uh"
 

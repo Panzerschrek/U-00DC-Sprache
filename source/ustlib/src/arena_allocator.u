@@ -1,7 +1,7 @@
-import "../imports/alloc.u"
-import "../imports/arena_allocator.u"
-import "../imports/memory.u"
-import "../imports/minmax.u"
+import "../imports/alloc.iu"
+import "../imports/arena_allocator.iu"
+import "../imports/memory.iu"
+import "../imports/minmax.iu"
 
 
 namespace ust

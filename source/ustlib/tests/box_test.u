@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/box.u"
+import "../imports/box.iu"
 
 struct S
 {

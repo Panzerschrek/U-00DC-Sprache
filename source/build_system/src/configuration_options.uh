@@ -1,5 +1,5 @@
-import "/hash_map.u"
-import "/path.u"
+import "/hash_map.iu"
+import "/path.iu"
 import "logger.uh"
 
 namespace BK
