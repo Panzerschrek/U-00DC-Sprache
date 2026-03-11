@@ -1,6 +1,6 @@
 import "../../imports/bit_math.iu"
-import "errno.uh"
-import "socket.uh"
+import "errno.iu"
+import "socket.iu"
 
 namespace ust
 {

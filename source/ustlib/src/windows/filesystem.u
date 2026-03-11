@@ -3,8 +3,8 @@ import "../../imports/file.iu"
 import "../../imports/filesystem.iu"
 import "../../imports/minmax.iu"
 import "../../imports/path_utils.iu"
-import "wide_string.uh"
-import "windows.uh"
+import "wide_string.iu"
+import "windows.iu"
 
 namespace ust
 {

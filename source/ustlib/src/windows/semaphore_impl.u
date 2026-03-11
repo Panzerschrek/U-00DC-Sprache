@@ -1,6 +1,6 @@
 import "../../imports/memory.iu"
 import "../../imports/semaphore_impl.iu"
-import "windows.uh"
+import "windows.iu"
 
 namespace ust
 {

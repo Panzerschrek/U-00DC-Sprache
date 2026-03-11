@@ -3,7 +3,7 @@ import "../../imports/alloc.iu"
 import "../../imports/atomic.iu"
 import "../../imports/semaphore_impl.iu"
 import "../../imports/string_conversions.iu"
-import "semaphore.uh"
+import "semaphore.iu"
 
 namespace ust
 {

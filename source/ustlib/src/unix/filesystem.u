@@ -3,8 +3,8 @@ import "../../imports/file.iu"
 import "../../imports/filesystem.iu"
 import "../../imports/path_utils.iu"
 import "../../imports/scoped_array.iu"
-import "errno.uh"
-import "unix.uh"
+import "errno.iu"
+import "unix.iu"
 
 namespace ust
 {

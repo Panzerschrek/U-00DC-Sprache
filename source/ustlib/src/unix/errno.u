@@ -1,5 +1,5 @@
-import "errno.uh"
-import "unix.uh"
+import "errno.iu"
+import "unix.iu"
 
 namespace ust
 {
