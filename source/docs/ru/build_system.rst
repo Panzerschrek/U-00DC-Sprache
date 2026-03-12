@@ -17,7 +17,7 @@
 
 .. code-block:: u_spr
 
-   import "/build_system.uh"
+   import "/build_system.iu"
 
    fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
    {
@@ -92,7 +92,7 @@
 
 .. code-block:: u_spr
 
-   import "/SomeLibrary/some_library_header.uh"
+   import "/SomeLibrary/some_library_header.iu"
 
 *SomeLibrary* - это имя сборочной цели.
 Такая директива импорта может быть использована как в сборочной цели *SomeLibrary*, так и в сборочных целях, которые от неё зависят.
