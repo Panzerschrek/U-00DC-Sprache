@@ -1,4 +1,4 @@
-import "/helpers.u"
+import "/helpers.iu"
 import "utils.iu"
 
 fn IncreaseFileDescriptorsLimit()

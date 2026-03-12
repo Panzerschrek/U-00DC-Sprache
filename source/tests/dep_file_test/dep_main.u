@@ -1,4 +1,4 @@
-import "dep_included.u"
+import "dep_included.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
