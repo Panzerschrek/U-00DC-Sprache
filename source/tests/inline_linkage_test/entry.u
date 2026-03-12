@@ -1,4 +1,4 @@
-import "inc.u"
+import "inc.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
