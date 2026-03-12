@@ -16,15 +16,15 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 	#
 
 	add_custom_command(
-		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_converted.u
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_converted.iu
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_test.h CppHeaderConverter
 		COMMAND
-			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/c_converted.u
+			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/c_converted.iu
 			${CMAKE_CURRENT_SOURCE_DIR}/c_test.h -- -std=c2x )
 
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_header_converter_test.o
-		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_header_converter_test.u ${CMAKE_CURRENT_BINARY_DIR}/c_converted.u Compiler
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_header_converter_test.u ${CMAKE_CURRENT_BINARY_DIR}/c_converted.iu Compiler
 		COMMAND
 			Compiler${CURRENT_COMPILER_GENERATION}
 			${CMAKE_CURRENT_SOURCE_DIR}/c_header_converter_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/c_header_converter_test.o
@@ -50,15 +50,15 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 	#
 
 	add_custom_command(
-		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpp_converted.u
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpp_converted.iu
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/cpp_test.hpp CppHeaderConverter
 		COMMAND
-			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/cpp_converted.u
+			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/cpp_converted.iu
 			${CMAKE_CURRENT_SOURCE_DIR}/cpp_test.hpp -- -std=c++17 )
 
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpp_header_converter_test.o
-		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/cpp_header_converter_test.u ${CMAKE_CURRENT_BINARY_DIR}/cpp_converted.u Compiler
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/cpp_header_converter_test.u ${CMAKE_CURRENT_BINARY_DIR}/cpp_converted.iu Compiler
 		COMMAND
 			Compiler${CURRENT_COMPILER_GENERATION}
 			${CMAKE_CURRENT_SOURCE_DIR}/cpp_header_converter_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/cpp_header_converter_test.o
@@ -86,15 +86,15 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 		#
 
 		add_custom_command(
-			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/windows_headers.u
+			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/windows_headers.iu
 			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/windows_headers.h CppHeaderConverter
 			COMMAND
-				CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/windows_headers.u
+				CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/windows_headers.iu
 				${CMAKE_CURRENT_SOURCE_DIR}/windows_headers.h -- )
 
 		add_custom_command(
 			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/windows_headers_test.o
-			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/windows_headers_test.u ${CMAKE_CURRENT_BINARY_DIR}/windows_headers.u Compiler
+			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/windows_headers_test.u ${CMAKE_CURRENT_BINARY_DIR}/windows_headers.iu Compiler
 			COMMAND
 				Compiler${CURRENT_COMPILER_GENERATION}
 				${CMAKE_CURRENT_SOURCE_DIR}/windows_headers_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/windows_headers_test.o
@@ -118,17 +118,17 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 		#
 
 		add_custom_command(
-			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers.u
+			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers.iu
 			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers.h CppHeaderConverter
 			COMMAND
-				CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers.u
+				CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers.iu
 				${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers.h --
 				-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER} ${CPP_HEADER_CONVERTER_SYSROOT_OPTION}
 				)
 
 		add_custom_command(
 			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers_test.o
-			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers_test.u ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers.u Compiler
+			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers_test.u ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers.iu Compiler
 			COMMAND
 				Compiler${CURRENT_COMPILER_GENERATION}
 				${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers_test.o
@@ -156,10 +156,10 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 	#
 
 	add_custom_command(
-		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.iu
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h CppHeaderConverter
 		COMMAND
-			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u
+			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.iu
 			${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h --
 			-Wno-implicit-function-declaration
 			-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER} ${CPP_HEADER_CONVERTER_SYSROOT_OPTION}
@@ -167,7 +167,7 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers_test.o
-		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers_test.u ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u Compiler
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers_test.u ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.iu Compiler
 		COMMAND
 			Compiler${CURRENT_COMPILER_GENERATION}
 			${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers_test.o

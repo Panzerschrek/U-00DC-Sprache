@@ -1,4 +1,4 @@
-import "/cpp_converted.u"
+import "/cpp_converted.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

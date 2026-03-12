@@ -1,4 +1,4 @@
-import "/c_standard_library_headers.u"
+import "/c_standard_library_headers.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
