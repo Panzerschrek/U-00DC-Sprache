@@ -59,7 +59,7 @@
 
 .. code-block:: sh
 
-   u.._cpp_header_converter some_c_header.h -o some_c_header_converted.uh -- -std=c11
+   u.._cpp_header_converter some_c_header.h -o some_c_header_converted.iu -- -std=c11
 
 Входные файлы указываются непосредственно.
 
