@@ -1,4 +1,4 @@
-import "halt_func.uh"
+import "halt_func.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

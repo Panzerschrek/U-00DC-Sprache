@@ -1,8 +1,8 @@
-import "/qwerty/some.uh"
-import "/qwe/rty/another.uh"
-import "/ach/wie/gut/dass/niemand/weiss/wer/ich/bin/und/wie/ich/heiss/rumpelstilzchen.uh"
-import "/d/krupps.uh"
-import "/root_import.uh"
+import "/qwerty/some.iu"
+import "/qwe/rty/another.iu"
+import "/ach/wie/gut/dass/niemand/weiss/wer/ich/bin/und/wie/ich/heiss/rumpelstilzchen.iu"
+import "/d/krupps.iu"
+import "/root_import.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

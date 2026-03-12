@@ -1,5 +1,5 @@
-import "inc/a.uh"
-import "/b.uh"
+import "inc/a.iu"
+import "/b.iu"
 
 static_assert( warcraft == "Умру за одру!\n" );
 

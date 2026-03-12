@@ -1,10 +1,10 @@
 /*
 Each declaration of global variable, produced by macro expancion, must produce same unique name for this variable.
-Names, produced in "a.uh", "b.uh", "c.uh", during "x.u" and "b.u" files compilation, must be the same.
+Names, produced in "a.iu", "b.iu", "c.iu", during "x.u" and "b.u" files compilation, must be the same.
 */
 
-import "x.uh"
-import "y.uh"
+import "x.iu"
+import "y.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

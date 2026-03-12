@@ -1,4 +1,4 @@
-import "cpp_linkage.uh"
+import "cpp_linkage.iu"
 
 // Extern C++ function
 fn CallCPP( i32 x ) call_conv( "C" );
