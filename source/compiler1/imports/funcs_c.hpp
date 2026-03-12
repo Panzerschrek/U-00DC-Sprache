@@ -4,7 +4,7 @@
 
 #include "../../code_builder_lib_common/mangling.hpp"
 
-// If contents of this file changed, funcs_u.uh must be changed too!
+// If contents of this file changed, funcs_u.iu must be changed too!
 
 extern "C"
 {
