@@ -62,8 +62,8 @@ struct BuildTarget
 	// Publuc include directories of this build target.
 	// They are used in this target and in all build targets dependent on it.
 	// Imports like
-	//    import "some_target/some_file.uh"
-	// will lead to these directories - some_file.uh will be searched within them.
+	//    import "some_target/some_file.iu"
+	// will lead to these directories - some_file.iu will be searched within them.
 	// Paths with "." and ".." aren't allowed.
 	// Duplicates aren't allowed.
 	ust::vector</ust::filesystem_path/> public_include_directories;
