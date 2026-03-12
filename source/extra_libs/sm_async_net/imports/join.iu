@@ -1,6 +1,6 @@
 import "/assert.iu"
 import "/vector.iu"
-import "runner_internal.uh"
+import "runner_internal.iu"
 
 namespace sm_async_net
 {

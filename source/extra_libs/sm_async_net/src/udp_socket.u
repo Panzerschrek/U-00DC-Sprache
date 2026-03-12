@@ -1,4 +1,4 @@
-import "/sm_async_net/udp_socket.uh"
+import "/sm_async_net/udp_socket.iu"
 
 namespace sm_async_net
 {

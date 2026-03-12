@@ -5,11 +5,11 @@ import "/shared_ptr_mt_final.iu"
 import "/shared_ptr_mt.iu"
 import "/thread.iu"
 import "/variant.iu"
-import "/sm_async_net_sys/unix.uh"
-import "/sm_async_net/runner.uh"
-import "/sm_async_net/runner_internal.uh"
-import "poll_waker.uh"
-import "queue.uh"
+import "/sm_async_net_sys/unix.iu"
+import "/sm_async_net/runner.iu"
+import "/sm_async_net/runner_internal.iu"
+import "poll_waker.iu"
+import "queue.iu"
 
 namespace sm_async_net
 {

@@ -9,11 +9,11 @@ import "/shared_ptr_mt_final.iu"
 import "/stdout.iu"
 import "/string_conversions.iu"
 import "/thread.iu"
-import "/sm_async_net/join.uh"
-import "/sm_async_net/runner.uh"
-import "/sm_async_net/tcp_listener.uh"
-import "/sm_async_net/udp_socket.uh"
-import "utils.uh"
+import "/sm_async_net/join.iu"
+import "/sm_async_net/runner.iu"
+import "/sm_async_net/tcp_listener.iu"
+import "/sm_async_net/udp_socket.iu"
+import "utils.iu"
 
 pretty_main
 {

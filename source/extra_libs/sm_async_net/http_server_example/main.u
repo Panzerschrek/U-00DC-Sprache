@@ -4,8 +4,8 @@ import "/semaphore.iu"
 import "/shared_ptr_mt_final.iu"
 import "/stdout.iu"
 import "/string_conversions.iu"
-import "/sm_async_net/runner.uh"
-import "/sm_async_net/tcp_listener.uh"
+import "/sm_async_net/runner.iu"
+import "/sm_async_net/tcp_listener.iu"
 
 pretty_main
 {
