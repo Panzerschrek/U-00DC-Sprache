@@ -22,7 +22,7 @@ namespace Ü_extension
 		internal static FileExtensionToContentTypeDefinition ü_source_file_extension_definition;
 
 		[Export]
-		[FileExtension(".uh")]
+		[FileExtension(".iu")]
 		[ContentType(c_content_type)]
 		internal static FileExtensionToContentTypeDefinition ü_header_file_extension_definition;
 
