@@ -1,4 +1,4 @@
-import "../../imports/system_timei.u"
+import "../../imports/system_time.iu"
 import "windows.iu"
 
 namespace ust
