@@ -1,5 +1,5 @@
 import "/path.iu"
-import "package_transformation.uh"
+import "package_transformation.iu"
 
 namespace BK
 {

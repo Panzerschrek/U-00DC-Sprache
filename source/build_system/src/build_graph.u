@@ -3,10 +3,10 @@ import "/hash_map.iu"
 import "/path_utils.iu"
 import "/scoped_array.iu"
 import "/string_conversions.iu"
-import "build_graph.uh"
-import "filesystem.uh"
-import "make_dep_file.uh"
-import "process.uh"
+import "build_graph.iu"
+import "filesystem.iu"
+import "make_dep_file.iu"
+import "process.iu"
 
 
 namespace BK

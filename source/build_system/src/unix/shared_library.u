@@ -1,6 +1,6 @@
-import "../shared_library.uh"
-import "../string_utils.uh"
-import "unix.uh"
+import "../shared_library.iu"
+import "../string_utils.iu"
+import "unix.iu"
 
 namespace BK
 {

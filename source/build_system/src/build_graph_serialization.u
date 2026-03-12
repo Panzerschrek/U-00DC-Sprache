@@ -1,6 +1,6 @@
-import "build_graph_serialization.uh"
-import "json/parsing.uh"
-import "json/serialization.uh"
+import "build_graph_serialization.iu"
+import "json/parsing.iu"
+import "json/serialization.iu"
 
 namespace BK
 {

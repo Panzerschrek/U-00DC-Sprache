@@ -4,8 +4,8 @@ import "/environment.iu"
 import "/filesystem.iu"
 import "/path_utils.iu"
 
-import "../filesystem.uh"
-import "unix.uh"
+import "../filesystem.iu"
+import "unix.iu"
 
 namespace BK
 {

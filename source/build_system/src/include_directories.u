@@ -1,5 +1,5 @@
 import "/path_utils.iu"
-import "include_directories.uh"
+import "include_directories.iu"
 
 namespace BK
 {
@@ -50,7 +50,7 @@ fn ExtractDependenciesIncludeDirectories(
 		{
 			// Prefix this directory with target name.
 			// So, using
-			//    import "some_target/some_file.uh"
+			//    import "some_target/some_file.iu"
 			// will work.
 			// Package path isn't used here, so,
 			// it should be ensured prior to this code that a build target has dependencies with unique names.

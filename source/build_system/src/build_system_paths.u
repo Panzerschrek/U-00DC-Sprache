@@ -1,6 +1,6 @@
 import "/path_utils.iu"
 import "/string_conversions.iu"
-import "build_system_paths.uh"
+import "build_system_paths.iu"
 
 namespace BK
 {

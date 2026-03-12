@@ -1,5 +1,5 @@
 import "/memory.iu"
-import "windows.uh"
+import "windows.iu"
 
 // Produces INVALID_HANDLE_VALUE.
 fn GetInvalidHandle() : HANDLE

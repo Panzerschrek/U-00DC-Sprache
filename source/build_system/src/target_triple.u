@@ -1,4 +1,4 @@
-import "target_triple.uh"
+import "target_triple.iu"
 
 namespace BK
 {

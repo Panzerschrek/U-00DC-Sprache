@@ -5,21 +5,21 @@ import "/string_conversions.iu"
 import "/stdout.iu"
 import "/thread.iu"
 import "../imports/build_system_interface.iu"
-import "abort_signal_handler.uh"
-import "build_graph_serialization.uh"
-import "build_system_paths.uh"
-import "configuration_options.uh"
-import "filesystem.uh"
-import "include_directories.uh"
-import "init_command.uh"
-import "language_server_workspace_info.uh"
-import "make_dep_file.uh"
-import "options.uh"
-import "package_transformation.uh"
-import "process.uh"
-import "shared_library.uh"
-import "target_triple.uh"
-import "version_unification.uh"
+import "abort_signal_handler.iu"
+import "build_graph_serialization.iu"
+import "build_system_paths.iu"
+import "configuration_options.iu"
+import "filesystem.iu"
+import "include_directories.iu"
+import "init_command.iu"
+import "language_server_workspace_info.iu"
+import "make_dep_file.iu"
+import "options.iu"
+import "package_transformation.iu"
+import "process.iu"
+import "shared_library.iu"
+import "target_triple.iu"
+import "version_unification.iu"
 
 pretty_main
 {
@@ -571,7 +571,7 @@ fn BuildAndLoadPackageBuildScript(
 		}
 
 		var ust::filesystem_path build_script_wrapper_file_path= ust::path::join( build_script_wrapper_file_directory, "build_script_wrapper.u" );
-		var ust::filesystem_path build_script_header_file_path= ust::path::join( build_script_wrapper_header_file_directory, "build_script_header.uh" );
+		var ust::filesystem_path build_script_header_file_path= ust::path::join( build_script_wrapper_header_file_directory, "build_script_header.iu" );
 
 		// Create our own wrapper file to ensure that the function exported from the shared library has proper type.
 		{

@@ -1,5 +1,5 @@
-import "build_system_paths.uh"
-import "package_transformation.uh"
+import "build_system_paths.iu"
+import "package_transformation.iu"
 
 namespace BK
 {

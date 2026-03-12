@@ -1,5 +1,5 @@
 import "/utf.iu"
-import "wide_string.uh"
+import "wide_string.iu"
 
 namespace BK
 {

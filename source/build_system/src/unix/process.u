@@ -3,9 +3,9 @@ import "/assert.iu"
 import "/scoped_array.iu"
 import "/string_conversions.iu"
 import "/vector.iu"
-import "../process.uh"
-import "errno.uh"
-import "unix.uh"
+import "../process.iu"
+import "errno.iu"
+import "unix.iu"
 
 namespace BK
 {

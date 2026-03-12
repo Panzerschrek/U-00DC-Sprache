@@ -1,8 +1,8 @@
 import "/path_utils.iu"
-import "filesystem.uh"
-import "include_directories.uh"
-import "json/serialization.uh"
-import "language_server_workspace_info.uh"
+import "filesystem.iu"
+import "include_directories.iu"
+import "json/serialization.iu"
+import "language_server_workspace_info.iu"
 
 //
 // If code in this file is changed, corresponding code in the Language Server should be changed too!

@@ -1,5 +1,5 @@
 import "/type_traits.iu"
-import "errno.uh"
+import "errno.iu"
 
 namespace BK
 {

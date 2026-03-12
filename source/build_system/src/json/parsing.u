@@ -1,6 +1,6 @@
 import "/math.iu"
 import "/utf.iu"
-import "parsing.uh"
+import "parsing.iu"
 
 namespace BK
 {

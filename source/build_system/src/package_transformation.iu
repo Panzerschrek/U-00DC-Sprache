@@ -1,6 +1,6 @@
 import "/hash_map.iu"
 import "../imports/package_info.iu"
-import "logger.uh"
+import "logger.iu"
 
 namespace BK
 {

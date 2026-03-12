@@ -1,7 +1,7 @@
 import "/string_conversions.iu"
-import "../shared_library.uh"
-import "wide_string.uh"
-import "windows.uh"
+import "../shared_library.iu"
+import "wide_string.iu"
+import "windows.iu"
 
 namespace BK
 {
