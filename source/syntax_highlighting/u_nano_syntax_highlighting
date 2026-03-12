@@ -1,7 +1,7 @@
 # Ü syntax highlighting config for nano.
 # Move this file into ~/.nanorc in order to apply it.
 
-syntax "Ü" "\.(u|uh|ü)$"
+syntax "Ü" "\.(u|iu|ü)$"
 
 comment "//"
 
