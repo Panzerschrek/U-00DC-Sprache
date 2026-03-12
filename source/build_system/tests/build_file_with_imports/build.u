@@ -1,4 +1,4 @@
-import "/build_system.uh"
+import "/build_system.iu"
 // Use imports relative to the build script file.
 import "sources.uh"
 import "target_name.uh"

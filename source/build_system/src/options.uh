@@ -1,6 +1,6 @@
 import "/path.iu"
 import "/string.iu"
-import "../imports/types.uh"
+import "../imports/types.iu"
 
 namespace BK
 {

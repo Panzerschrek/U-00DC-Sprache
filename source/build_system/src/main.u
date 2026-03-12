@@ -4,7 +4,7 @@ import "/sort.iu"
 import "/string_conversions.iu"
 import "/stdout.iu"
 import "/thread.iu"
-import "../imports/build_system_interface.uh"
+import "../imports/build_system_interface.iu"
 import "abort_signal_handler.uh"
 import "build_graph_serialization.uh"
 import "build_system_paths.uh"
@@ -596,7 +596,7 @@ fn BuildAndLoadPackageBuildScript(
 		// Create also header file. We need it to export entry function properly.
 		{
 			var ust::string8 contents = ust::concat(
-				"import \"/build_system.uh\"\n\n",
+				"import \"/build_system.iu\"\n\n",
 				"fn nomangle ",
 				entry_func_name,
 				"( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>;\n" );

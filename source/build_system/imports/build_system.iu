@@ -1,0 +1,5 @@
+// Main header file combining all build system interface headers.
+
+import "build_system_interface.iu"
+import "package_info.iu"
+import "types.iu"

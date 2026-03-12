@@ -1,5 +1,5 @@
 import "/assert.iu"
-import "/build_system.uh"
+import "/build_system.iu"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
