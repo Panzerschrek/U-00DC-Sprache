@@ -1,6 +1,6 @@
 import "/string.iu"
 import "/vector.iu"
-import "lex_synt_error.uh"
+import "lex_synt_error.iu"
 
 namespace U1
 {

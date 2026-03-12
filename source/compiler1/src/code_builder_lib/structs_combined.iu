@@ -4,11 +4,11 @@ import "/shared_ptr.iu"
 import "/shared_ptr_final.iu"
 import "/variant.iu"
 import "/vector.iu"
-import "../lex_synt_lib/syntax_elements.uh"
-import "code_builder_errors.uh"
-import "lang_types.uh"
-import "llvm_ext.uh"
-import "mixins.uh"
+import "../lex_synt_lib/syntax_elements.iu"
+import "code_builder_errors.iu"
+import "lang_types.iu"
+import "llvm_ext.iu"
+import "mixins.iu"
 
 /*
 

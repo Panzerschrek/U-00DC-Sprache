@@ -1,5 +1,5 @@
 import "/assert.iu"
-import "source_graph.uh"
+import "source_graph.iu"
 
 namespace U1
 {

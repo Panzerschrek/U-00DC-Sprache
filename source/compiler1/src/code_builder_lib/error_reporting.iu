@@ -2,9 +2,9 @@ import "/composite.iu"
 import "/random_access_range.iu"
 import "/string_conversions.iu"
 import "/vector.iu"
-import "code_builder_errors.uh"
-import "../lex_synt_lib/syntax_analyzer.uh"
-import "structs_combined.uh"
+import "code_builder_errors.iu"
+import "../lex_synt_lib/syntax_analyzer.iu"
+import "structs_combined.iu"
 
 // Perform almost all errors preprocessing code in separate function instead of doing this in inline macro.
 // Doing so prevent inlining of error processing code, because this code generally is rarely executed.

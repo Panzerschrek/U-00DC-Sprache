@@ -1,6 +1,6 @@
-import "macro.uh"
-import "syntax_elements.uh"
-import "lex_synt_error.uh"
+import "macro.iu"
+import "syntax_elements.iu"
+import "lex_synt_error.iu"
 
 namespace U1
 {

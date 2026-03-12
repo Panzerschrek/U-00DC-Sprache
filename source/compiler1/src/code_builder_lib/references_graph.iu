@@ -1,6 +1,6 @@
 import "/hash_set.iu"
-import "code_builder_errors.uh"
-import "structs_combined.uh"
+import "code_builder_errors.iu"
+import "structs_combined.iu"
 
 namespace U1
 {

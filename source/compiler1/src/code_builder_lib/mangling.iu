@@ -1,5 +1,5 @@
 import "/string.iu"
-import "structs_combined.uh"
+import "structs_combined.iu"
 
 namespace U1
 {

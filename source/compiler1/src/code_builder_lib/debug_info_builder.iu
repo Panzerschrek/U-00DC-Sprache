@@ -1,5 +1,5 @@
-import "../lex_synt_lib/source_graph.uh"
-import "function_context.uh"
+import "../lex_synt_lib/source_graph.iu"
+import "function_context.iu"
 
 namespace U1
 {

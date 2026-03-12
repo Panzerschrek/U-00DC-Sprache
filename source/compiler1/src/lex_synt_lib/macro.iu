@@ -2,7 +2,7 @@ import "/box_nullable.iu"
 import "/hash_map.iu"
 import "/shared_ptr_final.iu"
 import "/shared_ptr.iu"
-import "lexical_analyzer.uh"
+import "lexical_analyzer.iu"
 
 namespace U1
 {

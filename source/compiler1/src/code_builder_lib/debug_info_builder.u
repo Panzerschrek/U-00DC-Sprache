@@ -1,7 +1,7 @@
 import "/scoped_array.iu"
 import "/sort.iu"
 import "/string_conversions.iu"
-import "debug_info_builder.uh"
+import "debug_info_builder.iu"
 
 namespace U1
 {

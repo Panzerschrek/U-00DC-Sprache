@@ -1,5 +1,5 @@
-import "../lex_synt_lib/syntax_elements.uh"
-import "llvm_ext.uh"
+import "../lex_synt_lib/syntax_elements.iu"
+import "llvm_ext.iu"
 
 namespace U1
 {

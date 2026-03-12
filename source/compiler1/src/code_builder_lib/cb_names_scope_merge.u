@@ -1,6 +1,6 @@
-import "/CodeBuilderLib/keywords.uh"
-import "error_reporting.uh"
-import "code_builder.uh"
+import "/CodeBuilderLib/keywords.iu"
+import "error_reporting.iu"
+import "code_builder.iu"
 
 
 namespace U1

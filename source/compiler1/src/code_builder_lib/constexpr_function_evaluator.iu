@@ -1,7 +1,7 @@
 import "/result.iu"
 import "/string.iu"
 import "/vector.iu"
-import "constexpr_function_evaluator_bindings.uh"
+import "constexpr_function_evaluator_bindings.iu"
 
 namespace U1
 {

@@ -3,8 +3,8 @@ import "/hash_set.iu"
 import "/shared_ptr.iu"
 import "/string_conversions.iu"
 import "/utf.iu"
-import "/CodeBuilderLib/keywords.uh"
-import "syntax_analyzer.uh"
+import "/CodeBuilderLib/keywords.iu"
+import "syntax_analyzer.iu"
 
 namespace U1
 {

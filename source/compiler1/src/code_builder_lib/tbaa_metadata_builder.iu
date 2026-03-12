@@ -1,6 +1,6 @@
-import "llvm_ext.uh"
-import "mangling.uh"
-import "structs_combined.uh"
+import "llvm_ext.iu"
+import "mangling.iu"
+import "structs_combined.iu"
 
 namespace U1
 {

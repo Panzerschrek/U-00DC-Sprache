@@ -5,8 +5,8 @@ import "/shared_ptr_final.iu"
 import "/string.iu"
 import "/variant.iu"
 import "/vector.iu"
-import "lexical_analyzer.uh"
-import "operators.uh"
+import "lexical_analyzer.iu"
+import "operators.iu"
 
 
 namespace U1

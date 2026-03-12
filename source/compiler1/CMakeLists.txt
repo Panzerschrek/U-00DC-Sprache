@@ -1,7 +1,7 @@
 message( STATUS "Build compiler ${NEXT_COMPILER_GENERATION}")
 
 file( GLOB_RECURSE CODE_BUILDER_LIB_CPP_SOURCES "src/*.cpp" )
-file( GLOB_RECURSE CODE_BUILDER_LIB_HEADERS "src/*.uh" "imports/*.uh" )
+file( GLOB_RECURSE CODE_BUILDER_LIB_HEADERS "src/*.iu" "imports/*.iu" )
 file( GLOB_RECURSE CODE_BUILDER_LIB_SOURCES "src/*.u" )
 
 if( TARGET BuildSystem AND TARGET lldCommon AND ${NEXT_COMPILER_GENERATION} GREATER_EQUAL 2 )
@@ -177,7 +177,7 @@ else()
 		ERROR_CODE_TO_STRING_LIST
 		${ERRORS_LIST_CONTENT} )
 
-	configure_file( src/code_builder_lib/code_builder_error_code.uh.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_error_code.uh )
+	configure_file( src/code_builder_lib/code_builder_error_code.iu.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_error_code.iu )
 
 	#
 	# CodeBuilderLib
@@ -190,11 +190,11 @@ else()
 		KEYWORDS_LIST
 		${KEYWORDS_LIST_CONTENT} )
 
-	configure_file( src/lex_synt_lib/keywords.uh.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.uh )
+	configure_file( src/lex_synt_lib/keywords.iu.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.iu )
 
 	set( CODE_BUILDER_LIB_HEADERS_GENERATED
-		${CMAKE_CURRENT_BINARY_DIR}/keywords.uh
-		${CMAKE_CURRENT_BINARY_DIR}/code_builder_error_code.uh
+		${CMAKE_CURRENT_BINARY_DIR}/keywords.iu
+		${CMAKE_CURRENT_BINARY_DIR}/code_builder_error_code.iu
 		)
 
 	CompileUSources( CODE_BUILDER_LIB_SOURCES CODE_BUILDER_LIB_OBJECTS )

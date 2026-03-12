@@ -1,4 +1,4 @@
-import "references_graph.uh"
+import "references_graph.iu"
 
 namespace U1
 {

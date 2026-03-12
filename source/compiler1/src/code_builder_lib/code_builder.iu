@@ -1,13 +1,13 @@
-import "../../imports/mangling_scheme.uh"
-import "../lex_synt_lib/source_graph.uh"
-import "calling_convention_info.uh"
-import "code_builder_errors.uh"
-import "constexpr_function_evaluator.uh"
-import "debug_info_builder.uh"
-import "function_context.uh"
-import "mangling.uh"
-import "references_graph.uh"
-import "tbaa_metadata_builder.uh"
+import "../../imports/mangling_scheme.iu"
+import "../lex_synt_lib/source_graph.iu"
+import "calling_convention_info.iu"
+import "code_builder_errors.iu"
+import "constexpr_function_evaluator.iu"
+import "debug_info_builder.iu"
+import "function_context.iu"
+import "mangling.iu"
+import "references_graph.iu"
+import "tbaa_metadata_builder.iu"
 
 namespace U1
 {

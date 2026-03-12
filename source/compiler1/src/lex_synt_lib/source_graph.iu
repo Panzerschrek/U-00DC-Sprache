@@ -1,4 +1,4 @@
-import "syntax_analyzer.uh"
+import "syntax_analyzer.iu"
 
 namespace U1
 {

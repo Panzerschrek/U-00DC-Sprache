@@ -1,8 +1,8 @@
-import "/CodeBuilderLib/keywords.uh"
-import "../lex_synt_lib/lexical_analyzer.uh"
-import "../lex_synt_lib/syntax_analyzer.uh"
-import "error_reporting.uh"
-import "code_builder.uh"
+import "/CodeBuilderLib/keywords.iu"
+import "../lex_synt_lib/lexical_analyzer.iu"
+import "../lex_synt_lib/syntax_analyzer.iu"
+import "error_reporting.iu"
+import "code_builder.iu"
 
 namespace U1
 {

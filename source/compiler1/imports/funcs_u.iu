@@ -1,5 +1,5 @@
-import "mangling_scheme.uh"
-import "llvm.uh"
+import "mangling_scheme.iu"
+import "llvm.iu"
 
 // If contents of this file changed, funcs_c.hpp must be changed too!
 

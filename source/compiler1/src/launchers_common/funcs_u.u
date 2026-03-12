@@ -1,9 +1,9 @@
 import "/stdout.iu"
 import "/string_conversions.iu"
-import "../lex_synt_lib/source_graph.uh"
-import "../code_builder_lib/code_builder.uh"
-import "../code_builder_lib/long_stable_hash_wrapper.uh"
-import "../../imports/funcs_u.uh"
+import "../lex_synt_lib/source_graph.iu"
+import "../code_builder_lib/code_builder.iu"
+import "../code_builder_lib/long_stable_hash_wrapper.iu"
+import "../../imports/funcs_u.iu"
 
 fn nomangle nodiscard U1_BuildProgram(
 	U1_StringView& program_text,
