@@ -1,5 +1,5 @@
-import "/b0/b0.uh"
-import "/c1/c1.uh"
+import "/b0/b0.iu"
+import "/c1/c1.iu"
 
 fn BFunc() : i32
 {

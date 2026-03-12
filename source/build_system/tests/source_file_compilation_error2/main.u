@@ -1,1 +1,1 @@
-import "non_existing_imported_file.uh"
+import "non_existing_imported_file.iu"

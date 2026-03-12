@@ -1,4 +1,4 @@
-import "/multiplier/multiplier.uh"
+import "/multiplier/multiplier.iu"
 
 fn MultiplyInts( i32 x, i32 y ) : i32
 {

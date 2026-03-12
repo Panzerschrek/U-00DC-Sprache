@@ -1,5 +1,5 @@
 // Error here - importing file outside the package source directory isn't allowed.
-import "../not_allowed_import4.uh"
+import "../not_allowed_import4.iu"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {

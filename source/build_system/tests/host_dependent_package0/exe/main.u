@@ -1,6 +1,6 @@
 import "/stdout.iu"
 import "/string_conversions.iu"
-import "/exe/test.uh"
+import "/exe/test.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

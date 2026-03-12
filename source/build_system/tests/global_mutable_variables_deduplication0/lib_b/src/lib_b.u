@@ -1,5 +1,5 @@
-import "/lib_b/lib_b.uh"
-import "/lib_common/lib_common.uh"
+import "/lib_b/lib_b.iu"
+import "/lib_common/lib_common.iu"
 
 fn BGetVar() : i32
 {

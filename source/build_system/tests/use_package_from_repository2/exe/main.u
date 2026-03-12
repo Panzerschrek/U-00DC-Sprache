@@ -1,5 +1,5 @@
-import "/two_returner/two_returner.uh"
-import "/integer_adder/integer_adder.uh"
+import "/two_returner/two_returner.iu"
+import "/integer_adder/integer_adder.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

@@ -1,5 +1,5 @@
-import "/shared_library_target/lib.uh"
-import "internal.uh"
+import "/shared_library_target/lib.iu"
+import "internal.iu"
 
 fn nomangle AddTwoNumbers( i32 x, i32 y ) call_conv( "C" ) : i32
 {

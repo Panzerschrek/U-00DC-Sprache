@@ -1,4 +1,4 @@
-import "/lib_common/lib_common.uh"
+import "/lib_common/lib_common.iu"
 
 fn CommonGetVar() : i32
 {

@@ -1,4 +1,4 @@
-import "/a/a.uh"
+import "/a/a.iu"
 
 fn AFunc() : MyInt
 {

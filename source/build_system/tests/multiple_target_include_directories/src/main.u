@@ -1,8 +1,8 @@
 import "/stdout.iu"
 // Should found files located in different include directories of the dependency library.
-import "/lib/one.uh"
-import "/lib/two.uh"
-import "/lib/three.uh"
+import "/lib/one.iu"
+import "/lib/two.iu"
+import "/lib/three.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

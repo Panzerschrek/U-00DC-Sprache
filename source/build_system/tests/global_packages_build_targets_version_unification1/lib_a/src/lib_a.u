@@ -1,5 +1,5 @@
-import "/lib_a/lib_a.uh"
-import "/two_returner/two_returner.uh"
+import "/lib_a/lib_a.iu"
+import "/two_returner/two_returner.iu"
 
 fn LibAFunc() : u32
 {

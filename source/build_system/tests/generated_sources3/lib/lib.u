@@ -1,5 +1,5 @@
 // Import generated public header in "lib".
-import "/lib/lib.uh"
+import "/lib/lib.iu"
 
 fn Foo() : i32
 {

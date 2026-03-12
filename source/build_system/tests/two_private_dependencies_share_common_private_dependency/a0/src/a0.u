@@ -1,5 +1,5 @@
-import "/a0/a0.uh"
-import "/c1/c1.uh"
+import "/a0/a0.iu"
+import "/c1/c1.iu"
 
 fn AFunc() : i32
 {

@@ -1,4 +1,4 @@
-import "/integer_adder/integer_adder.uh"
+import "/integer_adder/integer_adder.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

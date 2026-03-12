@@ -1,4 +1,4 @@
-import "/four_returner/four_returner.uh"
+import "/four_returner/four_returner.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

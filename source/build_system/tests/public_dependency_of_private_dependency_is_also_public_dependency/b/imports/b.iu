@@ -1,3 +1,3 @@
-import "/c/c.uh"
+import "/c/c.iu"
 
 fn BFunc() : Int;

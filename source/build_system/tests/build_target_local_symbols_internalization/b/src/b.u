@@ -1,5 +1,5 @@
-import "/b/b.uh"
-import "b_internal.uh"
+import "/b/b.iu"
+import "b_internal.iu"
 
 fn BFunc() : u32
 {

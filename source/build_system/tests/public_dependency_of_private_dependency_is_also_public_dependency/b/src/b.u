@@ -1,4 +1,4 @@
-import "/b/b.uh"
+import "/b/b.iu"
 
 fn BFunc() : Int
 {

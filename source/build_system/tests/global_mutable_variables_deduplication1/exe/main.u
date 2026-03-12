@@ -1,4 +1,4 @@
-import "common.uh"
+import "common.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

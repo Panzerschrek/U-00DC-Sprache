@@ -1,7 +1,7 @@
 import "/build_system.iu"
 // Use imports relative to the build script file.
-import "sources.uh"
-import "target_name.uh"
+import "sources.iu"
+import "target_name.iu"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {

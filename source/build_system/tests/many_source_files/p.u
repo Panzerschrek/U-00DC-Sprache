@@ -1,4 +1,4 @@
-import "inc.uh"
+import "inc.iu"
 
 fn FuncP() : i32
 {

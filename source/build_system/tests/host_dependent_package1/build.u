@@ -7,7 +7,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 
 	auto& target_name= "exe";
 
-	auto& generated_file_name= "generated_private_header.uh";
+	auto& generated_file_name= "generated_private_header.iu";
 
 	var ust::filesystem_path generated_file_full_path= ust::path::join(
 		build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( target_name ),

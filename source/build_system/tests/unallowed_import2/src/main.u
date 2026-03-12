@@ -1,2 +1,2 @@
 // Using relative include path for include directory to access a file outside it.
-import "/unallowed_import/../inc.uh"
+import "/unallowed_import/../inc.iu"

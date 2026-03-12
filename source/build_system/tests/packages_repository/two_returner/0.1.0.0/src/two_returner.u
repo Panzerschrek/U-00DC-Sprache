@@ -1,4 +1,4 @@
-import "/two_returner/two_returner.uh"
+import "/two_returner/two_returner.iu"
 
 fn GetTwo() : i32
 {

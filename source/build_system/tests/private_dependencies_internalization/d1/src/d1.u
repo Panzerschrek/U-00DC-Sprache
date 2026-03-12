@@ -1,4 +1,4 @@
-import "/d1/d1.uh"
+import "/d1/d1.iu"
 
 fn CommonFunc() : u32
 {
