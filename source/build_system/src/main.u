@@ -579,7 +579,7 @@ fn BuildAndLoadPackageBuildScript(
 				"import \"/",
 				build_script_file,
 				"\"\n",
-				"import \"/build_script_header.uh\"\n\n",
+				"import \"/build_script_header.iu\"\n\n",
 				"fn nomangle ",
 				entry_func_name,
 				"( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>\n",
