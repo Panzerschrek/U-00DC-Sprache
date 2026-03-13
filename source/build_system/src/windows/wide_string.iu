@@ -1,0 +1,13 @@
+import "/string.iu"
+import "windows.iu"
+
+namespace BK
+{
+
+type WideString= ust::string_base</WCHAR/>;
+type WideStringView= ust::array_view_imut</WCHAR/>;
+
+fn UTF8ToWideString( ust::string_view8 v ) : WideString;
+fn WideStringToUTF8( WideStringView v ) : ust::string8;
+
+} // namespace BK

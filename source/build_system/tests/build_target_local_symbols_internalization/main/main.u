@@ -1,5 +1,5 @@
-import "/a/a.uh"
-import "/b/b.uh"
+import "/a/a.iu"
+import "/b/b.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

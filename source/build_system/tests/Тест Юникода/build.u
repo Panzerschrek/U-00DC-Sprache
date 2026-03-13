@@ -1,4 +1,4 @@
-import "/build_system.uh"
+import "/build_system.iu"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut интерфейс_сборочной_системы ) : BK::PackageInfo
 {

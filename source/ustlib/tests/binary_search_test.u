@@ -1,9 +1,9 @@
 //##success_test
-import "../imports/assert.u"
-import "../imports/binary_search.u"
-import "../imports/sort.u"
-import "../imports/string.u"
-import "../imports/vector.u"
+import "../imports/assert.iu"
+import "../imports/binary_search.iu"
+import "../imports/sort.iu"
+import "../imports/string.iu"
+import "../imports/vector.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

@@ -1,7 +1,7 @@
-import "/enum_string_conversions.u"
-import "/file_helpers.u"
-import "/path_utils.u"
-import "/build_system.uh"
+import "/enum_string_conversions.iu"
+import "/file_helpers.iu"
+import "/path_utils.iu"
+import "/build_system.iu"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>
 {
@@ -27,7 +27,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 	auto& lib_name= "CodeBuilderLib";
 	var ust::filesystem_path generated_sources_directory= build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( lib_name );
 
-	auto& keywords_file= "keywords.uh";
+	auto& keywords_file= "keywords.iu";
 	var ust::filesystem_path mut keywords_generated_file= ust::concat( generated_sources_directory, "/", keywords_file );
 
 	var BK::CustomBuildStep mut keywords_step
@@ -41,7 +41,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 		.comment= keywords_file,
 	};
 
-	auto& code_builder_error_code_file= "code_builder_error_code.uh";
+	auto& code_builder_error_code_file= "code_builder_error_code.iu";
 	var ust::filesystem_path mut code_builder_error_code_generated_file=
 		ust::path::join( generated_sources_directory, code_builder_error_code_file );
 
@@ -124,7 +124,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 fn CreateKeywordsHeaderFileContents( ust::string_view8 keywords_list_file_contents ) : ust::string8
 {
 	var ust::string8 mut contents;
-	contents+= "import \"/string.u\"\n\n";
+	contents+= "import \"/string.iu\"\n\n";
 	contents+= "namespace U1\n{\n\n";
 
 	contents+= "enum Keyword\n{\n";
@@ -177,7 +177,7 @@ fn CreateCodeBuilderErrorCodeFileContents( ust::string_view8 errors_list_file_co
 	auto errors_list= GetCodeBuilderErrors( errors_list_file_contents );
 
 	var ust::string8 mut contents;
-	contents+= "import \"/string.u\"\n";
+	contents+= "import \"/string.iu\"\n";
 	contents+= "\n";
 	contents+= "namespace U1\n{\n\n";
 	contents+= "enum CodeBuilderErrorCode\n{\n";

@@ -1,4 +1,4 @@
-import "/lib/lib.uh"
+import "/lib/lib.iu"
 
 fn LibBFunc( i32 x ) : i32
 {

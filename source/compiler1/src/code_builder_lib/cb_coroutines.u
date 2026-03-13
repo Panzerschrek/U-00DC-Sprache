@@ -1,9 +1,9 @@
-import "/assert.u"
-import "/scoped_array.u"
-import "/sort.u"
-import "/CodeBuilderLib/keywords.uh"
-import "code_builder.uh"
-import "error_reporting.uh"
+import "/assert.iu"
+import "/scoped_array.iu"
+import "/sort.iu"
+import "/CodeBuilderLib/keywords.iu"
+import "code_builder.iu"
+import "error_reporting.iu"
 
 namespace U1
 {

@@ -1,7 +1,7 @@
 //##fail_test
-import "../imports/thread.u"
-import "../imports/optional_ref.u"
-import "../imports/shared_ptr.u"
+import "../imports/thread.iu"
+import "../imports/optional_ref.iu"
+import "../imports/shared_ptr.iu"
 
 struct CallableObject non_sync
 {

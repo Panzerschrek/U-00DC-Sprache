@@ -1,5 +1,5 @@
-import "../../imports/tcp_stream.u"
-import "socket.uh"
+import "../../imports/tcp_stream.iu"
+import "socket.iu"
 
 namespace ust
 {

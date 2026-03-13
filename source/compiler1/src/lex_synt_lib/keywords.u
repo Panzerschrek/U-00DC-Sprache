@@ -1,5 +1,5 @@
-import "/enum_string_conversions.u"
-import "/CodeBuilderLib/keywords.uh"
+import "/enum_string_conversions.iu"
+import "/CodeBuilderLib/keywords.iu"
 
 namespace U1
 {

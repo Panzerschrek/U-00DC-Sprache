@@ -1,6 +1,6 @@
 //##success_test
-import "../imports/box_nullable.u"
-import "../imports/optional.u"
+import "../imports/box_nullable.iu"
+import "../imports/optional.iu"
 
 type IntBox= ust::box_nullable</i32/>;
 type IntOpt= ust::optional</i32/>;

@@ -1,11 +1,11 @@
-import "/enum_string_conversions.u"
-import "/main_wrapper.u"
-import "/semaphore.u"
-import "/shared_ptr_mt_final.u"
-import "/stdout.u"
-import "/string_conversions.u"
-import "/sm_async_net/runner.uh"
-import "/sm_async_net/tcp_listener.uh"
+import "/enum_string_conversions.iu"
+import "/main_wrapper.iu"
+import "/semaphore.iu"
+import "/shared_ptr_mt_final.iu"
+import "/stdout.iu"
+import "/string_conversions.iu"
+import "/sm_async_net/runner.iu"
+import "/sm_async_net/tcp_listener.iu"
 
 pretty_main
 {

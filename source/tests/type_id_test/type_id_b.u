@@ -1,4 +1,4 @@
-import "inc.u"
+import "inc.iu"
 
 fn nomangle GetSomeClassIdB() call_conv( "C" ) : size_type
 {

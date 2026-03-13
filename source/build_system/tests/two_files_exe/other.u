@@ -1,5 +1,5 @@
-import "/stdout.u"
-import "other.uh"
+import "/stdout.iu"
+import "other.iu"
 
 fn SayHello()
 {

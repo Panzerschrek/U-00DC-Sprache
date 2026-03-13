@@ -1719,11 +1719,11 @@ U_TEST( Document_GetFileForImportPoint_Test0 )
 	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
-	const IVfs::Path imported_path= "/some.u";
+	const IVfs::Path imported_path= "/some.iu";
 	Document imported_document(  path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[ imported_path ]= &imported_document;
 
-	document.SetText( "import \"some.u\" " );
+	document.SetText( "import \"some.iu\" " );
 
 	document.StartRebuild( g_tests_thread_pool );
 	document.WaitUntilRebuildFinished();
@@ -1740,11 +1740,11 @@ U_TEST( Document_GetFileForImportPoint_Test1 )
 	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
-	const IVfs::Path imported_path= "/some_global.u";
+	const IVfs::Path imported_path= "/some_global.iu";
 	Document imported_document( imported_path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[ imported_path ]= &imported_document;
 
-	document.SetText( "import \"/some_global.u\" " );
+	document.SetText( "import \"/some_global.iu\" " );
 
 	document.StartRebuild( g_tests_thread_pool );
 	document.WaitUntilRebuildFinished();
@@ -1781,11 +1781,11 @@ U_TEST( Document_GetFileForImportPoint_Test3 )
 	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
-	const IVfs::Path imported_path= "/some.u";
+	const IVfs::Path imported_path= "/some.iu";
 	Document imported_document(  path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[ imported_path ]= &imported_document;
 
-	document.SetText( "import \"some.u\"         " );
+	document.SetText( "import \"some.iu\"         " );
 
 	document.StartRebuild( g_tests_thread_pool );
 	document.WaitUntilRebuildFinished();
@@ -1804,13 +1804,13 @@ U_TEST( Document_GetFileForImportPoint_Test4 )
 	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
-	const IVfs::Path imported_path= "/file with spaces.u";
+	const IVfs::Path imported_path= "/file with spaces.iu";
 	Document imported_document(  path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[ imported_path ]= &imported_document;
 
 	// Should properly handle whitespaces in import line and in import string.
 	document.SetText( R"(
-	  import   "file with spaces.u"
+	  import   "file with spaces.iu"
 )" );
 
 	document.StartRebuild( g_tests_thread_pool );

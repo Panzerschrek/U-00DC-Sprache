@@ -1,7 +1,7 @@
 // This file contains f32 math functions missing in 32-bit Windows/MSVC.
 // These implementations just use f64 functions, which 32-bit MSVC does via inline functions.
 
-import "../../imports/type_traits.u"
+import "../../imports/type_traits.iu"
 
 var bool enable_missing_funcs=
 	typeinfo</size_type/>.size_of == 4s &&

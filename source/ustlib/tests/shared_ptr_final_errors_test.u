@@ -1,5 +1,5 @@
 //##fail_test
-import "../imports/shared_ptr_final.u"
+import "../imports/shared_ptr_final.iu"
 
 type IntPtr= ust::shared_ptr_final</i32/>;
 type IntPtrNullable= ust::shared_ptr_final_nullable</i32/>;

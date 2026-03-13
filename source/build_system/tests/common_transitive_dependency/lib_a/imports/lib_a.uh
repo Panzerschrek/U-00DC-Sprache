@@ -1,3 +1,0 @@
-import "/lib_c/lib_c.uh"
-
-fn ThirdPower( Num x ) : Num;

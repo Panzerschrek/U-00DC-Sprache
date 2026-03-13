@@ -1,6 +1,6 @@
 #include "../../../code_builder_lib_common/long_stable_hash.hpp"
 
-// If contents of this file changed, long_stable_hash_wrapper.uh must be changed too!
+// If contents of this file changed, long_stable_hash_wrapper.iu must be changed too!
 
 using UserHandle= size_t;
 

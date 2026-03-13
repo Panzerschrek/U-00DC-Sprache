@@ -1,4 +1,4 @@
-import "/c_converted.u"
+import "/c_converted.iu"
 
 fn SomeLocalFunc( f32 x ) call_conv( "C" ) {}
 

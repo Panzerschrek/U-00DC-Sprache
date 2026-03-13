@@ -1,4 +1,4 @@
-import "../../ustlib/imports/stdout.u"
+import "../../ustlib/imports/stdout.iu"
 
 fn nomangle custom_entry_point() : i32
 {

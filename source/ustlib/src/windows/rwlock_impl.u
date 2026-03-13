@@ -1,6 +1,6 @@
-import "../../imports/memory.u"
-import "../../imports/rwlock_impl.u"
-import "windows.uh"
+import "../../imports/memory.iu"
+import "../../imports/rwlock_impl.iu"
+import "windows.iu"
 
 namespace ust
 {

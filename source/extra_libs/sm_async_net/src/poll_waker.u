@@ -1,5 +1,5 @@
-import "/sm_async_net_sys/unix.uh"
-import "poll_waker.uh"
+import "/sm_async_net_sys/unix.iu"
+import "poll_waker.iu"
 
 namespace sm_async_net
 {

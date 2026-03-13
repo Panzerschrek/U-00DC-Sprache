@@ -178,13 +178,13 @@ U_TEST( Embed_Test7 )
 
 	static const char c_program_text_root[]=
 	R"(
-		import "a.u"
-		auto& import_contents= embed( "a.u" ); // Embed contents of a file, which was imported previously.
+		import "a.iu"
+		auto& import_contents= embed( "a.iu" ); // Embed contents of a file, which was imported previously.
 	)";
 
 	BuildMultisourceProgram(
 		{
-			{ "a.u", c_program_text_a },
+			{ "a.iu", c_program_text_a },
 			{ "root", c_program_text_root }
 		},
 		"root" );
@@ -287,13 +287,13 @@ U_TEST( Embed_WithType_Test0 )
 
 	static const char c_program_text_root[]=
 	R"(
-		auto& import_contents= embed</char8/>( "a.u" ); // Embed as char8 array.
+		auto& import_contents= embed</char8/>( "a.iu" ); // Embed as char8 array.
 		static_assert( import_contents == "fn Foo(){}" );
 	)";
 
 	BuildMultisourceProgram(
 		{
-			{ "a.u", c_program_text_a },
+			{ "a.iu", c_program_text_a },
 			{ "root", c_program_text_root }
 		},
 		"root" );
@@ -366,12 +366,12 @@ U_TEST( Embed_WithType_Test4 )
 		{
 			Bar(); // This function should be available.
 		}
-		mixin( embed</char8/>( "a.u" ) ); // use embed contents for mixin.
+		mixin( embed</char8/>( "a.iu" ) ); // use embed contents for mixin.
 	)";
 
 	BuildMultisourceProgram(
 		{
-			{ "a.u", c_program_text_a },
+			{ "a.iu", c_program_text_a },
 			{ "root", c_program_text_root }
 		},
 		"root" );

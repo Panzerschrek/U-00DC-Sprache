@@ -1,0 +1,96 @@
+import "memory.iu"
+
+namespace ust
+{
+
+template</type T/>
+fn enable_if( coro_impl::is_coroutine</T/>() )
+coro_done( T& coroutine ) : bool
+{
+	return unsafe( ::coro_done_impl( get_raw_coro_handle( coroutine ) ) );
+}
+
+// Resume given coroutine.
+// Given coroutine shouldn't be done.
+// Caller is responsible for result extraction.
+template</type T/>
+fn enable_if( coro_impl::is_coroutine</T/>() )
+coro_resume( T &mut coroutine ) unsafe
+{
+	unsafe( ::coro_resume_impl( get_raw_coro_handle( coroutine ) ) );
+}
+
+// Returns address of storage of given coroutine, where return value (or reference) is placed.
+template</type T/>
+fn enable_if( coro_impl::is_coroutine</T/>() )
+coro_return_value_address( T &mut coroutine ) unsafe : $(byte8)
+{
+	var size_type constexpr alignment=
+		( typeinfo</T/>.coroutine_return_value_is_reference
+			? typeinfo</$(byte8)/>.align_of
+			: typeinfo</T/>.coroutine_return_type.align_of );
+
+	unsafe
+	{
+		var raw_coro_handle h= get_raw_coro_handle( coroutine );
+		switch( alignment )
+		{
+			1s -> { return coro_return_value_address_impl_align1( h ); },
+			2s -> { return coro_return_value_address_impl_align2( h ); },
+			4s -> { return coro_return_value_address_impl_align4( h ); },
+			8s -> { return coro_return_value_address_impl_align8( h ); },
+			16s -> { return coro_return_value_address_impl_align16( h ); },
+			default -> { return coro_return_value_address_impl_align16( h ); },
+		}
+	}
+}
+
+// Type representing raw coroutine handle, used internally by the compiler.
+type raw_coro_handle= $(byte8);
+
+// Extract raw coroutine handle from given coroutine object.
+template</type T/>
+fn enable_if( coro_impl::is_coroutine</T/>() )
+get_raw_coro_handle( T& coroutine ) : raw_coro_handle
+{
+	static_assert( typeinfo</T/>.size_of == typeinfo</raw_coro_handle/>.size_of );
+
+	// Use "memcpy" to workaround TBAA.
+	unsafe
+	{
+		var raw_coro_handle mut res= uninitialized;
+		memory_copy(
+			ptr_cast_to_byte8( $<( res ) ),
+			ptr_cast_to_byte8( $<( cast_mut( coroutine ) ) ),
+			typeinfo</raw_coro_handle/>.size_of );
+		return res;
+	}
+}
+
+namespace coro_impl
+{
+
+template</type T/> fn constexpr is_coroutine() : bool
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		return typeinfo</T/>.is_coroutine;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+} // namespace coro_impl
+
+} // namespace ust
+
+// External implementation functions. Do not use directly!
+fn nomangle coro_done_impl( ust::raw_coro_handle coro_handle ) unsafe : bool;
+fn nomangle coro_resume_impl( ust::raw_coro_handle coro_handle ) unsafe;
+fn nomangle coro_return_value_address_impl_align1( ust::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align2( ust::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align4( ust::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align8( ust::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align16( ust::raw_coro_handle coro_handle ) unsafe : $(byte8);

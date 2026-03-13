@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/string.u"
+import "../imports/string.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

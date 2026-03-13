@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/arena_allocator.u"
+import "../imports/arena_allocator.iu"
 
 // Arena allocator is "non_sync", since it uses interrior mutability.
 static_assert( non_sync</ ust::arena_allocator /> );

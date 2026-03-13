@@ -1,4 +1,4 @@
-import "/lib_b/b.uh"
+import "/lib_b/b.iu"
 
 fn GetSomeInt() : Int
 {

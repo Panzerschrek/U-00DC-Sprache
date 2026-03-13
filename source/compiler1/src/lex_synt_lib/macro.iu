@@ -1,0 +1,82 @@
+import "/box_nullable.iu"
+import "/hash_map.iu"
+import "/shared_ptr_final.iu"
+import "/shared_ptr.iu"
+import "lexical_analyzer.iu"
+
+namespace U1
+{
+
+namespace Synt
+{
+
+struct Macro
+{
+	enum Context
+	{
+		Expression,
+		Block,
+		Class,
+		Namespace,
+	}
+
+	enum MatchElementKind
+	{
+		Lexem,
+		Identifier,
+		Typename,
+		Expression,
+		Block,
+		IfAlternative,
+		Optional,
+		Repeated,
+	}
+
+	enum ResultElementKind
+	{
+		Lexem,
+		VariableElement, // Identifier, typename, expression, block
+		VariableElementWithMacroBlock, // Optional, loop
+	}
+
+	enum BlockCheckLexemKind
+	{
+		LexemAfterBlockEnd, // Detect optional/loop end, using lexem after optional/loop as terminator.
+		LexemAtBlockStart, // Detect optional/loop, using lexem in beginning of optional/loop.
+	}
+
+	struct MatchElement
+	{
+		MatchElementKind kind= MatchElementKind::Lexem;
+		BlockCheckLexemKind block_check_lexem_kind= BlockCheckLexemKind::LexemAfterBlockEnd; // For optionals and loops.
+		Lexem lexem; // lexem for lexem elements, separator or EOF for loops
+		ust::string8 name; // for non-lexems
+		ust::box_nullable</ MatchElements /> sub_elements; // TODO - avoid usage of box</vector/>
+	}
+
+	type MatchElements= ust::vector</MatchElement/>;
+
+	struct ResultElement
+	{
+		ResultElementKind kind= ResultElementKind::Lexem;
+		Lexem lexem; // lexem for SimpleElement, separator or EOF for loops
+		ust::string8 name; // for non-lexems
+		ust::box_nullable</ ResultElements /> sub_elements; // TODO - avoid usage of box</vector/>
+	}
+
+	type ResultElements= ust::vector</ResultElement/>;
+
+	SrcLoc src_loc;
+	ust::string8 name;
+	MatchElements match_template_elements;
+	ResultElements result_template_elements;
+}
+
+type MacroMap= ust::hash_map</ ust::string8, ust::shared_ptr_final</Macro/> />;
+type MacrosByContextMap= ust::hash_map</ Macro::Context, MacroMap />;
+
+type MacrosPtr= ust::shared_ptr_mut</MacrosByContextMap/>;
+
+} // namespace Synt
+
+} // namespace U1

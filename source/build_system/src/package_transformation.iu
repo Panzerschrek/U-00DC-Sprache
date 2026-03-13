@@ -1,0 +1,167 @@
+import "/hash_map.iu"
+import "../imports/package_info.iu"
+import "logger.iu"
+
+namespace BK
+{
+
+struct PackageAbsoluteName
+{
+	ust::variant</ tup[ RootPackage, GlobalVersionedPackageName ] /> name_base;
+	ust::filesystem_path path;
+
+	struct RootPackage{}
+
+	op<=>( PackageAbsoluteName& l, PackageAbsoluteName& r ) : i32
+	{
+		if( l.name_base != r.name_base )
+		{
+			// Different bases - compare them.
+			if_var( &l_global_versioned_package : l.name_base.get</GlobalVersionedPackageName/>() )
+			{
+				if_var( &r_global_versioned_package : r.name_base.get</GlobalVersionedPackageName/>() )
+				{
+					// If these are two global versioned packages - compare name/version.
+					return l_global_versioned_package <=> r_global_versioned_package;
+				}
+			}
+
+			// global <=> root or root <=> global comparison.
+			return ( l.name_base.has</ RootPackage />() ? (1) : (-1) );
+		}
+		// Same base names - compare paths within base package.
+		return l.path <=> r.path;
+	}
+}
+
+struct BuildTargetAbsoluteName
+{
+	PackageAbsoluteName package_name;
+	ust::string8 name;
+
+	op<=>( BuildTargetAbsoluteName& l, BuildTargetAbsoluteName& r ) : i32
+	{
+		if( l.package_name != r.package_name )
+		{
+			return l.package_name <=> r.package_name;
+		}
+		return l.name <=> r.name;
+	}
+}
+
+// Workspace info in form which is much better to work with.
+struct WorkspaceInfo
+{
+	struct BuildTarget
+	{
+		BuildTargetType target_type;
+
+		// Paths are normalized and the whole list is sorted.
+		ust::vector</ust::filesystem_path/> source_files;
+
+		// Paths are normalized and the whole list is sorted.
+		ust::vector</ust::filesystem_path/> generated_source_files;
+
+		// Paths are normalized and the whole list is sorted.
+		ust::vector</ust::filesystem_path/> generated_private_header_files;
+
+		// Paths are normalized and the whole list is sorted.
+		ust::vector</ust::filesystem_path/> generated_public_header_files;
+
+		// Calculated based on source file paths.
+		// May be empty if this build target contains no regular source files.
+		ust::filesystem_path sources_directory;
+
+		// Paths are normalized and the whole list is sorted.
+		ust::vector</ust::filesystem_path/> public_include_directories;
+
+		// List of direct public dependencies. It's sorted and deduplicated.
+		ust::vector</BuildTargetAbsoluteName/> public_dependencies;
+
+		// List of direct private dependencies. It's sorted and deduplicated.
+		ust::vector</BuildTargetAbsoluteName/> private_dependencies;
+
+		// List of all public dependencies, including transitive public dependencies. It's sorted and deduplicated.
+		ust::vector</BuildTargetAbsoluteName/> public_dependencies_including_transitive;
+
+		// List of all private dependencies and all transitive public dependencies of these dependencies.
+		// Dependencies which are also public or transitive public dependencies aren't listed.
+		// It's sorted and deduplicated.
+		ust::vector</BuildTargetAbsoluteName/> private_dependencies_including_transitive_public_dependencies;
+
+		// Includes names of all shared library dependencies needed to be linked.
+		// This includes also shared library dependencies of private library dependencies.
+		// It's sorted and deduplicated.
+		ust::vector</BuildTargetAbsoluteName/> shared_library_dependencies_to_link;
+
+		// External libraries list - sorted and deduplicated.
+		ust::vector</ust::string8/> external_libraries;
+
+		// List of all external libraries to link, including libraries of dependencies (except shared library dependencies).
+		// This list is sorted and deduplicated.
+		ust::vector</ust::string8/> all_external_libraries_to_link;
+	}
+
+	struct CustomBuildStep
+	{
+		struct HostBuildTargetExeCommand
+		{
+			BuildTargetAbsoluteName name;
+			ust::vector</ust::string8/> command_line;
+		}
+
+		// List is deduplicated and normalized.
+		ust::vector</ust::filesystem_path/> input_files;
+		// List is deduplicated and normalized.
+		ust::vector</ust::filesystem_path/> output_files;
+
+		ust::variant</ tup[
+			BK::CustomBuildStep::ExeCommand,
+			HostBuildTargetExeCommand,
+			BK::CustomBuildStep::CopyCommand,
+			BK::CustomBuildStep::GenerateFileCommand ] /> command;
+
+		ust::string8 comment;
+	}
+
+	ust::hash_map</BuildTargetAbsoluteName, BuildTarget/> build_targets;
+
+	// Same as PackageInfo::custom_build_steps, but with normalization - file lists are deduplicated, paths are normalized.
+	ust::vector</CustomBuildStep/> custom_build_steps;
+}
+
+// Performs package info transformation, normalization and validation.
+// Returns false if package isn't valid.
+fn nodiscard TransformAndValidatePackageInfo(
+	Logger &mut logger,
+	PackageInfo& package_info,
+	PackageAbsoluteName& package_absolute_name,
+	WorkspaceInfo &mut workspace_info ) : bool;
+
+// Returns true if dependency graph is valid - all dependencies are present and there are no circular dependencies.
+fn nodiscard CheckWorkspaceDependencyGraphIsValid( Logger &mut logger, WorkspaceInfo& workspace ) : bool;
+
+// Returns true if there are no errors in custom build steps.
+fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
+	Logger &mut logger, WorkspaceInfo& workspace, ust::filesystem_path_view root_package_build_directory ) : bool;
+
+// Evaluates transitive dependencies and checks them.
+// Returns false on error.
+// WARNING! Existence of dependencies and absence of dependency loops should be checked before!
+fn nodiscard RetrieveAndCheckWorkspaceTransitiveDependencies( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool;
+
+// Checks if dependencies on host worspace build targets are correct.
+// Returns true on success.
+fn nodiscard CheckHostSystemBuildTargetsArePresent(
+	Logger &mut logger,
+	WorkspaceInfo& workspace,
+	WorkspaceInfo& host_workspace ) : bool;
+
+// Given current package name and package name within it calculate result package absolute name.
+// Returns empty optional if can't do this.
+fn ResolvePackageAbsoluteName(
+	Logger &mut logger,
+	PackageAbsoluteName& parent_package_absolute_name,
+	PackageName& package_name ) : ust::optional</PackageAbsoluteName/>;
+
+} // namespace BK

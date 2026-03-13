@@ -1,0 +1,743 @@
+import "aligned_storage.iu"
+import "container_utils.iu"
+import "hash_apply.iu"
+import "helpers.iu"
+import "iterator.iu"
+import "memory.iu"
+import "minmax.iu"
+import "optional_ref.iu"
+import "reference_notation.iu"
+
+namespace ust
+{
+
+struct empty_range_type{}
+var empty_range_type constexpr empty_range{};
+
+template</ type T, bool is_mutable />
+class random_access_range
+{
+	static_assert( typeinfo</T/>.reference_indirection_depth <= 1s, "This container doesn't support types with second order references inside" );
+
+public:
+	fn constructor()= default;
+
+	fn constructor( mut this, this_type &imut other )= default;
+
+	op=( mut this, this_type &imut other )= default;
+
+	// Use this conversion constructor in order to use simple "ust::empty_range" to pass/return empty range, without specifying exact range type.
+	fn conversion_constructor( empty_range_type e )
+	{
+		ignore_unused(e);
+	}
+
+	template</ size_type size />
+	fn enable_if( is_mutable )
+	conversion_constructor( mut this, [ T, size ] & mut arr ) @( reference_notation::pollution::param0_param_1_reference )
+		( begin_= unsafe( $<( cast_ref_unsafe</T/>(arr) ) ) , size_= size )
+	{}
+
+	template</ size_type size />
+	fn enable_if( !is_mutable )
+	conversion_constructor( mut this, [ T, size ] &imut arr ) @( reference_notation::pollution::param0_param_1_reference )
+		( begin_= unsafe( $<( cast_mut( cast_ref_unsafe</T/>(arr) ) ) ), size_= size )
+	{}
+
+	fn enable_if( !is_mutable )
+	conversion_constructor( mut this, random_access_range</ T, true />& src_range ) @( reference_notation::pollution::param0_param_1_inner_reference )
+		( begin_= unsafe( src_range.data() ), size_= src_range.size() )
+	{}
+
+	// Implement constructors for a generic type template with single type argument equal to the range contained type.
+	// This is needed in order to support implicit conversion to range for containers like "vector" or "string".
+	// We can't create such constructors directly to avoid creating imports loop.
+	// This doesn't work for containers like "hash_set" and a compilation error may be generated if such conversion constructor is used.
+	// It's technically possible to perform deep type inspection in "enable_if" of these conversion constructors in order to check if given type has "range" method with proper signature.
+	// But it isn't done in order to speed-up compilation.
+	// This constructor is used too often and thus it can be too costly to perform complex check for each its instantiation.
+
+	// Explicit constructor from a container with "range" method.
+	template</type template Container/>
+	fn enable_if( is_mutable )
+	conversion_constructor( mut this, Container</T/> & mut container ) @( reference_notation::pollution::param0_param_1_reference )
+	{
+		// If you see a compilation error here, invalid implicit conversion is used somewhere in user code (in function call, return, initiaization, etc.).
+		this = container.range();
+	}
+
+	// Explicit constructor from a container with "range" method.
+	template</type template Container/>
+	fn enable_if( !is_mutable )
+	conversion_constructor( mut this, Container</T/> &imut container ) @( reference_notation::pollution::param0_param_1_reference )
+	{
+		// If you see a compilation error here, invalid implicit conversion is used somewhere in user code (in function call, return, initiaization, etc.).
+		this = container.range();
+	}
+
+	// Construct from raw parts.
+	fn constructor( $(T) begin, size_type size ) unsafe
+		( begin_(begin), size_(size) )
+	{}
+
+	op enable_if( is_mutable )
+	[]( this, size_type index ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if( index >= size_ );
+		return unsafe( index_unchecked(index) );
+	}
+
+	op
+	enable_if( !is_mutable )
+	[]( this, size_type index ) : T & imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if( index >= size_ );
+		return unsafe( index_unchecked(index) );
+	}
+
+	fn enable_if(  is_mutable ) index_unchecked( this, size_type index ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		return unsafe( $>(begin_ + index) );
+	}
+
+	fn enable_if( !is_mutable ) index_unchecked( this, size_type index ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		return unsafe( $>(begin_ + index) );
+	}
+
+	fn enable_if(  is_mutable ) front( this ) : T &  mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if(empty());
+		return unsafe( front_unchecked() );
+	}
+
+	fn enable_if( !is_mutable ) front( this ) : T & imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if(empty());
+		return unsafe( front_unchecked() );
+	}
+
+	fn enable_if(  is_mutable ) back ( this ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if(empty());
+		return unsafe( back_unchecked () );
+	}
+
+	fn enable_if( !is_mutable ) back ( this ) : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if(empty());
+		return unsafe( back_unchecked () );
+	}
+
+	fn enable_if(  is_mutable ) front_unchecked( this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		return unsafe( $>(begin_) );
+	}
+
+	fn enable_if( !is_mutable ) front_unchecked( this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		return unsafe( $>(begin_) );
+	}
+
+	fn enable_if(  is_mutable ) back_unchecked ( this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		return unsafe( $>(begin_ + size_ - 1s) );
+	}
+
+	fn enable_if( !is_mutable ) back_unchecked ( this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		return unsafe( $>(begin_ + size_ - 1s) );
+	}
+
+	fn subrange( this, size_type start_index, size_type end_index ) : this_type @( reference_notation::return_inner_references::param0_inner_reference0 )
+	{
+		halt if( start_index > end_index );
+		halt if( end_index > size_ );
+		return unsafe( this_type( begin_ + start_index, end_index - start_index ) );
+	}
+
+	// Returns subrange starting from given index and up to end.
+	fn subrange_start( this, size_type start_index ) : this_type @( reference_notation::return_inner_references::param0_inner_reference0 )
+	{
+		if( start_index >= size_ )
+		{
+			return this_type();
+		}
+		return unsafe( this_type( begin_ + start_index, size_ - start_index ) );
+	}
+
+	// Returns subrange up to end index.
+	fn subrange_end( this, size_type end_index ) : this_type @( reference_notation::return_inner_references::param0_inner_reference0 )
+	{
+		if( end_index >= size_ )
+		{
+			return this;
+		}
+		return unsafe( this_type( begin_, end_index ) );
+	}
+
+	fn empty( this ) : bool
+	{
+		return size_ == 0s;
+	}
+
+	fn size( this ) : size_type
+	{
+		return size_;
+	}
+
+	// ==
+	op enable_if( typeinfo</T/>.is_equality_comparable )
+	==( this_type& l, this_type& r ) : bool
+	{
+		if( l.size() != r.size() )
+		{
+			return false;
+		}
+
+		for( auto mut i= 0s; i < l.size_; ++i )
+		{
+			if( unsafe( l.index_unchecked(i) ) != unsafe( r.index_unchecked(i) ) )
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	// Returns true if "other" is prefix of "this".
+	fn enable_if( typeinfo</T/>.is_equality_comparable )
+	starts_with( this, this_type& other ) : bool
+	{
+		if( this.size() < other.size() )
+		{
+			return false;
+		}
+
+		for( auto mut i= 0s; i < other.size_; ++i )
+		{
+			if( unsafe( this.index_unchecked(i) ) != unsafe( other.index_unchecked(i) ) )
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	// Returns true if "other" is suffix of "this".
+	fn enable_if( typeinfo</T/>.is_equality_comparable )
+	ends_with( this, this_type& other ) : bool
+	{
+		if( this.size() < other.size() )
+		{
+			return false;
+		}
+
+		auto offset= this.size() - other.size();
+		for( auto mut i= 0s; i < other.size_; ++i )
+		{
+			if( unsafe( this.index_unchecked( offset + i ) ) != unsafe( other.index_unchecked(i) ) )
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	// hashing
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		// This code should match code of the function "apply_value_to_hasher" for arrays!
+
+		// Hash size in order to produce different hashes for pairs of sequences like "ab", "cde" and "abc", "de".
+		apply_value_to_hasher( hasher, size_ );
+
+		auto& ti= typeinfo</T/>;
+
+		static_if( ti.is_fundamental )
+		{
+			// Hash fundamentals except voids and floats as sequence of byte-elements.
+			// Floats are exceptions since they require extra handling of some special values.
+			static_if( ti.is_void | ti.is_float )
+			{
+				for( var size_type mut i= 0s; i < size_; ++i )
+				{
+					hasher( unsafe( $>( begin_ + i ) ) );
+				}
+			}
+			else
+			{
+				unsafe( hash_as_bytes( hasher ) );
+			}
+		}
+		else static_if( ti.is_enum | ti.is_raw_pointer | ti.is_function_pointer )
+		{
+			// Hash enums, raw pointers, function pointers as sequence of byte-elements.
+			unsafe( hash_as_bytes( hasher ) );
+		}
+		else
+		{
+			// Hash composites properly.
+			for( var size_type mut i= 0s; i < size_; ++i )
+			{
+				apply_value_to_hasher( hasher, unsafe( $>( begin_ + i ) ) );
+			}
+		}
+	}
+
+	fn drop_front( mut this )
+	{
+		halt if( empty() );
+		unsafe{ ++begin_; }
+		--size_;
+	}
+
+	fn drop_back( mut this )
+	{
+		halt if( empty() );
+		--size_;
+	}
+
+	// Precondition - range is nonempty.
+	fn drop_front_unchecked( mut this ) unsafe
+	{
+		unsafe{ ++begin_; }
+		--size_;
+	}
+
+	// Precondition - range is nonempty.
+	fn drop_back_unchecked( mut this ) unsafe
+	{
+		--size_;
+	}
+
+	fn nodiscard enable_if(is_mutable) drop_and_get_front( mut this ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if( empty() );
+		return unsafe( drop_and_get_front_unchecked() );
+	}
+
+	fn nodiscard enable_if(!is_mutable) drop_and_get_front( mut this ) : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if( empty() );
+		return unsafe( drop_and_get_front_unchecked() );
+	}
+
+	fn nodiscard enable_if(is_mutable) drop_and_get_back( mut this ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if( empty() );
+		return unsafe( drop_and_get_back_unchecked() );
+	}
+
+	fn nodiscard enable_if(!is_mutable) drop_and_get_back( mut this ) : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if( empty() );
+		return unsafe( drop_and_get_back_unchecked() );
+	}
+
+	// Precondition - range is nonempty.
+	fn nodiscard enable_if(is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		auto & mut res= unsafe( $>(begin_) );
+		unsafe{ ++begin_; }
+		--size_;
+		return res;
+	}
+
+	// Precondition - range is nonempty.
+	fn nodiscard enable_if(!is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		auto &imut res= unsafe( $>(begin_) );
+		unsafe{ ++begin_; }
+		--size_;
+		return res;
+	}
+
+	// Precondition - range is nonempty.
+	fn nodiscard enable_if(is_mutable) drop_and_get_back_unchecked( mut this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		--size_;
+		return unsafe( $>( begin_ + size_ ) );
+	}
+
+	// Precondition - range is nonempty.
+	fn nodiscard enable_if(!is_mutable) drop_and_get_back_unchecked( mut this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		--size_;
+		return unsafe( $>( begin_ + size_ ) );
+	}
+
+	// "iter" methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of iterator classes where it isn't necessary.
+
+	template<//>
+	fn iter( byval mut this ) : auto
+	{
+		return wrap_raw_iterator( random_access_range_raw_iterator</T, is_mutable/>( move(this) ) );
+	}
+
+	template<//>
+	fn iter_reverse( byval mut this ) : auto
+	{
+		return wrap_raw_iterator( random_access_range_reverse_raw_iterator</T, is_mutable/>( move(this) ) );
+	}
+
+	// Access raw data.
+	fn data( this ) unsafe : $(T)
+	{
+		return begin_;
+	}
+
+	fn enable_if( is_mutable ) swap( this, size_type i0, size_type i1 )
+	{
+		halt if( i0 >= size_ );
+		halt if( i1 >= size_ );
+
+		if( i0 == i1 ){ return; }
+
+		unsafe( ust::swap( $>(begin_ + i0), $>(begin_ + i1) ) );
+	}
+
+	fn enable_if( is_mutable ) reverse( this )
+	{
+		for( var size_type mut i= 0s, half_size= size_ / 2s; i < half_size; ++i )
+		{
+			auto i0= i;
+			auto i1= (size_ - 1s) - i;
+			unsafe( ust::swap( $>(begin_ + i0), $>(begin_ + i1) ) );
+		}
+	}
+
+	// Convert this immutable range to immutable range of "byte8" elements.
+	// This is supported only for types safe to be read as raw bytes,
+	// like some scalars and simple composites based on them (but without padding bytes).
+	template<//>
+	fn enable_if( !is_mutable && random_access_range_impl::can_cast_to_immutable_byte8_range</T/>() )
+	to_byte8_range( this )
+		: random_access_range</byte8, false/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+	{
+		return
+			unsafe( random_access_range</byte8, false/>(
+				ptr_cast_to_byte8( begin_ ),
+				size_ * typeinfo</T/>.size_of ) );
+	}
+
+	// Convert this mutable range to mutable range of "byte8" elements.
+	// This is supported only for types safe to be written as raw bytes,
+	// like some scalars and simple composites based on them (but without padding bytes).
+	template<//>
+	fn enable_if( is_mutable && random_access_range_impl::can_cast_to_mutable_byte8_range</T/>() )
+	to_byte8_range( this )
+		: random_access_range</byte8, true/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+	{
+		return
+			unsafe( random_access_range</byte8, true/>(
+				ptr_cast_to_byte8( begin_ ),
+				size_ * typeinfo</T/>.size_of ) );
+	}
+
+	// Copy contents of source into this range.
+	// This works only for types with "=" operator.
+	// If "src" size is less than this size, only first N elements are copied.
+	// If "src" size is greater than this size, excess elements are ignored.
+	template</bool source_is_mutable/>
+	fn
+	enable_if( is_mutable && typeinfo</T/>.is_copy_assignable && typeinfo</T/>.reference_tag_count == 0s )
+	copy_from( this, random_access_range</T, source_is_mutable/> src )
+	{
+		var size_type count= min( size_, src.size() );
+		for( auto mut i= 0s; i < count; ++i )
+		{
+			// Use unchecked indexing for better performance. We ensure, that this index is always in range.
+			// Use "=" to call overloaded copy-assignment operator.
+			unsafe( this.index_unchecked(i) )= unsafe( src.index_unchecked(i) );
+		}
+	}
+
+private:
+	// Call this only if elements may be correctly casted into sequence of byte8, byte16, byte32, byte64, byte128 elements!
+	// We treat types which can be represented as such sequences in order to speed-up hash calculation for them.
+	template</type Hasher/>
+	fn hash_as_bytes( this, Hasher &mut hasher ) unsafe
+	{
+		// This code should match code of the function "hash_apply_impl::hash_array_as_bytes"!
+
+		auto& ti= typeinfo</T/>;
+
+		type byte_type= byte_type_for_alignment</ ti.align_of />;
+		static_assert( ti.size_of % typeinfo</byte_type/>.size_of == 0s, "Invalid size for given alignment!" );
+
+		auto begin_casted= unsafe( ptr_cast_to_byte</ byte_type />( begin_ ) );
+		auto size_corrected= size_ * ti.size_of / typeinfo</byte_type/>.size_of;
+
+		hasher( unsafe( random_access_range</byte_type, false/>( begin_casted, size_corrected ) ) );
+	}
+
+private:
+	type this_type= random_access_range</ T, is_mutable />;
+
+private:
+	ReferenceContainerTag</ T, is_mutable /> reference_tag_;
+
+private:
+	// Store begin + size, instead of begin + end because we need to support elements with zero size.
+	// TODO - maybe use begin + end for non-zero-sized elements?
+	$(T) begin_= zero_init;
+	size_type size_= 0s;
+}
+
+// Iterator over range.
+template</type T, bool is_mutable/>
+class random_access_range_raw_iterator
+{
+public:
+	fn constructor( random_access_range</ T, is_mutable /> mut range ) @( reference_notation::pollution::param0_param_1_inner_reference )
+		( range_= move(range) )
+	{}
+
+	fn constructor( mut this, this_type& other )= default;
+	op=( mut this, this_type& other )= default;
+
+	fn nodiscard next( mut this ) : auto
+	{
+		if( range_.empty() )
+		{
+			return optional_ref</ T, is_mutable />();
+		}
+		return optional_ref</ T, is_mutable />( range_.drop_and_get_front() );
+	}
+
+private:
+	type this_type= random_access_range_raw_iterator</T, is_mutable/>;
+
+private:
+	random_access_range</ T, is_mutable /> range_;
+}
+
+// Reverse iterator over range.
+template</type T, bool is_mutable/>
+class random_access_range_reverse_raw_iterator
+{
+public:
+	fn constructor( random_access_range</ T, is_mutable /> mut range ) @( reference_notation::pollution::param0_param_1_inner_reference )
+		( range_= move(range) )
+	{}
+
+	fn constructor( mut this, this_type& other )= default;
+	op=( mut this, this_type& other )= default;
+
+	fn nodiscard next( mut this ) : auto
+	{
+		if( range_.empty() )
+		{
+			return optional_ref</ T, is_mutable />();
+		}
+		return optional_ref</ T, is_mutable />( range_.drop_and_get_back() );
+	}
+
+private:
+	type this_type= random_access_range_reverse_raw_iterator</T, is_mutable/>;
+
+private:
+	random_access_range</ T, is_mutable /> range_;
+}
+
+template</ type T />
+type random_access_range_mut = random_access_range</ T, true  />;
+template</ type T />
+type array_view_mut = random_access_range</ T, true  />;
+
+template</ type T />
+type random_access_range_imut= random_access_range</ T, false />;
+template</ type T />
+type array_view_imut= random_access_range</ T, false />;
+
+// Use free functions instead of consrtuctors in order to create array view for single element explicitly.
+// Doing such we can avoid common mistakes.
+
+template</type T/>
+fn single_element_array_view( T & mut el ) : array_view_mut</T/> @( reference_notation::return_inner_references::param0 )
+{
+	return unsafe( array_view_mut</T/>( $<(el), 1s ) );
+}
+
+template</type T/>
+fn single_element_array_view( T &imut el ) : array_view_imut</T/> @( reference_notation::return_inner_references::param0 )
+{
+	return unsafe( array_view_imut</T/>( $<(cast_mut(el)), 1s ) );
+}
+
+namespace random_access_range_impl
+{
+
+template</type T/>
+fn constexpr can_cast_to_immutable_byte8_range() : bool
+{
+	static_if( typeinfo</T/>.is_fundamental )
+	{
+		// Allow reading bytes of integers, chars, byte-types.
+		// Do not allow "void", since it has zero size.
+		// Do not allow "bool", since we should not allow reading upper unused bits of it.
+		return typeinfo</T/>.is_numeric || typeinfo</T/>.is_char || typeinfo</T/>.is_byte;
+	}
+	else static_if( typeinfo</T/>.is_raw_pointer || typeinfo</T/>.is_function_pointer )
+	{
+		// Can read raw pointers and function pointers as bytes.
+		return true;
+	}
+	else static_if( typeinfo</T/>.is_enum )
+	{
+		// Can read enum values as bytes.
+		return true;
+	}
+	else static_if( typeinfo</T/>.is_array )
+	{
+		// Can read arrays as bytes as long as can read their elements.
+		return can_cast_to_immutable_byte8_range</ typeof( typeinfo</T/>.element_type )::src_type />();
+	}
+	else static_if( typeinfo</T/>.is_tuple )
+	{
+		// Can read tuples as bytes as long as can read tuple elements.
+		// Also don't allow casting tuples with padding bytes, since reading padding bytes is UB.
+
+		var size_type mut size_sum= 0s;
+		foreach( &el : typeinfo</T/>.elements_list )
+		{
+			if( !can_cast_to_immutable_byte8_range</ typeof( el.type )::src_type />() )
+			{
+				return false;
+			}
+			size_sum+= el.type.size_of;
+		}
+
+		return size_sum ==  typeinfo</T/>.size_of;
+	}
+	else static_if( typeinfo</T/>.is_class )
+	{
+		// Can read as bytes only structs with elements which are allowed to be read.
+		// Also don't allow reading structs with padding bytes, since reading padding bytes is UB.
+		// Classes aren't allowed, since they may have non-public fields and parents.
+
+		static_if( typeinfo</T/>.is_struct )
+		{
+			var size_type mut size_sum= 0s;
+			foreach( &el : typeinfo</T/>.fields_list )
+			{
+				if( el.is_reference )
+				{
+					// Allow reading reference fields. They have pointer size.
+					size_sum+= typeinfo</ $(byte8) />.size_of;
+				}
+				else
+				{
+					if( !can_cast_to_immutable_byte8_range</ typeof( el.type )::src_type />() )
+					{
+						return false;
+					}
+
+					size_sum+= el.type.size_of;
+				}
+			}
+
+			return size_sum == typeinfo</T/>.size_of;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		static_assert( false, "Unhandled type kind!" );
+	}
+}
+
+template</type T/>
+fn constexpr can_cast_to_mutable_byte8_range() : bool
+{
+	static_if( typeinfo</T/>.is_fundamental )
+	{
+		// Allow writing bytes of integers, chars, byte-types.
+		// Do not allow "void", since it has zero size.
+		// Do not allow "bool", since we should not allow writing upper unused bits of it.
+		return typeinfo</T/>.is_numeric || typeinfo</T/>.is_char || typeinfo</T/>.is_byte;
+	}
+	else static_if( typeinfo</T/>.is_raw_pointer || typeinfo</T/>.is_function_pointer )
+	{
+		// Can't write raw pointers and function pointers as bytes, since pointers should be aligned.
+		// Writing arbitraty bytes into a function pointer is also unsafe.
+		return false;
+	}
+	else static_if( typeinfo</T/>.is_enum )
+	{
+		// Can't write enum values as bytes, since not any byte value represents a valid enum value.
+		return false;
+	}
+	else static_if( typeinfo</T/>.is_array )
+	{
+		// Can write arrays as bytes as long as can write their elements.
+		return can_cast_to_mutable_byte8_range</ typeof( typeinfo</T/>.element_type )::src_type />();
+	}
+	else static_if( typeinfo</T/>.is_tuple )
+	{
+		// Can write tuples as bytes as long as can write tuple elements.
+		// Also don't allow writing tuples with padding bytes, since writing padding bytes is UB.
+
+		var size_type mut size_sum= 0s;
+		foreach( &el : typeinfo</T/>.elements_list )
+		{
+			if( !can_cast_to_mutable_byte8_range</ typeof( el.type )::src_type />() )
+			{
+				return false;
+			}
+			size_sum+= el.type.size_of;
+		}
+
+		return size_sum == typeinfo</T/>.size_of;
+	}
+	else static_if( typeinfo</T/>.is_class )
+	{
+		// Can write as bytes only structs with elements which are allowed to be written.
+		// Also don't allow writing structs with padding bytes, since writing padding bytes is UB.
+		// Classes aren't allowed, since they may have non-public fields, parents and virtual table pointers.
+
+		static_if( typeinfo</T/>.is_struct )
+		{
+			var size_type mut size_sum= 0s;
+			foreach( &el : typeinfo</T/>.fields_list )
+			{
+				if( el.is_reference )
+				{
+					// Don't allow writing reference fields, since it's unsafe.
+					return false;
+				}
+				else
+				{
+					if( !can_cast_to_mutable_byte8_range</ typeof( el.type )::src_type />() )
+					{
+						return false;
+					}
+
+					size_sum+= el.type.size_of;
+				}
+			}
+
+			return size_sum == typeinfo</T/>.size_of;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		static_assert( false, "Unhandled type kind!" );
+	}
+}
+
+} // namespace random_access_range_impl
+
+} // namespace ust

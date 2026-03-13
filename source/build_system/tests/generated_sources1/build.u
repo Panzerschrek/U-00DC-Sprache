@@ -1,11 +1,11 @@
-import "/path_utils.u"
-import "/build_system.uh"
+import "/path_utils.iu"
+import "/build_system.iu"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
 	var ust::string8 generated_source= "foo.u";
 
-	auto& contents= "import \"/generated_sources1/foo.uh\"\nfn Foo() : i32 { return 678123; }";
+	auto& contents= "import \"/generated_sources1/foo.iu\"\nfn Foo() : i32 { return 678123; }";
 
 	var BK::BuildTarget mut target
 	{

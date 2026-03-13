@@ -1,7 +1,7 @@
-import "../../imports/helpers.u"
-import "../../imports/memory.u"
-import "../../imports/thread_impl.u"
-import "windows.uh"
+import "../../imports/helpers.iu"
+import "../../imports/memory.iu"
+import "../../imports/thread_impl.iu"
+import "windows.iu"
 
 namespace ust
 {

@@ -1,8 +1,8 @@
 //##success_test
-import "../imports/semaphore.u"
-import "../imports/shared_condition_variable.u"
-import "../imports/thread.u"
-import "../imports/vector.u"
+import "../imports/semaphore.iu"
+import "../imports/shared_condition_variable.iu"
+import "../imports/thread.iu"
+import "../imports/vector.iu"
 
 // Shared condition variable has pointer size.
 static_assert( typeinfo</ ust::shared_condition_variable />.size_of == typeinfo</size_type/>.size_of );

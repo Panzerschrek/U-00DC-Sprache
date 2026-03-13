@@ -1,5 +1,5 @@
 //##fail_test
-import "../imports/variant.u"
+import "../imports/variant.iu"
 
 type NonTupleParamVariant= ust::variant</ bool />; //##expect_error TemplateContext
 type EmptyTupleVariant= ust::variant</ tup[] />; //##expect_error TemplateContext

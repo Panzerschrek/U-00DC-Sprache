@@ -1,4 +1,4 @@
-import "b_internal.uh"
+import "b_internal.iu"
 
 fn FuncImpl() : u32
 {

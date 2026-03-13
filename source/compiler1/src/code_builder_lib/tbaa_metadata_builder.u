@@ -1,6 +1,6 @@
-import "/composite.u"
-import "/CodeBuilderLib/keywords.uh"
-import "tbaa_metadata_builder.uh"
+import "/composite.iu"
+import "/CodeBuilderLib/keywords.iu"
+import "tbaa_metadata_builder.iu"
 
 namespace U1
 {

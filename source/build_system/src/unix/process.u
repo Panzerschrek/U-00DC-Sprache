@@ -1,11 +1,11 @@
-import "/arena_allocated_array.u"
-import "/assert.u"
-import "/scoped_array.u"
-import "/string_conversions.u"
-import "/vector.u"
-import "../process.uh"
-import "errno.uh"
-import "unix.uh"
+import "/arena_allocated_array.iu"
+import "/assert.iu"
+import "/scoped_array.iu"
+import "/string_conversions.iu"
+import "/vector.iu"
+import "../process.iu"
+import "errno.iu"
+import "unix.iu"
 
 namespace BK
 {

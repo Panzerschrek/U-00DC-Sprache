@@ -1,0 +1,15 @@
+import "/hash_map.iu"
+import "/path.iu"
+import "logger.iu"
+
+namespace BK
+{
+
+// Simple options in form of key-value pairs.
+type ConfigurationOptions= ust::hash_map</ust::string8, ust::string8/>;
+
+// Input file should be a JSON with root object.
+fn LoadConfigurationOptions(
+	Logger &mut logger, ust::filesystem_path_view file_path ) : ust::optional</ConfigurationOptions/>;
+
+} // namespace BK

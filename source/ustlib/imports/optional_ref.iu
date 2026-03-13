@@ -1,0 +1,182 @@
+import "helpers.iu"
+import "container_utils.iu"
+import "reference_notation.iu"
+
+namespace ust
+{
+
+struct null_optional_ref_type{}
+var null_optional_ref_type constexpr null_optional_ref{};
+
+// Optional reference.
+template</ type T, bool is_mutable />
+class optional_ref
+{
+	static_assert( typeinfo</T/>.reference_indirection_depth <= 1s, "This container doesn't support types with second order references inside" );
+
+public:
+	type this_type= optional_ref</T, is_mutable/>;
+
+	fn constructor( this_type &imut other )= default;
+	op=( mut this, this_type &imut other )= default;
+
+	// Default constructor - set to zero
+	fn constructor()
+		( ptr_= zero_init )
+	{}
+
+	// Use this conversion constructor in order to use simple "ust::null_optional_ref" to pass/return empty optional_ref, without specifying exact optional_ref type.
+	fn conversion_constructor( null_optional_ref_type n )
+		( ptr_= zero_init )
+	{
+		ignore_unused(n);
+	}
+
+	// Construct from reference
+	fn enable_if( is_mutable )
+	conversion_constructor( mut this, T &  mut ref ) @( reference_notation::pollution::param0_param_1_reference )
+		( ptr_= $<(ref) )
+	{
+	}
+
+	// Construct from reference
+	fn enable_if( !is_mutable )
+	conversion_constructor( mut this, T &imut ref ) @( reference_notation::pollution::param0_param_1_reference )
+		( ptr_= $<( unsafe( cast_mut(ref) ) ) )
+	{
+	}
+
+	// Construct "optional_ref_imut" from "optional_ref_mut".
+	fn enable_if( !is_mutable )
+	conversion_constructor( mut this, optional_ref</T, true/> r ) @( reference_notation::pollution::param0_param_1_inner_reference )
+		( ptr_= unsafe( r.get_ptr() ) )
+	{
+	}
+
+	// Construct form raw pointer. Pointer should be valid or should be null.
+	fn constructor( $(T) ptr ) unsafe
+	( ptr_= ptr )
+	{}
+
+	// Assign 'mut' reference to 'imut' reference.
+	op enable_if( !is_mutable )
+	=( mut this, optional_ref</ T, true />& other ) @( reference_notation::pollution::param0_param_1_inner_reference )
+	{
+		this.ptr_= unsafe( other.get_ptr() );
+	}
+
+	op=( mut this, null_optional_ref_type n )
+	{
+		ignore_unused(n);
+		reset();
+	}
+
+	fn empty( this ) : bool
+	{
+		return is_nullptr(ptr_);
+	}
+
+	fn enable_if( is_mutable )
+	try_deref( this ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if(empty());
+		return unsafe( deref_unchecked() );
+	}
+
+	fn enable_if( !is_mutable )
+	try_deref( this ) : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if(empty());
+		return unsafe( deref_unchecked() );
+	}
+
+	fn enable_if( is_mutable )
+	deref_unchecked( this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		return unsafe( $>(ptr_) );
+	}
+
+	fn enable_if( !is_mutable )
+	deref_unchecked( this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		return unsafe( $>(ptr_) );
+	}
+
+	// "try_take" methods are added for compatibility with "optional".
+	// For optional_ref it is just a alais for "try_deref".
+
+	fn nodiscard enable_if( is_mutable )
+	try_take( this ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		return try_deref();
+	}
+
+	fn nodiscard enable_if( !is_mutable )
+	try_take( this ) : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		return try_deref();
+	}
+
+	// "deref_or" methods - to get contained reference or alternative value if "optional_ref" is empty.
+
+	fn enable_if( is_mutable )
+	deref_or( this, T & mut alternative ) : auto & mut
+	{
+		return ( empty() ? alternative : try_deref() );
+	}
+
+	fn enable_if( !is_mutable )
+	deref_or( this, T &imut alternative ) : auto &imut
+	{
+		return ( empty() ? alternative : try_deref() );
+	}
+
+	// Get raw pointer. Returns null if empty.
+	fn get_ptr( this ) unsafe : $(T)
+	{
+		return ptr_;
+	}
+
+	fn reset( mut this )
+	{
+		ptr_= nullptr</T/>();
+	}
+
+	fn enable_if( is_mutable )
+	reset( mut this, T & mut ref ) @( reference_notation::pollution::param0_param_1_reference )
+	{
+		ptr_= $<(ref);
+	}
+
+	fn enable_if( !is_mutable )
+	reset( mut this, T &imut ref ) @( reference_notation::pollution::param0_param_1_reference )
+	{
+		ptr_= $<( unsafe( cast_mut(ref) ) );
+	}
+
+	// Compare with null optional_ref. Result is true if optional_ref is empty.
+
+	op==( this_type& l, null_optional_ref_type n ) : bool
+	{
+		ignore_unused(n);
+		return l.empty();
+	}
+
+	op==( null_optional_ref_type n, this_type& r ) : bool
+	{
+		ignore_unused(n);
+		return r.empty();
+	}
+
+private:
+	ReferenceContainerTag</ T, is_mutable /> container_tag_;
+	$(T) ptr_;
+}
+
+template</ type T />
+type optional_ref_mut = optional_ref</T, true />;
+
+template</ type T />
+type optional_ref_imut= optional_ref</T, false/>;
+
+} // namespace ust

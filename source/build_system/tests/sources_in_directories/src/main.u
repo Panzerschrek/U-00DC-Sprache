@@ -1,5 +1,5 @@
-import "/stdout.u"
-import "inc.uh"
+import "/stdout.iu"
+import "inc.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

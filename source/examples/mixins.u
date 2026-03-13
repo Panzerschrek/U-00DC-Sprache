@@ -1,8 +1,8 @@
 // This example demonstraits usage of mixins.
 
-import "/assert.u"
-import "/main_wrapper.u"
-import "/mixin_utils.u"
+import "/assert.iu"
+import "/main_wrapper.iu"
+import "/mixin_utils.iu"
 
 pretty_main
 {

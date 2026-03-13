@@ -944,7 +944,7 @@ def BrokenBuildFile3Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not read file" ) != -1 or stderr.find( "can not read file" ) != -1 )
-	assert( stderr.find( "non_existing_file_imported_in_build_file.uh" ) != -1 )
+	assert( stderr.find( "non_existing_file_imported_in_build_file.iu" ) != -1 )
 	assert( stderr.find( "Compiler execution failed" ) != -1 )
 
 
@@ -975,7 +975,7 @@ def SourceFileCompilationError2Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not read file" ) != -1 or stderr.find( "can not read file" ) != -1 )
-	assert( stderr.find( "non_existing_imported_file.uh" ) != -1 )
+	assert( stderr.find( "non_existing_imported_file.iu" ) != -1 )
 
 
 def SourceFileCompilationError3Test():
@@ -1025,8 +1025,8 @@ def DuplicatedGeneratedPublicHeaderFileTest():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	if platform.system() == "Windows":
-		assert( stderr.find( "Error, duplicated generated public header file \"dir\\\\other.uh\" of the build target \"hello_world\"!" ) != -1 )
-	assert( stderr.find( "Error, duplicated generated public header file \"some.uh\" of the build target \"hello_world\"!" ) != -1 )
+		assert( stderr.find( "Error, duplicated generated public header file \"dir\\\\other.iu\" of the build target \"hello_world\"!" ) != -1 )
+	assert( stderr.find( "Error, duplicated generated public header file \"some.iu\" of the build target \"hello_world\"!" ) != -1 )
 
 
 def InvalidTargetName0Test():
@@ -1345,7 +1345,7 @@ def UnallowedImport4():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Importing file \"" ) != -1 )
-	assert( stderr.find( "not_allowed_import4.uh" ) != -1 )
+	assert( stderr.find( "not_allowed_import4.iu" ) != -1 )
 	assert( stderr.find( "t allowed." ) != -1 )
 
 
@@ -1454,28 +1454,28 @@ def MissingCustomBuildStepForGeneratedFile1Test():
 	res = RunBuildSystemWithErrors( "missing_custom_build_step_for_generated_file1" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "No custom build step found for generated private header file \"some.uh\" of build target \"exe\"!" ) != -1 )
+	assert( stderr.find( "No custom build step found for generated private header file \"some.iu\" of build target \"exe\"!" ) != -1 )
 
 
 def MissingCustomBuildStepForGeneratedFile2Test():
 	res = RunBuildSystemWithErrors( "missing_custom_build_step_for_generated_file2" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "No custom build step found for generated public header file \"some.uh\" of build target \"lib\"!" ) != -1 )
+	assert( stderr.find( "No custom build step found for generated public header file \"some.iu\" of build target \"lib\"!" ) != -1 )
 
 
 def HostBuildTargetCommandError0Test():
 	res = RunBuildSystemWithErrors( "host_build_target_command_error0" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Host build target \"sub_package/helper_tool\" used in custom build step \"test.uh\" is not executable!" ) != -1 )
+	assert( stderr.find( "Host build target \"sub_package/helper_tool\" used in custom build step \"test.iu\" is not executable!" ) != -1 )
 
 
 def HostBuildTargetCommandError1Test():
 	res = RunBuildSystemWithErrors( "host_build_target_command_error1" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Host build target \"sub_package/helper_tool\" used in custom build step \"test.uh\" not found!" ) != -1 )
+	assert( stderr.find( "Host build target \"sub_package/helper_tool\" used in custom build step \"test.iu\" not found!" ) != -1 )
 
 
 #

@@ -1,5 +1,5 @@
-import "../../imports/barrier_impl.u"
-import "pthread.uh"
+import "../../imports/barrier_impl.iu"
+import "pthread.iu"
 
 namespace ust
 {

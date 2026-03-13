@@ -8,7 +8,7 @@
 	<!ENTITY IdentStartChar "a-zA-Z\x{0400}-\x{04FF}\x{0500}-\x{0527}\x{00C0}-\x{00D6}\x{00D8}-\x{00F6}\x{00F8}-\x{00FF}\x{0100}-\x{017F}\x{0180}-\x{024F}">
 ]>
 
-<language name="Sprache" version="4" kateversion="5.0" section="Sources" extensions="*.u;*.uh;*.ü" mimetype="text/u-spr" priority="10" license="BSD3" author="Panzerschrek">
+<language name="Sprache" version="4" kateversion="5.0" section="Sources" extensions="*.u;*.iu;*.ü" mimetype="text/u-spr" priority="10" license="BSD3" author="Panzerschrek">
 	<highlighting>
 
 		<list name="Sprache_RegularKeyword">

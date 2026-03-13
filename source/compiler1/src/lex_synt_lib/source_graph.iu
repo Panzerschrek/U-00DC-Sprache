@@ -1,0 +1,56 @@
+import "syntax_analyzer.iu"
+
+namespace U1
+{
+
+class IVfs interface
+{
+	fn virtual pure NormalizeFilePath(
+		mut this,
+		ust::string_view8 file_path,
+		ust::string_view8 parent_file_path_normalized ) : ust::string8;
+
+	// Empty "full_parent_file_path" means root file.
+	fn virtual pure LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>;
+
+	// Returns "false" if it isn't allowed to import file given.
+	fn virtual pure IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool;
+
+	// Returns "true" if file given is located within one of source directories.
+	fn virtual pure IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool;
+}
+
+type IVfsSharedPtr= ust::shared_ptr_mut</IVfs/>;
+
+struct SourceGraph
+{
+	struct Node
+	{
+		enum Category
+		{
+			SourceOrInternalImport,
+			OtherImport,
+			BuiltInPrelude,
+		}
+
+		ust::string8 file_path_normalized;
+		ust::string8 file_path_hash;
+		Synt::SyntaxAnalysisResult synt_result;
+		ust::vector</size_type/> children;
+		Category category;
+	}
+
+	ust::vector</Node/> nodes; // Node #0 is root
+	Synt::MacroExpansionContextsPtr macro_expansion_contexts;
+	LexSyntErrors errors;
+}
+
+type SourceFilePathHashigFunction= fn( ust::string_view8 source_file_contents ) : ust::string8;
+
+fn LoadSourceGraph(
+	IVfsSharedPtr& vfs,
+	SourceFilePathHashigFunction source_file_path_hashing_function,
+	ust::string_view8 root_file_path,
+	ust::string_view8 prelude_code ) : SourceGraph;
+
+} // namespace U1

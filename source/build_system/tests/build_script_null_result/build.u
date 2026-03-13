@@ -1,4 +1,4 @@
-import "/build_system.uh"
+import "/build_system.iu"
 
 // It's also possible to return optional from this function.
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>

@@ -1,5 +1,5 @@
-import "/path_utils.u"
-import "/build_system.uh"
+import "/path_utils.iu"
+import "/build_system.iu"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {

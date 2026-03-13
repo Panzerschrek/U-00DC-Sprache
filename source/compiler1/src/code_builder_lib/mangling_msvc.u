@@ -1,5 +1,5 @@
-import "/CodeBuilderLib/keywords.uh"
-import "mangling.uh"
+import "/CodeBuilderLib/keywords.iu"
+import "mangling.iu"
 
 namespace U1
 {

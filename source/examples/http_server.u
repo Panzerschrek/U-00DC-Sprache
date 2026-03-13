@@ -1,9 +1,9 @@
 // This example demonstraits usage of TCP listener class, which is used to implement a simple HTTP server.
 
-import "/main_wrapper.u"
-import "/stdout.u"
-import "/string_conversions.u"
-import "/tcp_listener.u"
+import "/main_wrapper.iu"
+import "/stdout.iu"
+import "/string_conversions.iu"
+import "/tcp_listener.iu"
 
 pretty_main
 {

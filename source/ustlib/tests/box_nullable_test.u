@@ -1,6 +1,6 @@
 //##success_test
-import "../imports/box.u"
-import "../imports/box_nullable.u"
+import "../imports/box.iu"
+import "../imports/box_nullable.iu"
 
 class S
 {

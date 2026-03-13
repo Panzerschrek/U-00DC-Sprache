@@ -1,6 +1,6 @@
 //##success_test
-import "../imports/arena_allocated_array.u"
-import "../imports/string.u"
+import "../imports/arena_allocated_array.iu"
+import "../imports/string.iu"
 
 // Arena-allocated array is "non_sync", since it holds a reference to arena allocator, which is "non_sync".
 static_assert( non_sync</ ust::arena_allocated_array</i32/> /> );

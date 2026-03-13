@@ -1,8 +1,8 @@
 // This example demonstraits usage of destructors.
 
-import "/main_wrapper.u"
-import "/stdout.u"
-import "/string_conversions.u"
+import "/main_wrapper.iu"
+import "/stdout.iu"
+import "/string_conversions.iu"
 
 pretty_main
 {

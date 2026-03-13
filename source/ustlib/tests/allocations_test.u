@@ -1,6 +1,6 @@
 //##success_test
-import "../imports/alloc.u"
-import "../imports/memory.u"
+import "../imports/alloc.iu"
+import "../imports/memory.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

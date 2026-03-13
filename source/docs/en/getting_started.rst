@@ -33,8 +33,8 @@ For cross-compiling you may also require additional SDKs for the target platform
 .. code-block:: u_spr
   :caption: hello_world.u
 
-   import "/main_wrapper.u"
-   import "/stdout.u"
+   import "/main_wrapper.iu"
+   import "/stdout.iu"
 
    pretty_main
    {

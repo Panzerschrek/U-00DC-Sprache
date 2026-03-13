@@ -33,8 +33,8 @@
 .. code-block:: u_spr
   :caption: hello_world.u
 
-   import "/main_wrapper.u"
-   import "/stdout.u"
+   import "/main_wrapper.iu"
+   import "/stdout.iu"
 
    pretty_main
    {

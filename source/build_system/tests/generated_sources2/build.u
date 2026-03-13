@@ -1,10 +1,10 @@
-import "/path_utils.u"
-import "/build_system.uh"
+import "/path_utils.iu"
+import "/build_system.iu"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
 	// Generate private header.
-	var ust::string8 generated_private_header= "foo.uh";
+	var ust::string8 generated_private_header= "foo.iu";
 
 	var BK::BuildTarget mut target
 	{

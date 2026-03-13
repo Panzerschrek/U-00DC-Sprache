@@ -1,4 +1,4 @@
-import "shared_library.uh"
+import "shared_library.iu"
 
 fn nomangle SomeUnmangledFunction() : i32
 {

@@ -1,5 +1,5 @@
-import "../../imports/condition_variable_impl.u"
-import "pthread.uh"
+import "../../imports/condition_variable_impl.iu"
+import "pthread.iu"
 
 namespace ust
 {

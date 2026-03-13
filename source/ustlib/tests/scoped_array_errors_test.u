@@ -1,6 +1,6 @@
 //##fail_test
-import "../imports/scoped_array.u"
-import "../imports/string.u"
+import "../imports/scoped_array.iu"
+import "../imports/string.iu"
 
 struct RM
 {

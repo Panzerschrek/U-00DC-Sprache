@@ -1,5 +1,5 @@
-import "/four_returner/four_returner.uh"
-import "/two_returner/two_returner.uh"
+import "/four_returner/four_returner.iu"
+import "/two_returner/two_returner.iu"
 
 fn GetFour() : i32
 {

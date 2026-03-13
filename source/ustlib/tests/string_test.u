@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/string.u"
+import "../imports/string.iu"
 
 fn AcceptStringOnly( ust::string8 str )
 {

@@ -1,4 +1,0 @@
-import "../../ustlib/imports/polymorph.u"
-
-// Must emit virtual table, type_id
-class SomeClass polymorph{}

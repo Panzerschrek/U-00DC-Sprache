@@ -1,8 +1,8 @@
 //##success_test
-import "../imports/assert.u"
-import "../imports/scoped_array.u"
-import "../imports/shared_ptr.u"
-import "../imports/string.u"
+import "../imports/assert.iu"
+import "../imports/scoped_array.iu"
+import "../imports/shared_ptr.iu"
+import "../imports/string.iu"
 
 struct DefaultConstructible
 {

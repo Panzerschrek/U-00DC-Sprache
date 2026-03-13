@@ -1,5 +1,5 @@
-import "/CodeBuilderLib/keywords.uh"
-import "lang_types.uh"
+import "/CodeBuilderLib/keywords.iu"
+import "lang_types.iu"
 
 namespace U1
 {

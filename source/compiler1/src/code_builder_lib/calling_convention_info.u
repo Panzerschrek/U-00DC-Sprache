@@ -1,4 +1,4 @@
-import "calling_convention_info.uh"
+import "calling_convention_info.iu"
 
 namespace U1
 {

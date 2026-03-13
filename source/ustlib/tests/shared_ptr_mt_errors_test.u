@@ -1,6 +1,6 @@
 //##fail_test
-import "../imports/shared_ptr_mt.u"
-import "../imports/thread.u"
+import "../imports/shared_ptr_mt.iu"
+import "../imports/thread.iu"
 
 type IntPtrMut=  ust::shared_ptr_mt_mut </i32/>;
 type IntPtrImut= ust::shared_ptr_mt_imut</i32/>;

@@ -1,6 +1,6 @@
-import "/binary_heap.u"
-import "/CodeBuilderLib/keywords.uh"
-import "error_reporting.uh"
+import "/binary_heap.iu"
+import "/CodeBuilderLib/keywords.iu"
+import "error_reporting.iu"
 
 namespace U1
 {

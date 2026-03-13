@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/utf.u"
+import "../imports/utf.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

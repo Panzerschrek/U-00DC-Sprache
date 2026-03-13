@@ -1,4 +1,4 @@
-import "common.uh"
+import "common.iu"
 
 fn BGetVar() : i32
 {

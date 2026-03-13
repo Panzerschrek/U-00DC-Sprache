@@ -25,10 +25,10 @@ If a path is relative it will be searched relative to the current file.
 
 .. code-block:: u_spr
 
-   import "a.u" // Import a file located in the same directory as the current file
-   import "../b.u" // Import a file located in one directory above the directory of the current file
-   import "cc/c.u" // Import a file from subdirectory "cc" of directory containing the current file
-   import "/d.u" // Import a file that is located in one of the root directories (specified in the compiler options)
+   import "a.iu" // Import a file located in the same directory as the current file
+   import "../b.iu" // Import a file located in one directory above the directory of the current file
+   import "cc/c.iu" // Import a file from subdirectory "cc" of directory containing the current file
+   import "/d.iu" // Import a file that is located in one of the root directories (specified in the compiler options)
 
 *******************
 *How imports works*
@@ -46,19 +46,19 @@ Usage of ``private`` linkage allows to define functions in common imported files
 For example, there are three files and contents of one of them is imported by two others:
 
 .. code-block:: u_spr
-  :caption: a.u
+  :caption: a.iu
 
    fn GetX() : i32 { return 42; }
 
 .. code-block:: u_spr
   :caption: b.u
 
-   import "a.u"
+   import "a.iu"
 
 .. code-block:: u_spr
   :caption: c.u
 
-   import "a.u"
+   import "a.iu"
 
 In a program linked from ``"b.u"`` and ``"c.u"`` files there will be no linking conflicts caused by ``GetX()`` function.
 

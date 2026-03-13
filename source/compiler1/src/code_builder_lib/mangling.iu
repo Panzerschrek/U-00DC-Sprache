@@ -1,0 +1,33 @@
+import "/string.iu"
+import "structs_combined.iu"
+
+namespace U1
+{
+
+class IMangler interface
+{
+public:
+	// All methods return null-terminated string.
+
+	fn virtual pure MangleFunction(
+		mut this,
+		NamesScope& parent_scope,
+		ust::string_view8 name,
+		FunctionType& function_type ) : ust::string8;
+
+	fn virtual pure MangleFunction(
+		mut this,
+		NamesScope& parent_scope,
+		ust::string_view8 name,
+		FunctionType& function_type,
+		TemplateArgsFinished& template_args ) : ust::string8;
+
+	fn virtual pure MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string_view8 variable_name, Type& t, bool is_constant ) : ust::string8;
+	fn virtual pure MangleType( mut this, Type& t ) : ust::string8;
+	fn virtual pure MangleVirtualTable( mut this, Type& t ) : ust::string8;
+}
+
+fn CreateManglerItaniumABI() : ust::box</IMangler/>;
+fn CreateManglerMSVC(bool is_32_bit) : ust::box</IMangler/>;
+
+} // namespace U1

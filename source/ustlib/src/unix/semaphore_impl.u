@@ -1,9 +1,9 @@
-import "../../imports/memory.u"
-import "../../imports/alloc.u"
-import "../../imports/atomic.u"
-import "../../imports/semaphore_impl.u"
-import "../../imports/string_conversions.u"
-import "semaphore.uh"
+import "../../imports/memory.iu"
+import "../../imports/alloc.iu"
+import "../../imports/atomic.iu"
+import "../../imports/semaphore_impl.iu"
+import "../../imports/string_conversions.iu"
+import "semaphore.iu"
 
 namespace ust
 {

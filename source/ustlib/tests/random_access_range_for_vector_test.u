@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/vector.u"
+import "../imports/vector.iu"
 
 type VecType= ust::vector</i32/>;
 

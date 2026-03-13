@@ -1,7 +1,7 @@
-import "/aa.u" // Should find aa, bb, cc in their directories
-import "/bb.u"
-import "/cc.u"
-import "/0.u" // should found b/0.u ( because order of include dirs is "a", "b", "c" )
+import "/aa.iu" // Should find aa, bb, cc in their directories
+import "/bb.iu"
+import "/cc.iu"
+import "/0.iu" // should found b/0.iu ( because order of include dirs is "a", "b", "c" )
 
 static_assert( aa == 9854 );
 static_assert( bb == -9863541 );

@@ -1,9 +1,9 @@
-import "/path_utils.u"
-import "/sort.u"
-import "package_transformation.uh"
-import "build_system_paths.uh"
-import "options.uh"
-import "filesystem.uh"
+import "/path_utils.iu"
+import "/sort.iu"
+import "package_transformation.iu"
+import "build_system_paths.iu"
+import "options.iu"
+import "filesystem.iu"
 
 namespace BK
 {

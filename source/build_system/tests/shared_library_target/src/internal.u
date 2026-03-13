@@ -1,4 +1,4 @@
-import "internal.uh"
+import "internal.iu"
 
 fn nomangle InternalFunction()
 {

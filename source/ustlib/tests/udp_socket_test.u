@@ -1,12 +1,12 @@
 //##success_test
-import "../imports/assert.u"
-import "../imports/enum_string_conversions.u"
-import "../imports/hash_set.u"
-import "../imports/semaphore.u"
-import "../imports/string.u"
-import "../imports/string_conversions.u"
-import "../imports/thread.u"
-import "../imports/udp_socket.u"
+import "../imports/assert.iu"
+import "../imports/enum_string_conversions.iu"
+import "../imports/hash_set.iu"
+import "../imports/semaphore.iu"
+import "../imports/string.iu"
+import "../imports/string_conversions.iu"
+import "../imports/thread.iu"
+import "../imports/udp_socket.iu"
 
 // UDP socket class is just thin wrapper around native socket.
 // And native socket is just simple handle.

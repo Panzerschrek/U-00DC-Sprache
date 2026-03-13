@@ -1,5 +1,0 @@
-// Main header file combining all build system interface headers.
-
-import "build_system_interface.uh"
-import "package_info.uh"
-import "types.uh"

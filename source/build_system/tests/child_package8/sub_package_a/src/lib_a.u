@@ -1,5 +1,5 @@
-import "/lib_a/lib_a.uh"
-import "/lib_c/lib_c.uh"
+import "/lib_a/lib_a.iu"
+import "/lib_c/lib_c.iu"
 
 fn LibAFunc( i32 x ) : i32
 {

@@ -1,12 +1,12 @@
-import "/assert.u"
-import "/hash_map.u"
-import "/path_utils.u"
-import "/scoped_array.u"
-import "/string_conversions.u"
-import "build_graph.uh"
-import "filesystem.uh"
-import "make_dep_file.uh"
-import "process.uh"
+import "/assert.iu"
+import "/hash_map.iu"
+import "/path_utils.iu"
+import "/scoped_array.iu"
+import "/string_conversions.iu"
+import "build_graph.iu"
+import "filesystem.iu"
+import "make_dep_file.iu"
+import "process.iu"
 
 
 namespace BK

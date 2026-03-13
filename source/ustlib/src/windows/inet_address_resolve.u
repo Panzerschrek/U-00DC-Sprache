@@ -1,6 +1,6 @@
-import "../../imports/inet_address_resolve.u"
-import "socket.uh"
-import "wide_string.uh"
+import "../../imports/inet_address_resolve.iu"
+import "socket.iu"
+import "wide_string.iu"
 
 namespace ust
 {

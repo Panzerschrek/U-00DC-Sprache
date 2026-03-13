@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/bit_math.u"
+import "../imports/bit_math.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

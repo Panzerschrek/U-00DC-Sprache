@@ -1,5 +1,5 @@
-import "../../imports/system_time.u"
-import "windows.uh"
+import "../../imports/system_time.iu"
+import "windows.iu"
 
 namespace ust
 {

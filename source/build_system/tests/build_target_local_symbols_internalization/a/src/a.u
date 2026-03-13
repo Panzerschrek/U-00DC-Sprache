@@ -1,5 +1,5 @@
-import "/a/a.uh"
-import "a_internal.uh"
+import "/a/a.iu"
+import "a_internal.iu"
 
 fn AFunc() : u32
 {

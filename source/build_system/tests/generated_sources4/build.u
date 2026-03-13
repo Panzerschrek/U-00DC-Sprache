@@ -1,5 +1,5 @@
-import "/path_utils.u"
-import "/build_system.uh"
+import "/path_utils.iu"
+import "/build_system.iu"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
@@ -13,11 +13,11 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 
 	// Generate both public headers and sources for a library.
 
-	var ust::string8 generated_public_header= "lib.uh";
+	var ust::string8 generated_public_header= "lib.iu";
 	auto& generated_public_header_contents= "fn Foo() : i32;";
 
 	var ust::string8 generated_source= "lib.u";
-	auto& generated_source_contents= "import \"/lib/lib.uh\" fn Foo() : i32 { return 1234321; }";
+	auto& generated_source_contents= "import \"/lib/lib.iu\" fn Foo() : i32 { return 1234321; }";
 
 	var BK::BuildTarget mut lib
 	{

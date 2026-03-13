@@ -1,5 +1,5 @@
 //##fail_test
-import "../imports/result.u"
+import "../imports/result.iu"
 
 
 enum SomeErrorEnum{ NotOk, CompleteDisaster }

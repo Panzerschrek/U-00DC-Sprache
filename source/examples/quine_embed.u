@@ -1,8 +1,8 @@
 // This is a quine, but with cheating.
 // It uses a derective to embed contents of its source file.
 
-import "/main_wrapper.u"
-import "/stdout.u"
+import "/main_wrapper.iu"
+import "/stdout.iu"
 
 pretty_main
 {

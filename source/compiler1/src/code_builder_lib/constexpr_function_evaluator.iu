@@ -1,0 +1,23 @@
+import "/result.iu"
+import "/string.iu"
+import "/vector.iu"
+import "constexpr_function_evaluator_bindings.iu"
+
+namespace U1
+{
+
+class ConstexprFunctionEvaluator
+{
+public:
+	fn constructor( LLVMTargetDataRef data_layout );
+	fn destructor();
+
+	type Result= ust::result</ LLVMValueRef, ust::vector</ ust::string8 /> />;
+
+	fn Evaluate( mut this, LLVMValueRef function, ust::array_view_imut</LLVMValueRef/> args, LLVMTypeRef return_type ) : Result;
+
+private:
+	ConstexprFunctionEvaluatorRef impl_= zero_init;
+}
+
+} // namespace U1

@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/inet_address.u"
+import "../imports/inet_address.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

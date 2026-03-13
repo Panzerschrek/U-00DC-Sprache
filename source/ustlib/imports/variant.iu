@@ -1,0 +1,422 @@
+import "aligned_storage.iu"
+import "container_utils.iu"
+import "hash_apply.iu"
+import "minmax.iu"
+import "optional_ref.iu"
+import "ustlib_macros.iu"
+
+?macro <? variant_visit:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
+->
+<?
+	with( & ?m<? mut ?> ??variant : ?e )
+	{
+		for( & ??element_type_typeinfo : typeinfo</ typeof(??variant)::elements_tuple />.elements_list )
+		{
+			type ??ElementT= typeof(??element_type_typeinfo.type)::src_type;
+			if( ??variant.has</ ??ElementT />() )
+			{
+				with( ?r<? & ?> ?m<? mut ?> ?var_name : ??variant.try_get</??ElementT/>() )
+				?b
+			}
+		}
+	}
+?>
+
+namespace ust
+{
+
+// Param - nonempty tuple with unique types.
+template</ type Y />
+class variant
+{
+public:
+	static_assert( typeinfo</Y/>.is_tuple, "this container accepts types list in form of tuple" );
+	static_assert( typeinfo</Y/>.element_count > 0s, "expected non-empty tuple" );
+	static_assert( tuple_type_properties_.all_elements_are_unique, "duplicated element types" );
+	// Can't use type with references inside since we use "optional_ref" to access variants.
+	static_assert( typeinfo</Y/>.reference_tag_count == 0s, "this container doesn't support types with references inside" );
+
+	type this_type= variant</ Y />;
+	type elements_tuple= Y;
+
+public:
+	fn
+	enable_if( typeinfo</Y/>.elements_list[0].type.is_default_constructible )
+	constructor()
+		( index_(0), storage_= unsafe(get_uninitialized_value</storage_type/>()) )
+	{
+		type FirstT= typeof(typeinfo</Y/>.elements_list[0].type)::src_type;
+		var FirstT mut val;
+		unsafe( move_into_uninitialized( cast_ref_unsafe</ FirstT />(storage_), move(val) ) );
+	}
+
+	fn
+	enable_if( tuple_type_properties_.all_elements_are_copy_constructible )
+	constructor( this_type& other )
+		( index_(other.index_), storage_= unsafe(get_uninitialized_value</storage_type/>()) )
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			if( cur_index == size_type(other.index_) )
+			{
+				type ElementT= typeof(element.type)::src_type;
+				unsafe
+				{
+					auto mut copy = cast_ref_unsafe</ ElementT />(other.storage_);
+					move_into_uninitialized( cast_ref_unsafe</ ElementT />(storage_), move(copy) );
+				}
+				return;
+			}
+			++cur_index;
+		}
+	}
+	
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	conversion_constructor(T mut val)
+		( index_(0), storage_= unsafe(get_uninitialized_value</storage_type/>()) )
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				unsafe( move_into_uninitialized( cast_ref_unsafe</T/>(storage_), move(val) ) );
+
+				index_= u8(cur_index);
+				return;
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+	}
+	
+	fn destructor()
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			if( cur_index == size_type(index_) )
+			{
+				unsafe( call_destructor( cast_ref_unsafe</ typeof(element.type)::src_type />(storage_) ) );
+				return;
+			}
+			++cur_index;
+		}
+	}
+
+	template</ type T />
+	op enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	=( mut this, T mut val )
+	{
+		this = this_type( move(val) );
+	}
+
+	op
+	enable_if( tuple_type_properties_.all_elements_are_copy_constructible )
+	=( mut this, this_type& other )
+	{
+		// Implement assignment operator, using copy constructor.
+		// Native assignment operators for element types are not used here because it's not applicable in case where this.index_ != other.index_;
+		this = this_type(other);
+	}
+	
+	fn index(this) : size_type
+	{
+		return size_type(index_);
+	}
+
+	// Check if variant contains given type.
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	has( this ) : bool
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					return true;
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		return false;
+	}
+
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	get( this ) : optional_ref_imut</ T />  @( reference_notation::return_inner_references::param0 )
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					return unsafe( cast_ref_unsafe</T/>(storage_) );
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		return null_optional_ref;
+	}
+
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	get(mut this) : optional_ref_mut</ T />  @( reference_notation::return_inner_references::param0 )
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					return unsafe( cast_ref_unsafe</T/>(storage_) );
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		return null_optional_ref;
+	}
+
+	// try_get - return a reference to given type or halt, if variant doesn't contain type specified.
+
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	try_get( this ) : T &imut @( reference_notation::return_references::param0 )
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					return unsafe( cast_ref_unsafe</T/>(storage_) );
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		halt;
+	}
+
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	try_get( mut this ) : T &mut @( reference_notation::return_references::param0 )
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					return unsafe( cast_ref_unsafe</T/>(storage_) );
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		halt;
+	}
+
+	// Try to move value out of variant. Halts, if variant doesn't contain value of specified type.
+	// It is recommended to move variant value while calling this function.
+	template</ type T />
+	fn nodiscard enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	try_move( byval mut this ) : T
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					unsafe
+					{
+						var T mut result= uninitialized;
+						memory_copy_aligned( typeinfo</T/>.align_of, ptr_cast_to_byte8( $<(result) ), ptr_cast_to_byte8( $<(storage_) ), typeinfo</T/>.size_of );
+						unsafe( move_into_nowhere( move(this) ) );
+						return result;
+					}
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		halt; // Variant contains other type.
+	}
+
+	// "==" operators
+	// Use aslo "==" for value to variant comparison to avoid constly conversions to variant.
+
+	op
+	enable_if( tuple_type_properties_.all_elements_are_equality_comparable )
+	==( this_type& l, this_type& r ) : bool
+	{
+		if( l.index_ != r.index_ )
+		{
+			return false;
+		}
+
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			if( cur_index == size_type(l.index_) )
+			{
+				type ElementT= typeof(element.type)::src_type;
+				return unsafe( cast_ref_unsafe</ ElementT />(l.storage_) ) == unsafe( cast_ref_unsafe</ ElementT />(r.storage_) );
+			}
+			++cur_index;
+		}
+		halt;
+	}
+
+	template</ type T />
+	op
+	enable_if( tuple_type_properties_.all_elements_are_equality_comparable && variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	==( this_type& l, T& r ) : bool
+	{
+		if_var( &l_value : l.get</T/>() )
+		{
+			return l_value == r;
+		}
+		return false;
+	}
+
+	template</ type T />
+	op
+	enable_if( tuple_type_properties_.all_elements_are_equality_comparable && variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	==( T& l, this_type& r ) : bool
+	{
+		if_var( &r_value : r.get</T/>() )
+		{
+			return l == r_value;
+		}
+		return false;
+	}
+
+	// Hashing.
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		// Hash kind index.
+		apply_value_to_hasher( hasher, index_ );
+
+		// Hash contents of currenly-stored type.
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			if( cur_index == size_type(index_) )
+			{
+				apply_value_to_hasher( hasher, unsafe( cast_ref_unsafe</ typeof(element.type)::src_type />(storage_) ) );
+			}
+			++cur_index;
+		}
+	}
+
+private:
+	var variant_impl::TupleTypeProperties tuple_type_properties_= variant_impl::get_tuple_type_properties</Y/>();
+
+	type storage_type= aligned_storage</ tuple_type_properties_.max_element_size, tuple_type_properties_.max_element_alignment />;
+
+private:
+	ContainerTag</ Y /> container_tag_;
+	u8 index_;
+	storage_type storage_;
+}
+
+namespace variant_impl
+{
+
+// Use single function to retrieve all tuple properties in order to reduce number of generated template functions and speed-up compilation.
+
+template</ type T />
+fn constexpr get_tuple_type_properties() : TupleTypeProperties
+{
+	var TupleTypeProperties mut result
+	{
+		.max_element_size(0),
+		.max_element_alignment(0),
+		.all_elements_are_copy_constructible(true),
+		.all_elements_are_equality_comparable(true),
+		.all_elements_are_unique(true)
+	};
+
+	for( & element : typeinfo</T/>.elements_list )
+	{
+		max_assign( result.max_element_size, element.type.size_of );
+		max_assign( result.max_element_alignment, element.type.align_of );
+		result.all_elements_are_copy_constructible &= element.type.is_copy_constructible;
+		result.all_elements_are_equality_comparable &= element.type.is_equality_comparable;
+	}
+
+	auto mut i= 0s;
+	for( & element_i : typeinfo</T/>.elements_list )
+	{
+		auto mut j= 0s;
+		for( & element_j : typeinfo</T/>.elements_list )
+		{
+			if( i != j && same_type</ typeof(element_i.type), typeof(element_j.type) /> )
+			{
+				result.all_elements_are_unique= false;
+			}
+
+			++j;
+		}
+		++i;
+	}
+
+	return result;
+}
+
+struct TupleTypeProperties
+{
+	size_type max_element_size;
+	size_type max_element_alignment;
+	bool all_elements_are_copy_constructible;
+	bool all_elements_are_equality_comparable;
+	bool all_elements_are_unique;
+}
+
+template</ type C, type Tup />
+fn constexpr type_is_one_of_tuple_elements() : bool
+{
+	for( & element : typeinfo</Tup/>.elements_list )
+	{
+		if( same_type</ typeof(element.type)::src_type, C /> )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+} // namespace variant_impl
+
+} // namespace ust

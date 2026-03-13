@@ -1,4 +1,4 @@
-import "/unistd_headers.u"
+import "/unistd_headers.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

@@ -1,6 +1,6 @@
-import "../../imports/bit_math.u"
-import "../../imports/atomic.u"
-import "socket.uh"
+import "../../imports/bit_math.iu"
+import "../../imports/atomic.iu"
+import "socket.iu"
 
 namespace ust
 {

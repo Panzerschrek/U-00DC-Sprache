@@ -1,6 +1,6 @@
-import "../../imports/helpers.u"
-import "../../imports/mutex_impl.u"
-import "windows.uh"
+import "../../imports/helpers.iu"
+import "../../imports/mutex_impl.iu"
+import "windows.iu"
 
 namespace ust
 {

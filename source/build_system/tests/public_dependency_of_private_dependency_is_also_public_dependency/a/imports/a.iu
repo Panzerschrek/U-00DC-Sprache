@@ -1,0 +1,3 @@
+import "/c/c.iu"
+
+fn AFunc() : Int;

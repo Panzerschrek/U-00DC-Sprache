@@ -1,6 +1,6 @@
-import "/lib_b/lib_b.uh"
-import "/multiplier/multiplier.uh"
-import "/two_returner/two_returner.uh"
+import "/lib_b/lib_b.iu"
+import "/multiplier/multiplier.iu"
+import "/two_returner/two_returner.iu"
 
 fn LibBFunc() : u32
 {

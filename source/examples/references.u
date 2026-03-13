@@ -1,7 +1,7 @@
 // This example demonstraits usage of references.
 
-import "/assert.u"
-import "/main_wrapper.u"
+import "/assert.iu"
+import "/main_wrapper.iu"
 
 pretty_main
 {

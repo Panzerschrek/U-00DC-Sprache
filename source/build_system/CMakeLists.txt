@@ -1,19 +1,19 @@
 message( STATUS "Build build system" )
 
-file( GLOB BUILD_SYSTEM_HEADERS "src/*.uh" "src/json/*.uh" "imports/*.uh" )
+file( GLOB BUILD_SYSTEM_HEADERS "src/*.iu" "src/json/*.iu" "imports/*.iu" )
 file( GLOB BUILD_SYSTEM_SOURCES "src/*.u" "src/json/*.u" )
 
 if( WIN32 )
 	file( GLOB BUILD_SYSTEM_SOURCES_WINDOWS "src/windows/*.u" )
 	set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_WINDOWS} )
 
-	file( GLOB BUILD_SYSTEM_HEADERS_WINDOWS "src/windows/*.uh" )
+	file( GLOB BUILD_SYSTEM_HEADERS_WINDOWS "src/windows/*.iu" )
 	set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_WINDOWS} )
 else()
 	file( GLOB BUILD_SYSTEM_SOURCES_UNIX "src/unix/*.u" )
 	set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_UNIX} )
 
-	file( GLOB BUILD_SYSTEM_HEADERS_UNIX "src/unix/*.uh" )
+	file( GLOB BUILD_SYSTEM_HEADERS_UNIX "src/unix/*.iu" )
 	set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_UNIX} )
 endif()
 

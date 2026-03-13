@@ -1,4 +1,4 @@
-import "long_stable_hash_wrapper.uh"
+import "long_stable_hash_wrapper.iu"
 
 // If contents of this file changed, source_file_contents_hash_wrapper.cpp must be changed too!
 

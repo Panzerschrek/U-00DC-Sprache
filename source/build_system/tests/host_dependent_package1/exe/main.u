@@ -1,5 +1,5 @@
-import "/lib/lib.uh"
-import "/exe/generated_private_header.uh"
+import "/lib/lib.iu"
+import "/exe/generated_private_header.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

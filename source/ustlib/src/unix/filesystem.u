@@ -1,10 +1,10 @@
-import "../../imports/directory_iterator.u"
-import "../../imports/file.u"
-import "../../imports/filesystem.u"
-import "../../imports/path_utils.u"
-import "../../imports/scoped_array.u"
-import "errno.uh"
-import "unix.uh"
+import "../../imports/directory_iterator.iu"
+import "../../imports/file.iu"
+import "../../imports/filesystem.iu"
+import "../../imports/path_utils.iu"
+import "../../imports/scoped_array.iu"
+import "errno.iu"
+import "unix.iu"
 
 namespace ust
 {

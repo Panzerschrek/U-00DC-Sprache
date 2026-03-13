@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/polymorph.u"
+import "../imports/polymorph.iu"
 
 struct S{}
 

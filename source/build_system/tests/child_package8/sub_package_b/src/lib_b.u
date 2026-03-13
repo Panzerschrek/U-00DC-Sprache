@@ -1,5 +1,5 @@
-import "/lib_b/lib_b.uh"
-import "/lib_c/lib_c.uh"
+import "/lib_b/lib_b.iu"
+import "/lib_c/lib_c.iu"
 
 fn LibBFunc( i32 x ) : i32
 {

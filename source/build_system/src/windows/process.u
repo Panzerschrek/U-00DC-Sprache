@@ -1,11 +1,11 @@
-import "/assert.u"
-import "/atomic.u"
-import "/string_conversions.u"
-import "/vector.u"
-import "../process.uh"
-import "invalid_handle.uh"
-import "wide_string.uh"
-import "windows.uh"
+import "/assert.iu"
+import "/atomic.iu"
+import "/string_conversions.iu"
+import "/vector.iu"
+import "../process.iu"
+import "invalid_handle.iu"
+import "wide_string.iu"
+import "windows.iu"
 
 namespace BK
 {

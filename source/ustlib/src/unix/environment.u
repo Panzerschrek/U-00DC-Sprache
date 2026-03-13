@@ -1,6 +1,6 @@
-import "../../imports/environment.u"
-import "../../imports/scoped_array.u"
-import "unix.uh"
+import "../../imports/environment.iu"
+import "../../imports/scoped_array.iu"
+import "unix.iu"
 
 namespace ust
 {

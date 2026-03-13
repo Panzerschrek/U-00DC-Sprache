@@ -1,3 +1,0 @@
-import "/lib_b/lib_b.uh"
-
-fn FloatInv( Float f ) : Float;

@@ -1,5 +1,5 @@
-import "/lib_a/lib_a.uh"
-import "/lib_common/lib_common.uh"
+import "/lib_a/lib_a.iu"
+import "/lib_common/lib_common.iu"
 
 fn AGetVar() : i32
 {

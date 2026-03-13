@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/memory.u"
+import "../imports/memory.iu"
 
 struct S{ i32 a; f32 b; }
 

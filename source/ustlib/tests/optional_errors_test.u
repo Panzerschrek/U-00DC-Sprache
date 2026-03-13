@@ -1,6 +1,6 @@
 //##fail_test
-import "../imports/optional.u"
-import "../imports/string.u"
+import "../imports/optional.iu"
+import "../imports/string.iu"
 
 var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
 

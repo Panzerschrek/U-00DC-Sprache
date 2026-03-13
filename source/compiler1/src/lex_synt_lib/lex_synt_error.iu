@@ -1,0 +1,21 @@
+import "/string.iu"
+import "/vector.iu"
+import "src_loc.iu"
+
+namespace U1
+{
+
+struct LexSyntError
+{
+	SrcLoc src_loc;
+	ust::string8 text;
+
+	fn constructor() = default;
+	fn constructor( SrcLoc& in_src_loc, ust::string8 mut in_text )
+		( src_loc= in_src_loc, text= move(in_text) )
+		{}
+}
+
+type LexSyntErrors= ust::vector</LexSyntError/>;
+
+} // namespace U1

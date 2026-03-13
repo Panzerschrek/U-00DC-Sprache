@@ -1,6 +1,6 @@
 //##success_test
-import "../imports/optional.u"
-import "../imports/string.u"
+import "../imports/optional.iu"
+import "../imports/string.iu"
 
 struct U32Vec16
 {

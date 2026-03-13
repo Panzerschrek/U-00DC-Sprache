@@ -1,5 +1,5 @@
-import "../../imports/system_time.u"
-import "unix.uh"
+import "../../imports/system_time.iu"
+import "unix.iu"
 
 namespace ust
 {

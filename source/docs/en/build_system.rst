@@ -17,7 +17,7 @@ This file is just an Ü source file, with contents like this:
 
 .. code-block:: u_spr
 
-   import "/build_system.uh"
+   import "/build_system.iu"
 
    fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
    {
@@ -92,7 +92,7 @@ While importing a file from such directory its build target name may be used as 
 
 .. code-block:: u_spr
 
-   import "/SomeLibrary/some_library_header.uh"
+   import "/SomeLibrary/some_library_header.iu"
 
 *SomeLibrary* is a build target name.
 Such import may be used in *SomeLibrary* build target and build targets which depend on it.

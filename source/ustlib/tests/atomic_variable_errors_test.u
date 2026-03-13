@@ -1,5 +1,5 @@
 //##fail_test
-import "../imports/atomic_variable.u"
+import "../imports/atomic_variable.iu"
 
 // Unsupported types for atomic variable.
 type AtomicVoid= ust::atomic_variable</void/>; //##expect_error TemplateContext

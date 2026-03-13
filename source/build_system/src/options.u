@@ -1,9 +1,9 @@
-import "/hash_set.u"
-import "/integer_parsing.u"
-import "/stdout.u"
-import "/enum_string_conversions.u"
-import "/vector.u"
-import "options.uh"
+import "/hash_set.iu"
+import "/integer_parsing.iu"
+import "/stdout.iu"
+import "/enum_string_conversions.iu"
+import "/vector.iu"
+import "options.iu"
 
 namespace BK
 {

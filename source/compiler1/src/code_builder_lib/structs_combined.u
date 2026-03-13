@@ -1,7 +1,7 @@
-import "/helpers.u"
-import "/string_conversions.u"
-import "/CodeBuilderLib/keywords.uh"
-import "structs_combined.uh"
+import "/helpers.iu"
+import "/string_conversions.iu"
+import "/CodeBuilderLib/keywords.iu"
+import "structs_combined.iu"
 
 namespace U1
 {

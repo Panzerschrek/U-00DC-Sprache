@@ -1,0 +1,10 @@
+import "/path.iu"
+import "logger.iu"
+
+namespace BK
+{
+
+// Returns true on success.
+fn nodiscard InitProjectStub( Logger &mut logger, ust::filesystem_path_view project_directory ) : bool;
+
+} // namespace BK

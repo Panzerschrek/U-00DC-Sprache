@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/volatile.u"
+import "../imports/volatile.iu"
 
 fn DoBoolTest()
 {

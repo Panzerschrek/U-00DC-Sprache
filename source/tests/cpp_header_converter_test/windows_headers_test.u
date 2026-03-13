@@ -1,4 +1,4 @@
-import "/windows_headers.u"
+import "/windows_headers.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

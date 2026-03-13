@@ -1,7 +1,7 @@
-import "/hash_set.u"
-import "/sort.u"
-import "/string_conversions.u"
-import "version_unification.uh"
+import "/hash_set.iu"
+import "/sort.iu"
+import "/string_conversions.iu"
+import "version_unification.iu"
 
 namespace BK
 {

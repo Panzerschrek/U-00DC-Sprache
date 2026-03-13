@@ -1,6 +1,6 @@
 //##success_test
-import "../imports/string.u"
-import "../imports/vector.u"
+import "../imports/string.iu"
+import "../imports/vector.iu"
 
 struct A {} // Default-constructible, empty
 

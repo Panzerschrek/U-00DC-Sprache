@@ -1,7 +1,7 @@
 //##success_test
-import "../imports/any.u"
-import "../imports/string.u"
-import "../imports/shared_ptr.u"
+import "../imports/any.iu"
+import "../imports/string.iu"
+import "../imports/shared_ptr.iu"
 
 // "any" is default-constructible (with default empty state).
 static_assert( typeinfo</ust::any/>.is_default_constructible );

@@ -1,6 +1,6 @@
 //##success_test
-import "../imports/shared_ptr_final.u"
-import "../imports/hash_map.u"
+import "../imports/shared_ptr_final.iu"
+import "../imports/hash_map.iu"
 
 type IntPtr= ust::shared_ptr_final</i32/>;
 type IntPtrNullable= ust::shared_ptr_final_nullable</i32/>;

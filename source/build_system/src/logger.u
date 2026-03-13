@@ -1,5 +1,5 @@
-import "/stdout.u"
-import "logger.uh"
+import "/stdout.iu"
+import "logger.iu"
 
 
 namespace BK

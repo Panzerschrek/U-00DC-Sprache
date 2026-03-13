@@ -1,10 +1,10 @@
 //##success_test
-import "../imports/thread.u"
-import "../imports/shared_ptr_mt.u"
-import "../imports/sort.u"
-import "../imports/stdout.u"
-import "../imports/string_conversions.u"
-import "../imports/vector.u"
+import "../imports/thread.iu"
+import "../imports/shared_ptr_mt.iu"
+import "../imports/sort.iu"
+import "../imports/stdout.iu"
+import "../imports/string_conversions.iu"
+import "../imports/vector.iu"
 
 fn Bar(){}
 

@@ -1,4 +1,4 @@
-import "/fancy/path/a.uh"
+import "/fancy/path/a.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {

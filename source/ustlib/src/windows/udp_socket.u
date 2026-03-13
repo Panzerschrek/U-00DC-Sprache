@@ -1,5 +1,5 @@
-import "../../imports/udp_socket.u"
-import "socket.uh"
+import "../../imports/udp_socket.iu"
+import "socket.iu"
 
 namespace ust
 {

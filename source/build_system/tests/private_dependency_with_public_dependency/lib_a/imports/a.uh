@@ -1,3 +1,0 @@
-import "/lib_b/b.uh"
-
-fn GetSomeLargeInt() : Int;

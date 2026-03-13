@@ -1,0 +1,18 @@
+import "/path.iu"
+import "/string.iu"
+import "/vector.iu"
+
+namespace BK
+{
+
+struct MakeDepFile
+{
+	// All path are normalized.
+	ust::filesystem_path destination;
+	ust::vector</ust::filesystem_path/> dependencies;
+}
+
+// Actually can parse only dep files produced by the Ü compiler.
+fn ParseMakeDepFileContents( ust::string_view8 file_contents ) : ust::optional</MakeDepFile/>;
+
+} // namespace BK

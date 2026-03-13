@@ -1,0 +1,17 @@
+import "build_system_paths.iu"
+import "package_transformation.iu"
+
+namespace BK
+{
+
+// Write a file with workspace information needed for Ü language server.
+// Returns true on success.
+fn nodiscard WriteLanguageServerWorkspaceInfoFile(
+	Logger &mut logger,
+	BuildSystemPaths& build_system_paths,
+	WorkspaceInfo& target_workspace,
+	ust::filesystem_path_view root_package_build_directory,
+	WorkspaceInfo& host_workspace,
+	ust::filesystem_path_view host_packages_root_build_directory ) : bool;
+
+} // namespace BK

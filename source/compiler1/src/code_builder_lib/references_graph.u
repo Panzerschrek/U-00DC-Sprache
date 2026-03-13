@@ -1,6 +1,6 @@
-import "/assert.u"
-import "error_reporting.uh"
-import "references_graph.uh"
+import "/assert.iu"
+import "error_reporting.iu"
+import "references_graph.iu"
 
 namespace U1
 {

@@ -1,4 +1,4 @@
-import "/build_system.uh"
+import "/build_system.iu"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
@@ -10,7 +10,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.target_type = BK::BuildTargetType::Executable,
 		.source_files= ust::make_array</ust::string8/>( "main.u" ),
 		// For now it's useless to generate public headers for executables, since no other build target can depend on an executable.
-		.generated_public_header_files= ust::make_array</ust::string8/>( "main.uh" ),
+		.generated_public_header_files= ust::make_array</ust::string8/>( "main.iu" ),
 	};
 
 	return BK::PackageInfo{ .build_targets= ust::make_array( move(exe) ) };

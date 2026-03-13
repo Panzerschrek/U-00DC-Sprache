@@ -1,7 +1,7 @@
 //##success_test
-import "../imports/atomic_variable.u"
-import "../imports/thread.u"
-import "../imports/vector.u"
+import "../imports/atomic_variable.iu"
+import "../imports/thread.iu"
+import "../imports/vector.iu"
 
 // Atomic variables aren't copyable (because of heap indirection).
 static_assert( !typeinfo</ ust::atomic_variable</i32/> />.is_copy_constructible );
