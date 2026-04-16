@@ -471,6 +471,14 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		return {};
 	}
 
+	{
+		std::vector<CompletionItem> import_completion_result= CompleteImport( position );
+		if( !import_completion_result.empty() )
+		{
+			return import_completion_result;
+		}
+	}
+
 	// Perform lexical analysis and other manipulations for current version of the document text.
 
 	const uint32_t line= position.line;
@@ -588,6 +596,120 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 			CompletionItem{ item.name, item.sort_text, item.detail, TranslateCompletionItemKind( item.kind ) } );
 
 	return result_transformed;
+}
+
+std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& position )
+{
+	std::vector<CompletionItem> result;
+
+	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );
+	if( linear_position == std::nullopt )
+		return result;
+
+	const uint32_t line= LinearPositionToLine( line_to_linear_position_index_, *linear_position );
+	U_ASSERT( line < line_to_linear_position_index_.size() );
+
+	const TextLinearPosition line_offset= line_to_linear_position_index_[line];
+	U_ASSERT( *linear_position >= line_offset );
+
+	size_t line_end_offset= text_.size();
+	if( line + 1 < line_to_linear_position_index_.size() )
+	{
+		line_end_offset= line_to_linear_position_index_[ line + 1 ];
+	}
+	const size_t line_size= line_end_offset - line_offset;
+
+	const std::string_view line_text= std::string_view( text_ ).substr( line_offset, line_size );
+
+	std::string_view line_parsed= line_text;
+
+	if( line_parsed.empty() )
+	{
+		return result;
+	}
+
+	while(true)
+	{
+		// TODO - handle other kinds of whitespaces.
+		if( line_parsed.front() == ' ' )
+		{
+			line_parsed= line_parsed.substr(1);
+			if( line_parsed.empty() )
+			{
+				return result;
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	const std::string_view import_keyword= "import"; // TODO - remove hardcode.
+
+	if( line_parsed.size() >= import_keyword.size() && line_parsed.substr( 0, import_keyword.size() ) == import_keyword )
+	{
+		line_parsed= line_parsed.substr( import_keyword.size() );
+	}
+	else
+	{
+		return result;
+	}
+
+	if( line_parsed.empty() )
+	{
+		return result;
+	}
+
+	while(true)
+	{
+		// TODO - handle other kinds of whitespaces.
+		if( line_parsed.front() == ' ' )
+		{
+			line_parsed= line_parsed.substr(1);
+			if( line_parsed.empty() )
+			{
+				return result;
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	if( line_parsed.front() == '"' )
+	{
+		line_parsed= line_parsed.substr(1);
+	}
+	else
+	{
+		return result;
+	}
+
+	// TODO - detect closing '"'. If it's present - don't do the completion.
+
+	while( !line_parsed.empty() && (line_parsed.back() == '\n' || line_parsed.back() == '\r' ) )
+	{
+		line_parsed= line_parsed.substr( 0, line_parsed.size() - 1 );
+	}
+
+	// TODO - perform real completion here.
+
+	std::string completion( line_parsed );
+	completion += "_completed";
+
+	log_() << "COMPLETE IMPORT " << completion << std::endl;
+
+	CompletionItem item;
+	item.kind= CompletionItemKind::Module;
+	item.label= completion;
+	item.sort_text= completion;
+	item.detail= "some file to import ";
+
+	result.push_back( std::move(item) );
+
+	return result;
 }
 
 std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const DocumentPosition& position )
