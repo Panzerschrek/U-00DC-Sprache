@@ -137,8 +137,6 @@ public: // IVfs
 	virtual std::vector<PathCompletionItem> CompletePath(
 		const Path& file_path_prefix, const Path& full_parent_file_path ) override
 	{
-		(void)full_parent_file_path; // TODO - use it.
-
 		std::vector<PathCompletionItem> result;
 
 		const fs_path file_path_prefix_r( file_path_prefix );
@@ -151,23 +149,28 @@ public: // IVfs
 		{
 			// Relative import.
 
-			fs_path start_directory= fsp::parent_path( full_parent_file_path );
-			start_directory+= "/";
+			fs_path parent_directory= fsp::parent_path( full_parent_file_path );
+			parent_directory+= "/";
+
+			fs_path full_path_prefix= parent_directory;
+			fsp::append( full_path_prefix, file_path_prefix );
+
+			fs_path search_directory= fsp::parent_path( full_path_prefix );
 
 			std::error_code ec;
-			for( fs::directory_iterator it( start_directory, ec ), it_end;
+			for( fs::directory_iterator it( search_directory, ec ), it_end;
 				!ec && it != it_end;
 				it = it.increment(ec) )
 			{
 				fs_path entry_path= llvm::StringRef( it->path() );
 
-				if( fsp::replace_path_prefix( entry_path, start_directory, "" ) &&
+				if( fsp::replace_path_prefix( entry_path, parent_directory, "" ) &&
 					entry_path.startswith( file_path_prefix ) )
 				{
 					PathCompletionItem item;
 					item.completed_path= entry_path.str().str();
 
-					fs_path absolute_path= start_directory;
+					fs_path absolute_path= search_directory;
 					fsp::append( absolute_path, entry_path );
 
 					item.full_absolute_path= NormalizePath( absolute_path ).str().str();
