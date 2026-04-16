@@ -606,9 +606,8 @@ std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& po
 
 	size_t line_end_offset= text_.size();
 	if( line + 1 < line_to_linear_position_index_.size() )
-	{
 		line_end_offset= line_to_linear_position_index_[ line + 1 ];
-	}
+
 	const size_t line_size= line_end_offset - line_offset;
 
 	const std::string_view line_text= std::string_view( text_ ).substr( line_offset, line_size );
@@ -616,75 +615,55 @@ std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& po
 	std::string_view line_parsed= line_text;
 
 	if( line_parsed.empty() )
-	{
 		return result;
-	}
 
-	while(true)
+	const auto is_whitespace= []( const char c ) { return c == ' ' || c == '\t'; };
+
+	// Skip whitespaces before "import".
+	while( true )
 	{
-		// TODO - handle other kinds of whitespaces.
-		if( line_parsed.front() == ' ' )
+		if( is_whitespace( line_parsed.front() ) )
 		{
-			line_parsed= line_parsed.substr(1);
+			line_parsed.remove_prefix(1);
 			if( line_parsed.empty() )
-			{
 				return result;
-			}
 		}
 		else
-		{
 			break;
-		}
 	}
 
 	const std::string_view import_keyword= "import"; // TODO - remove hardcode.
 
 	if( line_parsed.size() >= import_keyword.size() && line_parsed.substr( 0, import_keyword.size() ) == import_keyword )
-	{
-		line_parsed= line_parsed.substr( import_keyword.size() );
-	}
+		line_parsed.remove_prefix( import_keyword.size() );
 	else
-	{
 		return result;
-	}
 
 	if( line_parsed.empty() )
-	{
 		return result;
-	}
 
-	while(true)
+	// Skip whitespaces after "import" and before the string with import name.
+	while( true )
 	{
-		// TODO - handle other kinds of whitespaces.
-		if( line_parsed.front() == ' ' )
+		if( is_whitespace( line_parsed.front() ) )
 		{
-			line_parsed= line_parsed.substr(1);
+			line_parsed.remove_prefix(1);
 			if( line_parsed.empty() )
-			{
 				return result;
-			}
 		}
 		else
-		{
 			break;
-		}
 	}
 
 	if( line_parsed.front() == '"' )
-	{
-		line_parsed= line_parsed.substr(1);
-	}
+		line_parsed.remove_prefix(1);
 	else
-	{
 		return result;
-	}
 
 	// TODO - detect closing '"'. If it's present - don't do the completion.
 
 	while( !line_parsed.empty() && (line_parsed.back() == '\n' || line_parsed.back() == '\r' ) )
-	{
 		line_parsed= line_parsed.substr( 0, line_parsed.size() - 1 );
-	}
 
 	// TODO - perform real completion here.
 
