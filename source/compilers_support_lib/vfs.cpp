@@ -137,10 +137,47 @@ public: // IVfs
 	virtual std::vector<PathCompletionItem> CompletePath(
 		const Path& file_path_prefix, const Path& full_parent_file_path ) override
 	{
-		// TODO - implement it.
-		(void) file_path_prefix;
-		(void) full_parent_file_path;
-		return {};
+		(void)full_parent_file_path; // TODO - use it.
+
+		std::vector<PathCompletionItem> result;
+
+		const fs_path file_path_prefix_r( file_path_prefix );
+
+		if( !file_path_prefix_r.empty() && file_path_prefix_r[0] == '/' )
+		{
+			// Absolute import.
+		}
+		else
+		{
+			// Relative import.
+
+			fs_path start_directory= fsp::parent_path( full_parent_file_path );
+			start_directory+= "/";
+
+			std::error_code ec;
+			for( fs::directory_iterator it( start_directory, ec ), it_end;
+				!ec && it != it_end;
+				it = it.increment(ec) )
+			{
+				fs_path entry_path= llvm::StringRef( it->path() );
+
+				if( fsp::replace_path_prefix( entry_path, start_directory, "" ) &&
+					entry_path.startswith( file_path_prefix ) )
+				{
+					PathCompletionItem item;
+					item.completed_path= entry_path.str().str();
+
+					fs_path absolute_path= start_directory;
+					fsp::append( absolute_path, entry_path );
+
+					item.full_absolute_path= NormalizePath( absolute_path ).str().str();
+
+					result.push_back( std::move(item) );
+				}
+			}
+		}
+
+		return result;
 	}
 
 	virtual bool IsImportingFileAllowed( const Path& full_file_path ) override
