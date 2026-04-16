@@ -149,33 +149,47 @@ public: // IVfs
 		{
 			// Relative import.
 
-			fs_path parent_directory= fsp::parent_path( full_parent_file_path );
-			parent_directory+= "/";
-
-			fs_path full_path_prefix= parent_directory;
+			fs_path full_path_prefix= fsp::parent_path( full_parent_file_path );
 			fsp::append( full_path_prefix, file_path_prefix );
 
-			fs_path search_directory= fsp::parent_path( full_path_prefix );
+			if( !fsp::has_filename( full_path_prefix ) )
+				return result;
+
+			fs_path file_name_to_search= fsp::filename( full_path_prefix );
+			fs_path search_directory;
+
+			if( file_name_to_search == "/" ||
+				file_name_to_search == "\\" ||
+				file_name_to_search == "." ||
+				file_name_to_search == ".." )
+			{
+				file_name_to_search= "";
+				search_directory= NormalizePath( full_path_prefix );
+			}
+			else
+				search_directory= fsp::parent_path( NormalizePath( full_path_prefix ) );
 
 			std::error_code ec;
 			for( fs::directory_iterator it( search_directory, ec ), it_end;
 				!ec && it != it_end;
 				it = it.increment(ec) )
 			{
-				fs_path entry_path= llvm::StringRef( it->path() );
+				fs_path entry_absolute_path= llvm::StringRef( it->path() );
 
-				if( fsp::replace_path_prefix( entry_path, parent_directory, "" ) &&
-					entry_path.startswith( file_path_prefix ) )
+				if( fsp::has_filename( entry_absolute_path ) )
 				{
-					PathCompletionItem item;
-					item.completed_path= entry_path.str().str();
+					const llvm::StringRef entry_filename= fsp::filename( entry_absolute_path );
+					if( entry_filename.startswith( file_name_to_search ) )
+					{
+						PathCompletionItem item;
 
-					fs_path absolute_path= search_directory;
-					fsp::append( absolute_path, entry_path );
+						item.completed_path= entry_filename;
+						if( it->type() == fs::file_type::directory_file )
+							item.completed_path+= "/";
 
-					item.full_absolute_path= NormalizePath( absolute_path ).str().str();
-
-					result.push_back( std::move(item) );
+						item.full_absolute_path= NormalizePath( entry_absolute_path ).str().str();
+						result.push_back( std::move(item) );
+					}
 				}
 			}
 		}
