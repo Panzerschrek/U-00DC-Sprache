@@ -598,7 +598,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	return result_transformed;
 }
 
-std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& position )
+std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& position ) const
 {
 	std::vector<CompletionItem> result;
 
