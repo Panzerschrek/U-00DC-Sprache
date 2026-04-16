@@ -315,6 +315,10 @@ std::vector<CompletionItem> DocumentManager::Complete( const PositionInDocument&
 		return {};
 	}
 
+	std::vector<CompletionItem> import_complete= it->second.CompleteImport( position.position );
+	if( !import_complete.empty() )
+		return import_complete;
+
 	return it->second.Complete( position.position );
 }
 

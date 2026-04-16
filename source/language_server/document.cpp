@@ -471,14 +471,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		return {};
 	}
 
-	{
-		std::vector<CompletionItem> import_completion_result= CompleteImport( position );
-		if( !import_completion_result.empty() )
-		{
-			return import_completion_result;
-		}
-	}
-
 	// Perform lexical analysis and other manipulations for current version of the document text.
 
 	const uint32_t line= position.line;
