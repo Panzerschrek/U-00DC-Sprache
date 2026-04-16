@@ -605,63 +605,85 @@ std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& po
 
 	const size_t line_size= line_end_offset - line_offset;
 
-	const std::string_view line_text= std::string_view( text_ ).substr( line_offset, line_size );
+	const llvm::StringRef line_text= llvm::StringRef( text_ ).substr( line_offset, line_size );
+	size_t line_parse_position= 0;
 
-	std::string_view line_parsed= line_text;
-
-	if( line_parsed.empty() )
+	if( line_text.empty() )
 		return result;
+
+	const auto column_utf8_opt= Utf16PositionToUtf8Position( line_text, position.character );
+	if( column_utf8_opt == std::nullopt )
+	{
+		log_() << "Can't obtain column" << std::endl;
+		return result;
+	}
+
+	const uint32_t column_utf8= *column_utf8_opt;
 
 	const auto is_whitespace= []( const char c ) { return c == ' ' || c == '\t'; };
 
 	// Skip whitespaces before "import".
 	while( true )
 	{
-		if( is_whitespace( line_parsed.front() ) )
+		if( is_whitespace( line_text[ line_parse_position ] ) )
 		{
-			line_parsed.remove_prefix(1);
-			if( line_parsed.empty() )
+			++line_parse_position;
+			if( line_parse_position == line_text.size() )
 				return result;
 		}
 		else
 			break;
 	}
 
-	const std::string_view import_keyword= "import"; // TODO - remove hardcode.
+	const llvm::StringRef import_keyword= "import"; // TODO - remove hardcode.
 
-	if( line_parsed.size() >= import_keyword.size() && line_parsed.substr( 0, import_keyword.size() ) == import_keyword )
-		line_parsed.remove_prefix( import_keyword.size() );
+	if( line_text.substr( line_parse_position ).startswith( import_keyword ) )
+		line_parse_position+= import_keyword.size();
 	else
 		return result;
 
-	if( line_parsed.empty() )
+	if( line_parse_position == line_text.size() )
 		return result;
 
 	// Skip whitespaces after "import" and before the string with import name.
 	while( true )
 	{
-		if( is_whitespace( line_parsed.front() ) )
+		if( is_whitespace( line_text[ line_parse_position ] ) )
 		{
-			line_parsed.remove_prefix(1);
-			if( line_parsed.empty() )
+			++line_parse_position;
+			if( line_parse_position == line_text.size() )
 				return result;
 		}
 		else
 			break;
 	}
 
-	if( line_parsed.front() == '"' )
-		line_parsed.remove_prefix(1);
+	if( line_text[ line_parse_position ] == '"' )
+		++line_parse_position;
 	else
 		return result;
 
 	// TODO - detect closing '"'. If it's present - don't do the completion.
 
-	while( !line_parsed.empty() && (line_parsed.back() == '\n' || line_parsed.back() == '\r' ) )
-		line_parsed= line_parsed.substr( 0, line_parsed.size() - 1 );
+	size_t line_end= line_text.size();
+	while(
+		line_end > line_parse_position &&
+		( line_text[ line_end - 1 ] == '\n' || line_text[ line_end - 1 ] == '\r' ) )
+		--line_end;
 
-	for( IVfs::PathCompletionItem& completion_item : vfs_->CompletePath( IVfs::Path( line_parsed ), path_ ) )
+	if( column_utf8 < line_end )
+		line_end= column_utf8;
+
+	if( line_end < line_parse_position )
+		return result;
+
+	llvm::StringRef line_to_complete= line_text.substr( line_parse_position, line_end - line_parse_position );
+
+	for( IVfs::PathCompletionItem& completion_item : vfs_->CompletePath( IVfs::Path( line_to_complete ), path_ ) )
 	{
+		//if( llvm::StringRef( completion_item.completed_path ).startswith( line_parsed ) )
+		//	completion_item.completed_path= completion_item.completed_path.substr( line_parsed.size() );
+
 		CompletionItem item;
 		item.kind= CompletionItemKind::Module;
 		item.label= completion_item.completed_path;
