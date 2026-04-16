@@ -660,20 +660,16 @@ std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& po
 	while( !line_parsed.empty() && (line_parsed.back() == '\n' || line_parsed.back() == '\r' ) )
 		line_parsed= line_parsed.substr( 0, line_parsed.size() - 1 );
 
-	// TODO - perform real completion here.
+	for( IVfs::PathCompletionItem& completion_item : vfs_->CompletePath( IVfs::Path( line_parsed ), path_ ) )
+	{
+		CompletionItem item;
+		item.kind= CompletionItemKind::Module;
+		item.label= completion_item.completed_path;
+		item.sort_text= std::move( completion_item.completed_path );
+		item.detail= std::move( completion_item.full_absolute_path );
 
-	std::string completion( line_parsed );
-	completion += "_completed";
-
-	log_() << "COMPLETE IMPORT " << completion << std::endl;
-
-	CompletionItem item;
-	item.kind= CompletionItemKind::Module;
-	item.label= completion;
-	item.sort_text= completion;
-	item.detail= "some file to import ";
-
-	result.push_back( std::move(item) );
+		result.push_back( std::move(item) );
+	}
 
 	return result;
 }

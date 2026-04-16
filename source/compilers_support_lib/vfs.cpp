@@ -134,7 +134,8 @@ public: // IVfs
 		return NormalizePath( result_path ).str().str();
 	}
 
-	virtual std::vector<Path> CompletePath( const Path& file_path_prefix, const Path& full_parent_file_path ) override
+	virtual std::vector<PathCompletionItem> CompletePath(
+		const Path& file_path_prefix, const Path& full_parent_file_path ) override
 	{
 		// TODO - implement it.
 		(void) file_path_prefix;
