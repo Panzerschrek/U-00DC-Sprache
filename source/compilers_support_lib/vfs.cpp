@@ -134,6 +134,14 @@ public: // IVfs
 		return NormalizePath( result_path ).str().str();
 	}
 
+	virtual std::vector<Path> CompletePath( const Path& file_path_prefix, const Path& full_parent_file_path ) override
+	{
+		// TODO - implement it.
+		(void) file_path_prefix;
+		(void) full_parent_file_path;
+		return {};
+	}
+
 	virtual bool IsImportingFileAllowed( const Path& full_file_path ) override
 	{
 		if( !prevent_imports_outside_given_directories_ )

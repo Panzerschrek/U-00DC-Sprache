@@ -106,6 +106,11 @@ IVfs::Path DocumentManager::DocumentManagerVfs::GetFullFilePath( const Path& fil
 	return base_vfs_->GetFullFilePath( file_path, full_parent_file_path );
 }
 
+std::vector<IVfs::Path> DocumentManager::DocumentManagerVfs::CompletePath( const Path& file_path_prefix, const Path& full_parent_file_path )
+{
+	return base_vfs_->CompletePath( file_path_prefix, full_parent_file_path );
+}
+
 DocumentManager::DocumentManager( Logger& log, std::string installation_directory )
 	: log_(log)
 	// TODO - create different build options for different files.

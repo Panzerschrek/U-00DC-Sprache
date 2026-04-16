@@ -2,6 +2,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace U
 {
@@ -18,6 +19,9 @@ public:
 
 	// Empty "full_parent_file_path" means root file.
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path )= 0;
+
+	// If it's supported returns completed paths for given prefix (available for importing).
+	virtual std::vector<Path> CompletePath( const Path& file_path_prefix, const Path& full_parent_file_path )= 0;
 
 	// Returns "false" if it isn't allowed to import file given.
 	virtual bool IsImportingFileAllowed( const Path& full_file_path )= 0;
