@@ -157,7 +157,7 @@ public: // IVfs
 				while( prefix_it != prefix_it_end && given_path_it != given_path_it_end )
 				{
 					// For completion perform case-insensitive comparison.
-					if( ! ( *given_path_it ).equals_insensitive( *prefix_it ) )
+					if( ! given_path_it->equals_insensitive( *prefix_it ) )
 						break;
 					++given_path_it;
 					++prefix_it;
@@ -165,6 +165,8 @@ public: // IVfs
 
 				if( prefix_it == prefix_it_end )
 				{
+					// Complete files/directories after prefix.
+
 					fs_path remaining_path;
 					fsp::append( remaining_path, given_path_it, given_path_it_end );
 
@@ -188,6 +190,31 @@ public: // IVfs
 					}
 
 					SearchDirectoryForCompletions( search_directory, file_name_to_search, result );
+				}
+				else if( given_path_it != given_path_it_end  )
+				{
+					// Complete a prefix element.
+
+					const auto pos= prefix_it->find_insensitive( *given_path_it  );
+
+					if( given_path_it->empty() || pos != llvm::StringRef::npos )
+					{
+						PathCompletionItem item;
+
+						fs_path remaining_prefix;
+						fsp::append( remaining_prefix, prefix_it, prefix_it_end );
+
+						item.completed_path= *prefix_it;
+
+						// Perform prioritization by prefixing name in sort text.
+						// All values names starting with the given text have more priority than values with name matching in the middle/at end.
+						if( given_path_it->empty() || pos == 0 )
+							item.sort_text= "0_" + item.completed_path;
+						else
+							item.sort_text= "1_" + item.completed_path;
+
+						result.push_back( std::move(item) );
+					}
 				}
 			}
 		}
