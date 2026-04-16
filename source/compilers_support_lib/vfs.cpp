@@ -156,7 +156,8 @@ public: // IVfs
 
 				while( prefix_it != prefix_it_end && given_path_it != given_path_it_end )
 				{
-					if( *given_path_it != *prefix_it )
+					// For completion perform case-insensitive comparison.
+					if( ! ( *given_path_it ).equals_insensitive( *prefix_it ) )
 						break;
 					++given_path_it;
 					++prefix_it;
