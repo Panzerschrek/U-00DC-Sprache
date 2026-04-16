@@ -273,16 +273,26 @@ private:
 			if( fsp::has_filename( entry_absolute_path ) )
 			{
 				const llvm::StringRef entry_filename= fsp::filename( entry_absolute_path );
-				if( entry_filename.starts_with_insensitive( file_name_to_search ) ||
-					entry_filename.contains_insensitive( file_name_to_search ) )
+
+				const auto pos= entry_filename.find_insensitive( file_name_to_search );
+
+				if( file_name_to_search.empty() || pos != llvm::StringRef::npos )
 				{
 					PathCompletionItem item;
 
 					item.completed_path= entry_filename;
 					if( it->type() == fs::file_type::directory_file )
-						item.completed_path+= "/";
+						item.completed_path+= "/"; // Mark directories with trailing slash.
+
+					// Perform prioritization by prefixing name in sort text.
+					// All values names starting with the given text have more priority than values with name matching in the middle/at end.
+					if( file_name_to_search.empty() || pos == 0 )
+						item.sort_text= "0_" + item.completed_path;
+					else
+						item.sort_text= "1_" + item.completed_path;
 
 					item.full_absolute_path= NormalizePath( entry_absolute_path ).str().str();
+
 					result.push_back( std::move(item) );
 				}
 			}

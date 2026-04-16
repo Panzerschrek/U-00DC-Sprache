@@ -17,6 +17,7 @@ public:
 	{
 		Path completed_path;
 		Path full_absolute_path;
+		std::string sort_text;
 	};
 
 	virtual ~IVfs()= default;
