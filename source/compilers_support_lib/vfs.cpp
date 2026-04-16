@@ -200,6 +200,7 @@ public: // IVfs
 
 						fs_path remaining_prefix;
 						fsp::append( remaining_prefix, prefix_it, prefix_it_end );
+						remaining_prefix+= "/"; // Mark prefixes as directories.
 
 						item.completed_path= remaining_prefix.str();
 
