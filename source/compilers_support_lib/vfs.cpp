@@ -180,10 +180,7 @@ public: // IVfs
 						file_name_to_search= fsp::filename( remaining_path );
 						fsp::append( search_directory, remaining_path );
 
-						if( file_name_to_search == "/" ||
-							file_name_to_search == "\\" ||
-							file_name_to_search == "." ||
-							file_name_to_search == ".." )
+						if( IsDirectoryLikeFileName( file_name_to_search ) )
 							file_name_to_search= "";
 						else
 							search_directory= fsp::parent_path( search_directory );
@@ -231,10 +228,7 @@ public: // IVfs
 			fs_path file_name_to_search= fsp::filename( full_path_prefix );
 			fs_path search_directory;
 
-			if( file_name_to_search == "/" ||
-				file_name_to_search == "\\" ||
-				file_name_to_search == "." ||
-				file_name_to_search == ".." )
+			if( IsDirectoryLikeFileName( file_name_to_search ) )
 			{
 				file_name_to_search= "";
 				search_directory= NormalizePath( full_path_prefix );
@@ -286,7 +280,7 @@ public: // IVfs
 	}
 
 private:
-	void SearchDirectoryForCompletions(
+	static void SearchDirectoryForCompletions(
 		const fs_path& search_directory,
 		const fs_path& file_name_to_search,
 		std::vector<PathCompletionItem>& result )
@@ -325,6 +319,11 @@ private:
 				}
 			}
 		}
+	}
+
+	static bool IsDirectoryLikeFileName( const fs_path& file_name )
+	{
+		return file_name == "/" || file_name == "\\" || file_name == "." || file_name == "..";
 	}
 
 private:
