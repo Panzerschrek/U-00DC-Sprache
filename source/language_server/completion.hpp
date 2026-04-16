@@ -43,6 +43,7 @@ struct CompletionItem
 	std::string label;
 	std::string sort_text;
 	std::string detail;
+	std::string insert_text;
 	CompletionItemKind kind= CompletionItemKind::None;
 };
 

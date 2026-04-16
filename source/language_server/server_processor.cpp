@@ -300,6 +300,8 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 				item["sortText"]= completion_item.sort_text;
 			if( !completion_item.detail.empty() )
 				item["detail"]= completion_item.detail;
+			if( !completion_item.insert_text.empty() )
+				item["insertText"]= completion_item.insert_text;
 			if( completion_item.kind != CompletionItemKind::None )
 				item["kind"]= uint32_t(completion_item.kind);
 

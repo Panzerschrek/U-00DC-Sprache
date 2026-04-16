@@ -585,7 +585,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	result_transformed.reserve( completion_result.size() );
 	for( const CodeBuilder::CompletionItem& item : completion_result )
 		result_transformed.push_back(
-			CompletionItem{ item.name, item.sort_text, item.detail, TranslateCompletionItemKind( item.kind ) } );
+			CompletionItem{ item.name, item.sort_text, item.detail, "", TranslateCompletionItemKind( item.kind ) } );
 
 	return result_transformed;
 }
@@ -686,6 +686,11 @@ std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& po
 		item.label= std::move( completion_item.completed_path );
 		item.sort_text= std::move( completion_item.sort_text );
 		item.detail= std::move( completion_item.absolute_path );
+
+		// Add trailing " into the insert text if it's not a directory name.
+		item.insert_text= item.label;
+		if( !item.label.empty() && item.label.back() != '/' )
+			item.insert_text+= "\"";
 
 		result.push_back( std::move(item) );
 	}
