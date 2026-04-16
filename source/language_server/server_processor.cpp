@@ -201,6 +201,7 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 				// so, using "::" breaks completion for ".".
 				//trigger_characters.push_back( Json::Value( "::" ) );
 				trigger_characters.push_back( Json::Value( ":" ) );
+				trigger_characters.push_back( Json::Value( "\"" ) );
 
 				completion_options["triggerCharacters"]= std::move(trigger_characters);
 			}
