@@ -203,12 +203,21 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 				trigger_characters.push_back( Json::Value( ":" ) );
 				trigger_characters.push_back( Json::Value( "\"" ) );
 
+				// Trigger completion by entering slashes. It's needed for imports completion.
+				trigger_characters.push_back( Json::Value( "/" ) );
+				trigger_characters.push_back( Json::Value( "\\" ) );
+
 				completion_options["triggerCharacters"]= std::move(trigger_characters);
 			}
 			{
 				Json::Array commit_characters;
 				commit_characters.push_back( Json::Value( "." ) );
 				commit_characters.push_back( Json::Value( ":" ) );
+
+				// Commit slashes in import paths.
+				commit_characters.push_back( Json::Value( "/" ) );
+				commit_characters.push_back( Json::Value( "\\" ) );
+
 				completion_options["allCommitCharacters"]= std::move(commit_characters);
 			}
 			capabilities["completionProvider"]= std::move(completion_options);
