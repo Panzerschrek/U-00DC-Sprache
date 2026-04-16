@@ -144,6 +144,51 @@ public: // IVfs
 		if( !file_path_prefix_r.empty() && file_path_prefix_r[0] == '/' )
 		{
 			// Absolute import.
+
+			for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
+			{
+				auto given_path_it= llvm::sys::path::begin( file_path_prefix_r );
+				++given_path_it; // Skip first "/".
+				const auto given_path_it_end= llvm::sys::path::end( file_path_prefix_r );
+
+				auto prefix_it= llvm::sys::path::begin(prefixed_include_dir.vfs_path);
+				const auto prefix_it_end= llvm::sys::path::end(prefixed_include_dir.vfs_path);
+
+				while( prefix_it != prefix_it_end && given_path_it != given_path_it_end )
+				{
+					if( *given_path_it != *prefix_it )
+						break;
+					++given_path_it;
+					++prefix_it;
+				}
+
+				if( prefix_it == prefix_it_end )
+				{
+					fs_path remaining_path;
+					fsp::append( remaining_path, given_path_it, given_path_it_end );
+
+					fs_path file_name_to_search;
+					fs_path search_directory= prefixed_include_dir.host_fs_path;
+
+					if( remaining_path.empty() )
+						file_name_to_search= "";
+					else
+					{
+						file_name_to_search= fsp::filename( remaining_path );
+						fsp::append( search_directory, remaining_path );
+
+						if( file_name_to_search == "/" ||
+							file_name_to_search == "\\" ||
+							file_name_to_search == "." ||
+							file_name_to_search == ".." )
+							file_name_to_search= "";
+						else
+							search_directory= fsp::parent_path( search_directory );
+					}
+
+					SearchDirectoryForCompletions( search_directory, file_name_to_search, result );
+				}
+			}
 		}
 		else
 		{
@@ -169,29 +214,7 @@ public: // IVfs
 			else
 				search_directory= fsp::parent_path( NormalizePath( full_path_prefix ) );
 
-			std::error_code ec;
-			for( fs::directory_iterator it( search_directory, ec ), it_end;
-				!ec && it != it_end;
-				it = it.increment(ec) )
-			{
-				fs_path entry_absolute_path= llvm::StringRef( it->path() );
-
-				if( fsp::has_filename( entry_absolute_path ) )
-				{
-					const llvm::StringRef entry_filename= fsp::filename( entry_absolute_path );
-					if( entry_filename.startswith( file_name_to_search ) )
-					{
-						PathCompletionItem item;
-
-						item.completed_path= entry_filename;
-						if( it->type() == fs::file_type::directory_file )
-							item.completed_path+= "/";
-
-						item.full_absolute_path= NormalizePath( entry_absolute_path ).str().str();
-						result.push_back( std::move(item) );
-					}
-				}
-			}
+			SearchDirectoryForCompletions( search_directory, file_name_to_search, result );
 		}
 
 		return result;
@@ -232,6 +255,37 @@ public: // IVfs
 				return true;
 		}
 		return false;
+	}
+
+private:
+	void SearchDirectoryForCompletions(
+		const fs_path& search_directory,
+		const fs_path& file_name_to_search,
+		std::vector<PathCompletionItem>& result )
+	{
+		std::error_code ec;
+		for( fs::directory_iterator it( search_directory, ec ), it_end;
+			!ec && it != it_end;
+			it = it.increment(ec) )
+		{
+			fs_path entry_absolute_path= llvm::StringRef( it->path() );
+
+			if( fsp::has_filename( entry_absolute_path ) )
+			{
+				const llvm::StringRef entry_filename= fsp::filename( entry_absolute_path );
+				if( entry_filename.startswith( file_name_to_search ) )
+				{
+					PathCompletionItem item;
+
+					item.completed_path= entry_filename;
+					if( it->type() == fs::file_type::directory_file )
+						item.completed_path+= "/";
+
+					item.full_absolute_path= NormalizePath( entry_absolute_path ).str().str();
+					result.push_back( std::move(item) );
+				}
+			}
+		}
 	}
 
 private:
