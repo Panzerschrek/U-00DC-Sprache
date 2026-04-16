@@ -594,19 +594,14 @@ std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& po
 {
 	std::vector<CompletionItem> result;
 
-	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );
-	if( linear_position == std::nullopt )
+	if( position.line >= line_to_linear_position_index_.size() )
 		return result;
 
-	const uint32_t line= LinearPositionToLine( line_to_linear_position_index_, *linear_position );
-	U_ASSERT( line < line_to_linear_position_index_.size() );
-
-	const TextLinearPosition line_offset= line_to_linear_position_index_[line];
-	U_ASSERT( *linear_position >= line_offset );
+	const TextLinearPosition line_offset= line_to_linear_position_index_[ position.line ];
 
 	size_t line_end_offset= text_.size();
-	if( line + 1 < line_to_linear_position_index_.size() )
-		line_end_offset= line_to_linear_position_index_[ line + 1 ];
+	if( position.line + 1 < line_to_linear_position_index_.size() )
+		line_end_offset= line_to_linear_position_index_[ position.line + 1 ];
 
 	const size_t line_size= line_end_offset - line_offset;
 
