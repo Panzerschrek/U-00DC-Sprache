@@ -201,7 +201,7 @@ public: // IVfs
 						fs_path remaining_prefix;
 						fsp::append( remaining_prefix, prefix_it, prefix_it_end );
 
-						item.completed_path= *prefix_it;
+						item.completed_path= remaining_prefix.str();
 
 						// Perform prioritization by prefixing name in sort text.
 						// All values names starting with the given text have more priority than values with name matching in the middle/at end.
@@ -222,21 +222,21 @@ public: // IVfs
 			fs_path full_path_prefix= fsp::parent_path( full_parent_file_path );
 			fsp::append( full_path_prefix, file_path_prefix );
 
-			if( !fsp::has_filename( full_path_prefix ) )
-				return result;
-
-			fs_path file_name_to_search= fsp::filename( full_path_prefix );
-			fs_path search_directory;
-
-			if( IsDirectoryLikeFileName( file_name_to_search ) )
+			if( !full_path_prefix.empty() )
 			{
-				file_name_to_search= "";
-				search_directory= NormalizePath( full_path_prefix );
-			}
-			else
-				search_directory= fsp::parent_path( NormalizePath( full_path_prefix ) );
+				fs_path file_name_to_search= fsp::filename( full_path_prefix );
+				fs_path search_directory;
 
-			SearchDirectoryForCompletions( search_directory, file_name_to_search, result );
+				if( IsDirectoryLikeFileName( file_name_to_search ) )
+				{
+					file_name_to_search= "";
+					search_directory= NormalizePath( full_path_prefix );
+				}
+				else
+					search_directory= fsp::parent_path( NormalizePath( full_path_prefix ) );
+
+				SearchDirectoryForCompletions( search_directory, file_name_to_search, result );
+			}
 		}
 
 		return result;
