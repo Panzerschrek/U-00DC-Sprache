@@ -273,7 +273,7 @@ private:
 			if( fsp::has_filename( entry_absolute_path ) )
 			{
 				const llvm::StringRef entry_filename= fsp::filename( entry_absolute_path );
-				if( entry_filename.startswith( file_name_to_search ) )
+				if( entry_filename.starts_with_insensitive( file_name_to_search ) )
 				{
 					PathCompletionItem item;
 
