@@ -313,7 +313,7 @@ private:
 					else
 						item.sort_text= "1_" + item.completed_path;
 
-					item.full_absolute_path= NormalizePath( entry_absolute_path ).str().str();
+					item.absolute_path= NormalizePath( entry_absolute_path ).str().str();
 
 					result.push_back( std::move(item) );
 				}

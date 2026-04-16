@@ -16,7 +16,7 @@ public:
 	struct PathCompletionItem
 	{
 		Path completed_path;
-		Path full_absolute_path;
+		Path absolute_path;
 		std::string sort_text;
 	};
 

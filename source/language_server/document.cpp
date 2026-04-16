@@ -681,12 +681,11 @@ std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& po
 
 	for( IVfs::PathCompletionItem& completion_item : vfs_->CompletePath( IVfs::Path( line_to_complete ), path_ ) )
 	{
-
 		CompletionItem item;
 		item.kind= CompletionItemKind::Module;
 		item.label= std::move( completion_item.completed_path );
 		item.sort_text= std::move( completion_item.sort_text );
-		item.detail= std::move( completion_item.full_absolute_path );
+		item.detail= std::move( completion_item.absolute_path );
 
 		result.push_back( std::move(item) );
 	}
