@@ -72,7 +72,15 @@ public:
 	{
 		U_UNUSED(file_path_prefix);
 		U_UNUSED(full_parent_file_path);
-		return {};
+
+		std::vector<PathCompletionItem> result;
+
+		PathCompletionItem item;
+		item.completed_path= "some import completion";
+
+		result.push_back( std::move(item) );
+
+		return result;
 	}
 
 	virtual bool IsImportingFileAllowed( const Path& full_file_path ) override
@@ -1827,6 +1835,115 @@ U_TEST( Document_GetFileForImportPoint_Test4 )
 	const auto result= document.GetFileForImportPoint( { 2, 22 } );
 	const Uri expected_result= Uri::FromFilePath( imported_path );
 	U_TEST_ASSERT( result == expected_result );
+}
+
+U_TEST( Document_CompleteImport_Test0 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "import \"" );
+
+	const auto result= document.CompleteImport( { 1, 8 } );
+	U_TEST_ASSERT( result.size() == 1 );
+	U_TEST_ASSERT( result[0].label == "some import completion" );
+	U_TEST_ASSERT( result[0].insert_text == "some import completion\"" );
+}
+
+U_TEST( Document_CompleteImport_Test1 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "import \"som" );
+
+	const auto result= document.CompleteImport( { 1, 11 } );
+	U_TEST_ASSERT( result.size() == 1 );
+	U_TEST_ASSERT( result[0].label == "some import completion" );
+	U_TEST_ASSERT( result[0].insert_text == "some import completion\"" );
+}
+
+U_TEST( Document_CompleteImport_Test2 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should handle whitespaces around "import" properly.
+	document.SetText( "		  import		  \"s" );
+
+	const auto result= document.CompleteImport( { 1, 16 } );
+	U_TEST_ASSERT( result.size() == 1 );
+	U_TEST_ASSERT( result[0].label == "some import completion" );
+	U_TEST_ASSERT( result[0].insert_text == "some import completion\"" );
+}
+
+U_TEST( Document_CompleteImport_Test3 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should complete import even if it's not syntactically-correct to do so.
+	document.SetText( R"(
+	struct S{}
+	fn Foo();
+	import "
+	fn Bar();
+)" );
+
+	const auto result= document.CompleteImport( { 4, 9 } );
+	U_TEST_ASSERT( result.size() == 1 );
+	U_TEST_ASSERT( result[0].label == "some import completion" );
+	U_TEST_ASSERT( result[0].insert_text == "some import completion\"" );
+}
+
+U_TEST( Document_CompleteImport_Test4 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should not compete import if there is no ".
+	document.SetText( "import \n" );
+
+	const auto result= document.CompleteImport( { 1, 7 } );
+	U_TEST_ASSERT( result.size() == 0 );
+}
+
+U_TEST( Document_CompleteImport_Test5 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should complete long import between other imports.
+	document.SetText( R"(
+	import "ab.iu"
+	import "bc.iu"
+	import "/the/path/is/long/to/the/
+	import "cd.iu"
+	import "de.iu"
+)" );
+
+	const auto result= document.CompleteImport( { 4, 34 } );
+	U_TEST_ASSERT( result.size() == 1 );
+	U_TEST_ASSERT( result[0].label == "some import completion" );
+	U_TEST_ASSERT( result[0].insert_text == "some import completion\"" );
 }
 
 } // namespace
