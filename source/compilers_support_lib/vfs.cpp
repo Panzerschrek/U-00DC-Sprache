@@ -247,11 +247,11 @@ public: // IVfs
 			result.end(),
 			[]( const PathCompletionItem& l, const PathCompletionItem& r )
 			{
-				if( l.absolute_path != r.absolute_path )
-					return l.absolute_path < r.absolute_path;
+				if( l.sort_text != r.sort_text )
+					return l.sort_text < r.sort_text;
 				if( l.completed_path != r.completed_path )
 					return l.completed_path < r.completed_path;
-				return l.sort_text < r.sort_text;
+				return l.absolute_path < r.absolute_path;
 			} );
 
 		return result;
