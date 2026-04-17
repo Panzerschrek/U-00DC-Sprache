@@ -332,4 +332,65 @@ U_TEST( ImportCompletion_Test6 )
 	}
 }
 
+U_TEST( ImportCompletion_Test7 )
+{
+	// Completion for absolute import with prefixed directories.
+
+	const std::string import_directories[]
+	{
+		tests_directory + "test7/imports/dir0::A_dir",
+		tests_directory + "test7/imports/dir1::B_dir",
+		tests_directory + "test7/imports/dir2::C_dir/subpath",
+	};
+
+	const auto vfs= CreateVfsOverSystemFS( import_directories, {} );
+	U_TEST_ASSERT( vfs != nullptr );
+
+	const IVfs::Path main_file_full_path= vfs->GetFullFilePath( tests_directory + "test7/main.u", "" );
+
+	{ // For "" complete all prefixes.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 5 );
+		U_TEST_ASSERT( completions[0].completed_path == "/A_dir/" );
+		U_TEST_ASSERT( completions[1].completed_path == "/B_dir/" );
+		U_TEST_ASSERT( completions[2].completed_path == "/C_dir/" );
+		U_TEST_ASSERT( completions[3].completed_path == "imports/" );
+		U_TEST_ASSERT( completions[4].completed_path == "main.u" );
+	}
+	if( false ) // TODO - fix it.
+	{ // For "/" should complete all prefixes too.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 3 );
+		U_TEST_ASSERT( completions[0].completed_path == "/A_dir/" );
+		U_TEST_ASSERT( completions[1].completed_path == "/B_dir/" );
+		U_TEST_ASSERT( completions[2].completed_path == "/C_dir/" );
+	}
+	{ // For "/A_dir/" complete contents of this directory.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/A_dir/", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 1 );
+		U_TEST_ASSERT( completions[0].completed_path == "import0.iu" );
+	}
+	{ // For "/B_dir/" complete contents of this directory.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/B_dir/", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 1 );
+		U_TEST_ASSERT( completions[0].completed_path == "import1.iu" );
+	}
+	if( false ) // TODO - fix it.
+	{ // For "/C_dir" complete further path.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/C_dir/s", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 1 );
+		U_TEST_ASSERT( completions[0].completed_path == "subpath/" );
+	}
+	{ // For "/C_dir/s" complete further path.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/C_dir/s", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 1 );
+		U_TEST_ASSERT( completions[0].completed_path == "subpath/" );
+	}
+	{ // For "/C_dir/subpath/" complete contents.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/C_dir/subpath/", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 1 );
+		U_TEST_ASSERT( completions[0].completed_path == "import2.iu" );
+	}
+}
+
 } // namespace
