@@ -1,3 +1,7 @@
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/Support/FileSystem.h>
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+
 #include "../../tests/tests_lib/funcs_registrator.hpp"
 #include "../../tests/tests_lib/tests.hpp"
 #include "../../compilers_support_lib/vfs.hpp"
@@ -250,6 +254,70 @@ U_TEST( ImportCompletion_Test5 )
 		U_TEST_ASSERT( completions[0].completed_path == "eins_drei_vier.iu" );
 		U_TEST_ASSERT( completions[1].completed_path == "eins_zwei_vier.iu" );
 		U_TEST_ASSERT( completions[2].completed_path == "zwei_drei_vier.iu" );
+	}
+}
+
+U_TEST( ImportCompletion_Test6 )
+{
+	// Basic completion for absolute import with non-prefixed directories.
+
+	const std::string import_directories[]
+	{
+		tests_directory + "test6/dir0",
+		tests_directory + "test6/dir1",
+		tests_directory + "test6/dir2",
+	};
+
+	const auto vfs= CreateVfsOverSystemFS( import_directories, {} );
+	U_TEST_ASSERT( vfs != nullptr );
+
+	const IVfs::Path main_file_full_path= vfs->GetFullFilePath( tests_directory + "test6/main.u", "" );
+
+	{ // Complete for "/" - should suggest all files in all import directories.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 7 );
+		U_TEST_ASSERT( completions[0].completed_path == "file0.iu" );
+		U_TEST_ASSERT( completions[1].completed_path == "file1.iu" );
+		U_TEST_ASSERT( completions[2].completed_path == "file2.iu" );
+		U_TEST_ASSERT( completions[3].completed_path == "file22.iu" );
+		U_TEST_ASSERT( completions[4].completed_path == "subdir/" );
+		U_TEST_ASSERT( completions[5].completed_path == "subdir/" ); // Have second copy, since have two such subdirectories.
+		U_TEST_ASSERT( completions[6].completed_path == "unique_prefix.iu" );
+	}
+	{ // Complete for path starting with "/" - should suggest all matching files in all import directories.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/file", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 4 );
+		U_TEST_ASSERT( completions[0].completed_path == "file0.iu" );
+		U_TEST_ASSERT( completions[1].completed_path == "file1.iu" );
+		U_TEST_ASSERT( completions[2].completed_path == "file2.iu" );
+		U_TEST_ASSERT( completions[3].completed_path == "file22.iu" );
+	}
+	{ // Complete for path starting with "/" - should suggest all matching files in all import directories.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/unique", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 1 );
+		U_TEST_ASSERT( completions[0].completed_path == "unique_prefix.iu" );
+	}
+	{ // Complete for path starting with prefix leading to more than one subdirectory - should suggest all matching files in all import directories.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/subdir/", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 2 );
+		U_TEST_ASSERT( completions[0].completed_path == "subfile0.iu" );
+		U_TEST_ASSERT( completions[1].completed_path == "subfile1.iu" );
+	}
+	{ // Complete for path starting with prefix leading to more than one subdirectory - should suggest all matching files in all import directories.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/subdir/su", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 2 );
+		U_TEST_ASSERT( completions[0].completed_path == "subfile0.iu" );
+		U_TEST_ASSERT( completions[1].completed_path == "subfile1.iu" );
+	}
+	{ // Complete for path starting with prefix leading to single file in a subdirectory.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/subdir/0", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 1 );
+		U_TEST_ASSERT( completions[0].completed_path == "subfile0.iu" );
+	}
+	{ // Complete for path starting with prefix leading to single file in a subdirectory.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/subdir/file1", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 1 );
+		U_TEST_ASSERT( completions[0].completed_path == "subfile1.iu" );
 	}
 }
 

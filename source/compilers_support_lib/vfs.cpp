@@ -183,7 +183,7 @@ public: // IVfs
 						if( IsDirectoryLikeFileName( file_name_to_search ) )
 							file_name_to_search= "";
 						else
-							search_directory= fsp::parent_path( search_directory );
+							fsp::remove_filename( search_directory );
 					}
 
 					SearchDirectoryForCompletions( search_directory, file_name_to_search, result );
