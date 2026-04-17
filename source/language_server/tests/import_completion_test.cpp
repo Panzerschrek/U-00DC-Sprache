@@ -340,7 +340,7 @@ U_TEST( ImportCompletion_Test7 )
 	{
 		tests_directory + "test7/imports/dir0::A_dir",
 		tests_directory + "test7/imports/dir1::B_dir",
-		tests_directory + "test7/imports/dir2::C_dir/subpath",
+		tests_directory + "test7/imports/dir2::C_dir/subpath/deep_path",
 	};
 
 	const auto vfs= CreateVfsOverSystemFS( import_directories, {} );
@@ -353,17 +353,16 @@ U_TEST( ImportCompletion_Test7 )
 		U_TEST_ASSERT( completions.size() == 5 );
 		U_TEST_ASSERT( completions[0].completed_path == "/A_dir/" );
 		U_TEST_ASSERT( completions[1].completed_path == "/B_dir/" );
-		U_TEST_ASSERT( completions[2].completed_path == "/C_dir/" );
+		U_TEST_ASSERT( completions[2].completed_path == "/C_dir/subpath/deep_path/" );
 		U_TEST_ASSERT( completions[3].completed_path == "imports/" );
 		U_TEST_ASSERT( completions[4].completed_path == "main.u" );
 	}
-	if( false ) // TODO - fix it.
 	{ // For "/" should complete all prefixes too.
 		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/", main_file_full_path );
 		U_TEST_ASSERT( completions.size() == 3 );
-		U_TEST_ASSERT( completions[0].completed_path == "/A_dir/" );
-		U_TEST_ASSERT( completions[1].completed_path == "/B_dir/" );
-		U_TEST_ASSERT( completions[2].completed_path == "/C_dir/" );
+		U_TEST_ASSERT( completions[0].completed_path == "A_dir/" );
+		U_TEST_ASSERT( completions[1].completed_path == "B_dir/" );
+		U_TEST_ASSERT( completions[2].completed_path == "C_dir/subpath/deep_path/" );
 	}
 	{ // For "/A_dir/" complete contents of this directory.
 		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/A_dir/", main_file_full_path );
@@ -375,19 +374,18 @@ U_TEST( ImportCompletion_Test7 )
 		U_TEST_ASSERT( completions.size() == 1 );
 		U_TEST_ASSERT( completions[0].completed_path == "import1.iu" );
 	}
-	if( false ) // TODO - fix it.
 	{ // For "/C_dir" complete further path.
 		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/C_dir/s", main_file_full_path );
 		U_TEST_ASSERT( completions.size() == 1 );
-		U_TEST_ASSERT( completions[0].completed_path == "subpath/" );
+		U_TEST_ASSERT( completions[0].completed_path == "subpath/deep_path/" );
 	}
 	{ // For "/C_dir/s" complete further path.
 		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/C_dir/s", main_file_full_path );
 		U_TEST_ASSERT( completions.size() == 1 );
-		U_TEST_ASSERT( completions[0].completed_path == "subpath/" );
+		U_TEST_ASSERT( completions[0].completed_path == "subpath/deep_path/" );
 	}
-	{ // For "/C_dir/subpath/" complete contents.
-		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/C_dir/subpath/", main_file_full_path );
+	{ // For "/C_dir/subpath/deep_path/" complete contents.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/C_dir/subpath/deep_path/", main_file_full_path );
 		U_TEST_ASSERT( completions.size() == 1 );
 		U_TEST_ASSERT( completions[0].completed_path == "import2.iu" );
 	}

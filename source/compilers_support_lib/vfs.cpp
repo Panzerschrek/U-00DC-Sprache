@@ -188,11 +188,11 @@ public: // IVfs
 
 					SearchDirectoryForCompletions( search_directory, file_name_to_search, result );
 				}
-				else if( given_path_it != given_path_it_end  )
+				else if( given_path_it != given_path_it_end )
 				{
-					// Complete a prefix element.
+					// Complete remaining prefix.
 
-					const auto pos= prefix_it->find_insensitive( *given_path_it  );
+					const auto pos= prefix_it->find_insensitive( *given_path_it );
 
 					if( given_path_it->empty() || pos != llvm::StringRef::npos )
 					{
@@ -213,6 +213,20 @@ public: // IVfs
 
 						result.push_back( std::move(item) );
 					}
+				}
+				else
+				{
+					// Unconditionally suggest remaining prefix.
+
+					PathCompletionItem item;
+
+					fs_path remaining_prefix;
+					fsp::append( remaining_prefix, prefix_it, prefix_it_end );
+					remaining_prefix+= "/"; // Mark prefixes as directories.
+
+					item.completed_path= remaining_prefix.str();
+
+					result.push_back( std::move(item) );
 				}
 			}
 		}
@@ -246,20 +260,15 @@ public: // IVfs
 				{
 					PathCompletionItem item;
 
-					auto prefix_it= llvm::sys::path::begin(prefixed_include_dir.vfs_path);
-					const auto prefix_it_end= llvm::sys::path::end(prefixed_include_dir.vfs_path);
-					if( prefix_it != prefix_it_end )
+					fs_path path_to_complete;
+					if( !prefixed_include_dir.vfs_path.empty() )
 					{
-						// Add prefix name.
-						item.completed_path= "/";
-						item.completed_path+= *prefix_it;
-						item.completed_path+= "/";
+						path_to_complete+= "/";
+						fsp::append( path_to_complete, prefixed_include_dir.vfs_path );
 					}
-					else
-					{
-						// Add single "/" for non-prefixed imports.
-						item.completed_path+= "/";
-					}
+					path_to_complete+= "/";
+
+					item.completed_path= path_to_complete.str().str();
 
 					item.absolute_path= prefixed_include_dir.host_fs_path.str().str();
 					result.push_back( std::move(item) );
