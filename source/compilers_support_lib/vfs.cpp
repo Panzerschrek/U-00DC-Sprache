@@ -240,6 +240,20 @@ public: // IVfs
 			}
 		}
 
+		// Ensure stable order of results.
+		// It's necessary, since directory entry iteration order used by this function isn't specified.
+		std::sort(
+			result.begin(),
+			result.end(),
+			[]( const PathCompletionItem& l, const PathCompletionItem& r )
+			{
+				if( l.absolute_path != r.absolute_path )
+					return l.absolute_path < r.absolute_path;
+				if( l.completed_path != r.completed_path )
+					return l.completed_path < r.completed_path;
+				return l.sort_text < r.sort_text;
+			} );
+
 		return result;
 	}
 
