@@ -663,8 +663,6 @@ std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& po
 	else
 		return result;
 
-	// TODO - detect closing '"'. If it's present - don't do the completion.
-
 	size_t line_end= line_text.size();
 	while(
 		line_end > line_parse_position &&
@@ -677,7 +675,18 @@ std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& po
 	if( line_end < line_parse_position )
 		return result;
 
-	llvm::StringRef line_to_complete= line_text.substr( line_parse_position, line_end - line_parse_position );
+	const llvm::StringRef line_to_complete= line_text.substr( line_parse_position, line_end - line_parse_position );
+
+	// Make sure we complete within import string, not after it.
+	{
+		char prev_c= '\0';
+		for( const char c : line_to_complete )
+		{
+			if( c == '"' && prev_c != '\\' )
+				return result;
+			prev_c= c;
+		}
+	}
 
 	for( IVfs::PathCompletionItem& completion_item : vfs_->CompletePath( IVfs::Path( line_to_complete ), path_ ) )
 	{

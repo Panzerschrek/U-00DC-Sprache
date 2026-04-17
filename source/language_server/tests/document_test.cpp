@@ -1946,6 +1946,51 @@ U_TEST( Document_CompleteImport_Test5 )
 	U_TEST_ASSERT( result[0].insert_text == "some import completion\"" );
 }
 
+U_TEST( Document_CompleteImport_Test6 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should not compete import after second ".
+	document.SetText( "import \"\"" );
+
+	const auto result= document.CompleteImport( { 1, 9 } );
+	U_TEST_ASSERT( result.size() == 0 );
+}
+
+U_TEST( Document_CompleteImport_Test7 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should not compete import after second ".
+	document.SetText( "import \"some\"" );
+
+	const auto result= document.CompleteImport( { 1, 13 } );
+	U_TEST_ASSERT( result.size() == 0 );
+}
+
+U_TEST( Document_CompleteImport_Test8 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should not compete import after second ".
+	document.SetText( "import \"s\"\n" );
+
+	const auto result= document.CompleteImport( { 1, 10 } );
+	U_TEST_ASSERT( result.size() == 0 );
+}
+
 } // namespace
 
 } // namespace LangServer
