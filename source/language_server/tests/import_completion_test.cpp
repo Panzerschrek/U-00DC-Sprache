@@ -273,6 +273,17 @@ U_TEST( ImportCompletion_Test6 )
 
 	const IVfs::Path main_file_full_path= vfs->GetFullFilePath( tests_directory + "test6/main.u", "" );
 
+	{ // For empty string complete "/" for each import directory.
+		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "", main_file_full_path );
+		U_TEST_ASSERT( completions.size() == 7 );
+		U_TEST_ASSERT( completions[0].completed_path == "/" );
+		U_TEST_ASSERT( completions[1].completed_path == "/" );
+		U_TEST_ASSERT( completions[2].completed_path == "/" );
+		U_TEST_ASSERT( completions[3].completed_path == "dir0/" );
+		U_TEST_ASSERT( completions[4].completed_path == "dir1/" );
+		U_TEST_ASSERT( completions[5].completed_path == "dir2/" );
+		U_TEST_ASSERT( completions[6].completed_path == "main.u" );
+	}
 	{ // Complete for "/" - should suggest all files in all import directories.
 		const std::vector<IVfs::PathCompletionItem> completions= vfs->CompletePath( "/", main_file_full_path );
 		U_TEST_ASSERT( completions.size() == 7 );

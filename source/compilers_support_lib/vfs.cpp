@@ -238,6 +238,33 @@ public: // IVfs
 
 				SearchDirectoryForCompletions( search_directory, file_name_to_search, result );
 			}
+
+			if( file_path_prefix_r.empty() )
+			{
+				// For "" suggest also all prefixes of import directories.
+				for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
+				{
+					PathCompletionItem item;
+
+					auto prefix_it= llvm::sys::path::begin(prefixed_include_dir.vfs_path);
+					const auto prefix_it_end= llvm::sys::path::end(prefixed_include_dir.vfs_path);
+					if( prefix_it != prefix_it_end )
+					{
+						// Add prefix name.
+						item.completed_path= "/";
+						item.completed_path+= *prefix_it;
+						item.completed_path+= "/";
+					}
+					else
+					{
+						// Add single "/" for non-prefixed imports.
+						item.completed_path+= "/";
+					}
+
+					item.absolute_path= prefixed_include_dir.host_fs_path.str().str();
+					result.push_back( std::move(item) );
+				}
+			}
 		}
 
 		// Ensure stable order of results.
