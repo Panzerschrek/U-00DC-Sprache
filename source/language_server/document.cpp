@@ -15,6 +15,8 @@ namespace LangServer
 namespace
 {
 
+const llvm::StringRef import_keyword= "import";
+
 std::optional<DocumentRange> GetErrorRange( const SrcLoc& src_loc, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index )
 {
 	const uint32_t line= src_loc.GetLine();
@@ -314,11 +316,10 @@ std::optional<Uri> Document::GetFileForImportPoint( const DocumentPosition& posi
 	if( line_text.data() + offset_in_line >= line_text_trimmed.data() + line_text_trimmed.size() )
 		return std::nullopt; // Click point is in some whitespace.
 
-	const llvm::StringRef import_str= "import";
-	if( !line_text_trimmed.startswith( import_str ) )
+	if( !line_text_trimmed.startswith( import_keyword ) )
 		return std::nullopt; // Not an import.
 
-	line_text_trimmed= line_text_trimmed.drop_front( import_str.size() );
+	line_text_trimmed= line_text_trimmed.drop_front( import_keyword.size() );
 	line_text_trimmed= line_text_trimmed.ltrim( whitespaces );
 
 	if( line_text.data() + offset_in_line < line_text_trimmed.data() )
@@ -592,6 +593,10 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 
 std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& position ) const
 {
+	// A crude approach for imports completion.
+	// It given line starts with the "import" keyword and a string follows after it, perform import completion.
+	// It's not correct, since no proper syntax analysis is done. But it's mostly fine.
+
 	std::vector<CompletionItem> result;
 
 	if( position.line >= line_to_linear_position_index_.size() )
@@ -634,8 +639,6 @@ std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& po
 		else
 			break;
 	}
-
-	const llvm::StringRef import_keyword= "import"; // TODO - remove hardcode.
 
 	if( line_text.substr( line_parse_position ).startswith( import_keyword ) )
 		line_parse_position+= import_keyword.size();
