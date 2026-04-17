@@ -25,7 +25,7 @@ struct PrefixedIncludeDir
 	fs_path host_fs_path;
 };
 
-fs_path NormalizePath( const fs_path& p )
+fs_path NormalizePath( const llvm::StringRef p )
 {
 	fs_path result;
 	for( auto it= llvm::sys::path::begin(p), it_end= llvm::sys::path::end(p); it != it_end; ++it)
@@ -98,12 +98,12 @@ public: // IVfs
 			// Return real file system path to first existent file.
 			for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
 			{
-				auto given_path_it= llvm::sys::path::begin(file_path);
+				auto given_path_it= fsp::begin(file_path);
 				++given_path_it; // Skip first "/".
-				const auto given_path_it_end= llvm::sys::path::end(file_path);
+				const auto given_path_it_end= fsp::end(file_path);
 
-				auto prefix_it= llvm::sys::path::begin(prefixed_include_dir.vfs_path);
-				const auto prefix_it_end= llvm::sys::path::end(prefixed_include_dir.vfs_path);
+				auto prefix_it= fsp::begin(prefixed_include_dir.vfs_path);
+				const auto prefix_it_end= fsp::end(prefixed_include_dir.vfs_path);
 
 				while( prefix_it != prefix_it_end && given_path_it != given_path_it_end )
 				{
@@ -139,25 +139,23 @@ public: // IVfs
 	{
 		std::vector<PathCompletionItem> result;
 
-		const fs_path file_path_prefix_r( file_path_prefix );
-
-		if( !file_path_prefix_r.empty() && file_path_prefix_r[0] == '/' )
+		if( !file_path_prefix.empty() && file_path_prefix[0] == '/' )
 		{
 			// Absolute import.
 
 			for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
 			{
-				auto given_path_it= llvm::sys::path::begin( file_path_prefix_r );
+				auto given_path_it= fsp::begin( file_path_prefix );
 				++given_path_it; // Skip first "/".
-				const auto given_path_it_end= llvm::sys::path::end( file_path_prefix_r );
+				const auto given_path_it_end= fsp::end( file_path_prefix );
 
-				auto prefix_it= llvm::sys::path::begin(prefixed_include_dir.vfs_path);
-				const auto prefix_it_end= llvm::sys::path::end(prefixed_include_dir.vfs_path);
+				auto prefix_it= fsp::begin(prefixed_include_dir.vfs_path);
+				const auto prefix_it_end= fsp::end(prefixed_include_dir.vfs_path);
 
 				while( prefix_it != prefix_it_end && given_path_it != given_path_it_end )
 				{
 					// For completion perform case-insensitive comparison.
-					if( ! given_path_it->equals_insensitive( *prefix_it ) )
+					if( !given_path_it->equals_insensitive( *prefix_it ) )
 						break;
 					++given_path_it;
 					++prefix_it;
@@ -194,7 +192,7 @@ public: // IVfs
 
 					const auto pos= prefix_it->find_insensitive( *given_path_it );
 
-					if( given_path_it->empty() || pos != llvm::StringRef::npos )
+					if( pos != llvm::StringRef::npos )
 					{
 						PathCompletionItem item;
 
@@ -206,7 +204,7 @@ public: // IVfs
 
 						// Perform prioritization by prefixing name in sort text.
 						// All values names starting with the given text have more priority than values with name matching in the middle/at end.
-						if( given_path_it->empty() || pos == 0 )
+						if( pos == 0 )
 							item.sort_text= "0_" + item.completed_path;
 						else
 							item.sort_text= "1_" + item.completed_path;
@@ -253,9 +251,9 @@ public: // IVfs
 				SearchDirectoryForCompletions( search_directory, file_name_to_search, result );
 			}
 
-			if( file_path_prefix_r.empty() )
+			if( file_path_prefix.empty() )
 			{
-				// For "" suggest also all prefixes of import directories.
+				// For empty input suggest also all prefixes of import directories.
 				for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
 				{
 					PathCompletionItem item;
@@ -332,8 +330,8 @@ public: // IVfs
 
 private:
 	static void SearchDirectoryForCompletions(
-		const fs_path& search_directory,
-		const fs_path& file_name_to_search,
+		const llvm::StringRef search_directory,
+		const llvm::StringRef file_name_to_search,
 		std::vector<PathCompletionItem>& result )
 	{
 		std::error_code ec;
@@ -341,7 +339,7 @@ private:
 			!ec && it != it_end;
 			it = it.increment(ec) )
 		{
-			fs_path entry_absolute_path= llvm::StringRef( it->path() );
+			const llvm::StringRef entry_absolute_path= it->path();
 
 			if( fsp::has_filename( entry_absolute_path ) )
 			{
@@ -349,7 +347,7 @@ private:
 
 				const auto pos= entry_filename.find_insensitive( file_name_to_search );
 
-				if( file_name_to_search.empty() || pos != llvm::StringRef::npos )
+				if( pos != llvm::StringRef::npos )
 				{
 					PathCompletionItem item;
 
@@ -359,7 +357,7 @@ private:
 
 					// Perform prioritization by prefixing name in sort text.
 					// All values names starting with the given text have more priority than values with name matching in the middle/at end.
-					if( file_name_to_search.empty() || pos == 0 )
+					if( pos == 0 )
 						item.sort_text= "0_" + item.completed_path;
 					else
 						item.sort_text= "1_" + item.completed_path;
