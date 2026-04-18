@@ -197,7 +197,7 @@ public: // IVfs
 						PathCompletionItem item;
 
 						fs_path remaining_prefix;
-						fsp::append( remaining_prefix, prefix_it, prefix_it_end );
+						fsp::append( remaining_prefix, prefix_it, prefix_it_end, fsp::Style::posix );
 						remaining_prefix+= "/"; // Mark prefixes as directories.
 
 						item.completed_path= remaining_prefix.str();
@@ -219,7 +219,7 @@ public: // IVfs
 					PathCompletionItem item;
 
 					fs_path remaining_prefix;
-					fsp::append( remaining_prefix, prefix_it, prefix_it_end );
+					fsp::append( remaining_prefix, prefix_it, prefix_it_end, fsp::Style::posix );
 					remaining_prefix+= "/"; // Mark prefixes as directories.
 
 					item.completed_path= remaining_prefix.str();
