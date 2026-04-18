@@ -39,6 +39,13 @@ public:
 		return base_->GetFullFilePath( file_path, full_parent_file_path );
 	}
 
+	virtual std::vector<PathCompletionItem> CompletePath(
+		const Path& file_path_prefix, const Path& full_parent_file_path ) override
+	{
+		std::lock_guard<std::mutex> lock(mutex_);
+		return base_->CompletePath( file_path_prefix, full_parent_file_path );
+	}
+
 	bool IsImportingFileAllowed( const Path& full_file_path ) override
 	{
 		std::lock_guard<std::mutex> lock(mutex_);

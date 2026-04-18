@@ -201,6 +201,11 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 				// so, using "::" breaks completion for ".".
 				//trigger_characters.push_back( Json::Value( "::" ) );
 				trigger_characters.push_back( Json::Value( ":" ) );
+				trigger_characters.push_back( Json::Value( "\"" ) );
+
+				// Trigger completion by entering slashes. It's needed for imports completion.
+				trigger_characters.push_back( Json::Value( "/" ) );
+				trigger_characters.push_back( Json::Value( "\\" ) );
 
 				completion_options["triggerCharacters"]= std::move(trigger_characters);
 			}
@@ -208,6 +213,11 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 				Json::Array commit_characters;
 				commit_characters.push_back( Json::Value( "." ) );
 				commit_characters.push_back( Json::Value( ":" ) );
+
+				// Commit slashes in import paths.
+				commit_characters.push_back( Json::Value( "/" ) );
+				commit_characters.push_back( Json::Value( "\\" ) );
+
 				completion_options["allCommitCharacters"]= std::move(commit_characters);
 			}
 			capabilities["completionProvider"]= std::move(completion_options);
@@ -290,6 +300,8 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 				item["sortText"]= completion_item.sort_text;
 			if( !completion_item.detail.empty() )
 				item["detail"]= completion_item.detail;
+			if( !completion_item.insert_text.empty() )
+				item["insertText"]= completion_item.insert_text;
 			if( completion_item.kind != CompletionItemKind::None )
 				item["kind"]= uint32_t(completion_item.kind);
 

@@ -15,6 +15,8 @@ namespace LangServer
 namespace
 {
 
+const llvm::StringRef import_keyword= "import";
+
 std::optional<DocumentRange> GetErrorRange( const SrcLoc& src_loc, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index )
 {
 	const uint32_t line= src_loc.GetLine();
@@ -314,11 +316,10 @@ std::optional<Uri> Document::GetFileForImportPoint( const DocumentPosition& posi
 	if( line_text.data() + offset_in_line >= line_text_trimmed.data() + line_text_trimmed.size() )
 		return std::nullopt; // Click point is in some whitespace.
 
-	const llvm::StringRef import_str= "import";
-	if( !line_text_trimmed.startswith( import_str ) )
+	if( !line_text_trimmed.startswith( import_keyword ) )
 		return std::nullopt; // Not an import.
 
-	line_text_trimmed= line_text_trimmed.drop_front( import_str.size() );
+	line_text_trimmed= line_text_trimmed.drop_front( import_keyword.size() );
 	line_text_trimmed= line_text_trimmed.ltrim( whitespaces );
 
 	if( line_text.data() + offset_in_line < line_text_trimmed.data() )
@@ -585,9 +586,128 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	result_transformed.reserve( completion_result.size() );
 	for( const CodeBuilder::CompletionItem& item : completion_result )
 		result_transformed.push_back(
-			CompletionItem{ item.name, item.sort_text, item.detail, TranslateCompletionItemKind( item.kind ) } );
+			CompletionItem{ item.name, item.sort_text, item.detail, "", TranslateCompletionItemKind( item.kind ) } );
 
 	return result_transformed;
+}
+
+std::vector<CompletionItem> Document::CompleteImport( const DocumentPosition& position ) const
+{
+	// A crude approach for imports completion.
+	// It given line starts with the "import" keyword and a string follows after it, perform import completion.
+	// It's not correct, since no proper syntax analysis is done. But it's mostly fine.
+
+	std::vector<CompletionItem> result;
+
+	if( position.line >= line_to_linear_position_index_.size() )
+		return result;
+
+	const TextLinearPosition line_offset= line_to_linear_position_index_[ position.line ];
+
+	size_t line_end_offset= text_.size();
+	if( position.line + 1 < line_to_linear_position_index_.size() )
+		line_end_offset= line_to_linear_position_index_[ position.line + 1 ];
+
+	const size_t line_size= line_end_offset - line_offset;
+
+	const llvm::StringRef line_text= llvm::StringRef( text_ ).substr( line_offset, line_size );
+	size_t line_parse_position= 0;
+
+	if( line_text.empty() )
+		return result;
+
+	const auto column_utf8_opt= Utf16PositionToUtf8Position( line_text, position.character );
+	if( column_utf8_opt == std::nullopt )
+	{
+		log_() << "Can't obtain column" << std::endl;
+		return result;
+	}
+
+	const uint32_t column_utf8= *column_utf8_opt;
+
+	const auto is_whitespace= []( const char c ) { return c == ' ' || c == '\t'; };
+
+	// Skip whitespaces before "import".
+	while( true )
+	{
+		if( is_whitespace( line_text[ line_parse_position ] ) )
+		{
+			++line_parse_position;
+			if( line_parse_position == line_text.size() )
+				return result;
+		}
+		else
+			break;
+	}
+
+	if( line_text.substr( line_parse_position ).startswith( import_keyword ) )
+		line_parse_position+= import_keyword.size();
+	else
+		return result;
+
+	if( line_parse_position == line_text.size() )
+		return result;
+
+	// Skip whitespaces after "import" and before the string with import name.
+	while( true )
+	{
+		if( is_whitespace( line_text[ line_parse_position ] ) )
+		{
+			++line_parse_position;
+			if( line_parse_position == line_text.size() )
+				return result;
+		}
+		else
+			break;
+	}
+
+	if( line_text[ line_parse_position ] == '"' )
+		++line_parse_position;
+	else
+		return result;
+
+	size_t line_end= line_text.size();
+	while(
+		line_end > line_parse_position &&
+		( line_text[ line_end - 1 ] == '\n' || line_text[ line_end - 1 ] == '\r' ) )
+		--line_end;
+
+	if( column_utf8 < line_end )
+		line_end= column_utf8;
+
+	if( line_end < line_parse_position )
+		return result;
+
+	const llvm::StringRef line_to_complete= line_text.substr( line_parse_position, line_end - line_parse_position );
+
+	// Make sure we complete within import string, not after it.
+	{
+		char prev_c= '\0';
+		for( const char c : line_to_complete )
+		{
+			if( c == '"' && prev_c != '\\' )
+				return result;
+			prev_c= c;
+		}
+	}
+
+	for( IVfs::PathCompletionItem& completion_item : vfs_->CompletePath( IVfs::Path( line_to_complete ), path_ ) )
+	{
+		CompletionItem item;
+		item.kind= CompletionItemKind::Module;
+		item.label= std::move( completion_item.completed_path );
+		item.sort_text= std::move( completion_item.sort_text );
+		item.detail= std::move( completion_item.absolute_path );
+
+		// Add trailing " into the insert text if it's not a directory name.
+		item.insert_text= item.label;
+		if( !item.label.empty() && item.label.back() != '/' )
+			item.insert_text+= "\"";
+
+		result.push_back( std::move(item) );
+	}
+
+	return result;
 }
 
 std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const DocumentPosition& position )

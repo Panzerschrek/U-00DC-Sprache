@@ -80,6 +80,8 @@ public: // Requests.
 	// Non-const this, since internal compiler state may be changed in completion.
 	std::vector<CompletionItem> Complete( const DocumentPosition& position );
 
+	std::vector<CompletionItem> CompleteImport( const DocumentPosition& position ) const;
+
 	std::vector<CodeBuilder::SignatureHelpItem> GetSignatureHelp( const DocumentPosition& position );
 
 	// Assuming given SrcLoc is identifier start, get identifer end for it and construct result range.

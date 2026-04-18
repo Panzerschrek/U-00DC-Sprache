@@ -51,11 +51,16 @@ General:
 	specified and redirects all method calls to corresponding implementation method calls. A reference to an
 	implementation class can be converted to reference to one of its static interfaces.
 *) Consider supporting sequence filler initializer ( ... ) for tuples
+*) Consider forbidding using different parameter names in function declarations/definitions.
 
 References:
 *) Support second order inner references for coroutine types
 *) Separate reference checking for array elements while accessing via constexpr index
 *) Consider supporting reference pollution involving second order inner references
+*) Find a way to allow reference pollution for outer loop variables in places where it's safe, like when pushing
+	elements containing immutable references inside into a vector. Right now it's impossible to do so without ugly
+	hacks. If it's not possible to do so, consider some other solution for this problem, maybe implemented as some sort
+	of standard library helper.
 
 Templates:
 *) Default template arguments for short type template form
@@ -195,7 +200,6 @@ Language server:
 *) Improve "go to definition" for templates - fix some cases where templates processing doesn't work
 *) Go to definition for non-value names - loop labels, macro names, etc.
 *) Go to definition for macros
-*) Complete file names in "import"
 *) Backup completion for non-compiled documents
 *) Filter-out some symbol kinds in completion, depending on context
 *) Sort completed items using some kind of prioroty

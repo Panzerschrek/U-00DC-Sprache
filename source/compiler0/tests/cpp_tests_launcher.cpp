@@ -48,6 +48,14 @@ public:
 		return file_path;
 	}
 
+	virtual std::vector<PathCompletionItem> CompletePath(
+		const Path& file_path_prefix, const Path& full_parent_file_path ) override
+	{
+		U_UNUSED(file_path_prefix);
+		U_UNUSED(full_parent_file_path);
+		return {};
+	}
+
 	virtual bool IsImportingFileAllowed( const Path& full_file_path ) override
 	{
 		(void) full_file_path;

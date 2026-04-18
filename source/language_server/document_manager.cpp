@@ -106,6 +106,12 @@ IVfs::Path DocumentManager::DocumentManagerVfs::GetFullFilePath( const Path& fil
 	return base_vfs_->GetFullFilePath( file_path, full_parent_file_path );
 }
 
+std::vector<IVfs::PathCompletionItem> DocumentManager::DocumentManagerVfs::CompletePath(
+	const Path& file_path_prefix, const Path& full_parent_file_path )
+{
+	return base_vfs_->CompletePath( file_path_prefix, full_parent_file_path );
+}
+
 DocumentManager::DocumentManager( Logger& log, std::string installation_directory )
 	: log_(log)
 	// TODO - create different build options for different files.
@@ -314,6 +320,10 @@ std::vector<CompletionItem> DocumentManager::Complete( const PositionInDocument&
 		log_() << "Can't find document" << position.uri.ToString() << std::endl;
 		return {};
 	}
+
+	std::vector<CompletionItem> import_complete= it->second.CompleteImport( position.position );
+	if( !import_complete.empty() )
+		return import_complete;
 
 	return it->second.Complete( position.position );
 }

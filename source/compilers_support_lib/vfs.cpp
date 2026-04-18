@@ -25,7 +25,7 @@ struct PrefixedIncludeDir
 	fs_path host_fs_path;
 };
 
-fs_path NormalizePath( const fs_path& p )
+fs_path NormalizePath( const llvm::StringRef p )
 {
 	fs_path result;
 	for( auto it= llvm::sys::path::begin(p), it_end= llvm::sys::path::end(p); it != it_end; ++it)
@@ -98,12 +98,12 @@ public: // IVfs
 			// Return real file system path to first existent file.
 			for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
 			{
-				auto given_path_it= llvm::sys::path::begin(file_path);
+				auto given_path_it= fsp::begin(file_path);
 				++given_path_it; // Skip first "/".
-				const auto given_path_it_end= llvm::sys::path::end(file_path);
+				const auto given_path_it_end= fsp::end(file_path);
 
-				auto prefix_it= llvm::sys::path::begin(prefixed_include_dir.vfs_path);
-				const auto prefix_it_end= llvm::sys::path::end(prefixed_include_dir.vfs_path);
+				auto prefix_it= fsp::begin(prefixed_include_dir.vfs_path);
+				const auto prefix_it_end= fsp::end(prefixed_include_dir.vfs_path);
 
 				while( prefix_it != prefix_it_end && given_path_it != given_path_it_end )
 				{
@@ -132,6 +132,163 @@ public: // IVfs
 			fsp::append( result_path, file_path_r );
 		}
 		return NormalizePath( result_path ).str().str();
+	}
+
+	virtual std::vector<PathCompletionItem> CompletePath(
+		const Path& file_path_prefix, const Path& full_parent_file_path ) override
+	{
+		std::vector<PathCompletionItem> result;
+
+		if( !file_path_prefix.empty() && file_path_prefix[0] == '/' )
+		{
+			// Absolute import.
+
+			for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
+			{
+				auto given_path_it= fsp::begin( file_path_prefix );
+				++given_path_it; // Skip first "/".
+				const auto given_path_it_end= fsp::end( file_path_prefix );
+
+				auto prefix_it= fsp::begin(prefixed_include_dir.vfs_path);
+				const auto prefix_it_end= fsp::end(prefixed_include_dir.vfs_path);
+
+				while( prefix_it != prefix_it_end && given_path_it != given_path_it_end )
+				{
+					// For completion perform case-insensitive comparison.
+					if( !given_path_it->equals_insensitive( *prefix_it ) )
+						break;
+					++given_path_it;
+					++prefix_it;
+				}
+
+				if( prefix_it == prefix_it_end )
+				{
+					// Complete files/directories after prefix.
+
+					fs_path remaining_path;
+					fsp::append( remaining_path, given_path_it, given_path_it_end );
+
+					fs_path file_name_to_search;
+					fs_path search_directory= prefixed_include_dir.host_fs_path;
+
+					if( remaining_path.empty() )
+						file_name_to_search= "";
+					else
+					{
+						file_name_to_search= fsp::filename( remaining_path );
+						fsp::append( search_directory, remaining_path );
+
+						if( IsDirectoryLikeFileName( file_name_to_search ) )
+							file_name_to_search= "";
+						else
+							fsp::remove_filename( search_directory );
+					}
+
+					SearchDirectoryForCompletions( search_directory, file_name_to_search, result );
+				}
+				else if( given_path_it != given_path_it_end )
+				{
+					// Complete remaining prefix.
+
+					const auto pos= prefix_it->find_insensitive( *given_path_it );
+
+					if( pos != llvm::StringRef::npos )
+					{
+						PathCompletionItem item;
+
+						fs_path remaining_prefix;
+						fsp::append( remaining_prefix, prefix_it, prefix_it_end, fsp::Style::posix );
+						remaining_prefix+= "/"; // Mark prefixes as directories.
+
+						item.completed_path= remaining_prefix.str();
+
+						// Perform prioritization by prefixing name in sort text.
+						// All values names starting with the given text have more priority than values with name matching in the middle/at end.
+						if( pos == 0 )
+							item.sort_text= "0_" + item.completed_path;
+						else
+							item.sort_text= "1_" + item.completed_path;
+
+						result.push_back( std::move(item) );
+					}
+				}
+				else
+				{
+					// Unconditionally suggest remaining prefix.
+
+					PathCompletionItem item;
+
+					fs_path remaining_prefix;
+					fsp::append( remaining_prefix, prefix_it, prefix_it_end, fsp::Style::posix );
+					remaining_prefix+= "/"; // Mark prefixes as directories.
+
+					item.completed_path= remaining_prefix.str();
+
+					result.push_back( std::move(item) );
+				}
+			}
+		}
+		else
+		{
+			// Relative import.
+
+			fs_path full_path_prefix= fsp::parent_path( full_parent_file_path );
+			fsp::append( full_path_prefix, file_path_prefix );
+
+			if( !full_path_prefix.empty() )
+			{
+				fs_path file_name_to_search= fsp::filename( full_path_prefix );
+				fs_path search_directory;
+
+				if( IsDirectoryLikeFileName( file_name_to_search ) )
+				{
+					file_name_to_search= "";
+					search_directory= NormalizePath( full_path_prefix );
+				}
+				else
+					search_directory= fsp::parent_path( NormalizePath( full_path_prefix ) );
+
+				SearchDirectoryForCompletions( search_directory, file_name_to_search, result );
+			}
+
+			if( file_path_prefix.empty() )
+			{
+				// For empty input suggest also all prefixes of import directories.
+				for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
+				{
+					PathCompletionItem item;
+
+					fs_path path_to_complete;
+					if( !prefixed_include_dir.vfs_path.empty() )
+					{
+						path_to_complete+= "/";
+						fsp::append( path_to_complete, prefixed_include_dir.vfs_path );
+					}
+					path_to_complete+= "/";
+
+					item.completed_path= path_to_complete.str().str();
+
+					item.absolute_path= prefixed_include_dir.host_fs_path.str().str();
+					result.push_back( std::move(item) );
+				}
+			}
+		}
+
+		// Ensure stable order of results.
+		// It's necessary, since directory entry iteration order used by this function isn't specified.
+		std::sort(
+			result.begin(),
+			result.end(),
+			[]( const PathCompletionItem& l, const PathCompletionItem& r )
+			{
+				if( l.sort_text != r.sort_text )
+					return l.sort_text < r.sort_text;
+				if( l.completed_path != r.completed_path )
+					return l.completed_path < r.completed_path;
+				return l.absolute_path < r.absolute_path;
+			} );
+
+		return result;
 	}
 
 	virtual bool IsImportingFileAllowed( const Path& full_file_path ) override
@@ -169,6 +326,53 @@ public: // IVfs
 				return true;
 		}
 		return false;
+	}
+
+private:
+	static void SearchDirectoryForCompletions(
+		const llvm::StringRef search_directory,
+		const llvm::StringRef file_name_to_search,
+		std::vector<PathCompletionItem>& result )
+	{
+		std::error_code ec;
+		for( fs::directory_iterator it( search_directory, ec ), it_end;
+			!ec && it != it_end;
+			it = it.increment(ec) )
+		{
+			const llvm::StringRef entry_absolute_path= it->path();
+
+			if( fsp::has_filename( entry_absolute_path ) )
+			{
+				const llvm::StringRef entry_filename= fsp::filename( entry_absolute_path );
+
+				const auto pos= entry_filename.find_insensitive( file_name_to_search );
+
+				if( pos != llvm::StringRef::npos )
+				{
+					PathCompletionItem item;
+
+					item.completed_path= entry_filename;
+					if( it->type() == fs::file_type::directory_file )
+						item.completed_path+= "/"; // Mark directories with trailing slash.
+
+					// Perform prioritization by prefixing name in sort text.
+					// All values names starting with the given text have more priority than values with name matching in the middle/at end.
+					if( pos == 0 )
+						item.sort_text= "0_" + item.completed_path;
+					else
+						item.sort_text= "1_" + item.completed_path;
+
+					item.absolute_path= NormalizePath( entry_absolute_path ).str().str();
+
+					result.push_back( std::move(item) );
+				}
+			}
+		}
+	}
+
+	static bool IsDirectoryLikeFileName( const fs_path& file_name )
+	{
+		return file_name == "/" || file_name == "\\" || file_name == "." || file_name == "..";
 	}
 
 private:
