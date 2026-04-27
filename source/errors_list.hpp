@@ -48,6 +48,7 @@ PROCESS_ERROR( FunctionBodyDuplication, "Body for function \"{0}\" already exist
 PROCESS_ERROR( BodyForGeneratedFunction, "Body for generated function \"{0}\"." )
 PROCESS_ERROR( BodyForDeletedFunction, "Body for deleted function \"{0}\"." )
 PROCESS_ERROR( FunctionDeclarationOutsideItsScope, "Function declaration outside its scope." )
+PROCESS_ERROR( FunctionParameterNameMismatch, "Parameter {0} has different names in function declaration and definition (\"{1}\" and \"{2}\")." )
 PROCESS_ERROR( UsingIncompleteType, "Using incomplete type \"{0}\", expected complete type." )
 PROCESS_ERROR( GlobalsLoopDetected, "Globals loop detected:\n{0}" )
 
