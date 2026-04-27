@@ -231,12 +231,12 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test1 )
 		template</ type T, type U />
 		struct FuncsStroage</ T, U />
 		{
-			fn Foo( T t ){}
-			fn Foo( U &imut u ){} // Generates error, if U == T
-			fn Foo( i32 i ){} // Generates error, if T or U is i32
+			fn Foo( T a ){}
+			fn Foo( U &imut a ){} // Generates error, if U == T
+			fn Foo( i32 a ){} // Generates error, if T or U is i32
 
-			fn Baz( T       t, U &imut u ){}
-			fn Baz( U &imut u, T       t ){} // Generates error, if T and U is same
+			fn Baz( T       a, U &imut b ){}
+			fn Baz( U &imut a, T       b ){} // Generates error, if T and U is same
 		}
 
 		fn Foo()
