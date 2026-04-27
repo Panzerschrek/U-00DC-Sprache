@@ -99,3 +99,59 @@ def FunctionParameterNameMismatch_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "FunctionParameterNameMismatch", 9 ) )
+
+
+def FunctionParameterNameMismatch_Test9():
+	c_program_text= """
+		namespace Abc
+		{
+			class Def
+			{
+				fn Foo( this, f32 abc, u16 def, bool& ghi );
+			}
+		}
+		fn Abc::Def::Foo(
+			this,
+			f32 abc,
+			u16 edf, // Mismatch for out of line class method.
+			bool& ghi )
+		{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "FunctionParameterNameMismatch", 12 ) )
+
+
+def FunctionParameterNameMismatch_Test10():
+	c_program_text= """
+		namespace Abc
+		{
+			namespace Def
+			{
+				namespace Ghi
+				{
+					fn Foo( i32 x );
+					fn Foo( i32 y ){} // Mismatch withing a namespce.
+				}
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "FunctionParameterNameMismatch", 9 ) )
+
+
+def FunctionParameterNameMismatch_Test11():
+	c_program_text= """
+		namespace Abc
+		{
+			namespace Def
+			{
+				struct Ghi
+				{
+					fn Foo( i32 x );
+					fn Foo( i32 y ){} // Mismatch withing a class.
+				}
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "FunctionParameterNameMismatch", 9 ) )
