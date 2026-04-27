@@ -1620,7 +1620,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 	enum_.no_discard= enum_declaration.no_discard;
 }
 
-fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr )
+fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr )
 {
 	if( !type_alias_ptr.lock_imut().deref().t.empty() )
 	{
@@ -1632,7 +1632,7 @@ fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope_ptr, ust::s
 	auto syntax_element_ptr= type_alias_ptr.lock_imut().deref().syntax_element;
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
-	var Type mut t= PrepareType( names_scope_ptr, function_context, syntax_element_ptr.deref().type_name );
+	var Type mut t= PrepareType( names_scope, function_context, syntax_element_ptr.deref().type_name );
 
 	// Finally, update type alias.
 	auto mut lock= type_alias_ptr.lock_mut();
@@ -1857,7 +1857,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	lock.deref().variable= move(variable_ptr);
 }
 
-fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr )
+fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr )
 {
 	if( !global_auto_variable_ptr.lock_imut().deref().variable.empty() )
 	{
@@ -1880,7 +1880,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 		.name= auto_variable_declaration.name,
 	};
 
-	var VariablePtr expr_ptr= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, auto_variable_declaration.initializer_expression );
+	var VariablePtr expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, auto_variable_declaration.initializer_expression );
 	auto expr_lock= expr_ptr.lock_imut();
 	var Variable& expr= expr_lock.deref();
 
@@ -1891,21 +1891,21 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	}
 	if( !variable.t.CanBeConstexpr() )
 	{
-		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope_ptr, auto_variable_declaration.src_loc )
+		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope, auto_variable_declaration.src_loc )
 		return;
 	}
 
 	// Disable global mutable references because of problems with initializers and references protection.
 	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference && is_mutable )
 	{
-		REPORT_ERROR( MutableGlobalReferencesAreNotAllowed, names_scope_ptr, auto_variable_declaration.src_loc )
+		REPORT_ERROR( MutableGlobalReferencesAreNotAllowed, names_scope, auto_variable_declaration.src_loc )
 		return;
 	}
 
 	variable.constexpr_value= expr.constexpr_value;
 	if( variable.constexpr_value == Null::LLVMValueRef )
 	{
-		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, auto_variable_declaration.src_loc )
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, auto_variable_declaration.src_loc )
 		return;
 	}
 
@@ -1913,7 +1913,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	{
 		if( expr.value_type == ValueType::Value )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names_scope_ptr, auto_variable_declaration.src_loc )
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, auto_variable_declaration.src_loc )
 			return;
 		}
 
@@ -1921,7 +1921,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	}
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
-		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), auto_variable_declaration.name, variable.t, !is_mutable );
+		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope.lock_imut().deref(), auto_variable_declaration.name, variable.t, !is_mutable );
 		variable.llvm_value= ( is_mutable
 			? AddGlobalMutableVariable( name_mangled, variable.t.GetLLVMType(), auto_variable_declaration.src_loc )
 			: AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), expr.constexpr_value ) );
@@ -1932,7 +1932,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 		{
 			// Create debug info only for mutable variables. Creating it for constants has no reason.
 			debug_info_builder_.try_deref().CreateGlobalVariableInfo(
-				names_scope_ptr,
+				names_scope,
 				variable,
 				auto_variable_declaration.name,
 				auto_variable_declaration.src_loc );

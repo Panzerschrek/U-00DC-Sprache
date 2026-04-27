@@ -1069,7 +1069,7 @@ fn CallingConventionInfoMSVC_X86::CalculateValueArgumentPassingInfo( this, Type&
 class CallingConventionInfoSystemV_AArch64 final : ICallingConventionInfo
 {
 public:
-	fn constructor( LLVMTargetDataRef data_lyout, bool is_darwin );
+	fn constructor( LLVMTargetDataRef data_layout, bool is_darwin );
 
 public: // ICallingConventionInfo
 	fn virtual override CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing;

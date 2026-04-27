@@ -337,37 +337,37 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	ust::array_view_imut</TemplateParam/> template_params,
-	Synt::Expression& param,
+	Synt::Expression& signature_param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
-	if_var( &complex_name : param.get</Synt::ComplexName/>() )
+	if_var( &complex_name : signature_param.get</Synt::ComplexName/>() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, complex_name, template_params_usage_flags );
 	}
-	if_var( &array_type : param.get</ ust::box</ Synt::ArrayType /> />() )
+	if_var( &array_type : signature_param.get</ ust::box</ Synt::ArrayType /> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, array_type.deref(), template_params_usage_flags );
 	}
-	if_var( &tuple_type : param.get</ ust::box</ Synt::TupleType /> />() )
+	if_var( &tuple_type : signature_param.get</ ust::box</ Synt::TupleType /> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, tuple_type.deref(), template_params_usage_flags );
 	}
-	if_var( &raw_pointer_type : param.get</ ust::box</ Synt::RawPointerType /> />() )
+	if_var( &raw_pointer_type : signature_param.get</ ust::box</ Synt::RawPointerType /> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, raw_pointer_type.deref(), template_params_usage_flags );
 	}
-	if_var( &function_type : param.get</ ust::box</Synt::FunctionType/> />() )
+	if_var( &function_type : signature_param.get</ ust::box</Synt::FunctionType/> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, function_type.deref(), template_params_usage_flags );
 	}
-	if_var( &coroutine_type : param.get</ ust::box</Synt::CoroutineType/> />() )
+	if_var( &coroutine_type : signature_param.get</ ust::box</Synt::CoroutineType/> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, coroutine_type.deref(), template_params_usage_flags );
 	}
 
 	// Nothing special - process as regular expression
-	auto expression_value= BuildExpressionCode( names_scope, function_context, param );
-	return CreateTemplateSignatureParam( names_scope, expression_value, Synt::GetSrcLoc(param) );
+	auto expression_value= BuildExpressionCode( names_scope, function_context, signature_param );
+	return CreateTemplateSignatureParam( names_scope, expression_value, Synt::GetSrcLoc(signature_param) );
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -375,10 +375,10 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	ust::array_view_imut</TemplateParam/> template_params,
-	Synt::ComplexName& param,
+	Synt::ComplexName& signature_param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
-	if_var( &name_lookup : param.get</Synt::NameLookup/>() )
+	if_var( &name_lookup : signature_param.get</Synt::NameLookup/>() )
 	{
 		for( auto mut i= 0s; i < template_params.size(); ++i )
 		{
@@ -391,7 +391,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		}
 	}
 
-	if_var( &template_parameterization : param.get</ust::box</Synt::TemplateParameterization/>/>() )
+	if_var( &template_parameterization : signature_param.get</ust::box</Synt::TemplateParameterization/>/>() )
 	{
 		if_var( &name_lookup : template_parameterization.deref().base_.get</ Synt::NameLookup />() )
 		{
@@ -434,7 +434,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 			if( all_params_are_known )
 			{
-				auto value= ResolveValue( names_scope, function_context, param );
+				auto value= ResolveValue( names_scope, function_context, signature_param );
 				if_var( &t : value.get</Type/>() )
 				{
 					return TemplateSignatureParam::Type{ .t= t };
@@ -558,8 +558,8 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	}
 
 	// Nothing special - process as regular expression
-	auto expression_value= BuildExpressionCodeImpl( names_scope, function_context, param );
-	return CreateTemplateSignatureParam( names_scope, expression_value, Synt::GetSrcLoc(param) );
+	auto expression_value= BuildExpressionCodeImpl( names_scope, function_context, signature_param );
+	return CreateTemplateSignatureParam( names_scope, expression_value, Synt::GetSrcLoc(signature_param) );
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -567,36 +567,36 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	ust::array_view_imut</TemplateParam/> template_params,
-	Synt::TypeName& param,
+	Synt::TypeName& signature_param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
-	if_var( &complex_name : param.get</Synt::ComplexName/>() )
+	if_var( &complex_name : signature_param.get</Synt::ComplexName/>() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, complex_name, template_params_usage_flags );
 	}
-	if_var( &array_type : param.get</ ust::box</Synt::ArrayType/> />() )
+	if_var( &array_type : signature_param.get</ ust::box</Synt::ArrayType/> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, array_type.deref(), template_params_usage_flags );
 	}
-	if_var( &tuple_type : param.get</ ust::box</Synt::TupleType/> />() )
+	if_var( &tuple_type : signature_param.get</ ust::box</Synt::TupleType/> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, tuple_type.deref(), template_params_usage_flags );
 	}
-	if_var( &raw_pointer_type : param.get</ ust::box</Synt::RawPointerType/> />() )
+	if_var( &raw_pointer_type : signature_param.get</ ust::box</Synt::RawPointerType/> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, raw_pointer_type.deref(), template_params_usage_flags );
 	}
-	if_var( &function_type : param.get</ ust::box</Synt::FunctionType/> />() )
+	if_var( &function_type : signature_param.get</ ust::box</Synt::FunctionType/> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, function_type.deref(), template_params_usage_flags );
 	}
-	if_var( &coroutine_type : param.get</ ust::box</Synt::CoroutineType/> />() )
+	if_var( &coroutine_type : signature_param.get</ ust::box</Synt::CoroutineType/> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, coroutine_type.deref(), template_params_usage_flags );
 	}
 
 	// Nothing special - process as regular type name.
-	return TemplateSignatureParam::Type{ .t= PrepareType( names_scope, function_context, param ) };
+	return TemplateSignatureParam::Type{ .t= PrepareType( names_scope, function_context, signature_param ) };
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -604,19 +604,19 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	ust::array_view_imut</TemplateParam/> template_params,
-	Synt::ArrayType& param,
+	Synt::ArrayType& signature_param,
 	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
 	var TemplateSignatureParam::Array mut array_type_param
 	{
-		.element_type= CreateTemplateSignatureParam( names_scope, function_context, template_params, param.element_type, template_params_usage_flags ),
-		.element_count= CreateTemplateSignatureParam( names_scope, function_context, template_params, param.element_count, template_params_usage_flags ),
+		.element_type= CreateTemplateSignatureParam( names_scope, function_context, template_params, signature_param.element_type, template_params_usage_flags ),
+		.element_count= CreateTemplateSignatureParam( names_scope, function_context, template_params, signature_param.element_count, template_params_usage_flags ),
 	};
 
 	if( !array_type_param.element_type.GetType().empty() && !array_type_param.element_count.GetVariable().empty() )
 	{
 		// All params are known types/variables, so, this is just a type.
-		return TemplateSignatureParam::Type{ .t= PrepareTypeImpl( names_scope, function_context, param ) };
+		return TemplateSignatureParam::Type{ .t= PrepareTypeImpl( names_scope, function_context, signature_param ) };
 	}
 	return array_type_param;
 }

@@ -282,7 +282,7 @@ private:
 	fn BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type );
 	fn BuildTypeAlias( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr );
 	fn BuiltTypeTemplatesSet( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr );
-	fn BuildGlobalVariable( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr );
+	fn BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr );
 	fn BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr );
 
 	// Returns "true" if ok.
@@ -349,7 +349,7 @@ private:
 	fn ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef;
 	fn ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef;
 	fn ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef;
-	fn ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptre, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef;
+	fn ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef;
 	fn ApplyEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::string_view8 variable_name, SrcLoc& src_loc ) : LLVMValueRef;
 	fn ApplyConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> /> args, SrcLoc& src_loc )  : LLVMValueRef;
 
@@ -367,7 +367,7 @@ private:
 
 	fn BuildFuncCode(
 		mut this,
-		NamesScopePtr& names_scope_ptr,
+		NamesScopePtr& names_scope,
 		FunctionVariable &mut func_variable,
 		ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext /> return_type_deduction_context,
 		ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext /> reference_notation_deduction_context,
@@ -426,7 +426,7 @@ private:
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo;
 	fn BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator ) : BlockElementBuildInfo;
-	fn BuildCStyleForOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator );
+	fn BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator );
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo;
@@ -460,7 +460,7 @@ private:
 		mut this,
 		NamesScopeMutPtr& names_scope,
 		FunctionContext &mut function_context,
-		VariablePtr& variable,
+		VariablePtr& initializer_variable,
 		Synt::DecomposeDeclarationComponent& component );
 
 	template</type T/>
@@ -468,31 +468,31 @@ private:
 		mut this,
 		NamesScopeMutPtr& names_scope,
 		FunctionContext &mut function_context,
-		VariablePtr& variable,
+		VariablePtr& initializer_variable,
 		ust::box</T/>& component )
 	{
-		return BuildDecomposeDeclarationComponentImpl( names_scope, function_context, variable, component.deref() );
+		return BuildDecomposeDeclarationComponentImpl( names_scope, function_context, initializer_variable, component.deref() );
 	}
 
 	fn BuildDecomposeDeclarationComponentImpl(
 		mut this,
 		NamesScopeMutPtr& names_scope,
 		FunctionContext &mut function_context,
-		VariablePtr& variable,
+		VariablePtr& initializer_variable,
 		Synt::DecomposeDeclarationNamedComponent& component );
 
 	fn BuildDecomposeDeclarationComponentImpl(
 		mut this,
 		NamesScopeMutPtr& names_scope,
 		FunctionContext &mut function_context,
-		VariablePtr& variable,
+		VariablePtr& initializer_variable,
 		Synt::DecomposeDeclarationSequenceComponent& component );
 
 	fn BuildDecomposeDeclarationComponentImpl(
 		mut this,
 		NamesScopeMutPtr& names_scope,
 		FunctionContext &mut function_context,
-		VariablePtr& variable,
+		VariablePtr& initializer_variable,
 		Synt::DecomposeDeclarationStructComponent& component );
 
 	fn BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr;
@@ -620,7 +620,7 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		OverloadedOperator operator,
-		VariablePtr& variable,
+		VariablePtr& variable_ptr,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& synt_args,
 		SrcLoc& src_loc ) : ust::optional</Value/>;
 
@@ -844,7 +844,7 @@ private:
 		mut this,
 		NamesScopePtr& args_names_scope,
 		FunctionContext &mut function_context,
-		FunctionsSetPtr& functions_set,
+		FunctionsSetPtr& functions_set_ptr,
 		Synt::TemplateArgs& template_args,
 		SrcLoc& src_loc ) : ust::shared_ptr_nullable_mut</FunctionsSet/>;
 

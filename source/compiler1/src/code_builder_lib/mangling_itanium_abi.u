@@ -51,7 +51,7 @@ private:
 		NamesScope& parent_scope,
 		ust::string_view8 name,
 		FunctionType& function_type,
-		ust::optional_ref_imut</TemplateArgsFinished/> template_args ) : ust::string8;
+		ust::optional_ref_imut</TemplateArgsFinished/> template_args_opt ) : ust::string8;
 
 private:
 	ManglerState state_;

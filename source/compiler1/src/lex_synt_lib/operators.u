@@ -3,9 +3,9 @@ import "operators.iu"
 namespace U1
 {
 
-fn GetOverloadedOperatorForCompoundAssignmentOperator( BinaryOperatorType o ) : OverloadedOperator
+fn GetOverloadedOperatorForCompoundAssignmentOperator( BinaryOperatorType operator_type ) : OverloadedOperator
 {
-	switch(o)
+	switch( operator_type )
 	{
 		BinaryOperatorType::Add -> { return OverloadedOperator::AssignAdd; },
 		BinaryOperatorType::Sub -> { return OverloadedOperator::AssignSub; },
@@ -21,9 +21,9 @@ fn GetOverloadedOperatorForCompoundAssignmentOperator( BinaryOperatorType o ) : 
 	}
 }
 
-fn GetOverloadedOperatorForBinaryOperator( BinaryOperatorType o ) : OverloadedOperator
+fn GetOverloadedOperatorForBinaryOperator( BinaryOperatorType binary_operator_type ) : OverloadedOperator
 {
-	switch(o)
+	switch( binary_operator_type )
 	{
 		BinaryOperatorType::Add -> { return OverloadedOperator::Add; },
 		BinaryOperatorType::Sub -> { return OverloadedOperator::Sub; },
