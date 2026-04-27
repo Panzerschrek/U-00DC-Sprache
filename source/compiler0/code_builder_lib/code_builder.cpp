@@ -1345,6 +1345,8 @@ size_t CodeBuilder::PrepareFunction(
 			const llvm::ArrayRef<Synt::FunctionParam> params= func.type.params;
 			const llvm::ArrayRef<Synt::FunctionParam> prev_params= prev_function->syntax_element->type.params;
 
+			const SrcLoc src_loc= func.block == nullptr ? prev_function->syntax_element->src_loc : func.src_loc;
+
 			for( size_t i= 0; i < std::min( params.size(), prev_params.size() ); ++i )
 			{
 				const std::string_view param_name= params[i].name;
@@ -1352,7 +1354,7 @@ size_t CodeBuilder::PrepareFunction(
 				if( param_name != prev_param_name &&
 					param_name != Keyword( Keywords::this_ ) &&
 					prev_param_name != Keyword( Keywords::this_ ) )
-					REPORT_ERROR( FunctionParameterNameMismatch, names_scope.GetErrors(), func.src_loc, i, param_name, prev_param_name );
+					REPORT_ERROR( FunctionParameterNameMismatch, names_scope.GetErrors(), src_loc, i, param_name, prev_param_name );
 			}
 		}
 
