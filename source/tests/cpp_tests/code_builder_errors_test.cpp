@@ -2155,11 +2155,11 @@ U_TEST(FunctionBodyDuplicationTest0)
 
 U_TEST(FunctionBodyDuplicationTest1)
 {
-	// Functions with args of same type but different name is same.
+	// Functions with args of same type are same.
 	static const char c_program_text[]=
 	R"(
 		fn Bar( i32 x, f64 y ){}
-		fn Bar( i32 xx, f64 yy ){}
+		fn Bar( i32 x, f64 y ){}
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
