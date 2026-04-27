@@ -922,6 +922,42 @@ fn CodeBuilder::PrepareFunction(
 
 	if_var( &mut prev_function : GetFunctionWithSameType( functions_set, function_variable.t ) )
 	{
+		{
+			var ust::optional_ref_imut</Synt::Function/> mut prev_function_syntax_element_opt;
+			if( !prev_function.prototype_syntax_element.empty() )
+			{
+				prev_function_syntax_element_opt= prev_function.prototype_syntax_element.try_deref();
+			}
+			else if( !prev_function.body_syntax_element.empty() )
+			{
+				prev_function_syntax_element_opt= prev_function.body_syntax_element.try_deref();
+			}
+
+			if_var( &prev_function_syntax_element : prev_function_syntax_element_opt )
+			{
+				var ust::array_view_imut</Synt::FunctionType::Param/> params= function_declaration.function_type.params;
+				var ust::array_view_imut</Synt::FunctionType::Param/> prev_params= prev_function_syntax_element.function_type.params;
+
+				for( auto mut i= 0s; i < ust::min( params.size(), prev_params.size() ); ++i )
+				{
+					var Synt::FunctionType::Param& param= params[i];
+					var Synt::FunctionType::Param& prev_param= prev_params[i];
+					if( param.name != prev_param.name &&
+						param.name != KeywordToString( Keyword::this_ ) &&
+						prev_param.name != KeywordToString( Keyword::this_ ) )
+					{
+						REPORT_ERROR(
+							FunctionParameterNameMismatch,
+							names_scope_ptr,
+							( function_declaration.block.empty() ? prev_param.src_loc : param.src_loc ),
+							i,
+							param.name,
+							prev_param.name )
+					}
+				}
+			}
+		}
+
 		if( prev_function.prototype_syntax_element.empty() )
 		{
 			prev_function.prototype_syntax_element= function_variable.prototype_syntax_element;
