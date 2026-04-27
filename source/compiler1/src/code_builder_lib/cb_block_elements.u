@@ -3536,12 +3536,12 @@ fn CodeBuilder::BuildDecomposeDeclarationComponent(
 	mut this,
 	NamesScopeMutPtr& names_scope,
 	FunctionContext &mut function_context,
-	VariablePtr& variable,
+	VariablePtr& initializer_variable,
 	Synt::DecomposeDeclarationComponent& component )
 {
 	variant_visit( &el : component )
 	{
-		BuildDecomposeDeclarationComponentImpl( names_scope, function_context, variable, el );
+		BuildDecomposeDeclarationComponentImpl( names_scope, function_context, initializer_variable, el );
 	}
 }
 
@@ -3644,10 +3644,10 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 	mut this,
 	NamesScopeMutPtr& names_scope,
 	FunctionContext &mut function_context,
-	VariablePtr& variable,
+	VariablePtr& initializer_variable,
 	Synt::DecomposeDeclarationSequenceComponent& component )
 {
-	var VariableLite variable_lite= variable.lock_imut().deref();
+	var VariableLite variable_lite= initializer_variable.lock_imut().deref();
 
 	if( variable_lite.value_type != ValueType::Value )
 	{
@@ -3677,12 +3677,12 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 						( variable_lite.constexpr_value == Null::LLVMValueRef
 							? Null::LLVMValueRef
 							: unsafe( LLVMGetAggregateElement( variable_lite.constexpr_value, u32(i) ) ) ),
-					.name= ust::concat( variable.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
+					.name= ust::concat( initializer_variable.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
 					.src_loc= component.src_loc,
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( element_variable );
-			function_context.references_graph.TryAddInnerLinks( variable, element_variable, names_scope, component.src_loc );
+			function_context.references_graph.TryAddInnerLinks( initializer_variable, element_variable, names_scope, component.src_loc );
 
 			BuildDecomposeDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
 
@@ -3710,12 +3710,12 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 						( variable_lite.constexpr_value == Null::LLVMValueRef
 							? Null::LLVMValueRef
 							: unsafe( LLVMGetAggregateElement( variable_lite.constexpr_value, u32(i) ) ) ),
-					.name= ust::concat( variable.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
+					.name= ust::concat( initializer_variable.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
 					.src_loc= component.src_loc,
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( element_variable );
-			function_context.references_graph.TryAddInnerLinksForTupleElement( variable, element_variable, i, names_scope, component.src_loc );
+			function_context.references_graph.TryAddInnerLinksForTupleElement( initializer_variable, element_variable, i, names_scope, component.src_loc );
 
 			BuildDecomposeDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
 
@@ -3729,7 +3729,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 	}
 
 	// Mark this variable as destroyed - to avoid calling destructs.
-	function_context.references_graph.MoveNode( variable );
+	function_context.references_graph.MoveNode( initializer_variable );
 	CreateLifetimeEnd( function_context, variable_lite.llvm_value );
 }
 
@@ -3737,10 +3737,10 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 	mut this,
 	NamesScopeMutPtr& names_scope,
 	FunctionContext &mut function_context,
-	VariablePtr& variable,
+	VariablePtr& initializer_variable,
 	Synt::DecomposeDeclarationStructComponent& component )
 {
-	var VariableLite variable_lite= variable.lock_imut().deref();
+	var VariableLite variable_lite= initializer_variable.lock_imut().deref();
 
 	if( variable_lite.value_type != ValueType::Value )
 	{
@@ -3906,7 +3906,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 			function_context.references_graph.AddNode( result_reference );
 			RegisterFrameVariable( function_context, result_reference, 1s );
 
-			var VariablePtr inner_reference_node= variable.lock_imut().deref().inner_reference_nodes[ size_type(field.reference_tag) ];
+			var VariablePtr inner_reference_node= initializer_variable.lock_imut().deref().inner_reference_nodes[ size_type(field.reference_tag) ];
 
 			function_context.references_graph.TryAddLink( inner_reference_node, result_reference, names_scope, named_component.src_loc );
 
@@ -3950,12 +3950,12 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 						( variable_lite.constexpr_value == Null::LLVMValueRef
 							? Null::LLVMValueRef
 							: unsafe( LLVMGetAggregateElement( variable_lite.constexpr_value, field.index ) ) ),
-					.name= ust::concat( variable.lock_imut().deref().name, ".", entry.name ),
+					.name= ust::concat( initializer_variable.lock_imut().deref().name, ".", entry.name ),
 					.src_loc= component.src_loc,
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( element_variable );
-			function_context.references_graph.TryAddInnerLinksForClassField( variable, element_variable, field, names_scope, component.src_loc );
+			function_context.references_graph.TryAddInnerLinksForClassField( initializer_variable, element_variable, field, names_scope, component.src_loc );
 
 			BuildDecomposeDeclarationComponent( names_scope, function_context, element_variable, entry.component );
 
@@ -3976,7 +3976,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 	}
 
 	// Mark this variable as destroyed - to avoid calling destructs.
-	function_context.references_graph.MoveNode( variable );
+	function_context.references_graph.MoveNode( initializer_variable );
 	CreateLifetimeEnd( function_context, variable_lite.llvm_value );
 }
 

@@ -51,6 +51,7 @@ def run_tests():
 		"equality_operators_generation_test",
 		"external_symbols_access_test",
 		"fields_sort_test",
+		"function_parameter_name_mismatch_test",
 		"function_pointers_errors_test",
 		"function_pointers_test",
 		"function_reference_notation_test",

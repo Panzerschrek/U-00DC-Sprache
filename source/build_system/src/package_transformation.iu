@@ -136,7 +136,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 	Logger &mut logger,
 	PackageInfo& package_info,
 	PackageAbsoluteName& package_absolute_name,
-	WorkspaceInfo &mut workspace_info ) : bool;
+	WorkspaceInfo &mut workspace ) : bool;
 
 // Returns true if dependency graph is valid - all dependencies are present and there are no circular dependencies.
 fn nodiscard CheckWorkspaceDependencyGraphIsValid( Logger &mut logger, WorkspaceInfo& workspace ) : bool;

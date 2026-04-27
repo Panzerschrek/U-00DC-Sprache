@@ -386,19 +386,19 @@ fn create_directory( filesystem_path_view path ) : io_result</void/>
 	return void();
 }
 
-fn create_directory_with_parents( filesystem_path_view p ) : io_result</void/>
+fn create_directory_with_parents( filesystem_path_view path ) : io_result</void/>
 {
 	// Optimistically assume that we need to create only one directory.
-	if( create_directory( p ).is_ok() )
+	if( create_directory( path ).is_ok() )
 	{
 		return void();
 	}
 
 	// Create components one by one.
 	var filesystem_path mut path_iterative;
-	foreach( component : path::components_iter( p ) )
+	foreach( component : ust::path::components_iter( path ) )
 	{
-		path::append( path_iterative, component );
+		ust::path::append( path_iterative, component );
 		result_check_or_return( create_directory( path_iterative ) );
 	}
 
@@ -574,9 +574,9 @@ fn remove_directory( filesystem_path_view path ) : io_result</void/>
 	return void();
 }
 
-fn remove_directory_recursive( filesystem_path_view p ) : io_result</void/>
+fn remove_directory_recursive( filesystem_path_view path ) : io_result</void/>
 {
-	scoped_array char8 path_nt[ p.size() + 1s ]( p.iter().chain( filesystem_path_view("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	{ // Check if it's a symlink - if so, just remove link.
 		var stat_ mut s= zero_init;
@@ -642,7 +642,7 @@ fn remove_directory_recursive( filesystem_path_view p ) : io_result</void/>
 		}
 
 		var filesystem_path_view entry_name= filesystem_path_view( entry.d_name ).subrange_end( name_size );
-		var filesystem_path entry_full_name= path::join( p, entry_name );
+		var filesystem_path entry_full_name= ust::path::join( path, entry_name );
 
 		var io_result</void/> remove_result=
 			( entry.d_type == u8(DT_DIR)

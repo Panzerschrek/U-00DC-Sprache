@@ -5,12 +5,12 @@ namespace U1
 {
 
 fn LoadSourceGraph(
-	IVfsSharedPtr& vfs_ptr,
+	IVfsSharedPtr& vfs,
 	SourceFilePathHashigFunction source_file_path_hashing_function,
 	ust::string_view8 root_file_path,
 	ust::string_view8 prelude_code ) : SourceGraph
 {
-	with( mut vfs_lock : vfs_ptr.lock_mut() )
+	with( mut vfs_lock : vfs.lock_mut() )
 	{
 		return LoadSourceGraph( vfs_lock.deref(), source_file_path_hashing_function, root_file_path, prelude_code );
 	}

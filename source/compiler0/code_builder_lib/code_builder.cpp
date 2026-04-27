@@ -1340,6 +1340,25 @@ size_t CodeBuilder::PrepareFunction(
 
 	if( FunctionVariable* const prev_function= GetFunctionWithSameType( func_variable.type, functions_set ) )
 	{
+		if( prev_function->syntax_element != nullptr )
+		{
+			const llvm::ArrayRef<Synt::FunctionParam> params= func.type.params;
+			const llvm::ArrayRef<Synt::FunctionParam> prev_params= prev_function->syntax_element->type.params;
+
+			for( size_t i= 0; i < std::min( params.size(), prev_params.size() ); ++i )
+			{
+				const Synt::FunctionParam& param= params[i];
+				const Synt::FunctionParam& prev_param= prev_params[i];
+				if( param.name != prev_param.name &&
+					param.name != Keyword( Keywords::this_ ) &&
+					prev_param.name != Keyword( Keywords::this_ ) )
+				{
+					const SrcLoc& src_loc= func.block == nullptr ? prev_param.src_loc : param.src_loc;
+					REPORT_ERROR( FunctionParameterNameMismatch, names_scope.GetErrors(), src_loc, i, param.name, prev_param.name );
+				}
+			}
+		}
+
 			 if( prev_function->syntax_element->block == nullptr && func.block != nullptr )
 		{ // Ok, body after prototype.
 			prev_function->syntax_element= &func;

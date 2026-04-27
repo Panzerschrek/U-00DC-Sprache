@@ -396,21 +396,21 @@ fn create_directory( filesystem_path_view path ) : io_result</void/>
 	return translate_error_code( last_error );
 }
 
-fn create_directory_with_parents( filesystem_path_view p ) : io_result</void/>
+fn create_directory_with_parents( filesystem_path_view path ) : io_result</void/>
 {
 	// TODO - avoid calling "create_directory", this causes utf8 -> utf16 conversion of the whole path on each call.
 
 	// Optimistically assume that we need to create only one directory.
-	if( create_directory( p ).is_ok() )
+	if( create_directory( path ).is_ok() )
 	{
 		return void();
 	}
 
 	// Create components one by one.
 	var filesystem_path mut path_iterative;
-	foreach( component : path::components_iter( p ) )
+	foreach( component : ust::path::components_iter( path ) )
 	{
-		path::append( path_iterative, component );
+		ust::path::append( path_iterative, component );
 		result_check_or_return( create_directory( path_iterative ) );
 	}
 
@@ -499,9 +499,9 @@ fn remove_directory( filesystem_path_view path ) : io_result</void/>
 	return void();
 }
 
-fn remove_directory_recursive( filesystem_path_view p ) : io_result</void/>
+fn remove_directory_recursive( filesystem_path_view path ) : io_result</void/>
 {
-	var wide_string mut search_path_null_terminated= utf8_to_wide_string( p );
+	var wide_string mut search_path_null_terminated= utf8_to_wide_string( path );
 	if( search_path_null_terminated.empty() )
 	{
 		search_path_null_terminated.push_back( WCHAR( '.' ) );
@@ -534,7 +534,7 @@ fn remove_directory_recursive( filesystem_path_view p ) : io_result</void/>
 		var filesystem_path entry_name= extract_file_name_from_find_data( find_data );
 		if( !directory_entry_should_be_ignored( entry_name ) )
 		{
-			var filesystem_path entry_full_name= path::join( p, entry_name );
+			var filesystem_path entry_full_name= ust::path::join( path, entry_name );
 
 			var io_result</void/> remove_result=
 				( ( find_data.dwFileAttributes & DWORD(FILE_ATTRIBUTE_DIRECTORY) ) != 0u
@@ -567,7 +567,7 @@ fn remove_directory_recursive( filesystem_path_view p ) : io_result</void/>
 	}
 
 	// Can finally remove this directory, since it should be empty.
-	var wide_string mut path_null_terminated = utf8_to_null_terminated_wide_string( p );
+	var wide_string mut path_null_terminated = utf8_to_null_terminated_wide_string( path );
 	var BOOL res= unsafe( ::RemoveDirectoryW( path_null_terminated.data() ) );
 	if( res == 0 )
 	{

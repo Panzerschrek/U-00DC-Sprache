@@ -37,7 +37,7 @@ private:
 		NamesScope& parent_scope,
 		ust::string_view8 name,
 		FunctionType& function_type,
-		ust::optional_ref_imut</TemplateArgsFinished/> template_args ) : ust::string8;
+		ust::optional_ref_imut</TemplateArgsFinished/> template_args_opt ) : ust::string8;
 
 	fn EncodeType( this, ManglerState &mut mangler_state, Type& t );
 	fn EncodeFunctionType( this, ManglerState &mut mangler_state, FunctionType& function_type, bool encode_full_type );
