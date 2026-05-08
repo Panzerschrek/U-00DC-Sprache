@@ -897,8 +897,90 @@ std::optional<DocumentRange> Document::GetIdentifierCurrentRange( const SrcLoc& 
 
 std::string Document::Hover( const DocumentPosition& position )
 {
-	(void)position;
-	return "Document::Hover. TODO - implement it.";
+	TryTakeBackgroundStateUpdate();
+
+	if( compiled_state_ == nullptr || compiled_state_->source_graph->nodes_storage.empty() )
+	{
+		log_() << "Can't hover - document is not compiled" << std::endl;
+		return {};
+	}
+
+	// Perform lexical analysis and other manipulations for current version of the document text.
+
+	const uint32_t line= position.line;
+	if( line >= line_to_linear_position_index_.size() )
+	{
+		log_() << "Line is greater than document end" << std::endl;
+		return {};
+	}
+	const std::string_view line_text= std::string_view(text_).substr( line_to_linear_position_index_[ line ] );
+
+	const auto column_utf8= Utf16PositionToUtf8Position( line_text, position.character );
+	if( column_utf8 == std::nullopt )
+	{
+		log_() << "Can't obtain column" << std::endl;
+		return {};
+	}
+	if( *column_utf8 == 0 )
+	{
+		log_() << "Can't complete at column 0" << std::endl;
+		return {};
+	}
+	const TextLinearPosition column_utf8_minus_one= *column_utf8 - 1u;
+
+	Lexems lexems= LexicalAnalysis( text_ ).lexems;
+
+	SrcLoc src_loc;
+	{
+		const std::optional<TextLinearPosition> idenifier_start_utf8= GetIdentifierStartForPosition( line_text, column_utf8_minus_one );
+		if( idenifier_start_utf8 == std::nullopt )
+		{
+			log_() << "Failed to find identifer start" << std::endl;
+			return {};
+		}
+
+		const auto column= Utf8PositionToUtf32Position( line_text, *idenifier_start_utf8 );
+		if( column == std::nullopt )
+		{
+			log_() << "Failed to get utf32 position" << std::endl;
+			return {};
+		}
+		src_loc= SrcLoc( 0, line, *column );
+
+		if( !FindAndChangeLexem( lexems, src_loc, Lexem::Type::Identifier, Lexem::Type::HoverIdentifier ) )
+		{
+			log_() << "Can't find identifier lexem" << std::endl;
+			return {};
+		}
+	}
+
+	// Perform syntaxis parsing of current text.
+	// In most cases it will fail, but it will still parse text until first error.
+	// Here we assume, that first error is at least at point of completion or further.
+
+	const auto synt_result=
+		Synt::SyntaxAnalysis(
+			lexems,
+			TakeMacrosFromImports( *compiled_state_->source_graph ),
+			std::make_shared<Synt::MacroExpansionContexts>(),
+			CalculateLongStableHash( path_ ) );
+
+	// Lookup global thing, where element with "hover*" lexem is located, together with path to it.
+	const SyntaxTreeLookupResultOpt lookup_result=
+		FindCompletionSyntaxElement( src_loc.GetLine(), src_loc.GetColumn(), synt_result.program_elements );
+	if( lookup_result == std::nullopt )
+	{
+		log_() << "Failed to find parsed syntax element" << std::endl;
+		return {};
+	}
+
+	// Use existing compiled program to perform hover.
+	// Do not try to compile current text, because it is broken and completion will not return what should be returned.
+	// Also it is too slow to recompile program for each completion.
+	return
+		std::visit(
+			[&]( const auto& el ) { return compiled_state_->code_builder->Hover( lookup_result->prefix, *el ); },
+			lookup_result->global_item );
 }
 
 void Document::StartRebuild( llvm::ThreadPool& thread_pool )

@@ -1984,6 +1984,14 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 
 		return std::move(name_lookup_completion);
 	}
+	else if( it_->type == Lexem::Type::HoverIdentifier )
+	{
+		NameLookupHover name_lookup_hover( it_->src_loc );
+		name_lookup_hover.name= it_->text;
+		NextLexem();
+
+		return std::move(name_lookup_hover);
+	}
 	else
 	{
 		PushErrorMessage();

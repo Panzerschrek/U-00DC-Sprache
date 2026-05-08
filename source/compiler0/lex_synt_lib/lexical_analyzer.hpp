@@ -117,6 +117,7 @@ struct Lexem
 		CompletionDot,
 		SignatureHelpBracketLeft,
 		SignatureHelpComma,
+		HoverIdentifier,
 
 		EndOfFile,
 	};

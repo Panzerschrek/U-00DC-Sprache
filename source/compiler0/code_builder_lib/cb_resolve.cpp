@@ -147,6 +147,18 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	return ErrorValue();
 }
 
+Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupHover& name_lookup_hover )
+{
+	// Don't bother handling here "this" or "base".
+
+	const NameLookupResult result= LookupName( names_scope, name_lookup_hover.name, name_lookup_hover.src_loc );
+
+	// TODO - handle "result" here.
+	hover_result_= "TODO - provide proper hover info";
+
+	return ContextualizeValueInResolve( names_scope, function_context, result.value->value, name_lookup_hover.src_loc );
+}
+
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch )
 {
 	const Value base= ResolveValue( names_scope, function_context, names_scope_fetch.base );

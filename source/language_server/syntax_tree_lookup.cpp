@@ -368,6 +368,15 @@ void FindImpl( const Synt::NameLookupCompletion& name_lookup_completion )
 	}
 }
 
+void FindImpl( const Synt::NameLookupHover& name_lookup_hover )
+{
+	if( line_ == name_lookup_hover.src_loc.GetLine() && column_ == name_lookup_hover.src_loc.GetColumn() )
+	{
+		U_ASSERT( global_item_ != std::nullopt );
+		result_= SyntaxTreeLookupResult{ prefix_, &name_lookup_hover, *global_item_ };
+	}
+}
+
 void FindImpl( const Synt::NamesScopeNameFetch& names_scope_name_fetch )
 {
 	FindImpl( names_scope_name_fetch.base );

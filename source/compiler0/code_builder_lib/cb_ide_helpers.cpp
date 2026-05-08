@@ -229,6 +229,13 @@ std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::SignatureHelpResultFina
 	return result;
 }
 
+std::string CodeBuilder::HoverResultFinalize()
+{
+	std::string result= hover_result_;
+	result.swap( hover_result_ );
+	return result;
+}
+
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )
 {
 	WithGlobalFunctionContext(

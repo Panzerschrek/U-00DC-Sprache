@@ -149,6 +149,20 @@ public: // IDE helpers.
 		return SignatureHelpResultFinalize();
 	}
 
+	template<typename T>
+	std::string Hover( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const T& el )
+	{
+		// Use same routines for completion and hover.
+		++completion_request_index_;
+
+		const NamesScopePtr names_scope= GetNamesScopeForCompletion( prefix );
+		if( names_scope == nullptr )
+			return {};
+
+		BuildElementForCompletionImpl( *names_scope, el );
+		return HoverResultFinalize();
+	}
+
 	// Delete bodies of functions (excepth constexpr ones).
 	// This breaks result module and should not be used for a program compilation (with result object file).
 	// But this is usable for ide helpers in order to reduce memory usage.
@@ -213,6 +227,7 @@ private:
 	NamesScopePtr EvaluateCompletionRequestPrefix_r( const NamesScopePtr& start_scope, llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	std::vector<CompletionItem> CompletionResultFinalize();
 	std::vector<SignatureHelpItem> SignatureHelpResultFinalize();
+	std::string HoverResultFinalize();
 
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration );
@@ -300,6 +315,7 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupHover& name_lookup_hover );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_name_fetch );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_name_fetch_completion );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization );
@@ -787,6 +803,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupHover& name_lookup_hover );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion );
@@ -1061,6 +1078,7 @@ private:
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupHover& name_lookup_hover );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization );
@@ -1616,6 +1634,8 @@ private:
 	std::vector<CompletionItem> completion_items_;
 	// Output container for signature help result items.
 	std::vector<SignatureHelpItem> signature_help_items_;
+	// Output hover result.
+	std::string hover_result_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

@@ -48,6 +48,7 @@ bool SingleExpressionIsUselessImpl( const Synt::RootNamespaceNameLookup& ) { ret
 bool SingleExpressionIsUselessImpl( const Synt::RootNamespaceNameLookupCompletion& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::NameLookup& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::NameLookupCompletion& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::NameLookupHover& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::TypeofTypeName& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::NamesScopeNameFetch& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::NamesScopeNameFetchCompletion& ) { return true; }

@@ -2288,6 +2288,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
+	const Synt::NameLookupHover& name_lookup_hover )
+{
+	return ResolveValueImpl( names_scope, function_context, name_lookup_hover );
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::TypeofTypeName& typeof_type_name )
 {
 	return ResolveValueImpl( names_scope, function_context, typeof_type_name );

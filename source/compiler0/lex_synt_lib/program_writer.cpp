@@ -167,6 +167,11 @@ void ElementWrite( const NameLookupCompletion& name_lookup_completion ) const
 	stream_ << name_lookup_completion.name;
 }
 
+void ElementWrite( const NameLookupHover& name_lookup_hover ) const
+{
+	stream_ << name_lookup_hover.name;
+}
+
 void ElementWrite( const NamesScopeNameFetch& names_scope_fetch ) const
 {
 	ElementWrite( names_scope_fetch.base );

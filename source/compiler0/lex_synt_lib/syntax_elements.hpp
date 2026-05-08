@@ -37,6 +37,7 @@ struct RootNamespaceNameLookup;
 struct RootNamespaceNameLookupCompletion;
 struct NameLookup;
 struct NameLookupCompletion;
+struct NameLookupHover;
 struct TypeofTypeName;
 struct NamesScopeNameFetch;
 struct NamesScopeNameFetchCompletion;
@@ -147,6 +148,7 @@ using ComplexName= std::variant<
 	RootNamespaceNameLookupCompletion,
 	NameLookup,
 	NameLookupCompletion,
+	NameLookupHover,
 	// Non-terminal nodes (that contain ComplexName inside).
 	std::unique_ptr<const TypeofTypeName>,
 	std::unique_ptr<const NamesScopeNameFetch>,
@@ -162,6 +164,7 @@ using TypeName= std::variant<
 	RootNamespaceNameLookupCompletion,
 	NameLookup,
 	NameLookupCompletion,
+	NameLookupHover,
 	std::unique_ptr<const TypeofTypeName>,
 	std::unique_ptr<const NamesScopeNameFetch>,
 	std::unique_ptr<const NamesScopeNameFetchCompletion>,
@@ -219,6 +222,7 @@ using Expression= std::variant<
 	RootNamespaceNameLookupCompletion,
 	NameLookup,
 	NameLookupCompletion,
+	NameLookupHover,
 	std::unique_ptr<const TypeofTypeName>,
 	std::unique_ptr<const NamesScopeNameFetch>,
 	std::unique_ptr<const NamesScopeNameFetchCompletion>,
@@ -403,6 +407,17 @@ struct NameLookup
 struct NameLookupCompletion
 {
 	explicit NameLookupCompletion( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::string name;
+};
+
+// Variant of name lookup, used internally by language server for completion.
+// In normal compilation process it is not used.
+struct NameLookupHover
+{
+	explicit NameLookupHover( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
