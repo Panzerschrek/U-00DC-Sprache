@@ -1399,6 +1399,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		return ComplexNameToExpression( ParseComplexName() );
 
 	case Lexem::Type::CompletionIdentifier:
+	case Lexem::Type::HoverIdentifier:
 		return ComplexNameToExpression( ParseComplexName() );
 
 	default:
