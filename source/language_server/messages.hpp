@@ -63,6 +63,11 @@ struct Rename
 	std::string new_name;
 };
 
+struct Hover
+{
+	PositionInDocument position;
+};
+
 } // namespace Requests
 
 using RequestId= std::variant<std::string, int64_t>;
@@ -78,7 +83,8 @@ using RequestParams= std::variant<
 	Requests::Complete,
 	Requests::SignatureHelp,
 	Requests::Highlight,
-	Requests::Rename >;
+	Requests::Rename,
+	Requests::Hover >;
 
 struct Request
 {

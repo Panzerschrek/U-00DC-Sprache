@@ -236,6 +236,11 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 
 			capabilities["signatureHelpProvider"]= std::move(signature_help_options);
 		}
+		{
+			Json::Object hover_options;
+
+			capabilities["hover"]= std::move(hover_options);
+		}
 
 		result["capabilities"]= std::move(capabilities);
 	}
@@ -393,6 +398,19 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 
 		result["changes"]= std::move(changes);
 	}
+
+	return result;
+}
+
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Hover& hover )
+{
+	// TODO - implement hover.
+
+	(void) hover;
+
+	Json::Object result;
+
+	result[ "contents" ]= "TODO - handle hover";
 
 	return result;
 }

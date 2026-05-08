@@ -190,6 +190,19 @@ RequestParams ParseTextDocumentRename( const Json::Value& params )
 	return Requests::Rename{ std::move( *position_in_document ), new_name->str() };
 }
 
+RequestParams ParseTextDocumentHover( const Json::Value& params )
+{
+	const auto obj= params.getAsObject();
+	if( obj == nullptr )
+		return InvalidParams{ "Not an object!" };
+
+	auto position_in_document= JsonToPositionInDocument( *obj );
+	if( position_in_document == std::nullopt )
+		return InvalidParams{ "Failed to get position in document!" };
+
+	return Requests::Hover{ std::move( *position_in_document ) };
+}
+
 RequestParams ParseRequestParams( const std::string_view method, const Json::Value& params )
 {
 	if( method == "initialize" )
@@ -210,6 +223,8 @@ RequestParams ParseRequestParams( const std::string_view method, const Json::Val
 		return ParseTextDocumentHighlight( params );
 	if( method == "textDocument/rename" )
 		return ParseTextDocumentRename( params );
+	if( method == "textDocument/hover" )
+		return ParseTextDocumentHover( params );
 
 	return MethodNotFound{ std::string(method) };
 }

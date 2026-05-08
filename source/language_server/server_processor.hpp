@@ -71,6 +71,7 @@ private:
 	ServerResponse HandleRequestImpl( const Requests::SignatureHelp& signature_help );
 	ServerResponse HandleRequestImpl( const Requests::Highlight& highlight );
 	ServerResponse HandleRequestImpl( const Requests::Rename& rename );
+	ServerResponse HandleRequestImpl( const Requests::Hover& hover );
 
 	// Notifications.
 	void HandleNotificationImpl( const InvalidParams& invalid_params );
