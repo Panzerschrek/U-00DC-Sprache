@@ -281,6 +281,8 @@ private:
 
 	void PerformSignatureHelp( const Value& value );
 
+	void CaptureValueForHover( std::string_view name, const Value& value );
+
 	void DeleteFunctionsBodies_r( NamesScope& names_scope );
 
 private:

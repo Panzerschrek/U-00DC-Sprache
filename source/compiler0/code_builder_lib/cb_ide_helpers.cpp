@@ -1276,6 +1276,61 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 	}
 }
 
+void CodeBuilder::CaptureValueForHover( std::string_view name, const Value& value )
+{
+	hover_result_= "";
+	hover_result_+= name;
+	hover_result_+= ": ";
+
+	if( const auto variable= value.GetVariable() )
+	{
+		hover_result_+= "varible\n";
+		hover_result_+= "type: ";
+		hover_result_+= variable->type.ToString();
+
+		// TODO - print value for constexpr types.
+	}
+	else if( value.GetFunctionsSet() != nullptr )
+	{
+		hover_result_+= "functions set";
+	}
+	else if( const auto type= value.GetTypeName() )
+	{
+		hover_result_+= "type\n";
+		hover_result_+= type->ToString();
+	}
+	else if( const auto class_field= value.GetClassField() )
+	{
+		hover_result_+= "struct/class field\n";
+		hover_result_+= "type: ";
+		hover_result_+= class_field->type.ToString();
+		hover_result_+= "modifiers: ";
+		if( class_field->is_reference )
+		{
+			if( class_field->is_mutable )
+				hover_result_+= "&mut";
+			else
+				hover_result_+= "&imut";
+		}
+		else
+		{
+			if( class_field->is_mutable )
+				hover_result_+= "mut";
+			else
+				hover_result_+= "imut";
+		}
+	}
+	else if( value.GetNamespace() != nullptr )
+	{
+		hover_result_+= "namespace";
+	}
+	else
+	{
+		// TODO - handle other kinds of symbols.
+		hover_result_+= "Something unhandled";
+	}
+}
+
 void CodeBuilder::DeleteFunctionsBodies_r( NamesScope& names_scope )
 {
 	names_scope.ForEachValueInThisScope(

@@ -153,8 +153,8 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 	const NameLookupResult result= LookupName( names_scope, name_lookup_hover.name, name_lookup_hover.src_loc );
 
-	// TODO - handle "result" here.
-	hover_result_= "TODO - provide proper hover info";
+	if( result.value != nullptr )
+		CaptureValueForHover( name_lookup_hover.name, result.value->value );
 
 	return ContextualizeValueInResolve( names_scope, function_context, result.value->value, name_lookup_hover.src_loc );
 }
