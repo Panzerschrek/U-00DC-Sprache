@@ -404,14 +404,8 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 
 ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Hover& hover )
 {
-	// TODO - implement hover.
-
-	(void) hover;
-
 	Json::Object result;
-
-	result[ "contents" ]= "TODO - handle hover";
-
+	result[ "contents" ]= document_manager_.Hover( hover.position );
 	return result;
 }
 

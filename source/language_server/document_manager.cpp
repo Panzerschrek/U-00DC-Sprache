@@ -340,6 +340,18 @@ std::vector<CodeBuilder::SignatureHelpItem> DocumentManager::GetSignatureHelp( c
 	return it->second.GetSignatureHelp( position.position );
 }
 
+std::string DocumentManager::Hover( const PositionInDocument& position )
+{
+	const auto it= documents_container_->documents.find( position.uri );
+	if( it == documents_container_->documents.end() )
+	{
+		log_() << "Can't find document" << position.uri.ToString() << std::endl;
+		return {};
+	}
+
+	return it->second.Hover( position.position );
+}
+
 RangeInDocument DocumentManager::GetDocumentIdentifierRangeOrDummy( const SrcLocInDocument& document_src_loc ) const
 {
 	if( auto range= GetDocumentIdentifierRange( document_src_loc ) )

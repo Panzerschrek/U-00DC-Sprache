@@ -895,6 +895,12 @@ std::optional<DocumentRange> Document::GetIdentifierCurrentRange( const SrcLoc& 
 	return SrcLocToDocumentIdentifierRange( src_loc, text_, line_to_linear_position_index_ );
 }
 
+std::string Document::Hover( const DocumentPosition& position )
+{
+	(void)position;
+	return "Document::Hover. TODO - implement it.";
+}
+
 void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 {
 	TryTakeBackgroundStateUpdate();

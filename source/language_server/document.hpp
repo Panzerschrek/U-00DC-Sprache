@@ -91,6 +91,8 @@ public: // Requests.
 	// Same as abowe, but uses current state of document text.
 	std::optional<DocumentRange> GetIdentifierCurrentRange( const SrcLoc& src_loc ) const;
 
+	std::string Hover( const DocumentPosition& position );
+
 public: // Other stuff.
 	// Start rebuild. Rebuilding itself is performed in background thread.
 	void StartRebuild( llvm::ThreadPool& thread_pool );

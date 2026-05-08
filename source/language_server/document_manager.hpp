@@ -47,6 +47,8 @@ public: // Wrappers for document founctionality. Use them to perform proper rang
 
 	std::vector<CodeBuilder::SignatureHelpItem> GetSignatureHelp( const PositionInDocument& position );
 
+	std::string Hover( const PositionInDocument& position );
+
 private:
 	RangeInDocument GetDocumentIdentifierRangeOrDummy( const SrcLocInDocument& document_src_loc ) const;
 	std::optional<DocumentRange> GetDocumentIdentifierRange( const SrcLocInDocument& document_src_loc ) const;
