@@ -1059,6 +1059,13 @@ fn nomangle main() call_conv( "C" ) : i32
 			}
 		}
 	}
+	{ // Iterator types should be public.
+		type M= ust::hash_map</u32, i32/>;
+		type IteratorMut= M::raw_iterator</ true />;
+		type IteratorImut= M::raw_iterator</ false />;
+		type IteratorElementMut= M::iterator_element_mut;
+		type IteratorElementImut= M::iterator_element_imut;
+	}
 
 	return 0;
 }
