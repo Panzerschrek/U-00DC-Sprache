@@ -132,6 +132,48 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( s != ","u16 );
 		halt if( s.size() != 1s );
 	}
+	{ // resize_uninitialized with size increase.
+		var ust::string8 mut s;
+
+		s.push_back( '@' );
+
+		unsafe
+		{
+			s.resize_uninitialized( 27s );
+
+			for( auto mut i= 0s; i < 26s; ++i )
+			{
+				s[ 1s + i ]= char8( i + size_type( 'a' ) );
+			}
+		}
+
+		halt if( s.size() != 27s );
+
+		halt if( s[0s] != '@' );
+
+		for( auto mut i= 0s; i < 26s; ++i )
+		{
+			halt if( s[ 1s + i ] != char8( i + size_type( 'a' ) ) );
+		}
+	}
+	{ // resize_uninitialized with size decrease.
+		var ust::string8 mut s;
+
+		s.push_back( '6' );
+		s.push_back( 'Q' );
+		s.push_back( '=' );
+		s.push_back( 'n' );
+
+		unsafe
+		{
+			s.resize_uninitialized( 2s );
+		}
+
+		halt if( s.size() != 2s );
+
+		halt if( s[0s] != '6' );
+		halt if( s[1s] != 'Q' );
+	}
 	{ // swap
 		var ust::string8 mut s("0123456789");
 
