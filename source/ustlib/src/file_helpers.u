@@ -14,19 +14,16 @@ fn read_file_to_byte8_vector( filesystem_path_view path ) : io_result</ vector</
 		return io_error::out_of_memory;
 	}
 
+	var vector</byte8/> mut res;
+
 	unsafe // Because of uninitialized.
 	{
-		var vector</byte8/> mut res;
-
-		// It's assumed that compiler can optimize-out filling container memory with uninitialized value.
-		// So, using such approach we prevent unnecessary filling of memory, which will be soon overwritten.
-		var byte8 filler= uninitialized;
-		res.resize( size_type(s), filler );
-
+		// It's fine to use "resize_uninitialized", since file reading initializes the result value.
+		res.resize_uninitialized( size_type(s) );
 		result_check_or_return( f.read_exact( res ) );
-
-		return res;
 	}
+
+	return res;
 }
 
 fn read_file_to_string( filesystem_path_view path ) : io_result</ string8 />
@@ -39,19 +36,16 @@ fn read_file_to_string( filesystem_path_view path ) : io_result</ string8 />
 		return io_error::out_of_memory;
 	}
 
+	var string8 mut res;
+
 	unsafe // Because of uninitialized.
 	{
-		var string8 mut res;
-
-		// It's assumed that compiler can optimize-out filling container memory with uninitialized value.
-		// So, using such approach we prevent unnecessary filling of memory, which will be soon overwritten.
-		var char8 filler= uninitialized;
-		res.resize( size_type(s), filler );
-
+		// It's fine to use "resize_uninitialized", since file reading initializes the result value.
+		res.resize_uninitialized( size_type(s) );
 		result_check_or_return( f.read_exact( res.range().to_byte8_range() ) );
-
-		return res;
 	}
+
+	return res;
 }
 
 fn write_byte8_range_to_file( filesystem_path_view path, array_view_imut</byte8/> range ) : io_result</void/>
