@@ -229,7 +229,7 @@ fn LoadSourceGraph_r(
 			source_graph.macro_expansion_contexts,
 			file_path_hash );
 
-	source_graph.errors.append_from_iterator( synt_result.errors.iter() );
+	source_graph.errors.append_copy( synt_result.errors );
 
 	source_graph.nodes[node_index]=
 		SourceGraph::Node

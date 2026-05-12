@@ -4599,7 +4599,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, Macro::MatchElements& match_elemen
 
 		auto range_after= it_;
 		auto range_size= range_before.size() - range_after.size();
-		element.lexems.append_from_iterator( range_before.subrange_end( range_size ).iter() );
+		element.lexems.append_copy( range_before.subrange_end( range_size ) );
 
 		// Redefinition checked before, while parsing macro itself.
 		macro_variables_map.insert_or_update( match_element.name, move(element) );
@@ -4661,7 +4661,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 					lexems_expanded.push_back( Lexem{ .lexem_type= Lexem::Type::BracketLeft } );
 				}
 
-				lexems_expanded.append_from_iterator( variable.lexems.iter() );
+				lexems_expanded.append_copy( variable.lexems );
 
 				if( variable.need_to_add_brackets_in_expansion )
 				{
