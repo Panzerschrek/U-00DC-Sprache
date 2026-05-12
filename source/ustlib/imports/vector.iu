@@ -544,6 +544,29 @@ public:
 		}
 	}
 
+	// Resize with newly-created elements left in uninitialized state.
+	// You should initialize them properly before reading/writing them and/or before calling other methods modifying this container.
+	fn resize_uninitialized( mut this, size_type new_size ) unsafe
+	{
+		if( new_size > size_ )
+		{
+			unsafe
+			{
+				ensure_capacity( new_size );
+
+				// Leave new elements uninitialized.
+
+				size_= new_size;
+			}
+		}
+		else if( new_size < size_ )
+		{
+			// TODO - optimize. Calls to public methods contain unnecessary checks.
+			var size_type num_elements_to_remove= size_ - new_size;
+			drop_back( num_elements_to_remove );
+		}
+	}
+
 	// "iter" and "range" methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of range and iterator classes where it isn't necessary.
 
 	template<//>

@@ -403,6 +403,48 @@ fn nomangle main() call_conv( "C" ) : i32
 			++i;
 		}
 	}
+	{ // resize_uninitialized with size increase.
+		var I32Vec mut v;
+
+		v.push_back( 139 );
+
+		unsafe
+		{
+			v.resize_uninitialized( 32s );
+
+			for( auto mut i= 0s; i < 31s; ++i )
+			{
+				v[ 1s + i ]= i32(i);
+			}
+		}
+
+		halt if( v.size() != 32s );
+
+		halt if( v[0s] != 139 );
+
+		for( auto mut i= 0s; i < 31s; ++i )
+		{
+			halt if( v[ 1s + i ] != i32(i) );
+		}
+	}
+	{ // resize_uninitialized with size decrease.
+		var I32Vec mut v;
+
+		v.push_back( 8434 );
+		v.push_back( 75456 );
+		v.push_back( 3556 );
+		v.push_back( 3912 );
+
+		unsafe
+		{
+			v.resize_uninitialized( 2s );
+		}
+
+		halt if( v.size() != 2s );
+
+		halt if( v[0s] != 8434 );
+		halt if( v[1s] != 75456 );
+	}
 	{ // Append
 		var I32Vec mut v0, mut v1;
 		v0.push_back( 14 );

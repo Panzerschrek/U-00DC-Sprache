@@ -110,6 +110,10 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::vector</RM/> mut v;
 		v.resize( 10s, r ); //##expect_error CouldNotSelectOverloadedFunction
 	}
+	{ // "resize_uninitialized" used outside unsafe block.
+		var ust::vector</i32/> mut v;
+		v.resize_uninitialized( 16s ); //##expect_error UnsafeFunctionCallOutsideUnsafeBlock
+	}
 	{
 		var ust::vector</RM/> mut v;
 		v.push_back( 5 );
