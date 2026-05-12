@@ -156,7 +156,7 @@ fn LoadSourceGraph_r(
 
 	auto { mut lexems, mut lex_errors : errors } = LexicalAnalysis( file_content_view );
 
-	source_graph.errors.append( lex_errors );
+	source_graph.errors.append_from_other( lex_errors );
 
 	foreach( &mut lexem : lexems )
 	{

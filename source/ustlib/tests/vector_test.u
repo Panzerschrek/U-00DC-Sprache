@@ -445,7 +445,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( v[0s] != 8434 );
 		halt if( v[1s] != 75456 );
 	}
-	{ // Append
+	{ // Append from other
 		var I32Vec mut v0, mut v1;
 		v0.push_back( 14 );
 		v0.push_back( 25 );
@@ -458,7 +458,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		v1.push_back( 710 );
 		halt if( v1.size() != 4s );
 
-		v0.append(v1);
+		v0.append_from_other(v1);
 		halt if( v0.size() != 7s );
 		halt if( v1.size() != 0s );
 

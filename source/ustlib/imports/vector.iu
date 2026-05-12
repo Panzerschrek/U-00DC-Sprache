@@ -369,7 +369,7 @@ public:
 	// modificators
 
 	// Append contents of other vector to this, leave "other" vector empty
-	fn append( mut this, this_type &mut other ) @( c_param1_pollution )
+	fn append_from_other( mut this, this_type &mut other ) @( c_param1_pollution )
 	{
 		auto new_size= add_overflow_check_halt( size_, other.size_ );
 
