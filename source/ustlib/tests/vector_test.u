@@ -482,7 +482,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		v1.push_back( 89 );
 		v1.push_back( 17 );
 
-		v0.append( v1.iter().skip(2s) );
+		v0.append_from_iterator( v1.iter().skip(2s) );
 
 		halt if( v0.size() != 5s );
 		halt if( v0[0s] != 14 );

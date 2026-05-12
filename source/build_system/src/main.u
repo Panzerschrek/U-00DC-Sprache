@@ -1034,7 +1034,7 @@ fn CreatePackageTargetBuildGraphNodes(
 
 		// Add dependencies on generated headers of this build target and generated public headers of dependencies.
 		// Do this in order to ensure headers are generated before this source file is compiled.
-		node.input_files.append( generated_headers_dependencies.iter() );
+		node.input_files.append_from_iterator( generated_headers_dependencies.iter() );
 
 		node.command_line.push_back( source_file_to_compile.source_file_full_path );
 

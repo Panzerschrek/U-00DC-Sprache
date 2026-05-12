@@ -391,9 +391,10 @@ public:
 	}
 
 	// Append contents of an iterator.
+	// If given iterator produces references, referenced values are copied. If it produces values - they are moved.
 	template</type RawIterator/>
 	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
-	append( mut this, iterator</RawIterator/> mut it )
+	append_from_iterator( mut this, iterator</RawIterator/> mut it )
 	{
 		// TODO - if possible, reserve place before this loop.
 		loop
@@ -403,7 +404,7 @@ public:
 			{
 				return;
 			}
-			push_back( r.try_take() );
+			push_back( r.try_take() ); // Contains potential copying here.
 		}
 	}
 
