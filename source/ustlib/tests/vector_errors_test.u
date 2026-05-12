@@ -114,6 +114,11 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::vector</i32/> mut v;
 		v.resize_uninitialized( 16s ); //##expect_error UnsafeFunctionCallOutsideUnsafeBlock
 	}
+	{ // "append_copy" for now can't work for types with references inside.
+		var ust::vector</RI/> mut v;
+		var i32 mut x= 0;
+		v.append_copy( ust::single_element_array_view( RI(x) ) ); //##expect_error CouldNotSelectOverloadedFunction
+	}
 	{
 		var ust::vector</RM/> mut v;
 		v.push_back( 5 );

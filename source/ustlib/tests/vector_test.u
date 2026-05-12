@@ -491,6 +491,47 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( v0[3s] != 89 );
 		halt if( v0[4s] != 17 );
 	}
+	{ // append_copy
+		var I32Vec mut v;
+
+		v.push_back( 27934 );
+		v.push_back( 367344 );
+
+		halt if( v.size() != 2s );
+
+		var [ i32, 5 ] nums[ 673, 89555, 345, -65724 , 44 ];
+
+		v.append_copy( ust::array_view_imut</i32/>( nums ) );
+
+		halt if( v.size() != 7s );
+		halt if( v[0s] != 27934 );
+		halt if( v[1s] != 367344 );
+		halt if( v[2s] != 673 );
+		halt if( v[3s] != 89555 );
+		halt if( v[4s] != 345 );
+		halt if( v[5s] != -65724 );
+		halt if( v[6s] != 44 );
+	}
+	{ // append_copy
+		var ust::vector</ust::string8/> mut v;
+
+		v.push_back( "Anfang" );
+
+		halt if( v.size() != 1s );
+
+		var [ ust::string8, 3 ] strs[ "doch du gehst", "aus diesem Leben", "aus dieser Welt" ];
+		v.append_copy( strs );
+
+		halt if( v.size() != 4s );
+		halt if( v[0s] != "Anfang" );
+		halt if( v[1s] != "doch du gehst" );
+		halt if( v[2s] != "aus diesem Leben" );
+		halt if( v[3s] != "aus dieser Welt" );
+
+		halt if( strs[0s] != "doch du gehst" );
+		halt if( strs[1s] != "aus diesem Leben" );
+		halt if( strs[2s] != "aus dieser Welt" );
+	}
 	{ // ==
 		static_assert( typeinfo</I32Vec/>.is_equality_comparable );
 		var I32Vec mut v0, mut v1, mut v2, mut v3, mut v4, mut v5, mut v6;

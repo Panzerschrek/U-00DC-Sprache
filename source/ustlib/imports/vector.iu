@@ -408,6 +408,29 @@ public:
 		}
 	}
 
+	// Append by taking copies of elements in given range.
+	fn enable_if(
+		typeinfo</T/>.is_copy_constructible &&
+		c_reference_tag_count == 0s /* For now can't process reference tags here - it's too complex. */ )
+	append_copy( mut this, random_access_range_imut</T/> range ) @( c_param1_pollution )
+	{
+		auto new_size= add_overflow_check_halt( size_, range.size() );
+
+		unsafe
+		{
+			ensure_capacity( new_size );
+
+			for( auto mut i= 0s; i < range.size(); ++i )
+			{
+				move_into_uninitialized(
+					$>( ptr_ + size_ + i ),
+					range.index_unchecked(i) /* take copy here */ );
+			}
+		}
+
+		size_= new_size;
+	}
+
 	fn swap( mut this, size_type i0, size_type i1 )
 	{
 		halt if( i0 >= size_ );
