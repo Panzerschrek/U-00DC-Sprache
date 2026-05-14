@@ -192,24 +192,21 @@ fn CodeBuilder::PrepareFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, u
 	// Preapare functions set itself.
 	while( !functions_set.syntax_elements.empty() )
 	{
-		auto syntax_element_ptr= functions_set.syntax_elements.back();
+		auto syntax_element_ptr= functions_set.syntax_elements.pop_back();
 		auto class_type_ptr= functions_set.class_;
 		PrepareFunction( syntax_element_ptr, names_scope_ptr, class_type_ptr, functions_set, false );
-		functions_set.syntax_elements.drop_back();
 	}
 	while( !functions_set.out_of_line_syntax_elements.empty() )
 	{
-		auto syntax_element_ptr= functions_set.out_of_line_syntax_elements.back();
+		auto syntax_element_ptr= functions_set.out_of_line_syntax_elements.pop_back();
 		auto class_type_ptr= functions_set.class_;
 		PrepareFunction( syntax_element_ptr, names_scope_ptr, class_type_ptr, functions_set, true );
-		functions_set.out_of_line_syntax_elements.drop_back();
 	}
 	while( !functions_set.function_templates_syntax_elements.empty() )
 	{
-		auto syntax_element_ptr= functions_set.function_templates_syntax_elements.back();
+		auto syntax_element_ptr= functions_set.function_templates_syntax_elements.pop_back();
 		auto function_template= PrepareFunctionTemplate( names_scope_ptr, syntax_element_ptr, functions_set.class_ );
 		functions_set.function_templates.push_back( function_template );
-		functions_set.function_templates_syntax_elements.drop_back();
 	}
 
 	// Immediately build auto-return functions.

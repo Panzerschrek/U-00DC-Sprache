@@ -1,4 +1,3 @@
-import "../imports/file.iu"
 import "../imports/file_helpers.iu"
 
 namespace ust
@@ -14,19 +13,16 @@ fn read_file_to_byte8_vector( filesystem_path_view path ) : io_result</ vector</
 		return io_error::out_of_memory;
 	}
 
+	var vector</byte8/> mut res;
+
 	unsafe // Because of uninitialized.
 	{
-		var vector</byte8/> mut res;
-
-		// It's assumed that compiler can optimize-out filling container memory with uninitialized value.
-		// So, using such approach we prevent unnecessary filling of memory, which will be soon overwritten.
-		var byte8 filler= uninitialized;
-		res.resize( size_type(s), filler );
-
+		// It's fine to use "resize_uninitialized", since file reading initializes the result value.
+		res.resize_uninitialized( size_type(s) );
 		result_check_or_return( f.read_exact( res ) );
-
-		return res;
 	}
+
+	return res;
 }
 
 fn read_file_to_string( filesystem_path_view path ) : io_result</ string8 />
@@ -39,16 +35,84 @@ fn read_file_to_string( filesystem_path_view path ) : io_result</ string8 />
 		return io_error::out_of_memory;
 	}
 
+	var string8 mut res;
+
 	unsafe // Because of uninitialized.
 	{
-		var string8 mut res;
-
-		// It's assumed that compiler can optimize-out filling container memory with uninitialized value.
-		// So, using such approach we prevent unnecessary filling of memory, which will be soon overwritten.
-		var char8 filler= uninitialized;
-		res.resize( size_type(s), filler );
-
+		// It's fine to use "resize_uninitialized", since file reading initializes the result value.
+		res.resize_uninitialized( size_type(s) );
 		result_check_or_return( f.read_exact( res.range().to_byte8_range() ) );
+	}
+
+	return res;
+}
+
+fn read_file_and_append_to_vector(
+	file_readable &mut file, size_type read_size, vector</byte8/> &mut v ) : io_result</void/>
+{
+	return read_file_and_append_to_vector_impl( file, read_size, v );
+}
+
+fn read_file_and_append_to_vector(
+	file_readable_writeable &mut file, size_type read_size, vector</byte8/> &mut v ) : io_result</void/>
+{
+	return read_file_and_append_to_vector_impl( file, read_size, v );
+}
+
+template</type FileT/>
+fn read_file_and_append_to_vector_impl(
+	FileT &mut file, size_type read_size, vector</byte8/> &mut v ) : io_result</void/>
+{
+	var size_type initial_size= v.size();
+	var size_type result_size= add_overflow_check_halt( initial_size, read_size );
+
+	unsafe
+	{
+		// It's fine to use "resize_uninitialized", since file reading initializes the result value.
+		v.resize_uninitialized( result_size );
+
+		auto res= file.read_exact( v.range().subrange_start( initial_size ) );
+
+		if( !res.is_ok() )
+		{
+			// Resize given vector back in case of read error.
+			v.resize_uninitialized( initial_size );
+		}
+
+		return res;
+	}
+}
+
+fn read_file_and_append_to_string(
+	file_readable &mut file, size_type read_size, string8 &mut s ) : io_result</void/>
+{
+	return read_file_and_append_to_string_impl( file, read_size, s );
+}
+
+fn read_file_and_append_to_string(
+	file_readable_writeable &mut file, size_type read_size, string8 &mut s ) : io_result</void/>
+{
+	return read_file_and_append_to_string_impl( file, read_size, s );
+}
+
+template</type FileT/>
+fn read_file_and_append_to_string_impl( FileT &mut file, size_type read_size, string8 &mut s ) : io_result</void/>
+{
+	var size_type initial_size= s.size();
+	var size_type result_size= add_overflow_check_halt( initial_size, read_size );
+
+	unsafe
+	{
+		// It's fine to use "resize_uninitialized", since file reading initializes the result value.
+		s.resize_uninitialized( result_size );
+
+		auto res= file.read_exact( s.range().subrange_start( initial_size ).to_byte8_range() );
+
+		if( !res.is_ok() )
+		{
+			// Resize given vector back in case of read error.
+			s.resize_uninitialized( initial_size );
+		}
 
 		return res;
 	}

@@ -589,6 +589,23 @@ public:
 		}
 	}
 
+	// Resize with newly-created elements left in uninitialized state.
+	// You should initialize them properly before reading/writing them and/or before calling other methods modifying this container.
+	fn resize_uninitialized( mut this, size_type new_size ) unsafe
+	{
+		if( new_size > size_ )
+		{
+			unsafe
+			{
+				ensure_capacity( new_size );
+
+				// Leave new elements uninitialized.
+			}
+		}
+
+		size_= new_size;
+	}
+
 	fn clear( mut this )
 	{
 		size_= 0s;

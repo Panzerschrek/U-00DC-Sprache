@@ -369,7 +369,7 @@ public:
 	// modificators
 
 	// Append contents of other vector to this, leave "other" vector empty
-	fn append( mut this, this_type &mut other ) @( c_param1_pollution )
+	fn append_from_other( mut this, this_type &mut other ) @( c_param1_pollution )
 	{
 		auto new_size= add_overflow_check_halt( size_, other.size_ );
 
@@ -391,9 +391,10 @@ public:
 	}
 
 	// Append contents of an iterator.
+	// If given iterator produces references, referenced values are copied. If it produces values - they are moved.
 	template</type RawIterator/>
 	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
-	append( mut this, iterator</RawIterator/> mut it )
+	append_from_iterator( mut this, iterator</RawIterator/> mut it )
 	{
 		// TODO - if possible, reserve place before this loop.
 		loop
@@ -403,8 +404,31 @@ public:
 			{
 				return;
 			}
-			push_back( r.try_take() );
+			push_back( r.try_take() ); // Contains potential copying here.
 		}
+	}
+
+	// Append by taking copies of elements in given range.
+	fn enable_if(
+		typeinfo</T/>.is_copy_constructible &&
+		c_reference_tag_count == 0s /* For now can't process reference tags here - it's too complex. */ )
+	append_copy( mut this, random_access_range_imut</T/> range )
+	{
+		auto new_size= add_overflow_check_halt( size_, range.size() );
+
+		unsafe
+		{
+			ensure_capacity( new_size );
+
+			for( auto mut i= 0s; i < range.size(); ++i )
+			{
+				move_into_uninitialized(
+					$>( ptr_ + size_ + i ),
+					range.index_unchecked(i) /* take copy here */ );
+			}
+		}
+
+		size_= new_size;
 	}
 
 	fn swap( mut this, size_type i0, size_type i1 )
@@ -544,6 +568,29 @@ public:
 		}
 	}
 
+	// Resize with newly-created elements left in uninitialized state.
+	// You should initialize them properly before reading/writing them and/or before calling other methods modifying this container.
+	fn resize_uninitialized( mut this, size_type new_size ) unsafe
+	{
+		if( new_size > size_ )
+		{
+			unsafe
+			{
+				ensure_capacity( new_size );
+
+				// Leave new elements uninitialized.
+
+				size_= new_size;
+			}
+		}
+		else if( new_size < size_ )
+		{
+			// TODO - optimize. Calls to public methods contain unnecessary checks.
+			var size_type num_elements_to_remove= size_ - new_size;
+			drop_back( num_elements_to_remove );
+		}
+	}
+
 	// "iter" and "range" methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of range and iterator classes where it isn't necessary.
 
 	template<//>
@@ -659,6 +706,42 @@ public:
 		}
 
 		// Update size - dst is less than size if elements were removed.
+		// All destructors were called previously.
+		size_= dst;
+	}
+
+	// Run given function for all present elements.
+	// Given function should have a single argument of the stored type (or constructible from it).
+	// Elements for which given function returned "false" are removed.
+	// The order of preserved elements is preserved, but they may be moved (change their indices).
+	template</type Func/>
+	fn retain( mut this, Func& func )
+	{
+		var size_type mut dst= 0s, mut src= 0s;
+		while( src < size_ )
+		{
+			if( !func( unsafe( $>( ptr_ + src ) ) ) )
+			{
+				// Destroy an element for which the given function returned "false".
+				unsafe( call_destructor( $>( ptr_ + src ) ) );
+			}
+			else
+			{
+				// Current element should be preserved - move it into destination (unless destination index is equal source).
+				if( dst < src )
+				{
+					unsafe( memory_copy_aligned(
+						c_element_alignment_,
+						ptr_cast_to_byte8( ptr_ + dst ),
+						ptr_cast_to_byte8( ptr_ + src ),
+						c_element_size_ ) );
+				}
+				++dst;
+			}
+			++src;
+		}
+
+		// Update size - "dst" is less than "size" if elements were removed.
 		// All destructors were called previously.
 		size_= dst;
 	}

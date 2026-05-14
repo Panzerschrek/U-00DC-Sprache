@@ -315,7 +315,7 @@ private:
 
 		auto result= parse_method( syntax_analyzer );
 
-		errors_.append( syntax_analyzer.errors_ );
+		errors_.append_from_other( syntax_analyzer.errors_ );
 		return result;
 	}
 
@@ -548,7 +548,7 @@ fn SyntaxAnalyzer::ParseNamespaceBodyImpl( mut this, Lexem::Type end_lexem ) : N
 				if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Namespace ) )
 				{
 					var NamespaceElements mut expanded_namespace_elements= ExpandMacro( macro, ParseNamespaceBodyToFileEnd );
-					namespace_elements.append( expanded_namespace_elements );
+					namespace_elements.append_from_other( expanded_namespace_elements );
 					continue;
 				}
 			}
@@ -2403,7 +2403,7 @@ fn SyntaxAnalyzer::ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : B
 				if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Block ) )
 				{
 					var BlockElements mut expanded_block_elements= ExpandMacro( macro, ParseBlockElementsToFileEnd );
-					block_elements.append( expanded_block_elements );
+					block_elements.append_from_other( expanded_block_elements );
 					continue;
 				}
 			}
@@ -3600,7 +3600,7 @@ fn SyntaxAnalyzer::ParseClassBodyElementsImpl( mut this, Lexem::Type end_lexem )
 				if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Class ) )
 				{
 					var ClassElements mut expanded_class_elements= ExpandMacro( macro, ParseClassBodyElementsToFileEnd );
-					class_elements.append( expanded_class_elements );
+					class_elements.append_from_other( expanded_class_elements );
 					continue;
 				}
 			}
@@ -4599,7 +4599,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, Macro::MatchElements& match_elemen
 
 		auto range_after= it_;
 		auto range_size= range_before.size() - range_after.size();
-		element.lexems.append( range_before.subrange_end( range_size ).iter() );
+		element.lexems.append_copy( range_before.subrange_end( range_size ) );
 
 		// Redefinition checked before, while parsing macro itself.
 		macro_variables_map.insert_or_update( match_element.name, move(element) );
@@ -4661,7 +4661,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 					lexems_expanded.push_back( Lexem{ .lexem_type= Lexem::Type::BracketLeft } );
 				}
 
-				lexems_expanded.append( variable.lexems.iter() );
+				lexems_expanded.append_copy( variable.lexems );
 
 				if( variable.need_to_add_brackets_in_expansion )
 				{
@@ -4702,7 +4702,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 						macro_unique_identifiers_base_name,
 						expansion_src_loc );
 
-				lexems_expanded.append( internal_lexems_expanded );
+				lexems_expanded.append_from_other( internal_lexems_expanded );
 
 				macro_variables_maps_stack.drop_back();
 

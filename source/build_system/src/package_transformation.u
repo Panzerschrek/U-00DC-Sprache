@@ -696,7 +696,7 @@ fn nodiscard RetrieveAndCheckWorkspaceTransitiveDependencies( Logger &mut logger
 				return true;
 			};
 
-		out_build_target.private_dependencies_including_transitive_public_dependencies.append(
+		out_build_target.private_dependencies_including_transitive_public_dependencies.append_from_iterator(
 			dependencies.iter().filter( is_not_in_public_dependencies ) );
 	}
 
@@ -804,7 +804,7 @@ fn ResolvePackageAbsoluteName(
 		}
 
 		var ust::vector</ust::filesystem_path/> mut components;
-		components.append( ust::path::components_iter( parent_package_absolute_name.path ) );
+		components.append_from_iterator( ust::path::components_iter( parent_package_absolute_name.path ) );
 
 		foreach( &child_component : ust::path::components_iter( package_name.path ) )
 		{

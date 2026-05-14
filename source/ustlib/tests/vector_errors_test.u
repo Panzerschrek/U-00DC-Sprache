@@ -110,11 +110,32 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::vector</RM/> mut v;
 		v.resize( 10s, r ); //##expect_error CouldNotSelectOverloadedFunction
 	}
+	{ // "resize_uninitialized" used outside unsafe block.
+		var ust::vector</i32/> mut v;
+		v.resize_uninitialized( 16s ); //##expect_error UnsafeFunctionCallOutsideUnsafeBlock
+	}
+	{ // "append_copy" for now can't work for types with references inside.
+		var ust::vector</RI/> mut v;
+		var i32 mut x= 0;
+		v.append_copy( ust::single_element_array_view( RI(x) ) ); //##expect_error CouldNotSelectOverloadedFunction
+	}
 	{
 		var ust::vector</RM/> mut v;
 		v.push_back( 5 );
 		// pop_back returns a value, which sould be used.
 		v.pop_back(); //##expect_error DiscardingValueMarkedAsNodiscard
+	}
+	{ // "retain" - invalid functor signature.
+		var ust::vector</i32/> mut v;
+		v.retain( lambda() : bool { return true; } ); //##expect_error TemplateContext
+	}
+	{ // "retain" - given functor doesn't return "bool".
+		var ust::vector</i32/> mut v;
+		v.retain( lambda( i32 x ) {} ); //##expect_error TemplateContext
+	}
+	{ // "retain" requires mutable "this".
+		var ust::vector</i32/> v;
+		v.retain( lambda( i32 x ) : bool { return x != 0; } ); //##expect_error CouldNotSelectOverloadedFunction
 	}
 	{
 		var [ i32, 3 ] ints[ 11, 222, 3333 ];

@@ -332,7 +332,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				named_template_args,
 				lambda( NamedTemplateArg& a ) : ust::string8& { return a[0]; } );
 
-			template_args.append(
+			template_args.append_from_iterator(
 				named_template_args.iter().map(
 					lambda( NamedTemplateArg &mut a ) : TemplateArgFinished { return take( a[1] ); } ) );
 		}

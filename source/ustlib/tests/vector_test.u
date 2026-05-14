@@ -403,7 +403,49 @@ fn nomangle main() call_conv( "C" ) : i32
 			++i;
 		}
 	}
-	{ // Append
+	{ // resize_uninitialized with size increase.
+		var I32Vec mut v;
+
+		v.push_back( 139 );
+
+		unsafe
+		{
+			v.resize_uninitialized( 32s );
+
+			for( auto mut i= 0s; i < 31s; ++i )
+			{
+				v[ 1s + i ]= i32(i);
+			}
+		}
+
+		halt if( v.size() != 32s );
+
+		halt if( v[0s] != 139 );
+
+		for( auto mut i= 0s; i < 31s; ++i )
+		{
+			halt if( v[ 1s + i ] != i32(i) );
+		}
+	}
+	{ // resize_uninitialized with size decrease.
+		var I32Vec mut v;
+
+		v.push_back( 8434 );
+		v.push_back( 75456 );
+		v.push_back( 3556 );
+		v.push_back( 3912 );
+
+		unsafe
+		{
+			v.resize_uninitialized( 2s );
+		}
+
+		halt if( v.size() != 2s );
+
+		halt if( v[0s] != 8434 );
+		halt if( v[1s] != 75456 );
+	}
+	{ // Append from other
 		var I32Vec mut v0, mut v1;
 		v0.push_back( 14 );
 		v0.push_back( 25 );
@@ -416,7 +458,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		v1.push_back( 710 );
 		halt if( v1.size() != 4s );
 
-		v0.append(v1);
+		v0.append_from_other(v1);
 		halt if( v0.size() != 7s );
 		halt if( v1.size() != 0s );
 
@@ -440,7 +482,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		v1.push_back( 89 );
 		v1.push_back( 17 );
 
-		v0.append( v1.iter().skip(2s) );
+		v0.append_from_iterator( v1.iter().skip(2s) );
 
 		halt if( v0.size() != 5s );
 		halt if( v0[0s] != 14 );
@@ -448,6 +490,47 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( v0[2s] != 36 );
 		halt if( v0[3s] != 89 );
 		halt if( v0[4s] != 17 );
+	}
+	{ // append_copy
+		var I32Vec mut v;
+
+		v.push_back( 27934 );
+		v.push_back( 367344 );
+
+		halt if( v.size() != 2s );
+
+		var [ i32, 5 ] nums[ 673, 89555, 345, -65724 , 44 ];
+
+		v.append_copy( ust::array_view_imut</i32/>( nums ) );
+
+		halt if( v.size() != 7s );
+		halt if( v[0s] != 27934 );
+		halt if( v[1s] != 367344 );
+		halt if( v[2s] != 673 );
+		halt if( v[3s] != 89555 );
+		halt if( v[4s] != 345 );
+		halt if( v[5s] != -65724 );
+		halt if( v[6s] != 44 );
+	}
+	{ // append_copy
+		var ust::vector</ust::string8/> mut v;
+
+		v.push_back( "Anfang" );
+
+		halt if( v.size() != 1s );
+
+		var [ ust::string8, 3 ] strs[ "doch du gehst", "aus diesem Leben", "aus dieser Welt" ];
+		v.append_copy( strs );
+
+		halt if( v.size() != 4s );
+		halt if( v[0s] != "Anfang" );
+		halt if( v[1s] != "doch du gehst" );
+		halt if( v[2s] != "aus diesem Leben" );
+		halt if( v[3s] != "aus dieser Welt" );
+
+		halt if( strs[0s] != "doch du gehst" );
+		halt if( strs[1s] != "aus diesem Leben" );
+		halt if( strs[2s] != "aus dieser Welt" );
 	}
 	{ // ==
 		static_assert( typeinfo</I32Vec/>.is_equality_comparable );
@@ -583,6 +666,144 @@ fn nomangle main() call_conv( "C" ) : i32
 		v.remove_adjacent_duplicates();
 		halt if( v.size() != 1s );
 		halt if( v[0s] != "77" );
+	}
+	{ // "retain" for empty vector.
+
+		var ust::vector</ ust::string8 /> mut v;
+
+		v.retain( lambda[&]( ust::string8& s ) : bool { return true; } );
+	}
+	{ // "retain" for non-empty vector - preserve all elements.
+
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "schwarz" );
+		v.push_back( "rot" );
+		v.push_back( "gold" );
+
+		v.retain( lambda( ust::string8& s ) : bool { return true; } );
+
+		halt if( v.size() != 3s );
+		halt if( v[0s] != "schwarz" );
+		halt if( v[1s] != "rot" );
+		halt if( v[2s] != "gold" );
+	}
+	{ // "retain" - remove only element with index 0.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "rot" );
+		v.push_back( "orange" );
+		v.push_back( "gelb" );
+		v.push_back( "grün" );
+		v.push_back( "blau" );
+		v.push_back( "violett" );
+		halt if( v.size() != 6s );
+
+		v.retain( lambda( ust::string8& s ) : bool { return s != "rot"; } );
+
+		halt if( v.size() != 5s );
+		halt if( v[0s] != "orange" );
+		halt if( v[1s] != "gelb" );
+		halt if( v[2s] != "grün" );
+		halt if( v[3s] != "blau" );
+		halt if( v[4s] != "violett" );
+	}
+	{ // "retain" - remove only elements with indices 1 and 4.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "rot" );
+		v.push_back( "orange" );
+		v.push_back( "gelb" );
+		v.push_back( "grün" );
+		v.push_back( "blau" );
+		v.push_back( "violett" );
+		halt if( v.size() != 6s );
+
+		v.retain( lambda( ust::string8& s ) : bool { return !( s == "orange" || s == "blau" ); } );
+
+		halt if( v.size() != 4s );
+		halt if( v[0s] != "rot" );
+		halt if( v[1s] != "gelb" );
+		halt if( v[2s] != "grün" );
+		halt if( v[3s] != "violett" );
+	}
+	{ // "retain" - remove several elements at start.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "rot" );
+		v.push_back( "orange" );
+		v.push_back( "gelb" );
+		v.push_back( "grün" );
+		v.push_back( "blau" );
+		v.push_back( "violett" );
+		halt if( v.size() != 6s );
+
+		v.retain( lambda( ust::string8& s ) : bool { return !( s == "rot" || s == "orange" ); } );
+
+		halt if( v.size() != 4s );
+		halt if( v[0s] != "gelb" );
+		halt if( v[1s] != "grün" );
+		halt if( v[2s] != "blau" );
+		halt if( v[3s] != "violett" );
+	}
+	{ // "retain" - remove several elements at end.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "rot" );
+		v.push_back( "orange" );
+		v.push_back( "gelb" );
+		v.push_back( "grün" );
+		v.push_back( "blau" );
+		v.push_back( "violett" );
+		halt if( v.size() != 6s );
+
+		v.retain( lambda( ust::string8& s ) : bool { return !( s == "grün" || s == "blau" || s == "violett" ); } );
+
+		halt if( v.size() != 3s );
+		halt if( v[0s] != "rot" );
+		halt if( v[1s] != "orange" );
+		halt if( v[2s] != "gelb" );
+	}
+	{ // "retain" - remove single element at end.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "rot" );
+		v.push_back( "orange" );
+		v.push_back( "gelb" );
+		v.push_back( "grün" );
+		v.push_back( "blau" );
+		v.push_back( "violett" );
+		halt if( v.size() != 6s );
+
+		v.retain( lambda( ust::string8& s ) : bool { return s != "violett"; } );
+
+		halt if( v.size() != 5s );
+		halt if( v[0s] != "rot" );
+		halt if( v[1s] != "orange" );
+		halt if( v[2s] != "gelb" );
+		halt if( v[3s] != "grün" );
+		halt if( v[4s] != "blau" );
+	}
+	{ // "retain" - remove only elements with indices 1 and 4 and modify other elements.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "rot" );
+		v.push_back( "orange" );
+		v.push_back( "gelb" );
+		v.push_back( "grün" );
+		v.push_back( "blau" );
+		v.push_back( "violett" );
+		halt if( v.size() != 6s );
+
+		v.retain(
+			lambda( ust::string8 &mut s ) : bool
+			{
+				if( s == "orange" || s == "blau" )
+				{
+					return false;
+				}
+				s+= "#";
+				return true;
+			} );
+
+		halt if( v.size() != 4s );
+		halt if( v[0s] != "rot#" );
+		halt if( v[1s] != "gelb#" );
+		halt if( v[2s] != "grün#" );
+		halt if( v[3s] != "violett#" );
 	}
 	{ // vector for type with references inside
 
