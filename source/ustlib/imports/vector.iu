@@ -412,7 +412,7 @@ public:
 	fn enable_if(
 		typeinfo</T/>.is_copy_constructible &&
 		c_reference_tag_count == 0s /* For now can't process reference tags here - it's too complex. */ )
-	append_copy( mut this, random_access_range_imut</T/> range ) @( c_param1_pollution )
+	append_copy( mut this, random_access_range_imut</T/> range )
 	{
 		auto new_size= add_overflow_check_halt( size_, range.size() );
 
