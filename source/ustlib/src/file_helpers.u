@@ -83,6 +83,41 @@ fn read_file_and_append_to_vector_impl(
 	}
 }
 
+fn read_file_and_append_to_string(
+	file_readable &mut file, size_type read_size, string8 &mut s ) : io_result</void/>
+{
+	return read_file_and_append_to_string_impl( file, read_size, s );
+}
+
+fn read_file_and_append_to_string(
+	file_readable_writeable &mut file, size_type read_size, string8 &mut s ) : io_result</void/>
+{
+	return read_file_and_append_to_string_impl( file, read_size, s );
+}
+
+template</type FileT/>
+fn read_file_and_append_to_string_impl( FileT &mut file, size_type read_size, string8 &mut s ) : io_result</void/>
+{
+	var size_type initial_size= s.size();
+	var size_type result_size= add_overflow_check_halt( initial_size, read_size );
+
+	unsafe
+	{
+		// It's fine to use "resize_uninitialized", since file reading initializes the result value.
+		s.resize_uninitialized( result_size );
+
+		auto res= file.read_exact( s.range().subrange_start( initial_size ).to_byte8_range() );
+
+		if( !res.is_ok() )
+		{
+			// Resize given vector back in case of read error.
+			s.resize_uninitialized( initial_size );
+		}
+
+		return res;
+	}
+}
+
 fn write_byte8_range_to_file( filesystem_path_view path, array_view_imut</byte8/> range ) : io_result</void/>
 {
 	result_unwrap_or_return( mut f : file_writeable::create( path ) );

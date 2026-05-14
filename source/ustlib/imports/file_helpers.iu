@@ -28,4 +28,13 @@ fn read_file_and_append_to_vector(
 fn read_file_and_append_to_vector(
 	file_readable_writeable &mut file, size_type read_size, vector</byte8/> &mut v ) : io_result</void/>;
 
+// Read the number of bytes specified from the given file and append them to the given string instance.
+// In case of error preserves the size of the given string instance.
+// Elements previously stored aren't changed.
+fn read_file_and_append_to_string(
+	file_readable &mut file, size_type read_size, string8 &mut s ) : io_result</void/>;
+
+fn read_file_and_append_to_string(
+	file_readable_writeable &mut file, size_type read_size, string8 &mut s ) : io_result</void/>;
+
 } // namespace ust

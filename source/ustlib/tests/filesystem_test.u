@@ -274,6 +274,52 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+
+	// Read a file by appending its contents to a string.
+	{
+		var ust::string8 mut s= "prefix ";
+
+		var ust::file_readable mut f= ust::file_readable::open( "test_file0.txt" ).try_take();
+
+		result_match( ust::read_file_and_append_to_string( f, 3s, s ) )
+		{
+			Ok(v) -> { assert( s == "prefix som", "Unexpected file contents!" ); },
+			Err(e) -> { assert( false, "Failed to read file \"test_file0.txt\" to string!" ); }
+		}
+	}
+
+	// Read a file by appending its contents to a string.
+	{
+		var ust::string8 mut s= "Qv";
+
+		var ust::file_readable mut f= ust::file_readable::open( "test_file0.txt" ).try_take();
+
+		assert( f.seek( 1u64 ).is_ok(), "Failed to seek!" );
+
+		result_match( ust::read_file_and_append_to_string( f, 2s, s ) )
+		{
+			Ok(v) -> { assert( s == "Qvom", "Unexpected file contents!" ); },
+			Err(e) -> { assert( false, "Failed to read file \"test_file0.txt\" to string!" ); }
+		}
+	}
+
+	// Read a file by appending its contents to a string - read beyound the end of a file.
+	{
+		var ust::string8 mut s= "filler";
+
+		var ust::file_readable mut f= ust::file_readable::open( "test_file0.txt" ).try_take();
+
+		result_match( ust::read_file_and_append_to_string( f, 100s, s ) )
+		{
+			Ok(v) -> { assert( false, "Should not read beyond the end of the file!" ); },
+			Err(e) ->
+			{
+				assert( s == "filler", "Should preserve string in case of read error!" );
+				assert( e == ust::io_error::unexpected_end_of_file, "Unexpected error code while reading a file past the end!" );
+			}
+		}
+	}
+
 	// Try reading more than possible.
 	result_match( ust::file_readable::open( "test_file0.txt" ) )
 	{
