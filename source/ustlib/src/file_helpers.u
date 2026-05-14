@@ -1,4 +1,3 @@
-import "../imports/file.iu"
 import "../imports/file_helpers.iu"
 
 namespace ust
@@ -46,6 +45,42 @@ fn read_file_to_string( filesystem_path_view path ) : io_result</ string8 />
 	}
 
 	return res;
+}
+
+fn read_file_and_append_to_vector(
+	file_readable &mut file, size_type read_size, vector</byte8/> &mut v ) : io_result</void/>
+{
+	return read_file_and_append_to_vector_impl( file, read_size, v );
+}
+
+fn read_file_and_append_to_vector(
+	file_readable_writeable &mut file, size_type read_size, vector</byte8/> &mut v ) : io_result</void/>
+{
+	return read_file_and_append_to_vector_impl( file, read_size, v );
+}
+
+template</type FileT/>
+fn read_file_and_append_to_vector_impl(
+	FileT &mut file, size_type read_size, vector</byte8/> &mut v ) : io_result</void/>
+{
+	var size_type initial_size= v.size();
+	var size_type result_size= add_overflow_check_halt( initial_size, read_size );
+
+	unsafe
+	{
+		// It's fine to use "resize_uninitialized", since file reading initializes the result value.
+		v.resize_uninitialized( result_size );
+
+		auto res= file.read_exact( v.range().subrange_start( initial_size ) );
+
+		if( !res.is_ok() )
+		{
+			// Resize given vector back in case of read error.
+			v.resize_uninitialized( initial_size );
+		}
+
+		return res;
+	}
 }
 
 fn write_byte8_range_to_file( filesystem_path_view path, array_view_imut</byte8/> range ) : io_result</void/>
