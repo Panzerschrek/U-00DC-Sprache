@@ -711,7 +711,7 @@ public:
 	}
 
 	// Run given function for all present elements.
-	// Given function should have a single argument of the stored type (or convertible from it).
+	// Given function should have a single argument of the stored type (or constructible from it).
 	// Elements for which given function returned "false" are removed.
 	// The order of preserved elements is preserved, but they may be moved (change their indices).
 	template</type Func/>

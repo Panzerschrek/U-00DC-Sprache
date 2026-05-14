@@ -274,7 +274,6 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
-
 	// Read a file by appending its contents to a string.
 	{
 		var ust::string8 mut s= "prefix ";
