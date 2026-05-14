@@ -667,6 +667,144 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( v.size() != 1s );
 		halt if( v[0s] != "77" );
 	}
+	{ // "retain" for empty vector.
+
+		var ust::vector</ ust::string8 /> mut v;
+
+		v.retain( lambda[&]( ust::string8& s ) : bool { return true; } );
+	}
+	{ // "retain" for non-empty vector - preserve all elements.
+
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "schwarz" );
+		v.push_back( "rot" );
+		v.push_back( "gold" );
+
+		v.retain( lambda( ust::string8& s ) : bool { return true; } );
+
+		halt if( v.size() != 3s );
+		halt if( v[0s] != "schwarz" );
+		halt if( v[1s] != "rot" );
+		halt if( v[2s] != "gold" );
+	}
+	{ // "retain" - remove only element with index 0.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "rot" );
+		v.push_back( "orange" );
+		v.push_back( "gelb" );
+		v.push_back( "grün" );
+		v.push_back( "blau" );
+		v.push_back( "violett" );
+		halt if( v.size() != 6s );
+
+		v.retain( lambda( ust::string8& s ) : bool { return s != "rot"; } );
+
+		halt if( v.size() != 5s );
+		halt if( v[0s] != "orange" );
+		halt if( v[1s] != "gelb" );
+		halt if( v[2s] != "grün" );
+		halt if( v[3s] != "blau" );
+		halt if( v[4s] != "violett" );
+	}
+	{ // "retain" - remove only elements with indices 1 and 4.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "rot" );
+		v.push_back( "orange" );
+		v.push_back( "gelb" );
+		v.push_back( "grün" );
+		v.push_back( "blau" );
+		v.push_back( "violett" );
+		halt if( v.size() != 6s );
+
+		v.retain( lambda( ust::string8& s ) : bool { return !( s == "orange" || s == "blau" ); } );
+
+		halt if( v.size() != 4s );
+		halt if( v[0s] != "rot" );
+		halt if( v[1s] != "gelb" );
+		halt if( v[2s] != "grün" );
+		halt if( v[3s] != "violett" );
+	}
+	{ // "retain" - remove several elements at start.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "rot" );
+		v.push_back( "orange" );
+		v.push_back( "gelb" );
+		v.push_back( "grün" );
+		v.push_back( "blau" );
+		v.push_back( "violett" );
+		halt if( v.size() != 6s );
+
+		v.retain( lambda( ust::string8& s ) : bool { return !( s == "rot" || s == "orange" ); } );
+
+		halt if( v.size() != 4s );
+		halt if( v[0s] != "gelb" );
+		halt if( v[1s] != "grün" );
+		halt if( v[2s] != "blau" );
+		halt if( v[3s] != "violett" );
+	}
+	{ // "retain" - remove several elements at end.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "rot" );
+		v.push_back( "orange" );
+		v.push_back( "gelb" );
+		v.push_back( "grün" );
+		v.push_back( "blau" );
+		v.push_back( "violett" );
+		halt if( v.size() != 6s );
+
+		v.retain( lambda( ust::string8& s ) : bool { return !( s == "grün" || s == "blau" || s == "violett" ); } );
+
+		halt if( v.size() != 3s );
+		halt if( v[0s] != "rot" );
+		halt if( v[1s] != "orange" );
+		halt if( v[2s] != "gelb" );
+	}
+	{ // "retain" - remove single element at end.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "rot" );
+		v.push_back( "orange" );
+		v.push_back( "gelb" );
+		v.push_back( "grün" );
+		v.push_back( "blau" );
+		v.push_back( "violett" );
+		halt if( v.size() != 6s );
+
+		v.retain( lambda( ust::string8& s ) : bool { return s != "violett"; } );
+
+		halt if( v.size() != 5s );
+		halt if( v[0s] != "rot" );
+		halt if( v[1s] != "orange" );
+		halt if( v[2s] != "gelb" );
+		halt if( v[3s] != "grün" );
+		halt if( v[4s] != "blau" );
+	}
+	{ // "retain" - remove only elements with indices 1 and 4 and modify other elements.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back( "rot" );
+		v.push_back( "orange" );
+		v.push_back( "gelb" );
+		v.push_back( "grün" );
+		v.push_back( "blau" );
+		v.push_back( "violett" );
+		halt if( v.size() != 6s );
+
+		v.retain(
+			lambda( ust::string8 &mut s ) : bool
+			{
+				if( s == "orange" || s == "blau" )
+				{
+					return false;
+				}
+				s+= "#";
+				return true;
+			} );
+
+		halt if( v.size() != 4s );
+		halt if( v[0s] != "rot#" );
+		halt if( v[1s] != "gelb#" );
+		halt if( v[2s] != "grün#" );
+		halt if( v[3s] != "violett#" );
+	}
 	{ // vector for type with references inside
 
 		var ust::vector</ust::string_view8/> mut v;

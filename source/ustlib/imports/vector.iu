@@ -710,6 +710,42 @@ public:
 		size_= dst;
 	}
 
+	// Run given function for all present elements.
+	// Given function should have a single argument of the stored type (or convertible from it).
+	// Elements for which given function returned "false" are removed.
+	// The order of preserved elements is preserved, but they may be moved (change their indices).
+	template</type Func/>
+	fn retain( mut this, Func& func )
+	{
+		var size_type mut dst= 0s, mut src= 0s;
+		while( src < size_ )
+		{
+			if( !func( unsafe( $>( ptr_ + src ) ) ) )
+			{
+				// Destroy an element for which the given function returned "false".
+				unsafe( call_destructor( $>( ptr_ + src ) ) );
+			}
+			else
+			{
+				// Current element should be preserved - move it into destination (unless destination index is equal source).
+				if( dst < src )
+				{
+					unsafe( memory_copy_aligned(
+						c_element_alignment_,
+						ptr_cast_to_byte8( ptr_ + dst ),
+						ptr_cast_to_byte8( ptr_ + src ),
+						c_element_size_ ) );
+				}
+				++dst;
+			}
+			++src;
+		}
+
+		// Update size - "dst" is less than "size" if elements were removed.
+		// All destructors were called previously.
+		size_= dst;
+	}
+
 private:
 	auto constexpr c_element_size_= typeinfo</T/>.size_of;
 	auto constexpr c_element_alignment_= typeinfo</T/>.align_of;

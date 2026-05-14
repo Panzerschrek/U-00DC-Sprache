@@ -125,6 +125,18 @@ fn nomangle main() call_conv( "C" ) : i32
 		// pop_back returns a value, which sould be used.
 		v.pop_back(); //##expect_error DiscardingValueMarkedAsNodiscard
 	}
+	{ // "retain" - invalid functor signature.
+		var ust::vector</i32/> mut v;
+		v.retain( lambda() : bool { return true; } ); //##expect_error TemplateContext
+	}
+	{ // "retain" - given functor doesn't return "bool".
+		var ust::vector</i32/> mut v;
+		v.retain( lambda( i32 x ) {} ); //##expect_error TemplateContext
+	}
+	{ // "retain" requires mutable "this".
+		var ust::vector</i32/> v;
+		v.retain( lambda( i32 x ) : bool { return x != 0; } ); //##expect_error CouldNotSelectOverloadedFunction
+	}
 	{
 		var [ i32, 3 ] ints[ 11, 222, 3333 ];
 
