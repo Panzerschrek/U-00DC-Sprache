@@ -4197,7 +4197,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 			else if( element_type == "opt"   )
 			{
 				ExpectLexem( Lexem::Type::MacroBracketLeft );
-				match_element.sub_elements= ust::box_nullable</ Macro::MatchElements />( ParseMacroMatchBlock() );
+				match_element.sub_elements.reset( ParseMacroMatchBlock() );
 				ExpectLexem( Lexem::Type::MacroBracketRight );
 
 				match_element.kind= Macro::MatchElementKind::Optional;
@@ -4205,7 +4205,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 			else if( element_type == "rep" )
 			{
 				ExpectLexem( Lexem::Type::MacroBracketLeft );
-				match_element.sub_elements= ust::box_nullable</ Macro::MatchElements />( ParseMacroMatchBlock() );
+				match_element.sub_elements.reset( ParseMacroMatchBlock() );
 				ExpectLexem( Lexem::Type::MacroBracketRight );
 
 				// Separator.
@@ -4269,27 +4269,40 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 
 		var ust::optional</Lexem/> mut start_lexem, mut end_lexem;
 
-		if( !match_elements[i].sub_elements.try_deref().empty() &&
-			 match_elements[i].sub_elements.try_deref().front().kind == Macro::MatchElementKind::Lexem )
+		if( i + 1s < match_elements.size() )
 		{
-			start_lexem= match_elements[i].sub_elements.try_deref().front().lexem;
+			var Macro::MatchElement &mut next_match_element= match_elements[ i + 1s ];
+			if( next_match_element.kind == Macro::MatchElementKind::Lexem )
+			{
+				end_lexem= next_match_element.lexem;
+			}
 		}
-		if( i + 1s < match_elements.size() && match_elements[i+1s].kind == Macro::MatchElementKind::Lexem )
+
+		var Macro::MatchElement &mut match_element= match_elements[i];
+
+		if_var( &sub_elements : match_element.sub_elements )
 		{
-			end_lexem= match_elements[i+1s].lexem;
+			if( !sub_elements.empty() )
+			{
+				var Macro::MatchElement& first_subelement= sub_elements.front();
+				if( first_subelement.kind == Macro::MatchElementKind::Lexem )
+				{
+					start_lexem= first_subelement.lexem;
+				}
+			}
 		}
 
 		if( !start_lexem.empty() )
 		{
-			match_elements[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAtBlockStart;
+			match_element.block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAtBlockStart;
 		}
 		else if( !end_lexem.empty() )
 		{
-			match_elements[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAfterBlockEnd;
+			match_element.block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAfterBlockEnd;
 		}
 		else
 		{
-			PushMacroErrorMessage( match_element_src_loc, ust::concat( "Expected lexem at start or after \"", match_elements[i].name, "\" element." ) );
+			PushMacroErrorMessage( match_element_src_loc, ust::concat( "Expected lexem at start or after \"", match_element.name, "\" element." ) );
 		}
 
 		if( element_kind == Macro::MatchElementKind::Optional )
@@ -4303,11 +4316,11 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 		}
 		if( element_kind == Macro::MatchElementKind::Repeated )
 		{
-			if( match_elements[i].lexem.lexem_type != Lexem::Type::EndOfFile ) // Non-empty separator
+			if( match_element.lexem.lexem_type != Lexem::Type::EndOfFile ) // Non-empty separator
 			{
 				if( !end_lexem.empty() &&
-					match_elements[i].lexem.lexem_type == end_lexem.try_deref().lexem_type &&
-					match_elements[i].lexem.text == end_lexem.try_deref().text )
+					match_element.lexem.lexem_type == end_lexem.try_deref().lexem_type &&
+					match_element.lexem.text == end_lexem.try_deref().text )
 				{
 					PushMacroErrorMessage( match_element_src_loc, "Separator lexem of repeated macro block must be different from first lexem after repeated block." );
 				}
