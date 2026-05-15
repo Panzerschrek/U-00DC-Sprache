@@ -6,4 +6,4 @@
 *.hpp text eol=lf
 *.txt text eol=lf
 *.u text eol=lf
-*.uh text eol=lf
+*.iu text eol=lf
