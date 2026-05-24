@@ -1716,11 +1716,11 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 		else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
 		{
 			clang::CharLiteralParser char_literal_parser(
-					token.getLiteralData(),
-					token.getLiteralData() + token.getLength(),
-					token.getLocation(),
-					preprocessor_,
-					token.getKind() );
+				token.getLiteralData(),
+				token.getLiteralData() + token.getLength(),
+				token.getLocation(),
+				preprocessor_,
+				token.getKind() );
 
 			if( !char_literal_parser.isMultiChar() )
 			{
