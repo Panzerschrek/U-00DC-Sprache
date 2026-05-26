@@ -417,3 +417,17 @@ typedef unsigned long long int __64_int_from_c;
 #define STRING_CONSTANT_ASCII_COPY STRING_CONSTANT_ASCII
 #define CHAR_CONSTANT_COPY CHAR_CONSTANT
 #define UNSIGNED_CONSTANT_COPY_COPY UNSIGNED_CONSTANT_COPY
+
+// Should translate define - alias for a type name.
+#define CPP_CHAR8 CPP_char8
+#define ARRAY_TYPE15 ArrayType15
+#define REGULAR_STRUCT RegularStruct
+#define TYPEDEFED_STRUCT TypedefedStruct
+#define STUPID_STRUCT_NAMING StupidStuctNaming
+#define UNION_ALIGN_1 UnionAlign1
+#define SEQUENTIAL_ENUM SequentialEnum
+#define NON_SEQUENTIAL_ENUM NonSequentialEnum
+#define TYPEDEF_FOR_ENUM_ABC TypedefForEnumABC
+#define REGULAR_STRUCT_COPY REGULAR_STRUCT
+
+#define ALIAS_FOR_UNKNOWN ThisNameIsNotKnown12345 // Should NOT translate a define for a unknown name.

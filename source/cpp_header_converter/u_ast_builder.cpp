@@ -1597,7 +1597,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			return source_manager_.isBeforeInTranslationUnit( l.second->getLocation(), r.second->getLocation() );
 		} );
 
-	std::unordered_set<std::string> variable_defines;
+	std::unordered_set<std::string> variable_defines, type_alias_defines;
 
 	for( const MacroPair& macro_pair : macro_directives )
 	{
@@ -1618,7 +1618,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			named_enum_declarations.count( name ) != 0 ||
 			enum_names.count( name ) != 0 ||
 			named_variable_declarations.count( name ) != 0 ||
-			variable_defines.count( name ) != 0 )
+			variable_defines.count( name ) != 0 ||
+			type_alias_defines.count( name ) != 0 )
 			name+= "_";
 
 		if( macro_info->getNumTokens() == 1 )
@@ -1756,6 +1757,25 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
 						variable_defines.insert( name );
+					}
+					else if(
+						named_record_declarations.count( idenfier_name ) != 0 ||
+						named_typedef_declarations.count( idenfier_name ) != 0 ||
+						named_enum_declarations.count( idenfier_name ) != 0 ||
+						type_alias_defines.count( idenfier_name ) != 0 )
+					{
+						// For types create a type alias.
+
+						Synt::TypeAlias type_alias( g_dummy_src_loc );
+						type_alias.name= name;
+
+						Synt::NameLookup name_lookup( g_dummy_src_loc );
+						name_lookup.name= idenfier_name;
+
+						type_alias.value= std::move( name_lookup );
+						root_program_elements_.Append( std::move( type_alias ) );
+
+						type_alias_defines.insert( name );
 					}
 				}
 			}

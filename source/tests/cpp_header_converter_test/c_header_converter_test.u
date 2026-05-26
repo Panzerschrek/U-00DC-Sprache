@@ -344,5 +344,17 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( CHAR_CONSTANT_COPY == 'Z' );
 	static_assert( UNSIGNED_CONSTANT_COPY_COPY == 12345u );
 
+	// Define alias for types.
+	static_assert( same_type</ CPP_CHAR8, CPP_char8 /> );
+	static_assert( same_type</ ARRAY_TYPE15, ArrayType15 /> );
+	static_assert( same_type</ REGULAR_STRUCT, RegularStruct /> );
+	static_assert( same_type</ TYPEDEFED_STRUCT, TypedefedStruct /> );
+	static_assert( same_type</ STUPID_STRUCT_NAMING, StupidStuctNaming /> );
+	static_assert( same_type</ UNION_ALIGN_1, UnionAlign1 /> );
+	static_assert( same_type</ SEQUENTIAL_ENUM, SequentialEnum /> );
+	static_assert( same_type</ NON_SEQUENTIAL_ENUM, NonSequentialEnum /> );
+	static_assert( same_type</ TYPEDEF_FOR_ENUM_ABC, TypedefForEnumABC /> );
+	static_assert( same_type</ REGULAR_STRUCT_COPY, REGULAR_STRUCT /> );
+
 	return 0;
 }
