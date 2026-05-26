@@ -407,3 +407,6 @@ struct ___TripleUnderscoredStruct
 
 // Should proper handle identifiers with underscore prefix followed by number.
 typedef unsigned long long int __64_int_from_c;
+
+// Should translate define - alias for a function.
+#define FUNCTION_ZERO_ARGS Function_ZeroArgs

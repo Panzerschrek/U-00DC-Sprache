@@ -329,5 +329,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 	static_assert( same_type</ n64_int_from_c__, u64 /> );
 
+	// Call a function by using a define for it.
+	unsafe( FUNCTION_ZERO_ARGS() );
+
 	return 0;
 }

@@ -1682,6 +1682,45 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 				}
 			}
+			else if( token.getKind() == clang::tok::identifier )
+			{
+				// Something like #define X Y.
+
+				if( const auto identifier_info= token.getIdentifierInfo() )
+				{
+					const std::string idenfier_name= identifier_info->getName().str();
+
+					if( named_function_declarations.count( idenfier_name ) != 0 )
+					{
+						// For functions just create "auto x= y;".
+						// This creates a function-pointer variable.
+
+						Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+						auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+						auto_variable_declaration.name= name;
+
+						Synt::NameLookup name_lookup( g_dummy_src_loc );
+						name_lookup.name= idenfier_name;
+
+						auto_variable_declaration.initializer_expression= std::move( name_lookup );
+						root_program_elements_.Append( std::move( auto_variable_declaration ) );
+					}
+					else if( named_variable_declarations.count( idenfier_name ) != 0 )
+					{
+						// For variables just create "auto& x= y;"
+						Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+						auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+						auto_variable_declaration.name= name;
+						auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
+
+						Synt::NameLookup name_lookup( g_dummy_src_loc );
+						name_lookup.name= idenfier_name;
+
+						auto_variable_declaration.initializer_expression= std::move( name_lookup );
+						root_program_elements_.Append( std::move( auto_variable_declaration ) );
+					}
+				}
+			}
 		}
 		else if( macro_info->getNumTokens() == 2 )
 		{
