@@ -172,8 +172,7 @@ private:
 		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations,
 		const EnumNamesSet& enum_names,
-		const NamedVariableDeclarations& named_variable_declarations,
-		const TypeNamesMap& type_names_map );
+		const NamedVariableDeclarations& named_variable_declarations );
 
 	Synt::Expression TranslateNumericLiteral( const clang::Token& token );
 
@@ -289,7 +288,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	const NamedVariableDeclarations variable_names= GenerateVariableNames( function_names, record_names, typedef_names, enum_names, extra_enum_names );
 	EmitVariables( variable_names, type_names_map );
 
-	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names, extra_enum_names, variable_names, type_names_map );
+	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names, extra_enum_names, variable_names );
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
@@ -1569,41 +1568,30 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations,
 	const EnumNamesSet& enum_names,
-	const NamedVariableDeclarations& named_variable_declarations,
-	const TypeNamesMap& type_names_map )
+	const NamedVariableDeclarations& named_variable_declarations )
 {
-	// Populate a hash-map of original to trianslated type names.
+	// Populate a hash-map of original to translated type names.
 	std::unordered_map< std::string, std::string > type_original_to_translated_name_map;
 
-	for( const clang::RecordDecl* const record_declaration : record_declarations_ )
+	for( const auto& pair : named_record_declarations )
 	{
-		if( const auto it= type_names_map.find( record_declaration->getTypeForDecl() ); it != type_names_map.end() )
-		{
-			std::string original_name= record_declaration->getName().str();
-			if( type_original_to_translated_name_map.count( original_name ) == 0 )
-				type_original_to_translated_name_map[ std::move( original_name ) ]= it->second;
-		}
+		std::string original_name= pair.second->getName().str();
+		if( type_original_to_translated_name_map.count( original_name ) == 0 )
+			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
 	}
 
-	for( const clang::TypedefNameDecl* const typedef_declaration : typedef_declarations_ )
+	for( const auto& pair : named_typedef_declarations )
 	{
-		if( const auto it= type_names_map.find( ast_context_.getTypedefType( typedef_declaration ).getTypePtr() );
-			it != type_names_map.end() )
-		{
-			std::string original_name= typedef_declaration->getName().str();
-			if( type_original_to_translated_name_map.count( original_name ) == 0 )
-				type_original_to_translated_name_map[ std::move( original_name ) ]= it->second;
-		}
+		std::string original_name= pair.second->getName().str();
+		if( type_original_to_translated_name_map.count( original_name ) == 0 )
+			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
 	}
 
-	for( const clang::EnumDecl* const enum_declaration : enum_declarations_ )
+	for( const auto& pair : named_enum_declarations )
 	{
-		if( const auto it= type_names_map.find( enum_declaration->getTypeForDecl() ); it != type_names_map.end() )
-		{
-			std::string original_name= enum_declaration->getName().str();
-			if( type_original_to_translated_name_map.count( original_name ) == 0 && !original_name.empty() )
-				type_original_to_translated_name_map[ std::move( original_name ) ]= it->second;
-		}
+		std::string original_name= pair.second->getName().str();
+		if( type_original_to_translated_name_map.count( original_name ) == 0 )
+			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
 	}
 
 	// Extract all macros and sort them by their location.
