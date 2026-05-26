@@ -1674,13 +1674,24 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			type_alias_defines.count( macro_translated_name ) != 0 )
 			macro_translated_name+= "_";
 
-		if( macro_info->getNumTokens() == 0 )
+		clang::MacroInfo::const_tokens_iterator tokens_begin= macro_info->tokens_begin();
+		clang::MacroInfo::const_tokens_iterator tokens_end= macro_info->tokens_end();
+
+		// Strip ().
+		while( tokens_begin < tokens_end &&
+			tokens_begin->getKind() == clang::tok::l_paren && std::prev(tokens_end)->getKind() == clang::tok::r_paren )
+		{
+			++tokens_begin;
+			--tokens_end;
+		}
+
+		if( tokens_begin == tokens_end )
 		{
 			// There is no reason to translate macros defining nothing.
 		}
-		else if( macro_info->getNumTokens() == 1 )
+		else if( tokens_end - tokens_begin == 1 )
 		{
-			const clang::Token& token= macro_info->getReplacementToken(0u);
+			const clang::Token& token= *tokens_begin;
 			if( token.getKind() == clang::tok::numeric_constant )
 			{
 				Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
@@ -1842,10 +1853,10 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 				}
 			}
 		}
-		else if( macro_info->getNumTokens() == 2 )
+		else if( tokens_end - tokens_begin == 2 )
 		{
-			const clang::Token& token0= macro_info->getReplacementToken(0u);
-			const clang::Token& token1= macro_info->getReplacementToken(1u);
+			const clang::Token& token0= tokens_begin[0];
+			const clang::Token& token1= tokens_begin[1];
 
 			if( token0.getKind() == clang::tok::minus && token1.getKind() == clang::tok::numeric_constant )
 			{

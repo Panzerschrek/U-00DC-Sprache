@@ -14,6 +14,8 @@
 #define LARGE_INTEGER_CONSTANT_TRUNCATED 9876543210
 #define NEGATIVE_INTEGER_CONSTANT -733456
 #define NEGATIVE_DOUBLE_CONSTANT - 897.25f
+#define CONSTANT_WRAPPED ( 683 )
+#define CONSTANT_DEEPLY_WRAPPED ( ( ( ( ( -56772 ) ) ) ) )
 #define STRING_CONSTANT_ASCII "WTF?009a"
 #define STRING_CONSTANT_UTF8_IMPLICIT "Чё?"
 #define STRING_CONSTANT_WITH_SPECIAL_SYMBOLS "\u00DC \x13 one \t two \n quote \' double \" slash \\ "
@@ -435,6 +437,7 @@ typedef unsigned long long int __64_int_from_c;
 #define ___TRIPLE_UNDERSCORED_STRUCT ___TripleUnderscoredStruct
 #define __64_INT_FROM_C __64_int_from_c
 #define TRIPLE_UNDERSCORED_STRUCT ___TRIPLE_UNDERSCORED_STRUCT
+#define CPP_CHAR8_COPY ( CPP_CHAR8 )
 
 #define ALIAS_FOR_UNKNOWN ThisNameIsNotKnown12345 // Should NOT translate a define for a unknown name.
 

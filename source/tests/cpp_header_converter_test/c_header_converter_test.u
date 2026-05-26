@@ -42,6 +42,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( LARGE_INTEGER_CONSTANT_TRUNCATED == 9876543210 );
 	static_assert( NEGATIVE_INTEGER_CONSTANT == -733456 );
 	static_assert( NEGATIVE_DOUBLE_CONSTANT == - 897.25f );
+	static_assert( CONSTANT_WRAPPED == 683 );
+	static_assert( CONSTANT_DEEPLY_WRAPPED == -56772 );
 	static_assert( string_equals( STRING_CONSTANT_ASCII, "WTF?009a\u0000" ) );
 	static_assert( string_equals( STRING_CONSTANT_UTF8_IMPLICIT,"Чё?\u0000" ) );
 	static_assert( string_equals( STRING_CONSTANT_WITH_SPECIAL_SYMBOLS, "Ü \u0013 one \t two \n quote ' double \" slash \\ \u0000" ) );
@@ -362,6 +364,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT___, TripleUnderscoredStruct___ /> );
 	static_assert( same_type</ n64_INT_FROM_C__, n64_int_from_c__ /> );
 	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT, TRIPLE_UNDERSCORED_STRUCT___ /> );
+	static_assert( same_type</ CPP_CHAR8_COPY, CPP_CHAR8 /> );
 
 	return 0;
 }
