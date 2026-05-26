@@ -333,6 +333,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// Call a function by using a define for it.
 	unsafe( FUNCTION_ZERO_ARGS() );
+	unsafe( FUNCTION_ZERO_ARGS_COPY() );
 
 	// Access an alias to another define.
 	static_assert( UNSIGNED_CONSTANT_COPY == 12345u );
