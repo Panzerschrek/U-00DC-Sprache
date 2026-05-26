@@ -172,7 +172,8 @@ private:
 		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations,
 		const EnumNamesSet& enum_names,
-		const NamedVariableDeclarations& named_variable_declarations );
+		const NamedVariableDeclarations& named_variable_declarations,
+		const TypeNamesMap& type_names_map );
 
 	Synt::Expression TranslateNumericLiteral( const clang::Token& token );
 
@@ -288,7 +289,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	const NamedVariableDeclarations variable_names= GenerateVariableNames( function_names, record_names, typedef_names, enum_names, extra_enum_names );
 	EmitVariables( variable_names, type_names_map );
 
-	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names, extra_enum_names, variable_names );
+	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names, extra_enum_names, variable_names, type_names_map );
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
@@ -897,7 +898,7 @@ CppAstConsumer::TypeNamesMap CppAstConsumer::BuildTypeNamesMap(
 		res[ pair.second->getTypeForDecl() ] = pair.first;
 
 	for( const auto& pair : named_typedef_declarations )
-		res[ pair.second->getTypeForDecl() ] = pair.first;
+		res[ ast_context_.getTypedefType( pair.second ).getTypePtr() ] = pair.first;
 
 	for( const auto& pair : named_enum_declarations )
 		res[ pair.second->getTypeForDecl() ] = pair.first;
@@ -1568,8 +1569,43 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations,
 	const EnumNamesSet& enum_names,
-	const NamedVariableDeclarations& named_variable_declarations )
+	const NamedVariableDeclarations& named_variable_declarations,
+	const TypeNamesMap& type_names_map )
 {
+	// Populate a hash-map of original to trianslated type names.
+	std::unordered_map< std::string, std::string > type_original_to_translated_name_map;
+
+	for( const clang::RecordDecl* const record_declaration : record_declarations_ )
+	{
+		if( const auto it= type_names_map.find( record_declaration->getTypeForDecl() ); it != type_names_map.end() )
+		{
+			std::string original_name= record_declaration->getName().str();
+			if( type_original_to_translated_name_map.count( original_name ) == 0 )
+				type_original_to_translated_name_map[ original_name ]= it->second;
+		}
+	}
+
+	for( const clang::TypedefNameDecl* const typedef_declaration : typedef_declarations_ )
+	{
+		if( const auto it= type_names_map.find( ast_context_.getTypedefType( typedef_declaration ).getTypePtr() );
+			it != type_names_map.end() )
+		{
+			std::string original_name= typedef_declaration->getName().str();
+			if( type_original_to_translated_name_map.count( original_name ) == 0 )
+				type_original_to_translated_name_map[ original_name ]= it->second;
+		}
+	}
+
+	for( const clang::EnumDecl* const enum_declaration : enum_declarations_ )
+	{
+		if( const auto it= type_names_map.find( enum_declaration->getTypeForDecl() ); it != type_names_map.end() )
+		{
+			std::string original_name= enum_declaration->getName().str();
+			if( type_original_to_translated_name_map.count( original_name ) == 0 && !original_name.empty() )
+				type_original_to_translated_name_map[ original_name ]= it->second;
+		}
+	}
+
 	// Extract all macros and sort them by their location.
 	// We need natural order here (from includes to the main file, line-by-line in each file).
 
@@ -1617,7 +1653,9 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 		if( macro_info->getNumParams() != 0u || macro_info->isFunctionLike() )
 			continue;
 
-		std::string name= TranslateIdentifier( macro_pair.first );
+		const std::string& macro_original_name= macro_pair.first;
+
+		std::string name= TranslateIdentifier( macro_original_name );
 
 		// Rename to avoid name conflicts.
 		while(
@@ -1631,7 +1669,11 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			type_alias_defines.count( name ) != 0 )
 			name+= "_";
 
-		if( macro_info->getNumTokens() == 1 )
+		if( macro_info->getNumTokens() == 0 )
+		{
+			// There is no reason to translate macros defining nothing.
+		}
+		else if( macro_info->getNumTokens() == 1 )
 		{
 			const clang::Token& token= macro_info->getReplacementToken(0u);
 			if( token.getKind() == clang::tok::numeric_constant )
@@ -1768,10 +1810,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						variable_defines.insert( name );
 					}
 					else if(
-						named_record_declarations.count( idenfier_name ) != 0 ||
-						named_typedef_declarations.count( idenfier_name ) != 0 ||
-						named_enum_declarations.count( idenfier_name ) != 0 ||
-						type_alias_defines.count( idenfier_name ) != 0 )
+						const auto type_name_it= type_original_to_translated_name_map.find( idenfier_name );
+						type_name_it != type_original_to_translated_name_map.end() )
 					{
 						// For types create a type alias.
 
@@ -1779,11 +1819,12 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						type_alias.name= name;
 
 						Synt::NameLookup name_lookup( g_dummy_src_loc );
-						name_lookup.name= idenfier_name;
+						name_lookup.name= type_name_it->second;
 
 						type_alias.value= std::move( name_lookup );
 						root_program_elements_.Append( std::move( type_alias ) );
 
+						type_original_to_translated_name_map[ macro_original_name ]= name;
 						type_alias_defines.insert( name );
 					}
 				}

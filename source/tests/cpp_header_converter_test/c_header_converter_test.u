@@ -355,6 +355,9 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( same_type</ NON_SEQUENTIAL_ENUM, NonSequentialEnum /> );
 	static_assert( same_type</ TYPEDEF_FOR_ENUM_ABC, TypedefForEnumABC /> );
 	static_assert( same_type</ REGULAR_STRUCT_COPY, REGULAR_STRUCT /> );
+	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT___, TripleUnderscoredStruct___ /> );
+	static_assert( same_type</ n64_INT_FROM_C__, n64_int_from_c__ /> );
+	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT, TRIPLE_UNDERSCORED_STRUCT___ /> );
 
 	return 0;
 }

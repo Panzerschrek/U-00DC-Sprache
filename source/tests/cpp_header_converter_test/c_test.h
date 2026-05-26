@@ -429,5 +429,8 @@ typedef unsigned long long int __64_int_from_c;
 #define NON_SEQUENTIAL_ENUM NonSequentialEnum
 #define TYPEDEF_FOR_ENUM_ABC TypedefForEnumABC
 #define REGULAR_STRUCT_COPY REGULAR_STRUCT
+#define ___TRIPLE_UNDERSCORED_STRUCT ___TripleUnderscoredStruct
+#define __64_INT_FROM_C __64_int_from_c
+#define TRIPLE_UNDERSCORED_STRUCT ___TRIPLE_UNDERSCORED_STRUCT
 
 #define ALIAS_FOR_UNKNOWN ThisNameIsNotKnown12345 // Should NOT translate a define for a unknown name.
