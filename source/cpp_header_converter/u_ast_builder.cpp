@@ -1581,7 +1581,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 		{
 			std::string original_name= record_declaration->getName().str();
 			if( type_original_to_translated_name_map.count( original_name ) == 0 )
-				type_original_to_translated_name_map[ original_name ]= it->second;
+				type_original_to_translated_name_map[ std::move( original_name ) ]= it->second;
 		}
 	}
 
@@ -1592,7 +1592,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 		{
 			std::string original_name= typedef_declaration->getName().str();
 			if( type_original_to_translated_name_map.count( original_name ) == 0 )
-				type_original_to_translated_name_map[ original_name ]= it->second;
+				type_original_to_translated_name_map[ std::move( original_name ) ]= it->second;
 		}
 	}
 
@@ -1602,7 +1602,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 		{
 			std::string original_name= enum_declaration->getName().str();
 			if( type_original_to_translated_name_map.count( original_name ) == 0 && !original_name.empty() )
-				type_original_to_translated_name_map[ original_name ]= it->second;
+				type_original_to_translated_name_map[ std::move( original_name ) ]= it->second;
 		}
 	}
 
