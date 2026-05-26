@@ -340,6 +340,8 @@ fn nomangle main() call_conv( "C" ) : i32
 		static_assert( e_ratio > 0.999999 && e_ratio < 1.000001 );
 	}
 
+	static_assert( NEGATIVE_INTEGER_CONSTANT_COPY == NEGATIVE_INTEGER_CONSTANT );
+
 	static_assert( STRING_CONSTANT_ASCII_COPY == "WTF?009a\u0000" );
 	static_assert( CHAR_CONSTANT_COPY == 'Z' );
 	static_assert( UNSIGNED_CONSTANT_COPY_COPY == 12345u );
