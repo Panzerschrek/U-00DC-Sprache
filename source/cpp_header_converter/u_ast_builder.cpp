@@ -1642,7 +1642,11 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			return source_manager_.isBeforeInTranslationUnit( l.second->getLocation(), r.second->getLocation() );
 		} );
 
+	// Maintain hash-sets of emitted macro names (to avoid duplication).
 	std::unordered_set<std::string> variable_defines, type_alias_defines;
+
+	// Track what translated name was used for each emitted variable.
+	std::unordered_map< std::string, std::string > variable_original_to_translated_name_map;
 
 	for( const MacroPair& macro_pair : macro_directives )
 	{
@@ -1685,6 +1689,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
+				variable_original_to_translated_name_map[ macro_original_name ]= name;
 				variable_defines.insert( name );
 			}
 			else if( clang::tok::isStringLiteral( token.getKind() ) )
@@ -1706,6 +1711,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
+					variable_original_to_translated_name_map[ macro_original_name ]= name;
 					variable_defines.insert( name );
 				}
 				else if( string_literal_parser.isUTF16() ||
@@ -1723,6 +1729,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
+					variable_original_to_translated_name_map[ macro_original_name ]= name;
 					variable_defines.insert( name );
 				}
 				else if( string_literal_parser.isUTF32() ||
@@ -1739,6 +1746,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
+					variable_original_to_translated_name_map[ macro_original_name ]= name;
 					variable_defines.insert( name );
 				}
 			}
@@ -1763,6 +1771,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					auto_variable_declaration.initializer_expression= std::move(char_literal);
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
+					variable_original_to_translated_name_map[ macro_original_name ]= name;
 					variable_defines.insert( name );
 				}
 			}
@@ -1789,11 +1798,12 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						auto_variable_declaration.initializer_expression= std::move( name_lookup );
 						root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
+						variable_original_to_translated_name_map[ macro_original_name ]= name;
 						variable_defines.insert( name );
 					}
 					else if(
-						named_variable_declarations.count( idenfier_name ) != 0 ||
-						variable_defines.count( idenfier_name ) != 0 )
+						const auto variable_name_it= variable_original_to_translated_name_map.find( idenfier_name );
+						variable_name_it != variable_original_to_translated_name_map.end() )
 					{
 						// For variables just create "auto& x= y;"
 						Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
@@ -1802,11 +1812,12 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
 
 						Synt::NameLookup name_lookup( g_dummy_src_loc );
-						name_lookup.name= idenfier_name;
+						name_lookup.name= variable_name_it->second;
 
 						auto_variable_declaration.initializer_expression= std::move( name_lookup );
 						root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
+						variable_original_to_translated_name_map[ macro_original_name ]= name;
 						variable_defines.insert( name );
 					}
 					else if(

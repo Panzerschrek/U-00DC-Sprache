@@ -417,6 +417,8 @@ typedef unsigned long long int __64_int_from_c;
 #define STRING_CONSTANT_ASCII_COPY STRING_CONSTANT_ASCII
 #define CHAR_CONSTANT_COPY CHAR_CONSTANT
 #define UNSIGNED_CONSTANT_COPY_COPY UNSIGNED_CONSTANT_COPY
+#define __CHAR_CONSTANT_COPY_A CHAR_CONSTANT
+#define __CHAR_CONSTANT_COPY_B __CHAR_CONSTANT_COPY_A
 
 // Should translate define - alias for a type name.
 #define CPP_CHAR8 CPP_char8
