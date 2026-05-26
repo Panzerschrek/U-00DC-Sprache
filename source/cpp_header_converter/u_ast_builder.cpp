@@ -1594,6 +1594,16 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
 	}
 
+	// Populate a hash-map of original to translated variable names.
+	std::unordered_map< std::string, std::string > variable_original_to_translated_name_map;
+
+	for( const auto& pair : named_variable_declarations )
+	{
+		std::string original_name= pair.second->getName().str();
+		if( variable_original_to_translated_name_map.count( original_name ) == 0 )
+			variable_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
+	}
+
 	// Extract all macros and sort them by their location.
 	// We need natural order here (from includes to the main file, line-by-line in each file).
 
@@ -1633,9 +1643,6 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 	// Maintain hash-sets of emitted macro names (to avoid duplication).
 	std::unordered_set<std::string> variable_defines, type_alias_defines;
-
-	// Track what translated name was used for each emitted variable.
-	std::unordered_map< std::string, std::string > variable_original_to_translated_name_map;
 
 	for( const MacroPair& macro_pair : macro_directives )
 	{

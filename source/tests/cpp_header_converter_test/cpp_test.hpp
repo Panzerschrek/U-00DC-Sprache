@@ -118,3 +118,6 @@ const int* g_ptr_constant= nullptr;
 
 // For now can't convert global references.
 const unsigned int& g_global_const_ref= g_not_a_constant;
+
+// Should create an alias for a constant.
+#define G_CPP_AUTO_CONSTANT g_cpp_auto_constant

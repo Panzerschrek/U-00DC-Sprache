@@ -107,5 +107,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( g_cpp_auto_constant == 78767556676333 );
 	static_assert( g_cpp_auto_float_constant == -13.2f + 76.0f );
 
+	static_assert( G_CPP_AUTO_CONSTANT == g_cpp_auto_constant );
+
 	return 0;
 }
