@@ -1561,9 +1561,12 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 	const EnumNamesSet& enum_names,
 	const NamedVariableDeclarations& named_variable_declarations )
 {
-	std::unordered_set<std::string> variable_defines;
+	// Extract all macros and sort them by their location.
+	// We need natural order here (from includes to the main file, line-by-line in each file).
 
-	// Dump definitions of simple constants, using "define".
+	using MacroPair= std::pair< std::string, const clang::MacroDirective* >;
+
+	std::vector< MacroPair > macro_directives;
 	for( const clang::Preprocessor::macro_iterator::value_type& macro_pair : preprocessor_.macros() )
 	{
 		const clang::IdentifierInfo* ident_info= macro_pair.first;
@@ -1571,6 +1574,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 		std::string name= ident_info->getName().str();
 		if( name.empty() )
 			continue;
+
 		if( preprocessor_.getPredefines().find( "#define " + name ) != std::string::npos )
 			continue;
 
@@ -1580,16 +1584,31 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 		if( skip_declarations_from_includes_ &&
 			source_manager_.getFileID( macro_directive->getLocation() ) != source_manager_.getMainFileID() )
-			return;
+			continue;
 
-		const clang::MacroInfo* const macro_info= macro_directive->getMacroInfo();
+		macro_directives.push_back( std::make_pair( std::move( name ), macro_directive ) );
+	}
+
+	std::sort(
+		macro_directives.begin(),
+		macro_directives.end(),
+		[&]( const MacroPair& l, const MacroPair& r )
+		{
+			return source_manager_.isBeforeInTranslationUnit( l.second->getLocation(), r.second->getLocation() );
+		} );
+
+	std::unordered_set<std::string> variable_defines;
+
+	for( const MacroPair& macro_pair : macro_directives )
+	{
+		const clang::MacroInfo* const macro_info= macro_pair.second->getMacroInfo();
 		if( macro_info->isBuiltinMacro() )
 			continue;
 
 		if( macro_info->getNumParams() != 0u || macro_info->isFunctionLike() )
 			continue;
 
-		name= TranslateIdentifier(name);
+		std::string name= TranslateIdentifier( macro_pair.first );
 
 		// Rename to avoid name conflicts.
 		while(
