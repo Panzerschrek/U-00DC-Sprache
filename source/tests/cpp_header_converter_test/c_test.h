@@ -414,3 +414,6 @@ typedef unsigned long long int __64_int_from_c;
 // Should translate define - alias for a variable define.
 #define UNSIGNED_CONSTANT_COPY UNSIGNED_CONSTANT
 #define M_E_COPY M_E
+#define STRING_CONSTANT_ASCII_COPY STRING_CONSTANT_ASCII
+#define CHAR_CONSTANT_COPY CHAR_CONSTANT
+#define UNSIGNED_CONSTANT_COPY_COPY UNSIGNED_CONSTANT_COPY
