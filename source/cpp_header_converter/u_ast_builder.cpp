@@ -1641,8 +1641,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			return source_manager_.isBeforeInTranslationUnit( l.second->getLocation(), r.second->getLocation() );
 		} );
 
-	// Maintain hash-sets of emitted macro names (to avoid duplication).
-	std::unordered_set<std::string> variable_defines, type_alias_defines;
+	// Maintain a hash-set of emitted macro names (to avoid duplication).
+	std::unordered_set<std::string> emitted_macro_names;
 
 	for( const MacroPair& macro_pair : macro_directives )
 	{
@@ -1665,8 +1665,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			named_enum_declarations.count( macro_translated_name ) != 0 ||
 			enum_names.count( macro_translated_name ) != 0 ||
 			named_variable_declarations.count( macro_translated_name ) != 0 ||
-			variable_defines.count( macro_translated_name ) != 0 ||
-			type_alias_defines.count( macro_translated_name ) != 0 )
+			emitted_macro_names.count( macro_translated_name ) != 0 )
 			macro_translated_name+= "_";
 
 		clang::MacroInfo::const_tokens_iterator tokens_begin= macro_info->tokens_begin();
@@ -1697,7 +1696,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
 				variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-				variable_defines.insert( macro_translated_name );
+				emitted_macro_names.insert( macro_translated_name );
 			}
 			else if( clang::tok::isStringLiteral( token.getKind() ) )
 			{
@@ -1719,7 +1718,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
 					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-					variable_defines.insert( macro_translated_name );
+					emitted_macro_names.insert( macro_translated_name );
 				}
 				else if( string_literal_parser.isUTF16() ||
 					( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 16 ) )
@@ -1737,7 +1736,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
 					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-					variable_defines.insert( macro_translated_name );
+					emitted_macro_names.insert( macro_translated_name );
 				}
 				else if( string_literal_parser.isUTF32() ||
 					( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
@@ -1754,7 +1753,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
 					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-					variable_defines.insert( macro_translated_name );
+					emitted_macro_names.insert( macro_translated_name );
 				}
 			}
 			else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
@@ -1779,7 +1778,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
 					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-					variable_defines.insert( macro_translated_name );
+					emitted_macro_names.insert( macro_translated_name );
 				}
 			}
 			else if( token.getKind() == clang::tok::identifier )
@@ -1806,7 +1805,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
 						variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-						variable_defines.insert( macro_translated_name );
+						emitted_macro_names.insert( macro_translated_name );
 					}
 					else if(
 						const auto variable_name_it= variable_original_to_translated_name_map.find( idenfier_name );
@@ -1825,7 +1824,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
 						variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-						variable_defines.insert( macro_translated_name );
+						emitted_macro_names.insert( macro_translated_name );
 					}
 					else if(
 						const auto type_name_it= type_original_to_translated_name_map.find( idenfier_name );
@@ -1843,7 +1842,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						root_program_elements_.Append( std::move( type_alias ) );
 
 						type_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-						type_alias_defines.insert( macro_translated_name );
+						emitted_macro_names.insert( macro_translated_name );
 					}
 				}
 			}
@@ -1868,7 +1867,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
 				variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-				variable_defines.insert( macro_translated_name );
+				emitted_macro_names.insert( macro_translated_name );
 			}
 		}
 	} // for defines
