@@ -332,5 +332,13 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Call a function by using a define for it.
 	unsafe( FUNCTION_ZERO_ARGS() );
 
+	// Access an alias to another define.
+	static_assert( UNSIGNED_CONSTANT_COPY == 12345u );
+
+	{
+		var f64 e_ratio= M_E_COPY / 2.7182818284590452354;
+		static_assert( e_ratio > 0.999999 && e_ratio < 1.000001 );
+	}
+
 	return 0;
 }

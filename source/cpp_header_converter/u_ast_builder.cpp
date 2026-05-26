@@ -1561,6 +1561,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 	const EnumNamesSet& enum_names,
 	const NamedVariableDeclarations& named_variable_declarations )
 {
+	std::unordered_set<std::string> variable_defines;
+
 	// Dump definitions of simple constants, using "define".
 	for( const clang::Preprocessor::macro_iterator::value_type& macro_pair : preprocessor_.macros() )
 	{
@@ -1596,7 +1598,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			named_typedef_declarations.count( name ) != 0 ||
 			named_enum_declarations.count( name ) != 0 ||
 			enum_names.count( name ) != 0 ||
-			named_variable_declarations.count( name ) != 0 )
+			named_variable_declarations.count( name ) != 0 ||
+			variable_defines.count( name ) != 0 )
 			name+= "_";
 
 		if( macro_info->getNumTokens() == 1 )
@@ -1610,6 +1613,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 				auto_variable_declaration.initializer_expression= TranslateNumericLiteral( token );
 
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+				variable_defines.insert( name );
 			}
 			else if( clang::tok::isStringLiteral( token.getKind() ) )
 			{
@@ -1629,6 +1634,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+					variable_defines.insert( name );
 				}
 				else if( string_literal_parser.isUTF16() ||
 					( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 16 ) )
@@ -1644,6 +1651,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+					variable_defines.insert( name );
 				}
 				else if( string_literal_parser.isUTF32() ||
 					( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
@@ -1658,6 +1667,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+					variable_defines.insert( name );
 				}
 			}
 			else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
@@ -1680,6 +1691,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 					auto_variable_declaration.initializer_expression= std::move(char_literal);
 					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+					variable_defines.insert( name );
 				}
 			}
 			else if( token.getKind() == clang::tok::identifier )
@@ -1704,8 +1717,12 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 						auto_variable_declaration.initializer_expression= std::move( name_lookup );
 						root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+						variable_defines.insert( name );
 					}
-					else if( named_variable_declarations.count( idenfier_name ) != 0 )
+					else if(
+						named_variable_declarations.count( idenfier_name ) != 0 ||
+						variable_defines.count( idenfier_name ) != 0 )
 					{
 						// For variables just create "auto& x= y;"
 						Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
@@ -1718,6 +1735,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 						auto_variable_declaration.initializer_expression= std::move( name_lookup );
 						root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+						variable_defines.insert( name );
 					}
 				}
 			}
@@ -1740,6 +1759,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 				auto_variable_declaration.initializer_expression= std::move( minus );
 
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+				variable_defines.insert( name );
 			}
 		}
 	} // for defines

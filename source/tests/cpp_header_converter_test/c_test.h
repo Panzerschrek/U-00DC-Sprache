@@ -410,3 +410,7 @@ typedef unsigned long long int __64_int_from_c;
 
 // Should translate define - alias for a function.
 #define FUNCTION_ZERO_ARGS Function_ZeroArgs
+
+// Should translate define - alias for a variable define.
+#define UNSIGNED_CONSTANT_COPY UNSIGNED_CONSTANT
+#define M_E_COPY M_E
