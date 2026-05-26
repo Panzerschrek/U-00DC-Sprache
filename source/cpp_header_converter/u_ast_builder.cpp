@@ -56,6 +56,21 @@ private:
 	template<typename K, typename V>
 	using NamesMapContainer= std::map<K, V>;
 
+	// Translated/renamed name to function declaration map.
+	using NamedFunctionDeclarations= NamesMapContainer<std::string, const clang::FunctionDecl*>;
+
+	// Translated/renamed name to record declaration map.
+	using NamedRecordDeclarations= NamesMapContainer<std::string, const clang::RecordDecl*>;
+
+	// Translated/renamed name to typedef declaration map.
+	using NamedTypedefDeclarations= NamesMapContainer<std::string, const clang::TypedefNameDecl*>;
+
+	// Translated/renamed name to enum declaration map.
+	using NamedEnumDeclarations= NamesMapContainer<std::string, const clang::EnumDecl*>;
+
+	// Translated/renamed enum names.
+	using EnumNamesSet= std::unordered_set<std::string>;
+
 private:
 	void ProcessDecl( const clang::Decl& decl );
 
@@ -71,19 +86,13 @@ private:
 
 	void CollectSubrecords();
 
-	using NamedFunctionDeclarations= NamesMapContainer<std::string, const clang::FunctionDecl*>;
 	NamedFunctionDeclarations GenerateFunctionNames();
 
-	using NamedRecordDeclarations= NamesMapContainer<std::string, const clang::RecordDecl*>;
 	NamedRecordDeclarations GenerateRecordNames( const NamedFunctionDeclarations& named_function_declarations );
 
-	using NamedTypedefDeclarations= NamesMapContainer<std::string, const clang::TypedefNameDecl*>;
 	NamedTypedefDeclarations GenerateTypedefNames(
 		const NamedFunctionDeclarations& named_function_declarations,
 		const NamedRecordDeclarations& named_record_declarations );
-
-	using NamedEnumDeclarations= NamesMapContainer<std::string, const clang::EnumDecl*>;
-	using EnumNamesSet= std::unordered_set<std::string>;
 
 	NamedEnumDeclarations GenerateEnumNames(
 		const NamedFunctionDeclarations& named_function_declarations,
