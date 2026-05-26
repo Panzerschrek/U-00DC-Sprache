@@ -165,6 +165,8 @@ private:
 		const EnumNamesSet& enum_names,
 		const NamedVariableDeclarations& named_variable_declarations );
 
+	Synt::Expression TranslateNumericLiteral( const clang::Token& token );
+
 private:
 	Synt::ProgramElementsList::Builder& root_program_elements_;
 
@@ -1584,8 +1586,6 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 		if( macro_info->getNumParams() != 0u || macro_info->isFunctionLike() )
 			continue;
-		if( macro_info->getNumTokens() != 1u )
-			continue;
 
 		name= TranslateIdentifier(name);
 
@@ -1599,143 +1599,170 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			named_variable_declarations.count( name ) != 0 )
 			name+= "_";
 
-		const clang::Token& token= macro_info->getReplacementToken(0u);
-		if( token.getKind() == clang::tok::numeric_constant )
+		if( macro_info->getNumTokens() == 1 )
 		{
-			const std::string numeric_literal_str( token.getLiteralData(), token.getLength() );
-			clang::NumericLiteralParser numeric_literal_parser(
-				numeric_literal_str,
-				token.getLocation(),
-				source_manager_,
-				lang_options_,
-				target_info_,
-				diagnostic_engine_ );
-
-			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
-			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= name;
-
-			if( numeric_literal_parser.isIntegerLiteral() || numeric_literal_parser.getRadix() != 10 )
-			{
-				Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
-
-				llvm::APInt int_val( 64u, 0u );
-				numeric_literal_parser.GetIntegerValue( int_val );
-				numeric_constant.num.value= int_val.getLimitedValue();
-
-				if( numeric_literal_parser.isUnsigned )
-				{
-					numeric_constant.num.type_suffix[0]= 'u';
-					if( numeric_literal_parser.isLongLong )
-					{
-						numeric_constant.num.type_suffix[1]= '6';
-						numeric_constant.num.type_suffix[2]= '4';
-					}
-				}
-				else
-				{
-					if( numeric_literal_parser.isLongLong )
-					{
-						numeric_constant.num.type_suffix[0]= 'i';
-						numeric_constant.num.type_suffix[1]= '6';
-						numeric_constant.num.type_suffix[2]= '4';
-					}
-				}
-
-				auto_variable_declaration.initializer_expression= std::move(numeric_constant);
-			}
-			else
-			{
-				Synt::FloatingPointNumericConstant numeric_constant( g_dummy_src_loc );
-
-				llvm::APFloat float_val(0.0);
-				numeric_literal_parser.GetFloatValue( float_val );
-
-				// "HACK! fix infinity.
-				if( float_val.isInfinity() )
-					float_val= llvm::APFloat::getLargest( float_val.getSemantics(), float_val.isNegative() );
-				numeric_constant.num.value= float_val.convertToDouble();
-
-				if( numeric_literal_parser.isFloat )
-					numeric_constant.num.type_suffix[0]= 'f';
-
-				auto_variable_declaration.initializer_expression= std::move(numeric_constant);
-			}
-
-			root_program_elements_.Append( std::move( auto_variable_declaration ) );
-		}
-		else if( clang::tok::isStringLiteral( token.getKind() ) )
-		{
-			clang::StringLiteralParser string_literal_parser( { token }, preprocessor_ );
-
-			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
-			auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
-			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= name;
-
-			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
-
-			if( string_literal_parser.isOrdinary() || string_literal_parser.isUTF8() )
-			{
-				string_constant->value= string_literal_parser.GetString().str();
-				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
-
-				auto_variable_declaration.initializer_expression= std::move(string_constant);
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
-			}
-			else if( string_literal_parser.isUTF16() ||
-				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 16 ) )
-			{
-				llvm::convertUTF16ToUTF8String(
-					llvm::ArrayRef<llvm::UTF16>(
-						reinterpret_cast<const llvm::UTF16*>(string_literal_parser.GetString().data()),
-						string_literal_parser.GetNumStringChars() ),
-					string_constant->value );
-				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
-
-				string_constant->type_suffix= "u16";
-
-				auto_variable_declaration.initializer_expression= std::move(string_constant);
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
-			}
-			else if( string_literal_parser.isUTF32() ||
-				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
-			{
-				const auto string_ref = string_literal_parser.GetString();
-				for( size_t i= 0u; i < string_literal_parser.GetNumStringChars(); ++i )
-					PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant->value );
-
-				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
-
-				string_constant->type_suffix= "u32";
-
-				auto_variable_declaration.initializer_expression= std::move(string_constant);
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
-			}
-		}
-		else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
-		{
-			clang::CharLiteralParser char_literal_parser(
-				token.getLiteralData(),
-				token.getLiteralData() + token.getLength(),
-				token.getLocation(),
-				preprocessor_,
-				token.getKind() );
-
-			if( !char_literal_parser.isMultiChar() )
+			const clang::Token& token= macro_info->getReplacementToken(0u);
+			if( token.getKind() == clang::tok::numeric_constant )
 			{
 				Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
 				auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 				auto_variable_declaration.name= name;
+				auto_variable_declaration.initializer_expression= TranslateNumericLiteral( token );
 
-				Synt::CharLiteral char_literal( g_dummy_src_loc );
-				char_literal.code_point= uint32_t( char_literal_parser.getValue() );
+				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+			}
+			else if( clang::tok::isStringLiteral( token.getKind() ) )
+			{
+				clang::StringLiteralParser string_literal_parser( { token }, preprocessor_ );
 
-				auto_variable_declaration.initializer_expression= std::move(char_literal);
+				Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+				auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
+				auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+				auto_variable_declaration.name= name;
+
+				auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
+
+				if( string_literal_parser.isOrdinary() || string_literal_parser.isUTF8() )
+				{
+					string_constant->value= string_literal_parser.GetString().str();
+					string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+
+					auto_variable_declaration.initializer_expression= std::move(string_constant);
+					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+				}
+				else if( string_literal_parser.isUTF16() ||
+					( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 16 ) )
+				{
+					llvm::convertUTF16ToUTF8String(
+						llvm::ArrayRef<llvm::UTF16>(
+							reinterpret_cast<const llvm::UTF16*>(string_literal_parser.GetString().data()),
+							string_literal_parser.GetNumStringChars() ),
+						string_constant->value );
+					string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+
+					string_constant->type_suffix= "u16";
+
+					auto_variable_declaration.initializer_expression= std::move(string_constant);
+					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+				}
+				else if( string_literal_parser.isUTF32() ||
+					( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
+				{
+					const auto string_ref = string_literal_parser.GetString();
+					for( size_t i= 0u; i < string_literal_parser.GetNumStringChars(); ++i )
+						PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant->value );
+
+					string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+
+					string_constant->type_suffix= "u32";
+
+					auto_variable_declaration.initializer_expression= std::move(string_constant);
+					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+				}
+			}
+			else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
+			{
+				clang::CharLiteralParser char_literal_parser(
+					token.getLiteralData(),
+					token.getLiteralData() + token.getLength(),
+					token.getLocation(),
+					preprocessor_,
+					token.getKind() );
+
+				if( !char_literal_parser.isMultiChar() )
+				{
+					Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+					auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+					auto_variable_declaration.name= name;
+
+					Synt::CharLiteral char_literal( g_dummy_src_loc );
+					char_literal.code_point= uint32_t( char_literal_parser.getValue() );
+
+					auto_variable_declaration.initializer_expression= std::move(char_literal);
+					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+				}
+			}
+		}
+		else if( macro_info->getNumTokens() == 2 )
+		{
+			const clang::Token& token0= macro_info->getReplacementToken(0u);
+			const clang::Token& token1= macro_info->getReplacementToken(1u);
+
+			if( token0.getKind() == clang::tok::minus && token1.getKind() == clang::tok::numeric_constant )
+			{
+				// Negative numeric literals.
+
+				Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+				auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+				auto_variable_declaration.name= name;
+
+				auto minus= std::make_unique<Synt::UnaryMinus>( g_dummy_src_loc );
+				minus->expression= TranslateNumericLiteral( token1 );
+				auto_variable_declaration.initializer_expression= std::move( minus );
+
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
 			}
 		}
 	} // for defines
+}
+
+Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& token )
+{
+	const std::string numeric_literal_str( token.getLiteralData(), token.getLength() );
+	clang::NumericLiteralParser numeric_literal_parser(
+		numeric_literal_str,
+		token.getLocation(),
+		source_manager_,
+		lang_options_,
+		target_info_,
+		diagnostic_engine_ );
+
+	if( numeric_literal_parser.isIntegerLiteral() || numeric_literal_parser.getRadix() != 10 )
+	{
+		Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
+
+		llvm::APInt int_val( 64u, 0u );
+		numeric_literal_parser.GetIntegerValue( int_val );
+		numeric_constant.num.value= int_val.getLimitedValue();
+
+		if( numeric_literal_parser.isUnsigned )
+		{
+			numeric_constant.num.type_suffix[0]= 'u';
+			if( numeric_literal_parser.isLongLong )
+			{
+				numeric_constant.num.type_suffix[1]= '6';
+				numeric_constant.num.type_suffix[2]= '4';
+			}
+		}
+		else
+		{
+			if( numeric_literal_parser.isLongLong )
+			{
+				numeric_constant.num.type_suffix[0]= 'i';
+				numeric_constant.num.type_suffix[1]= '6';
+				numeric_constant.num.type_suffix[2]= '4';
+			}
+		}
+
+		return numeric_constant;
+	}
+	else
+	{
+		Synt::FloatingPointNumericConstant numeric_constant( g_dummy_src_loc );
+
+		llvm::APFloat float_val(0.0);
+		numeric_literal_parser.GetFloatValue( float_val );
+
+		// "HACK! fix infinity.
+		if( float_val.isInfinity() )
+			float_val= llvm::APFloat::getLargest( float_val.getSemantics(), float_val.isNegative() );
+		numeric_constant.num.value= float_val.convertToDouble();
+
+		if( numeric_literal_parser.isFloat )
+			numeric_constant.num.type_suffix[0]= 'f';
+
+		return numeric_constant;
+	}
 }
 
 CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result, const bool skip_declarations_from_includes )

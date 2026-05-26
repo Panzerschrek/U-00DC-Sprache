@@ -40,6 +40,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( LARGE_INTEGER_CONSTANT == 153124586353854499i64 );
 	static_assert( LARGE_INTEGER_UNSIGNED_CONSTANT == 7655554499878564u64 );
 	static_assert( LARGE_INTEGER_CONSTANT_TRUNCATED == 9876543210 );
+	static_assert( NEGATIVE_INTEGER_CONSTANT == -733456 );
+	static_assert( NEGATIVE_DOUBLE_CONSTANT == - 897.25f );
 	static_assert( string_equals( STRING_CONSTANT_ASCII, "WTF?009a\u0000" ) );
 	static_assert( string_equals( STRING_CONSTANT_UTF8_IMPLICIT,"Чё?\u0000" ) );
 	static_assert( string_equals( STRING_CONSTANT_WITH_SPECIAL_SYMBOLS, "Ü \u0013 one \t two \n quote ' double \" slash \\ \u0000" ) );
