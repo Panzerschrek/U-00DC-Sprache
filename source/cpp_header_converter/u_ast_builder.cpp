@@ -1618,14 +1618,15 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 		std::string name= ident_info->getName().str();
 		if( name.empty() )
-			continue;
+			continue; // Can't work with empty macros.
 
 		if( preprocessor_.getPredefines().find( "#define " + name ) != std::string::npos )
 			continue;
 
 		const clang::MacroDirective* const macro_directive= macro_pair.second.getLatest();
+
 		if( macro_directive->getKind() != clang::MacroDirective::MD_Define )
-			continue;
+			continue; // Process only "define" but not "undef".
 
 		if( skip_declarations_from_includes_ &&
 			source_manager_.getFileID( macro_directive->getLocation() ) != source_manager_.getMainFileID() )

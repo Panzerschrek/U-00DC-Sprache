@@ -437,3 +437,6 @@ typedef unsigned long long int __64_int_from_c;
 #define TRIPLE_UNDERSCORED_STRUCT ___TRIPLE_UNDERSCORED_STRUCT
 
 #define ALIAS_FOR_UNKNOWN ThisNameIsNotKnown12345 // Should NOT translate a define for a unknown name.
+
+#define WILL_BE_UNDEFINED_LATER 3331 // Should NOT translate it, because it's undefined later.
+#undef WILL_BE_UNDEFINED_LATER
