@@ -1630,6 +1630,9 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			source_manager_.getFileID( macro_directive->getLocation() ) != source_manager_.getMainFileID() )
 			continue;
 
+		if( !macro_directive->getLocation().isValid() )
+			continue; // Ignore macros with no location. They all seems to be compiler built-in macros.
+
 		macro_directives.push_back( std::make_pair( std::move( name ), macro_directive ) );
 	}
 
