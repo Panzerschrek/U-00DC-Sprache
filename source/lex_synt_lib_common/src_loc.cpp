@@ -7,15 +7,13 @@ namespace U
 SrcLoc::SrcLoc()
 	: file_index_(0u)
 	, macro_expansion_index_(c_max_macro_expanison_index)
-	, line_(0u)
-	, column_(0u)
+	, packed_line_column_(0)
 {}
 
 SrcLoc::SrcLoc( const uint32_t file_index, const uint32_t line, const uint32_t column )
 	: file_index_( uint16_t(file_index) )
 	, macro_expansion_index_( c_max_macro_expanison_index )
-	, line_( uint16_t(line) )
-	, column_( uint16_t(column) )
+	, packed_line_column_( ( line << 16 ) | ( column & 0xFFFF ) )
 {
 	U_ASSERT( file_index <= c_max_file_index );
 	U_ASSERT( line <= c_max_line );
@@ -34,18 +32,19 @@ uint32_t SrcLoc::GetMacroExpansionIndex() const
 
 uint32_t SrcLoc::GetLine() const
 {
-	return line_;
+	return packed_line_column_ >> 16;
 }
 
 uint32_t SrcLoc::GetColumn() const
 {
-	return column_;
+	return packed_line_column_ & 0xFFFF;
 }
 
 void SrcLoc::SetLine( const uint32_t line )
 {
 	U_ASSERT( line <= c_max_line );
-	line_= uint16_t(line);
+	packed_line_column_ &= 0xFFFF;
+	packed_line_column_ |= line << 16;
 }
 
 void SrcLoc::SetFileIndex( const uint32_t file_index )
@@ -65,8 +64,7 @@ bool SrcLoc::operator==( const SrcLoc& other ) const
 	return
 		this->file_index_ == other.file_index_ &&
 		this->macro_expansion_index_ == other.macro_expansion_index_ &&
-		this->line_ == other.line_ &&
-		this->column_ == other.column_;
+		this->packed_line_column_ == other.packed_line_column_;
 }
 
 bool SrcLoc::operator< (const SrcLoc& other ) const
@@ -75,9 +73,7 @@ bool SrcLoc::operator< (const SrcLoc& other ) const
 		return this->file_index_ < other.file_index_;
 	if( this->macro_expansion_index_ != other.macro_expansion_index_ )
 		return this->macro_expansion_index_ < other.macro_expansion_index_;
-	if( this->line_ != other.line_ )
-		return this->line_ < other.line_;
-	return this->column_ < other.column_;
+	return this->packed_line_column_ < other.packed_line_column_;
 }
 
 bool SrcLoc::operator<=( const SrcLoc& other ) const
@@ -90,12 +86,12 @@ size_t SrcLoc::Hash() const
 	if( sizeof(size_t) >= 8 )
 	{
 		// Can pack all into hash.
-		return (uint64_t(file_index_) << 48) | (uint64_t(macro_expansion_index_) << 32) | (uint64_t(line_) << 16) | uint64_t(column_);
+		return (uint64_t(file_index_) << 48) | (uint64_t(macro_expansion_index_) << 32) | uint64_t(packed_line_column_);
 	}
 	else
 	{
 		// xor low and high parts.
-		return ( (uint32_t(file_index_) << 16) | uint32_t(macro_expansion_index_) ) ^ ( (uint32_t(line_) << 16) | uint32_t(column_) );
+		return ( (uint32_t(file_index_) << 16) | uint32_t(macro_expansion_index_) ) ^ uint32_t(packed_line_column_);
 	}
 }
 

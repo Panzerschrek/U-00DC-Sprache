@@ -42,8 +42,7 @@ public:
 private:
 	uint16_t file_index_;
 	uint16_t macro_expansion_index_;
-	uint16_t line_;
-	uint16_t column_;
+	uint32_t packed_line_column_; // High 16 bits are line number, low 16 bits are column number.
 };
 
 struct SrcLocHasher
