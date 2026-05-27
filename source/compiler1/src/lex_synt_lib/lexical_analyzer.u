@@ -808,6 +808,13 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 	while( !it.empty() )
 	{
 		column+= u32( DiffUTF8Chars( prev_it, it ) );
+		if( column > SrcLoc::c_max_column )
+		{
+			result.errors.push_back(
+				LexSyntError( SrcLoc( 0u, line, SrcLoc::c_max_column ), GetColumnLimitMessage() ) );
+			return result;
+		}
+
 		prev_it= it;
 		var SrcLoc src_loc( 0u, line, column );
 
@@ -1005,6 +1012,11 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 fn GetLineLimitMessage() : ust::string8
 {
 	return ust::concat( "Lexical error: line limit reached, max is ", ust::to_string8( SrcLoc::c_max_line ), "." );
+}
+
+fn GetColumnLimitMessage() : ust::string8
+{
+	return ust::concat( "Lexical error: column limit reached, max is ", ust::to_string8( SrcLoc::c_max_column ), "." );
 }
 
 } // namespace U1
