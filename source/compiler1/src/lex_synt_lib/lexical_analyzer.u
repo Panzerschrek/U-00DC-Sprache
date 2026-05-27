@@ -860,6 +860,13 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 						++line;
 						column= 0u;
 
+						if( line > SrcLoc::c_max_line )
+						{
+							result.errors.push_back(
+								LexSyntError( SrcLoc( 0u, SrcLoc::c_max_line, column ), GetLineLimitMessage() ) );
+							return result;
+						}
+
 						// Handle case with two-symbol line ending.
 						if( !it.empty() )
 						{
@@ -885,6 +892,13 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		{
 			++line;
 			column= 0u;
+
+			if( line > SrcLoc::c_max_line )
+			{
+				result.errors.push_back(
+					LexSyntError( SrcLoc( 0u, SrcLoc::c_max_line, column ), GetLineLimitMessage() ) );
+				return result;
+			}
 
 			ust::utf::extract_code_point_or_null_from_string(it); // Consume this line ending symbol.
 
@@ -986,6 +1000,11 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 	result.lexems.push_back( Lexem{ .src_loc( 0u, line, column ), .lexem_type= Lexem::Type::EndOfFile, .text= "EOF" } );
 
 	return result;
+}
+
+fn GetLineLimitMessage() : ust::string8
+{
+	return ust::concat( "Lexical error: line limit reached, max is ", ust::to_string8( SrcLoc::c_max_line ), "." );
 }
 
 } // namespace U1
