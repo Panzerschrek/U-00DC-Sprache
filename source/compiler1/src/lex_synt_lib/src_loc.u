@@ -4,10 +4,11 @@ namespace U1
 {
 
 fn SrcLoc::constructor( u32 file_index, u32 line, u32 column )
-	( file_index_( u16(file_index) )
-	, macro_expansion_index_( u16(c_max_macro_expanison_index) )
-	, line_( u16(line) )
-	, column_( u16(column) ) )
+	(
+		file_index_( file_index ),
+		macro_expansion_index_( c_max_macro_expanison_index ),
+		packed_line_column_= ( line << c_num_column_bits ) | ( column & c_max_column )
+	)
 {
 	halt if( file_index > c_max_file_index );
 	halt if( line > c_max_line );
@@ -26,18 +27,19 @@ fn SrcLoc::GetMacroExpansionIndex(this) : u32
 
 fn SrcLoc::GetLine(this) : u32
 {
-	return u32(line_);
+	return packed_line_column_ >> c_num_column_bits;
 }
 
 fn SrcLoc::GetColumn(this) : u32
 {
-	return u32(column_);
+	return packed_line_column_ & c_max_column;
 }
 
 fn SrcLoc::SetLine( mut this, u32 line )
 {
 	halt if( line > c_max_line );
-	line_= u16(line);
+	packed_line_column_ &= c_max_column;
+	packed_line_column_ |= line << c_num_column_bits;
 }
 
 fn SrcLoc::SetFileIndex( mut this, u32 file_index )
@@ -62,11 +64,7 @@ op SrcLoc::<=>( SrcLoc& l, SrcLoc& r ) : i32
 	{
 		return l.macro_expansion_index_ <=> r.macro_expansion_index_;
 	}
-	if( l.line_ != r.line_ )
-	{
-		return l.line_ <=> r.line_;
-	}
-	return l.column_ <=> r.column_;
+	return l.packed_line_column_ <=> r.packed_line_column_;
 }
 
 } // namespace U1
