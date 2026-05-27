@@ -13,7 +13,7 @@ SrcLoc::SrcLoc()
 SrcLoc::SrcLoc( const uint32_t file_index, const uint32_t line, const uint32_t column )
 	: file_index_( uint16_t(file_index) )
 	, macro_expansion_index_( c_max_macro_expanison_index )
-	, packed_line_column_( ( line << 16 ) | ( column & 0xFFFF ) )
+	, packed_line_column_( ( line << c_num_column_bits ) | ( column & c_max_column ) )
 {
 	U_ASSERT( file_index <= c_max_file_index );
 	U_ASSERT( line <= c_max_line );
@@ -32,19 +32,19 @@ uint32_t SrcLoc::GetMacroExpansionIndex() const
 
 uint32_t SrcLoc::GetLine() const
 {
-	return packed_line_column_ >> 16;
+	return packed_line_column_ >> c_num_column_bits;
 }
 
 uint32_t SrcLoc::GetColumn() const
 {
-	return packed_line_column_ & 0xFFFF;
+	return packed_line_column_ & c_max_column;
 }
 
 void SrcLoc::SetLine( const uint32_t line )
 {
 	U_ASSERT( line <= c_max_line );
-	packed_line_column_ &= 0xFFFF;
-	packed_line_column_ |= line << 16;
+	packed_line_column_ &= c_max_column;
+	packed_line_column_ |= line << c_num_column_bits;
 }
 
 void SrcLoc::SetFileIndex( const uint32_t file_index )

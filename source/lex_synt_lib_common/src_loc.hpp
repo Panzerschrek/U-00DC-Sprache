@@ -12,10 +12,17 @@ namespace U
 class SrcLoc
 {
 public:
+	// Source files usually have more lines than columns.
+	// Even large (likely generated) files with more then 65535 lines are possible.
+	// So, allocate 18 bits for line numbers (max 262143 lines) an 14 bits for column numbers (max 16383 columns).
+	static constexpr uint32_t c_num_line_bits= 18;
+	static constexpr uint32_t c_num_column_bits= 32 - c_num_line_bits;
+
+	static constexpr uint32_t c_max_line= ( 1u << c_num_line_bits ) - 1u;
+	static constexpr uint32_t c_max_column= ( 1u << c_num_column_bits ) - 1u;
+
 	static constexpr uint32_t c_max_file_index= std::numeric_limits<uint16_t>::max();
 	static constexpr uint32_t c_max_macro_expanison_index= std::numeric_limits<uint16_t>::max();
-	static constexpr uint32_t c_max_line= std::numeric_limits<uint16_t>::max();
-	static constexpr uint32_t c_max_column= std::numeric_limits<uint16_t>::max();
 
 public:
 	SrcLoc();
@@ -42,7 +49,7 @@ public:
 private:
 	uint16_t file_index_;
 	uint16_t macro_expansion_index_;
-	uint32_t packed_line_column_; // High 16 bits are line number, low 16 bits are column number.
+	uint32_t packed_line_column_; // High bits are line number, low bits are column number.
 };
 
 struct SrcLocHasher
