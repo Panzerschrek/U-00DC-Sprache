@@ -663,6 +663,11 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 	return ParseDecimalNumber( it, it_end, src_loc, out_errors );
 }
 
+std::string GetLineLimitMessage()
+{
+	return "Lexical error: line limit reached, max is " + std::to_string( SrcLoc::c_max_line ) + ".";
+}
+
 } // namespace
 
 LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
@@ -745,6 +750,14 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 					if( IsNewline( c ) )
 					{
 						++line;
+
+						if( line > SrcLoc::c_max_line )
+						{
+							result.errors.emplace_back(
+								GetLineLimitMessage(), SrcLoc( 0u, SrcLoc::c_max_line, column ) );
+							return result;
+						}
+
 						column= 0;
 						++it;
 						// Handle case with two-symbol line ending.
@@ -769,6 +782,13 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 		else if( IsNewline(c) )
 		{
 			++line;
+
+			if( line > SrcLoc::c_max_line )
+			{
+				result.errors.emplace_back( GetLineLimitMessage(), SrcLoc( 0u, SrcLoc::c_max_line, column ) );
+				return result;
+			}
+
 			column= 0u;
 
 			ReadNextUTF8Char( it, it_end ); // Consume this line ending symbol.
@@ -875,12 +895,6 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 
 	result.lexems.emplace_back( std::move(eof_lexem) );
 
-	if( line > SrcLoc::c_max_line )
-	{
-		result.errors.emplace_back(
-			"Lexical error: line limit reached, max is " + std::to_string( SrcLoc::c_max_line ),
-			SrcLoc( 0u, line, column ) );
-	}
 	if( max_column > SrcLoc::c_max_column )
 	{
 		result.errors.emplace_back(
