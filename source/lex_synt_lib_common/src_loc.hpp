@@ -13,7 +13,7 @@ class SrcLoc
 {
 public:
 	// Source files usually have more lines than columns.
-	// Even large (likely generated) files with more then 65535 lines are possible.
+	// Even large (likely generated) files with more than 65535 lines are possible.
 	// So, allocate 18 bits for line numbers (max 262143 lines) an 14 bits for column numbers (max 16383 columns).
 	static constexpr uint32_t c_num_line_bits= 18;
 	static constexpr uint32_t c_num_column_bits= 32 - c_num_line_bits;
