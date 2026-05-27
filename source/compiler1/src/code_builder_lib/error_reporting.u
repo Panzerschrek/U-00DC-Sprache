@@ -20,7 +20,7 @@ op CodeBuilderError::<=>(CodeBuilderError& l, CodeBuilderError& r) : i32
 	return l.text <=> r.text;
 }
 
-fn ReportErrorImpl( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::array_view_imut</ust::string8/> format_args ) : CodeBuilderError
+fn ReportErrorImpl( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::array_view_imut</ust::string_view8/> format_args ) : CodeBuilderError
 {
 	var ust::string8 mut result_error_text;
 
