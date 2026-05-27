@@ -21,8 +21,11 @@ public:
 	static constexpr uint32_t c_max_line= ( 1u << c_num_line_bits ) - 1u;
 	static constexpr uint32_t c_max_column= ( 1u << c_num_column_bits ) - 1u;
 
-	static constexpr uint32_t c_max_file_index= std::numeric_limits<uint16_t>::max();
-	static constexpr uint32_t c_max_macro_expanison_index= std::numeric_limits<uint16_t>::max();
+	static constexpr uint32_t c_num_file_index_bits= 16;
+	static constexpr uint32_t c_num_macro_expansion_index_bits= 32 - c_num_file_index_bits;
+
+	static constexpr uint32_t c_max_file_index= ( 1u << c_num_file_index_bits ) - 1u;
+	static constexpr uint32_t c_max_macro_expanison_index= ( 1u << c_num_macro_expansion_index_bits ) - 1u;
 
 public:
 	SrcLoc();
@@ -35,8 +38,8 @@ public:
 
 	void SetLine( uint32_t line );
 
-	// = max for non-macro
 	void SetFileIndex( uint32_t file_index );
+	// = max for non-macro
 	void SetMacroExpansionIndex( uint32_t macro_expansion_index );
 
 	bool operator==( const SrcLoc& other ) const;
@@ -47,8 +50,7 @@ public:
 	size_t Hash() const;
 
 private:
-	uint16_t file_index_;
-	uint16_t macro_expansion_index_;
+	uint32_t packed_file_index_macro_expansion_index_; // High bits are file index, low bits are macro expansion index.
 	uint32_t packed_line_column_; // High bits are line number, low bits are column number.
 };
 

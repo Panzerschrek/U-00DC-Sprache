@@ -5,14 +5,14 @@ namespace U
 {
 
 SrcLoc::SrcLoc()
-	: file_index_(0u)
-	, macro_expansion_index_(c_max_macro_expanison_index)
+	: packed_file_index_macro_expansion_index_(
+		( 0u << c_num_macro_expansion_index_bits ) | c_max_macro_expanison_index )
 	, packed_line_column_(0)
 {}
 
 SrcLoc::SrcLoc( const uint32_t file_index, const uint32_t line, const uint32_t column )
-	: file_index_( uint16_t(file_index) )
-	, macro_expansion_index_( c_max_macro_expanison_index )
+	: packed_file_index_macro_expansion_index_(
+		( file_index << c_num_macro_expansion_index_bits ) | c_max_macro_expanison_index )
 	, packed_line_column_( ( line << c_num_column_bits ) | ( column & c_max_column ) )
 {
 	U_ASSERT( file_index <= c_max_file_index );
@@ -22,12 +22,12 @@ SrcLoc::SrcLoc( const uint32_t file_index, const uint32_t line, const uint32_t c
 
 uint32_t SrcLoc::GetFileIndex() const
 {
-	return file_index_;
+	return packed_file_index_macro_expansion_index_ >> c_num_macro_expansion_index_bits;
 }
 
 uint32_t SrcLoc::GetMacroExpansionIndex() const
 {
-	return macro_expansion_index_;
+	return packed_file_index_macro_expansion_index_ & c_max_macro_expanison_index;
 }
 
 uint32_t SrcLoc::GetLine() const
@@ -50,29 +50,28 @@ void SrcLoc::SetLine( const uint32_t line )
 void SrcLoc::SetFileIndex( const uint32_t file_index )
 {
 	U_ASSERT( file_index <= c_max_file_index );
-	file_index_= uint16_t(file_index);
+	packed_file_index_macro_expansion_index_ &= c_max_macro_expanison_index;
+	packed_file_index_macro_expansion_index_ |= file_index << c_num_macro_expansion_index_bits;
 }
 
 void SrcLoc::SetMacroExpansionIndex( const uint32_t macro_expansion_index )
 {
 	U_ASSERT( macro_expansion_index <= c_max_macro_expanison_index );
-	macro_expansion_index_= uint16_t(macro_expansion_index);
+	packed_file_index_macro_expansion_index_ &= ~c_max_macro_expanison_index;
+	packed_file_index_macro_expansion_index_ |= macro_expansion_index;
 }
 
 bool SrcLoc::operator==( const SrcLoc& other ) const
 {
 	return
-		this->file_index_ == other.file_index_ &&
-		this->macro_expansion_index_ == other.macro_expansion_index_ &&
+		this->packed_file_index_macro_expansion_index_ == other.packed_file_index_macro_expansion_index_ &&
 		this->packed_line_column_ == other.packed_line_column_;
 }
 
 bool SrcLoc::operator< (const SrcLoc& other ) const
 {
-	if( this->file_index_ != other.file_index_ )
-		return this->file_index_ < other.file_index_;
-	if( this->macro_expansion_index_ != other.macro_expansion_index_ )
-		return this->macro_expansion_index_ < other.macro_expansion_index_;
+	if( this->packed_file_index_macro_expansion_index_ != other.packed_file_index_macro_expansion_index_ )
+		return this->packed_file_index_macro_expansion_index_ < other.packed_file_index_macro_expansion_index_;
 	return this->packed_line_column_ < other.packed_line_column_;
 }
 
@@ -86,12 +85,12 @@ size_t SrcLoc::Hash() const
 	if( sizeof(size_t) >= 8 )
 	{
 		// Can pack all into hash.
-		return (uint64_t(file_index_) << 48) | (uint64_t(macro_expansion_index_) << 32) | uint64_t(packed_line_column_);
+		return ( uint64_t(packed_file_index_macro_expansion_index_) << 32) | uint64_t(packed_line_column_);
 	}
 	else
 	{
 		// xor low and high parts.
-		return ( (uint32_t(file_index_) << 16) | uint32_t(macro_expansion_index_) ) ^ uint32_t(packed_line_column_);
+		return uint32_t(packed_file_index_macro_expansion_index_) ^ uint32_t(packed_line_column_);
 	}
 }
 
