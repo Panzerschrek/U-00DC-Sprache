@@ -109,7 +109,7 @@ fn CodeBuilder::NamesScopeFillFunction( mut this, NamesScopeMutPtr& names_scope_
 		{
 			auto errors_container= names_scope.GetErrors();
 			auto mut errors_container_lock= errors_container.try_lock_mut();
-			errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function.deref().src_loc ) );
+			errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function.deref().src_loc, func_name ) );
 			return;
 		}
 
@@ -175,7 +175,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		{
 			auto errors_container= names_scope.GetErrors();
 			auto mut errors_container_lock= errors_container.try_lock_mut();
-			errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function_template.deref().src_loc ) );
+			errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function_template.deref().src_loc, func_name ) );
 			return;
 		}
 
@@ -304,7 +304,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		{
 			auto errors_container= names_scope.GetErrors();
 			auto mut errors_container_lock= errors_container.try_lock_mut();
-			errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, type_template.deref().src_loc ) );
+			errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, type_template.deref().src_loc, template_name ) );
 			return;
 		}
 

@@ -67,6 +67,38 @@ U_TEST( AdditionalSymbolsForIdentifiersTest0 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( VeryLongProgramText_Test0 )
+{
+	// A program having a lot of lines.
+	std::string program_text= "fn Bar() : i32 { return 65773; }\n";
+	program_text.resize( program_text.size() + 262140, '\n' );
+	program_text+= "fn Foo() : i32 { return Bar(); }";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t(65773) );
+}
+
+U_TEST( VeryWideProgramText_Test0 )
+{
+	// A program having a very long line.
+	std::string program_text= "fn Bar() : i32 { return 637212; }";
+	program_text.resize( program_text.size() + 16310, ' ' );
+	program_text+= "fn Foo() : i32 { return Bar(); }";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t(637212) );
+}
+
 U_TEST(SimpliestProgramTest0)
 {
 	static const char c_program_text[]=

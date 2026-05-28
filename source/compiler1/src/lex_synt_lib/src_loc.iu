@@ -1,13 +1,26 @@
 namespace U1
 {
 
+// Location in program source.
+// Lines in source are started with 1. This was choosen in order to report about errors properly, because IDEs/editors use 1-based lines numbering.
+// Column is represented starting with 0, in UTF-32 code points. It is maybe better to use 1-base, but it is too late to change this behavior.
 class SrcLoc
 {
 public:
-	var u32 c_max_file_index= 65535u;
-	var u32 c_max_macro_expanison_index= 65535u;
-	var u32 c_max_line= 65535u;
-	var u32 c_max_column= 65535u;
+	// Source files usually have more lines than columns.
+	// Even large (likely generated) files with more than 65535 lines are possible.
+	// So, allocate 18 bits for line numbers (max 262143 lines) an 14 bits for column numbers (max 16383 columns).
+	var u32 c_num_line_bits= 18u;
+	var u32 c_num_column_bits= 32u - c_num_line_bits;
+
+	var u32 c_max_line= ( 1u << c_num_line_bits ) - 1u;
+	var u32 c_max_column= ( 1u << c_num_column_bits ) - 1u;
+
+	var u32 c_num_file_index_bits= 16u;
+	var u32 c_num_macro_expansion_index_bits= 32u - c_num_file_index_bits;
+
+	var u32 c_max_file_index= ( 1u << c_num_file_index_bits ) - 1u;
+	var u32 c_max_macro_expanison_index= ( 1u << c_num_macro_expansion_index_bits ) - 1u;
 
 public:
 	fn constructor()= default;
@@ -23,8 +36,8 @@ public:
 
 	fn SetLine( mut this, u32 line );
 
-	// = max for non-macro
 	fn SetFileIndex( mut this, u32 file_index );
+	// = max for non-macro
 	fn SetMacroExpansionIndex( mut this, u32 macro_expansion_index );
 
 	op==( SrcLoc& l, SrcLoc& r ) : bool = default;
@@ -33,17 +46,13 @@ public:
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
 	{
-		hasher( file_index_ );
-		hasher( macro_expansion_index_ );
-		hasher( line_ );
-		hasher( column_ );
+		hasher( packed_file_index_macro_expansion_index_ );
+		hasher( packed_line_column_ );
 	}
 
 private:
-	u16 file_index_(0);
-	u16 macro_expansion_index_(c_max_macro_expanison_index);
-	u16 line_(0); // from 1
-	u16 column_(0);
+	u32 packed_file_index_macro_expansion_index_= c_max_macro_expanison_index; // High bits are file index, low bits are macro expansion index.
+	u32 packed_line_column_(0); // High bits are line number, low bits are column number.
 }
 
 } // namespace U1

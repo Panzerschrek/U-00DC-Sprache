@@ -2129,7 +2129,7 @@ fn CodeBuilder::CheckForUnusedLocalNames( this, NamesScopePtr& names_scope )
 		{
 			with( &variable : variable_ptr.try_lock_imut().deref() )
 			{
-				if( !variable.referenced && IsSrcLocFromMainFile( variable.src_loc ) )
+				if( !variable.referenced )
 				{
 					REPORT_ERROR( UnusedName, names_scope, variable.src_loc, name )
 				}
