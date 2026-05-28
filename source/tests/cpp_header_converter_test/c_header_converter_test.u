@@ -40,6 +40,10 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( LARGE_INTEGER_CONSTANT == 153124586353854499i64 );
 	static_assert( LARGE_INTEGER_UNSIGNED_CONSTANT == 7655554499878564u64 );
 	static_assert( LARGE_INTEGER_CONSTANT_TRUNCATED == 9876543210 );
+	static_assert( NEGATIVE_INTEGER_CONSTANT == -733456 );
+	static_assert( NEGATIVE_DOUBLE_CONSTANT == - 897.25f );
+	static_assert( CONSTANT_WRAPPED == 683 );
+	static_assert( CONSTANT_DEEPLY_WRAPPED == -56772 );
 	static_assert( string_equals( STRING_CONSTANT_ASCII, "WTF?009a\u0000" ) );
 	static_assert( string_equals( STRING_CONSTANT_UTF8_IMPLICIT,"Чё?\u0000" ) );
 	static_assert( string_equals( STRING_CONSTANT_WITH_SPECIAL_SYMBOLS, "Ü \u0013 one \t two \n quote ' double \" slash \\ \u0000" ) );
@@ -326,6 +330,42 @@ fn nomangle main() call_conv( "C" ) : i32
 		var TripleUnderscoredStruct___ triple_underscored_struct{ .y= 1.0f, .z= 'Y' };
 	}
 	static_assert( same_type</ n64_int_from_c__, u64 /> );
+
+	// Call a function by using a define for it.
+	unsafe( FUNCTION_ZERO_ARGS() );
+	unsafe( FUNCTION_ZERO_ARGS_COPY() );
+
+	// Access an alias to another define.
+	static_assert( UNSIGNED_CONSTANT_COPY == 12345u );
+
+	{
+		var f64 e_ratio= M_E_COPY / 2.7182818284590452354;
+		static_assert( e_ratio > 0.999999 && e_ratio < 1.000001 );
+	}
+
+	static_assert( NEGATIVE_INTEGER_CONSTANT_COPY == NEGATIVE_INTEGER_CONSTANT );
+
+	static_assert( STRING_CONSTANT_ASCII_COPY == "WTF?009a\u0000" );
+	static_assert( CHAR_CONSTANT_COPY == 'Z' );
+	static_assert( UNSIGNED_CONSTANT_COPY_COPY == 12345u );
+	static_assert( CHAR_CONSTANT_COPY_A__ == CHAR_CONSTANT );
+	static_assert( CHAR_CONSTANT_COPY_B__ == CHAR_CONSTANT );
+
+	// Define alias for types.
+	static_assert( same_type</ CPP_CHAR8, CPP_char8 /> );
+	static_assert( same_type</ ARRAY_TYPE15, ArrayType15 /> );
+	static_assert( same_type</ REGULAR_STRUCT, RegularStruct /> );
+	static_assert( same_type</ TYPEDEFED_STRUCT, TypedefedStruct /> );
+	static_assert( same_type</ STUPID_STRUCT_NAMING, StupidStuctNaming /> );
+	static_assert( same_type</ UNION_ALIGN_1, UnionAlign1 /> );
+	static_assert( same_type</ SEQUENTIAL_ENUM, SequentialEnum /> );
+	static_assert( same_type</ NON_SEQUENTIAL_ENUM, NonSequentialEnum /> );
+	static_assert( same_type</ TYPEDEF_FOR_ENUM_ABC, TypedefForEnumABC /> );
+	static_assert( same_type</ REGULAR_STRUCT_COPY, REGULAR_STRUCT /> );
+	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT___, TripleUnderscoredStruct___ /> );
+	static_assert( same_type</ n64_INT_FROM_C__, n64_int_from_c__ /> );
+	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT, TRIPLE_UNDERSCORED_STRUCT___ /> );
+	static_assert( same_type</ CPP_CHAR8_COPY, CPP_CHAR8 /> );
 
 	return 0;
 }

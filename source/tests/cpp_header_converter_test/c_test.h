@@ -12,6 +12,10 @@
 #define LARGE_INTEGER_CONSTANT 153124586353854499LL
 #define LARGE_INTEGER_UNSIGNED_CONSTANT 7655554499878564uLL
 #define LARGE_INTEGER_CONSTANT_TRUNCATED 9876543210
+#define NEGATIVE_INTEGER_CONSTANT -733456
+#define NEGATIVE_DOUBLE_CONSTANT - 897.25f
+#define CONSTANT_WRAPPED ( 683 )
+#define CONSTANT_DEEPLY_WRAPPED ( ( ( ( ( -56772 ) ) ) ) )
 #define STRING_CONSTANT_ASCII "WTF?009a"
 #define STRING_CONSTANT_UTF8_IMPLICIT "Чё?"
 #define STRING_CONSTANT_WITH_SPECIAL_SYMBOLS "\u00DC \x13 one \t two \n quote \' double \" slash \\ "
@@ -405,3 +409,38 @@ struct ___TripleUnderscoredStruct
 
 // Should proper handle identifiers with underscore prefix followed by number.
 typedef unsigned long long int __64_int_from_c;
+
+// Should translate define - alias for a function.
+#define FUNCTION_ZERO_ARGS Function_ZeroArgs
+#define FUNCTION_ZERO_ARGS_COPY FUNCTION_ZERO_ARGS
+
+// Should translate define - alias for a variable define.
+#define UNSIGNED_CONSTANT_COPY UNSIGNED_CONSTANT
+#define M_E_COPY M_E
+#define NEGATIVE_INTEGER_CONSTANT_COPY NEGATIVE_INTEGER_CONSTANT
+#define STRING_CONSTANT_ASCII_COPY STRING_CONSTANT_ASCII
+#define CHAR_CONSTANT_COPY CHAR_CONSTANT
+#define UNSIGNED_CONSTANT_COPY_COPY UNSIGNED_CONSTANT_COPY
+#define __CHAR_CONSTANT_COPY_A CHAR_CONSTANT
+#define __CHAR_CONSTANT_COPY_B __CHAR_CONSTANT_COPY_A
+
+// Should translate define - alias for a type name.
+#define CPP_CHAR8 CPP_char8
+#define ARRAY_TYPE15 ArrayType15
+#define REGULAR_STRUCT RegularStruct
+#define TYPEDEFED_STRUCT TypedefedStruct
+#define STUPID_STRUCT_NAMING StupidStuctNaming
+#define UNION_ALIGN_1 UnionAlign1
+#define SEQUENTIAL_ENUM SequentialEnum
+#define NON_SEQUENTIAL_ENUM NonSequentialEnum
+#define TYPEDEF_FOR_ENUM_ABC TypedefForEnumABC
+#define REGULAR_STRUCT_COPY REGULAR_STRUCT
+#define ___TRIPLE_UNDERSCORED_STRUCT ___TripleUnderscoredStruct
+#define __64_INT_FROM_C __64_int_from_c
+#define TRIPLE_UNDERSCORED_STRUCT ___TRIPLE_UNDERSCORED_STRUCT
+#define CPP_CHAR8_COPY ( CPP_CHAR8 )
+
+#define ALIAS_FOR_UNKNOWN ThisNameIsNotKnown12345 // Should NOT translate a define for a unknown name.
+
+#define WILL_BE_UNDEFINED_LATER 3331 // Should NOT translate it, because it's undefined later.
+#undef WILL_BE_UNDEFINED_LATER

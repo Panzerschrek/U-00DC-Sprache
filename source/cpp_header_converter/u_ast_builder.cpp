@@ -56,6 +56,21 @@ private:
 	template<typename K, typename V>
 	using NamesMapContainer= std::map<K, V>;
 
+	// Translated/renamed name to function declaration map.
+	using NamedFunctionDeclarations= NamesMapContainer<std::string, const clang::FunctionDecl*>;
+
+	// Translated/renamed name to record declaration map.
+	using NamedRecordDeclarations= NamesMapContainer<std::string, const clang::RecordDecl*>;
+
+	// Translated/renamed name to typedef declaration map.
+	using NamedTypedefDeclarations= NamesMapContainer<std::string, const clang::TypedefNameDecl*>;
+
+	// Translated/renamed name to enum declaration map.
+	using NamedEnumDeclarations= NamesMapContainer<std::string, const clang::EnumDecl*>;
+
+	// Translated/renamed enum names.
+	using EnumNamesSet= std::unordered_set<std::string>;
+
 private:
 	void ProcessDecl( const clang::Decl& decl );
 
@@ -71,19 +86,13 @@ private:
 
 	void CollectSubrecords();
 
-	using NamedFunctionDeclarations= NamesMapContainer<std::string, const clang::FunctionDecl*>;
 	NamedFunctionDeclarations GenerateFunctionNames();
 
-	using NamedRecordDeclarations= NamesMapContainer<std::string, const clang::RecordDecl*>;
 	NamedRecordDeclarations GenerateRecordNames( const NamedFunctionDeclarations& named_function_declarations );
 
-	using NamedTypedefDeclarations= NamesMapContainer<std::string, const clang::TypedefNameDecl*>;
 	NamedTypedefDeclarations GenerateTypedefNames(
 		const NamedFunctionDeclarations& named_function_declarations,
 		const NamedRecordDeclarations& named_record_declarations );
-
-	using NamedEnumDeclarations= NamesMapContainer<std::string, const clang::EnumDecl*>;
-	using EnumNamesSet= std::unordered_set<std::string>;
 
 	NamedEnumDeclarations GenerateEnumNames(
 		const NamedFunctionDeclarations& named_function_declarations,
@@ -164,6 +173,8 @@ private:
 		const NamedEnumDeclarations& named_enum_declarations,
 		const EnumNamesSet& enum_names,
 		const NamedVariableDeclarations& named_variable_declarations );
+
+	Synt::Expression TranslateNumericLiteral( const clang::Token& token );
 
 private:
 	Synt::ProgramElementsList::Builder& root_program_elements_;
@@ -886,7 +897,7 @@ CppAstConsumer::TypeNamesMap CppAstConsumer::BuildTypeNamesMap(
 		res[ pair.second->getTypeForDecl() ] = pair.first;
 
 	for( const auto& pair : named_typedef_declarations )
-		res[ pair.second->getTypeForDecl() ] = pair.first;
+		res[ ast_context_.getTypedefType( pair.second ).getTypePtr() ] = pair.first;
 
 	for( const auto& pair : named_enum_declarations )
 		res[ pair.second->getTypeForDecl() ] = pair.first;
@@ -1559,183 +1570,369 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 	const EnumNamesSet& enum_names,
 	const NamedVariableDeclarations& named_variable_declarations )
 {
-	// Dump definitions of simple constants, using "define".
+	// Populate a hash-map of original to translated type names.
+	std::unordered_map< std::string, std::string > type_original_to_translated_name_map;
+
+	for( const auto& pair : named_record_declarations )
+	{
+		std::string original_name= pair.second->getName().str();
+		if( type_original_to_translated_name_map.count( original_name ) == 0 )
+			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
+	}
+
+	for( const auto& pair : named_typedef_declarations )
+	{
+		std::string original_name= pair.second->getName().str();
+		if( type_original_to_translated_name_map.count( original_name ) == 0 )
+			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
+	}
+
+	for( const auto& pair : named_enum_declarations )
+	{
+		std::string original_name= pair.second->getName().str();
+		if( type_original_to_translated_name_map.count( original_name ) == 0 )
+			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
+	}
+
+	// Populate a hash-map of original to translated variable names.
+	std::unordered_map< std::string, std::string > variable_original_to_translated_name_map;
+
+	for( const auto& pair : named_variable_declarations )
+	{
+		std::string original_name= pair.second->getName().str();
+		if( variable_original_to_translated_name_map.count( original_name ) == 0 )
+			variable_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
+	}
+
+	// Extract all macros and sort them by their location.
+	// We need natural order here (from includes to the main file, line-by-line in each file).
+
+	using MacroPair= std::pair< std::string, const clang::MacroDirective* >;
+
+	std::vector< MacroPair > macro_directives;
 	for( const clang::Preprocessor::macro_iterator::value_type& macro_pair : preprocessor_.macros() )
 	{
 		const clang::IdentifierInfo* ident_info= macro_pair.first;
 
 		std::string name= ident_info->getName().str();
 		if( name.empty() )
-			continue;
+			continue; // Can't work with empty macros.
+
 		if( preprocessor_.getPredefines().find( "#define " + name ) != std::string::npos )
 			continue;
 
 		const clang::MacroDirective* const macro_directive= macro_pair.second.getLatest();
+
 		if( macro_directive->getKind() != clang::MacroDirective::MD_Define )
-			continue;
+			continue; // Process only "define" but not "undef".
 
 		if( skip_declarations_from_includes_ &&
 			source_manager_.getFileID( macro_directive->getLocation() ) != source_manager_.getMainFileID() )
-			return;
+			continue;
 
-		const clang::MacroInfo* const macro_info= macro_directive->getMacroInfo();
+		if( !macro_directive->getLocation().isValid() )
+			continue; // Ignore macros with no location. They all seems to be compiler built-in macros.
+
+		macro_directives.push_back( std::make_pair( std::move( name ), macro_directive ) );
+	}
+
+	std::sort(
+		macro_directives.begin(),
+		macro_directives.end(),
+		[&]( const MacroPair& l, const MacroPair& r )
+		{
+			return source_manager_.isBeforeInTranslationUnit( l.second->getLocation(), r.second->getLocation() );
+		} );
+
+	// Maintain a hash-set of emitted macro names (to avoid duplication).
+	std::unordered_set<std::string> emitted_macro_names;
+
+	for( const MacroPair& macro_pair : macro_directives )
+	{
+		const clang::MacroInfo* const macro_info= macro_pair.second->getMacroInfo();
 		if( macro_info->isBuiltinMacro() )
 			continue;
 
 		if( macro_info->getNumParams() != 0u || macro_info->isFunctionLike() )
 			continue;
-		if( macro_info->getNumTokens() != 1u )
-			continue;
 
-		name= TranslateIdentifier(name);
+		const std::string& macro_original_name= macro_pair.first;
+
+		std::string macro_translated_name= TranslateIdentifier( macro_original_name );
 
 		// Rename to avoid name conflicts.
 		while(
-			named_function_declarations.count( name ) != 0 ||
-			named_record_declarations.count( name ) != 0 ||
-			named_typedef_declarations.count( name ) != 0 ||
-			named_enum_declarations.count( name ) != 0 ||
-			enum_names.count( name ) != 0 ||
-			named_variable_declarations.count( name ) != 0 )
-			name+= "_";
+			named_function_declarations.count( macro_translated_name ) != 0 ||
+			named_record_declarations.count( macro_translated_name ) != 0 ||
+			named_typedef_declarations.count( macro_translated_name ) != 0 ||
+			named_enum_declarations.count( macro_translated_name ) != 0 ||
+			enum_names.count( macro_translated_name ) != 0 ||
+			named_variable_declarations.count( macro_translated_name ) != 0 ||
+			emitted_macro_names.count( macro_translated_name ) != 0 )
+			macro_translated_name+= "_";
 
-		const clang::Token& token= macro_info->getReplacementToken(0u);
-		if( token.getKind() == clang::tok::numeric_constant )
+		clang::MacroInfo::const_tokens_iterator tokens_begin= macro_info->tokens_begin();
+		clang::MacroInfo::const_tokens_iterator tokens_end= macro_info->tokens_end();
+
+		// Strip ().
+		while( tokens_begin < tokens_end &&
+			tokens_begin->getKind() == clang::tok::l_paren && std::prev(tokens_end)->getKind() == clang::tok::r_paren )
 		{
-			const std::string numeric_literal_str( token.getLiteralData(), token.getLength() );
-			clang::NumericLiteralParser numeric_literal_parser(
-				numeric_literal_str,
-				token.getLocation(),
-				source_manager_,
-				lang_options_,
-				target_info_,
-				diagnostic_engine_ );
-
-			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
-			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= name;
-
-			if( numeric_literal_parser.isIntegerLiteral() || numeric_literal_parser.getRadix() != 10 )
-			{
-				Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
-
-				llvm::APInt int_val( 64u, 0u );
-				numeric_literal_parser.GetIntegerValue( int_val );
-				numeric_constant.num.value= int_val.getLimitedValue();
-
-				if( numeric_literal_parser.isUnsigned )
-				{
-					numeric_constant.num.type_suffix[0]= 'u';
-					if( numeric_literal_parser.isLongLong )
-					{
-						numeric_constant.num.type_suffix[1]= '6';
-						numeric_constant.num.type_suffix[2]= '4';
-					}
-				}
-				else
-				{
-					if( numeric_literal_parser.isLongLong )
-					{
-						numeric_constant.num.type_suffix[0]= 'i';
-						numeric_constant.num.type_suffix[1]= '6';
-						numeric_constant.num.type_suffix[2]= '4';
-					}
-				}
-
-				auto_variable_declaration.initializer_expression= std::move(numeric_constant);
-			}
-			else
-			{
-				Synt::FloatingPointNumericConstant numeric_constant( g_dummy_src_loc );
-
-				llvm::APFloat float_val(0.0);
-				numeric_literal_parser.GetFloatValue( float_val );
-
-				// "HACK! fix infinity.
-				if( float_val.isInfinity() )
-					float_val= llvm::APFloat::getLargest( float_val.getSemantics(), float_val.isNegative() );
-				numeric_constant.num.value= float_val.convertToDouble();
-
-				if( numeric_literal_parser.isFloat )
-					numeric_constant.num.type_suffix[0]= 'f';
-
-				auto_variable_declaration.initializer_expression= std::move(numeric_constant);
-			}
-
-			root_program_elements_.Append( std::move( auto_variable_declaration ) );
+			++tokens_begin;
+			--tokens_end;
 		}
-		else if( clang::tok::isStringLiteral( token.getKind() ) )
+
+		if( tokens_begin == tokens_end )
 		{
-			clang::StringLiteralParser string_literal_parser( { token }, preprocessor_ );
-
-			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
-			auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
-			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= name;
-
-			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
-
-			if( string_literal_parser.isOrdinary() || string_literal_parser.isUTF8() )
-			{
-				string_constant->value= string_literal_parser.GetString().str();
-				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
-
-				auto_variable_declaration.initializer_expression= std::move(string_constant);
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
-			}
-			else if( string_literal_parser.isUTF16() ||
-				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 16 ) )
-			{
-				llvm::convertUTF16ToUTF8String(
-					llvm::ArrayRef<llvm::UTF16>(
-						reinterpret_cast<const llvm::UTF16*>(string_literal_parser.GetString().data()),
-						string_literal_parser.GetNumStringChars() ),
-					string_constant->value );
-				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
-
-				string_constant->type_suffix= "u16";
-
-				auto_variable_declaration.initializer_expression= std::move(string_constant);
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
-			}
-			else if( string_literal_parser.isUTF32() ||
-				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
-			{
-				const auto string_ref = string_literal_parser.GetString();
-				for( size_t i= 0u; i < string_literal_parser.GetNumStringChars(); ++i )
-					PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant->value );
-
-				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
-
-				string_constant->type_suffix= "u32";
-
-				auto_variable_declaration.initializer_expression= std::move(string_constant);
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
-			}
+			// There is no reason to translate macros defining nothing.
 		}
-		else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
+		else if( tokens_end - tokens_begin == 1 )
 		{
-			clang::CharLiteralParser char_literal_parser(
+			const clang::Token& token= *tokens_begin;
+			if( token.getKind() == clang::tok::numeric_constant )
+			{
+				Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+				auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+				auto_variable_declaration.name= macro_translated_name;
+				auto_variable_declaration.initializer_expression= TranslateNumericLiteral( token );
+
+				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+				variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+				emitted_macro_names.insert( macro_translated_name );
+			}
+			else if( clang::tok::isStringLiteral( token.getKind() ) )
+			{
+				clang::StringLiteralParser string_literal_parser( { token }, preprocessor_ );
+
+				Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+				auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
+				auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+				auto_variable_declaration.name= macro_translated_name;
+
+				auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
+
+				if( string_literal_parser.isOrdinary() || string_literal_parser.isUTF8() )
+				{
+					string_constant->value= string_literal_parser.GetString().str();
+					string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+
+					auto_variable_declaration.initializer_expression= std::move(string_constant);
+					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+					emitted_macro_names.insert( macro_translated_name );
+				}
+				else if( string_literal_parser.isUTF16() ||
+					( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 16 ) )
+				{
+					llvm::convertUTF16ToUTF8String(
+						llvm::ArrayRef<llvm::UTF16>(
+							reinterpret_cast<const llvm::UTF16*>(string_literal_parser.GetString().data()),
+							string_literal_parser.GetNumStringChars() ),
+						string_constant->value );
+					string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+
+					string_constant->type_suffix= "u16";
+
+					auto_variable_declaration.initializer_expression= std::move(string_constant);
+					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+					emitted_macro_names.insert( macro_translated_name );
+				}
+				else if( string_literal_parser.isUTF32() ||
+					( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
+				{
+					const auto string_ref = string_literal_parser.GetString();
+					for( size_t i= 0u; i < string_literal_parser.GetNumStringChars(); ++i )
+						PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant->value );
+
+					string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+
+					string_constant->type_suffix= "u32";
+
+					auto_variable_declaration.initializer_expression= std::move(string_constant);
+					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+					emitted_macro_names.insert( macro_translated_name );
+				}
+			}
+			else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
+			{
+				clang::CharLiteralParser char_literal_parser(
 					token.getLiteralData(),
 					token.getLiteralData() + token.getLength(),
 					token.getLocation(),
 					preprocessor_,
 					token.getKind() );
 
-			if( !char_literal_parser.isMultiChar() )
+				if( !char_literal_parser.isMultiChar() )
+				{
+					Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+					auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+					auto_variable_declaration.name= macro_translated_name;
+
+					Synt::CharLiteral char_literal( g_dummy_src_loc );
+					char_literal.code_point= uint32_t( char_literal_parser.getValue() );
+
+					auto_variable_declaration.initializer_expression= std::move(char_literal);
+					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+					emitted_macro_names.insert( macro_translated_name );
+				}
+			}
+			else if( token.getKind() == clang::tok::identifier )
 			{
+				// Something like #define X Y.
+
+				if( const auto identifier_info= token.getIdentifierInfo() )
+				{
+					const std::string idenfier_name= identifier_info->getName().str();
+
+					if( named_function_declarations.count( idenfier_name ) != 0 )
+					{
+						// For functions just create "auto x= y;".
+						// This creates a function-pointer variable.
+
+						Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+						auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+						auto_variable_declaration.name= macro_translated_name;
+
+						Synt::NameLookup name_lookup( g_dummy_src_loc );
+						name_lookup.name= idenfier_name;
+
+						auto_variable_declaration.initializer_expression= std::move( name_lookup );
+						root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+						variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+						emitted_macro_names.insert( macro_translated_name );
+					}
+					else if(
+						const auto variable_name_it= variable_original_to_translated_name_map.find( idenfier_name );
+						variable_name_it != variable_original_to_translated_name_map.end() )
+					{
+						// For variables just create "auto& x= y;"
+						Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+						auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+						auto_variable_declaration.name= macro_translated_name;
+						auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
+
+						Synt::NameLookup name_lookup( g_dummy_src_loc );
+						name_lookup.name= variable_name_it->second;
+
+						auto_variable_declaration.initializer_expression= std::move( name_lookup );
+						root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+						variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+						emitted_macro_names.insert( macro_translated_name );
+					}
+					else if(
+						const auto type_name_it= type_original_to_translated_name_map.find( idenfier_name );
+						type_name_it != type_original_to_translated_name_map.end() )
+					{
+						// For types create a type alias.
+
+						Synt::TypeAlias type_alias( g_dummy_src_loc );
+						type_alias.name= macro_translated_name;
+
+						Synt::NameLookup name_lookup( g_dummy_src_loc );
+						name_lookup.name= type_name_it->second;
+
+						type_alias.value= std::move( name_lookup );
+						root_program_elements_.Append( std::move( type_alias ) );
+
+						type_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+						emitted_macro_names.insert( macro_translated_name );
+					}
+				}
+			}
+		}
+		else if( tokens_end - tokens_begin == 2 )
+		{
+			const clang::Token& token0= tokens_begin[0];
+			const clang::Token& token1= tokens_begin[1];
+
+			if( token0.getKind() == clang::tok::minus && token1.getKind() == clang::tok::numeric_constant )
+			{
+				// Negative numeric literals.
+
 				Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
 				auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-				auto_variable_declaration.name= name;
+				auto_variable_declaration.name= macro_translated_name;
 
-				Synt::CharLiteral char_literal( g_dummy_src_loc );
-				char_literal.code_point= uint32_t( char_literal_parser.getValue() );
+				auto minus= std::make_unique<Synt::UnaryMinus>( g_dummy_src_loc );
+				minus->expression= TranslateNumericLiteral( token1 );
+				auto_variable_declaration.initializer_expression= std::move( minus );
 
-				auto_variable_declaration.initializer_expression= std::move(char_literal);
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+
+				variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+				emitted_macro_names.insert( macro_translated_name );
 			}
 		}
 	} // for defines
+}
+
+Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& token )
+{
+	const std::string numeric_literal_str( token.getLiteralData(), token.getLength() );
+	clang::NumericLiteralParser numeric_literal_parser(
+		numeric_literal_str,
+		token.getLocation(),
+		source_manager_,
+		lang_options_,
+		target_info_,
+		diagnostic_engine_ );
+
+	if( numeric_literal_parser.isIntegerLiteral() || numeric_literal_parser.getRadix() != 10 )
+	{
+		Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
+
+		llvm::APInt int_val( 64u, 0u );
+		numeric_literal_parser.GetIntegerValue( int_val );
+		numeric_constant.num.value= int_val.getLimitedValue();
+
+		if( numeric_literal_parser.isUnsigned )
+		{
+			numeric_constant.num.type_suffix[0]= 'u';
+			if( numeric_literal_parser.isLongLong )
+			{
+				numeric_constant.num.type_suffix[1]= '6';
+				numeric_constant.num.type_suffix[2]= '4';
+			}
+		}
+		else
+		{
+			if( numeric_literal_parser.isLongLong )
+			{
+				numeric_constant.num.type_suffix[0]= 'i';
+				numeric_constant.num.type_suffix[1]= '6';
+				numeric_constant.num.type_suffix[2]= '4';
+			}
+		}
+
+		return numeric_constant;
+	}
+	else
+	{
+		Synt::FloatingPointNumericConstant numeric_constant( g_dummy_src_loc );
+
+		llvm::APFloat float_val(0.0);
+		numeric_literal_parser.GetFloatValue( float_val );
+
+		// "HACK! fix infinity.
+		if( float_val.isInfinity() )
+			float_val= llvm::APFloat::getLargest( float_val.getSemantics(), float_val.isNegative() );
+		numeric_constant.num.value= float_val.convertToDouble();
+
+		if( numeric_literal_parser.isFloat )
+			numeric_constant.num.type_suffix[0]= 'f';
+
+		return numeric_constant;
+	}
 }
 
 CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result, const bool skip_declarations_from_includes )
