@@ -215,7 +215,6 @@ C++ header converter:
 *) White list of converted symbols
 *) Black list of converted symbols
 *) Ignore some headers or split result into several files
-*) Avoid creating too large files (more than 65535 lines)
 *) Handle "wchar_t" type specially, not as regular integer
 *) Support negative constants in defines
 *) Add more satisfying defines conversion - where defined value is a constant expression
