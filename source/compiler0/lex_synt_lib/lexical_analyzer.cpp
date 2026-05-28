@@ -663,6 +663,27 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 	return ParseDecimalNumber( it, it_end, src_loc, out_errors );
 }
 
+uint32_t AdvanceIteratorAndCountCodePoints( Iterator& it, const Iterator it_end )
+{
+	uint32_t count= 0u;
+	while( it < it_end )
+	{
+		ReadNextUTF8Char( it, it_end );
+		++count;
+	}
+	return count;
+}
+
+std::string GetLineLimitMessage()
+{
+	return "Lexical error: line limit reached, max is " + std::to_string( SrcLoc::c_max_line ) + ".";
+}
+
+std::string GetColumnLimitMessage()
+{
+	return "Lexical error: column limit reached, max is " + std::to_string( SrcLoc::c_max_column ) + ".";
+}
+
 } // namespace
 
 LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
@@ -678,23 +699,18 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 
 	uint32_t line= 1; // Count lines from "1", in human-readable format.
 	uint32_t column= 0u;
-	uint32_t max_column= 0u;
+
+	#define CHECK_RETURN_COLUMN_LIMIT\
+		if( column > SrcLoc::c_max_column ) \
+		{ \
+			result.errors.emplace_back( GetColumnLimitMessage(), SrcLoc( 0u, line, SrcLoc::c_max_column ) ); \
+			return result; \
+		}
 
 	std::string fixed_lexem_str;
 	while( it < it_end )
 	{
-		auto it_prev= it;
-		const auto advance_column=
-		[&]
-		{
-			while( it_prev < it )
-			{
-				// TODO - maybe count UTF-8 chars instead of code points?
-				ReadNextUTF8Char( it_prev, it );
-				++column;
-				max_column= std::max( max_column, column );
-			}
-		};
+		Iterator it_prev= it;
 
 		const sprache_char c= GetUTF8FirstChar( it, it_end );
 		Lexem lexem;
@@ -720,6 +736,7 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 			int comments_depth= 1;
 			it+= 2;
 			column+= 2u;
+			CHECK_RETURN_COLUMN_LIMIT
 
 			while( it < it_end )
 			{
@@ -727,7 +744,7 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 				{
 					it+= 2;
 					column+= 2u;
-					max_column= std::max( max_column, column );
+					CHECK_RETURN_COLUMN_LIMIT
 					--comments_depth;
 					if( comments_depth == 0 )
 						break;
@@ -736,7 +753,7 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 				{
 					it+= 2;
 					column+= 2u;
-					max_column= std::max( max_column, column );
+					CHECK_RETURN_COLUMN_LIMIT
 					++comments_depth;
 				}
 				else
@@ -745,6 +762,14 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 					if( IsNewline( c ) )
 					{
 						++line;
+
+						if( line > SrcLoc::c_max_line )
+						{
+							result.errors.emplace_back(
+								GetLineLimitMessage(), SrcLoc( 0u, SrcLoc::c_max_line, column ) );
+							return result;
+						}
+
 						column= 0;
 						++it;
 						// Handle case with two-symbol line ending.
@@ -757,8 +782,9 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 					}
 					else
 						ReadNextUTF8Char( it, it_end );
+
 					++column;
-					max_column= std::max( max_column, column );
+					CHECK_RETURN_COLUMN_LIMIT
 				}
 			}
 
@@ -769,6 +795,13 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 		else if( IsNewline(c) )
 		{
 			++line;
+
+			if( line > SrcLoc::c_max_line )
+			{
+				result.errors.emplace_back( GetLineLimitMessage(), SrcLoc( 0u, SrcLoc::c_max_line, column ) );
+				return result;
+			}
+
 			column= 0u;
 
 			ReadNextUTF8Char( it, it_end ); // Consume this line ending symbol.
@@ -788,6 +821,7 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 		{
 			++it;
 			++column;
+			CHECK_RETURN_COLUMN_LIMIT
 			continue;
 		}
 		else if( c == '"' )
@@ -798,7 +832,9 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 				// Parse string suffix.
 				lexem.src_loc= SrcLoc( 0u, line, column );
 
-				advance_column();
+				column+= AdvanceIteratorAndCountCodePoints( it_prev, it );
+				CHECK_RETURN_COLUMN_LIMIT
+
 				result.lexems.push_back( std::move(lexem) );
 
 				lexem= ParseIdentifier( it, it_end );
@@ -813,7 +849,9 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 				// Parse string suffix.
 				lexem.src_loc= SrcLoc( 0u, line, column );
 
-				advance_column();
+				column+= AdvanceIteratorAndCountCodePoints( it_prev, it );
+				CHECK_RETURN_COLUMN_LIMIT
+
 				result.lexems.push_back( std::move(lexem) );
 
 				lexem= ParseIdentifier( it, it_end );
@@ -863,10 +901,13 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 
 		lexem.src_loc= SrcLoc( 0u, line, column );
 
-		advance_column();
+		column+= AdvanceIteratorAndCountCodePoints( it_prev, it );
+		CHECK_RETURN_COLUMN_LIMIT
 
 		result.lexems.push_back( std::move(lexem) );
 	} // while not end
+
+	#undef CHECK_RETURN_COLUMN_LIMIT
 
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
@@ -874,19 +915,6 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 	eof_lexem.src_loc= SrcLoc( 0u, line, column );
 
 	result.lexems.emplace_back( std::move(eof_lexem) );
-
-	if( line > SrcLoc::c_max_line )
-	{
-		result.errors.emplace_back(
-			"Lexical error: line limit reached, max is " + std::to_string( SrcLoc::c_max_line ),
-			SrcLoc( 0u, line, column ) );
-	}
-	if( max_column > SrcLoc::c_max_column )
-	{
-		result.errors.emplace_back(
-			"Lexical error: column limit reached, max is " + std::to_string( SrcLoc::c_max_column ),
-			SrcLoc( 0u, line, column ) );
-	}
 
 	return result;
 }

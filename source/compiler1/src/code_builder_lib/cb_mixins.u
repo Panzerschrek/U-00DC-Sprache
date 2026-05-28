@@ -522,10 +522,18 @@ fn CodeBuilder::PrepareMixinLexems( mut this, NamesScopePtr& names_scope_ptr, Sr
 
 	foreach( &mut lexem : lexems )
 	{
+		var u32 line_corrected= lexem.src_loc.GetLine() + line_shift;
+
+		if( line_corrected > SrcLoc::c_max_line )
+		{
+			REPORT_ERROR( MixinLexicalError, names_scope_ptr, src_loc, "Line limit reached within mixin expansion" )
+			return ust::null_optional;
+		}
+
+		lexem.src_loc.SetLine( line_corrected );
+
 		lexem.src_loc.SetFileIndex( file_index );
 		lexem.src_loc.SetMacroExpansionIndex( macro_expansion_index );
-		var u32 line_corrected= lexem.src_loc.GetLine() + line_shift;
-		lexem.src_loc.SetLine( line_corrected );
 	}
 
 	if( !errors.empty() )

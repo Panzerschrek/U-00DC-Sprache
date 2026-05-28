@@ -458,9 +458,18 @@ std::optional<Lexems> CodeBuilder::PrepareMixinLexems( NamesScope& names_scope, 
 
 	for( Lexem& lexem : lex_result.lexems )
 	{
+		const uint32_t line_index= lexem.src_loc.GetLine() + line_shift;
+
+		if( line_index > SrcLoc::c_max_line )
+		{
+			REPORT_ERROR( MixinLexicalError, names_scope.GetErrors(), src_loc, "Line limit reached within mixin expansion" );
+			return std::nullopt;
+		}
+
+		lexem.src_loc.SetLine( line_index );
+
 		lexem.src_loc.SetFileIndex( file_index );
 		lexem.src_loc.SetMacroExpansionIndex( macro_expansion_index );
-		lexem.src_loc.SetLine( lexem.src_loc.GetLine() + line_shift );
 	}
 
 	if( !lex_result.errors.empty() )
