@@ -463,7 +463,7 @@ std::optional<Lexems> CodeBuilder::PrepareMixinLexems( NamesScope& names_scope, 
 		if( line_index > SrcLoc::c_max_line )
 		{
 			REPORT_ERROR( MixinLexicalError, names_scope.GetErrors(), src_loc, "Line limit reached within mixin expansion" );
-			break;
+			return std::nullopt;
 		}
 
 		lexem.src_loc.SetLine( line_index );
