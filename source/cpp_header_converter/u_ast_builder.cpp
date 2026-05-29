@@ -38,7 +38,7 @@ struct NamespaceItemEnumElement;
 
 using NamespaceItem=
 	std::variant<
-		NamespaceItemNamespace,
+		NamespaceItemNamespace, // Keep it first here, so that operator[] creates a namespace.
 		const clang::FunctionDecl*,
 		NamespaceItemRecord,
 		const clang::TypedefNameDecl*,
@@ -46,10 +46,12 @@ using NamespaceItem=
 		NamespaceItemEnumElement,
 		const clang::VarDecl* >;
 
+using ItemsMap= std::map<std::string, NamespaceItem>;
+
 struct NamespaceItemNamespace
 {
 	// Use ordered map for stable deterministic order.
-	std::map<std::string, NamespaceItem> items;
+	ItemsMap items;
 };
 
 struct NamespaceItemRecord
@@ -64,24 +66,6 @@ struct NamespaceItemEnumElement
 	const clang::EnumConstantDecl* enum_constant_decl;
 };
 
-void AddTaggedItem(
-	const std::string& tag_kind,
-	std::map<std::string, NamespaceItem>& items,
-	std::string name,
-	NamespaceItem item )
-{
-	// Tagged names (structs, unions, enums) in C build a separae namespace.
-	// So, put tags into separate Ü namespace.
-
-	if( const auto it= items.find( tag_kind ); it != items.end() )
-		std::get<NamespaceItemNamespace>( it->second ).items.emplace( std::move(name), std::move(item) );
-	else
-	{
-		NamespaceItemNamespace namespace_;
-		namespace_.items.emplace( std::move(name), std::move(item) );
-		items.emplace( tag_kind, std::move(namespace_) );
-	}
-}
 
 const std::string g_struct_kind_tag= "struct_";
 const std::string g_union_kind_tag= "union_";
@@ -291,7 +275,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 	if( const auto record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
 	{
-		if( record_decl->isCompleteDefinition() && !record_decl->isTemplated() )
+		if( !record_decl->isTemplated() )
 		{
 			const auto src_name= record_decl->getName();
 
@@ -301,11 +285,15 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 			else
 				name= TranslateIdentifier( src_name );
 
-			AddTaggedItem(
-				record_decl->isUnion() ? g_union_kind_tag : g_struct_kind_tag,
-				root_namespace_.items,
-				std::move(name),
-				NamespaceItemRecord{ record_decl, NamespaceItemNamespace() } );
+			// Tagged names (structs, unions, enums) in C build a separae namespace.
+			// So, put tags into separate Ü namespace.
+
+			ItemsMap& items_map=
+				std::get< NamespaceItemNamespace>( root_namespace_.items[ record_decl->isUnion() ? g_union_kind_tag : g_struct_kind_tag ] ).items;
+
+			// Insert if has no entry, replace if is complete definition.
+			if( items_map.count( name ) == 0 || record_decl->isCompleteDefinition() )
+				items_map.insert_or_assign( std::move(name), NamespaceItemRecord{ record_decl, NamespaceItemNamespace() } );
 		}
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
@@ -332,7 +320,14 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 		else
 			name= src_name;
 
-		AddTaggedItem( g_enum_kind_tag, root_namespace_.items, std::move(name), enum_decl );
+		// Tagged names (structs, unions, enums) in C build a separae namespace.
+		// So, put tags into separate Ü namespace.
+
+		ItemsMap& items_map= std::get< NamespaceItemNamespace>( root_namespace_.items[ g_enum_kind_tag ] ).items;
+
+		// Insert if has no entry, replace if is complete definition.
+		if( items_map.count( name ) == 0 || enum_decl->isComplete() )
+			items_map.insert_or_assign( std::move(name), enum_decl );
 
 		if( enum_decl->isComplete() )
 		{
