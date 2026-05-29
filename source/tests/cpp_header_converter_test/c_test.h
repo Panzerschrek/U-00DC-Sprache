@@ -181,6 +181,13 @@ struct LargeStructWithSingleBitField
 	int arr2[5];
 };
 
+#define TWO_ANON_STRUCTS struct { int x; int y; } anon_struct_value0; struct { int z; int w; } anon_struct_value1;
+
+struct StructWithTwoAnonStructsInside
+{
+	TWO_ANON_STRUCTS
+};
+
 enum SequentialEnum
 {
 	Red, Green, Blue,
