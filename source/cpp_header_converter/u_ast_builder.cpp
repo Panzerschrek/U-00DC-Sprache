@@ -66,6 +66,40 @@ struct NamespaceItemEnumElement
 	const clang::EnumConstantDecl* enum_constant_decl;
 };
 
+// This function should map C names to Ü names without any possibility of collision,
+// so that no two C names can get identical Ü name.
+std::string TranslateIdentifier( const llvm::StringRef identifier )
+{
+	U_ASSERT( !identifier.empty() );
+
+	size_t num_underscores= 0;
+	while( num_underscores < identifier.size() && identifier[num_underscores] == '_' )
+		++num_underscores;
+
+	// In Ü identifier can not start with "_", so, move all leading underscores to the end.
+	if( num_underscores > 0 )
+	{
+		std::string res;
+		res.resize( identifier.size() );
+		std::memcpy( res.data(), identifier.data() + num_underscores, identifier.size() - num_underscores );
+		std::memset( res.data() + identifier.size() - num_underscores, '_', num_underscores );
+
+		if( res.front() >= '0' && res.front() <= '9' )
+		{
+			// After dropping underscores it may happen that identifier starts with numeric symbol.
+			// In such case we need to prefix it with some other valid identifier start char.
+			res.insert( res.begin(), 'n' );
+		}
+
+		return res;
+	}
+
+	// Avoid using keywords as names.
+	if( IsKeyword( identifier ) )
+		return (identifier + "_").str();
+
+	return identifier.str();
+}
 
 const std::string g_struct_kind_tag= "struct_";
 const std::string g_union_kind_tag= "union_";
@@ -93,6 +127,43 @@ Synt::ComplexName GetItemNameSyntaxElement( const ItemName& item_name )
 	return
 		GetItemNameSyntaxElementImpl(
 			std::move( root_namespace_name_lookup ), llvm::ArrayRef<std::string>( item_name ).slice(1) );
+}
+
+Synt::TypeName StringToTypeName( const std::string_view s )
+{
+	Synt::NameLookup name_lookup( g_dummy_src_loc );
+	name_lookup.name= s;
+	return std::move(name_lookup);
+}
+
+std::optional<std::string> TranslateCallingConventionImpl( const clang::FunctionType& in_type )
+{
+	// TODO - handle/introduce other calling conventions.
+	switch( in_type.getCallConv() )
+	{
+	case clang::CallingConv::CC_C:
+		return "C";
+	case clang::CallingConv::CC_X86StdCall:
+		return "system";
+	case clang::CallingConv::CC_X86FastCall:
+		return "fast";
+	default: break;
+	}
+
+	return std::nullopt;
+}
+
+std::unique_ptr<const Synt::Expression> TranslateCallingConvention( const clang::FunctionType& in_type )
+{
+	if( auto cc= TranslateCallingConventionImpl( in_type ) )
+	{
+		auto string_literal= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
+		string_literal->value= std::move(*cc);
+
+		return std::make_unique<Synt::Expression>( std::move(string_literal) );
+	}
+
+	return nullptr;
 }
 
 class CppAstConsumer final : public clang::ASTConsumer
@@ -141,13 +212,8 @@ private:
 
 	Synt::TypeName TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
-	Synt::TypeName StringToTypeName( std::string_view s );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionType& in_type, const TypeNamesMap& type_names_map );
-	std::unique_ptr<const Synt::Expression> TranslateCallingConvention( const clang::FunctionType& in_type );
-	std::optional<std::string> TranslateCallingConventionImpl( const clang::FunctionType& in_type );
-
-	std::string TranslateIdentifier( llvm::StringRef identifier );
 
 	void BuildTypeNamesMap( TypeNamesMap& map, ItemName& prefix, const NamespaceItem& item );
 	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemNamespace& item );
@@ -318,6 +384,9 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 			if( func_decl->getIdentifier() != nullptr )
 			{
 				std::string name= func_decl->getName().str();
+
+				if( !name.empty() && name.back() == '_' )
+					std::cout << "Function with trailing underscore " << name << std::endl;
 				if( !name.empty() && !IsKeyword( name ) && name.front() != '_' )
 					root_namespace_.items.emplace( std::move( name ), NamespaceItem( func_decl ) );
 			}
@@ -599,13 +668,6 @@ std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& 
 	};
 }
 
-Synt::TypeName CppAstConsumer::StringToTypeName( const std::string_view s )
-{
-	Synt::NameLookup name_lookup( g_dummy_src_loc );
-	name_lookup.name= s;
-	return std::move(name_lookup);
-}
-
 Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map )
 {
 	// Translate info other than params.
@@ -665,69 +727,6 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionT
 	function_type.calling_convention= TranslateCallingConvention( in_type );
 
 	return function_type;
-}
-
-std::unique_ptr<const Synt::Expression> CppAstConsumer::TranslateCallingConvention( const clang::FunctionType& in_type )
-{
-	if( auto cc= TranslateCallingConventionImpl( in_type ) )
-	{
-		auto string_literal= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
-		string_literal->value= std::move(*cc);
-
-		return std::make_unique<Synt::Expression>( std::move(string_literal) );
-	}
-
-	return nullptr;
-}
-
-std::optional<std::string> CppAstConsumer::TranslateCallingConventionImpl( const clang::FunctionType& in_type )
-{
-	// TODO - handle/introduce other calling conventions.
-	switch( in_type.getCallConv() )
-	{
-	case clang::CallingConv::CC_C:
-		return "C";
-	case clang::CallingConv::CC_X86StdCall:
-		return "system";
-	case clang::CallingConv::CC_X86FastCall:
-		return "fast";
-	default: break;
-	}
-
-	return std::nullopt;
-}
-
-std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifier )
-{
-	U_ASSERT( !identifier.empty() );
-
-	size_t num_underscores= 0;
-	while( num_underscores < identifier.size() && identifier[num_underscores] == '_' )
-		++num_underscores;
-
-	// In Ü identifier can not start with "_", so, move all leading underscores to the end.
-	if( num_underscores > 0 )
-	{
-		std::string res;
-		res.resize( identifier.size() );
-		std::memcpy( res.data(), identifier.data() + num_underscores, identifier.size() - num_underscores );
-		std::memset( res.data() + identifier.size() - num_underscores, '_', num_underscores );
-
-		if( res.front() >= '0' && res.front() <= '9' )
-		{
-			// After dropping underscores it may happen that identifier starts with numeric symbol.
-			// In such case we need to prefix it with some other valid identifier start char.
-			res.insert( res.begin(), 'n' );
-		}
-
-		return res;
-	}
-
-	// Avoid using keywords as names.
-	if( IsKeyword( identifier ) )
-		return (identifier + "_").str();
-
-	return identifier.str();
 }
 
 void CppAstConsumer::BuildTypeNamesMap( TypeNamesMap& map, ItemName& prefix, const NamespaceItem& item )
