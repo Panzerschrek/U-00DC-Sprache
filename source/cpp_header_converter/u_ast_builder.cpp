@@ -375,7 +375,20 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	if( const auto record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
 	{
 		if( record_decl->isCompleteDefinition() && !record_decl->isTemplated() )
+		{
+			const auto src_name= record_decl->getName();
+
+			std::string name;
+			if( src_name.empty() )
+				name= "anon_record_" + std::to_string( ++unique_name_index_ );
+			else
+				name= TranslateIdentifier( src_name );
+
 			record_declarations_.push_back( record_decl );
+
+			root_namespace_.items.emplace(
+				std::move(name), NamespaceItem( NamespaceItemRecord{ record_decl, NamespaceItemNamespace() } ) );
+		}
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
@@ -874,10 +887,164 @@ void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items
 
 void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const NamespaceItemRecord& item )
 {
-	// TODO
-	(void)out_items;
-	(void)name;
-	(void)item;
+	TypeNamesMap type_names_map; // TODO - use real one, not this dummy.
+
+	const clang::RecordDecl& record_declaration= *item.record_decl;
+
+	if( record_declaration.isStruct() || record_declaration.isClass() )
+	{
+		Synt::Class class_(g_dummy_src_loc);
+		class_.name= name;
+
+		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
+		if( record_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
+			class_.no_discard= true;
+
+		if( record_declaration.isCompleteDefinition() )
+		{
+			bool has_bitfields= false;
+			for( const clang::FieldDecl* const field_declaration : record_declaration.fields() )
+			{
+				if( field_declaration->isBitField() )
+				{
+					has_bitfields= true;
+					break;
+				}
+			}
+
+			bool is_empty= record_declaration.fields().empty();
+
+			Synt::ClassElementsList::Builder class_elements;
+
+			if( const auto cxx_record= llvm::dyn_cast<clang::CXXRecordDecl>( &record_declaration ) )
+			{
+				size_t num_bases= 0;
+				bool has_polymorphic_base= false;
+				for( const clang::CXXBaseSpecifier& base : cxx_record->bases() )
+				{
+					Synt::ClassField field( g_dummy_src_loc );
+					field.type= TranslateType( *base.getType().getTypePtr(), type_names_map );
+					field.name= "ü_base" + std::to_string( num_bases );
+
+					class_elements.Append( std::move(field) );
+
+					++num_bases;
+
+					const clang::Type* base_type= base.getType().getTypePtr();
+					while(true)
+					{
+						if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( base_type ) )
+							base_type= paren_type->getInnerType().getTypePtr();
+						else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( base_type ) )
+							base_type= elaborated_type->desugar().getTypePtr();
+						else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( base_type ) )
+							base_type= attributed_type->desugar().getTypePtr(); // TODO - maybe collect such attributes?
+						else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>( base_type ) )
+						{
+							const auto aliased_type= typedef_type->desugar().getTypePtr();
+							if( aliased_type == nullptr )
+								break;
+							base_type= aliased_type;
+						}
+						else
+							break;
+					}
+
+					if( const clang::RecordType* const base_record_type= llvm::dyn_cast<clang::RecordType>( base_type ) )
+					{
+						if( const auto cxx_base_record= llvm::dyn_cast<clang::CXXRecordDecl>( base_record_type->getDecl() ) )
+							has_polymorphic_base|= cxx_base_record->isPolymorphic();
+					}
+				}
+
+
+				if( cxx_record->isPolymorphic() && !has_polymorphic_base )
+				{
+					is_empty= false;
+
+					Synt::ClassField field( g_dummy_src_loc );
+
+					Synt::NameLookup byte8_type( g_dummy_src_loc );
+					byte8_type.name= Keyword( Keywords::byte8_ );
+
+					Synt::RawPointerType raw_pointer_type( g_dummy_src_loc );
+					raw_pointer_type.element_type= std::move(byte8_type);
+
+					field.type= std::make_unique<Synt::RawPointerType>( std::move( raw_pointer_type ) );
+
+					field.name= "ü_vptr";
+
+					class_elements.Append( std::move(field) );
+				}
+			}
+
+			if( has_bitfields )
+			{
+				// Ü has no bitfields support. And generally we can't replace C bitfields with something else.
+				// So, for now just create stub struct.
+				class_.elements= MakeOpaqueRecordElements( record_declaration, "struct_with_bitfields" );
+			}
+			else if( is_empty )
+			{
+				// If struct has no fields we may still need to create some fields for it.
+				// It may be necessary in C++ mode, where empty structs have size 1.
+				class_.elements= MakeOpaqueRecordElements( record_declaration, "empty_struct" );
+			}
+			else
+			{
+				for( const clang::FieldDecl* const field_declaration : record_declaration.fields() )
+				{
+					Synt::ClassField field( g_dummy_src_loc );
+
+					field.type= TranslateType( *field_declaration->getType().getTypePtr(), type_names_map );
+
+					const auto src_name= field_declaration->getName();
+					if( src_name.empty() )
+						field.name= "anon_field_" + std::to_string( ++unique_name_index_ );
+					else
+						field.name= TranslateIdentifier( src_name );
+
+					class_elements.Append( std::move(field) );
+				}
+
+				// Assume we have at least one field (which is necessary for all structs in C).
+
+				class_.elements= class_elements.Build();
+			}
+		}
+		else
+		{
+			// Add deleted default constructor.
+			Synt::ClassElementsList::Builder class_elements;
+			class_elements.Append( GetDeletedDefaultConstructor() );
+			class_.elements= class_elements.Build();
+		}
+
+		out_items.Append( std::move(class_ ) );
+	}
+	else if( record_declaration.isUnion() )
+	{
+		// Emulate union, using array of bytes with required alignment.
+		Synt::Class class_(g_dummy_src_loc);
+		class_.name= name;
+		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
+		if( record_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
+			class_.no_discard= true;
+
+		if( record_declaration.isCompleteDefinition() )
+			class_.elements= MakeOpaqueRecordElements( record_declaration, "union" );
+		else
+		{
+			// Add deleted default constructor.
+			Synt::ClassElementsList::Builder class_elements;
+			class_elements.Append( GetDeletedDefaultConstructor() );
+			class_.elements= class_elements.Build();
+		}
+
+		out_items.Append( std::move(class_ ) );
+	}
 }
 
 void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::TypedefNameDecl* const item )
