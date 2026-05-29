@@ -410,6 +410,15 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		// But if this doesn't work, use underlying type instead.
 		return TranslateType( *typedef_type->desugar().getTypePtr(), type_names_map );
 	}
+	else if( const clang::RecordType* record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
+	{
+		// Normally we should create entries for records in types map.
+		// Here we process some special types.
+
+		if(const auto decl= record_type->getDecl() )
+			if( decl->getIdentifier() != nullptr && decl->getName() == "__va_list_tag" )
+				return StringToTypeName( Keyword( Keywords::byte8_ ) );
+	}
 	else if( const auto atomic_type= llvm::dyn_cast<clang::AtomicType>(&in_type) )
 	{
 		// For now translate atomic types as underlying types.
