@@ -59,6 +59,28 @@ struct NamespaceItemRecord
 
 using ItemName= std::vector<std::string>;
 
+Synt::ComplexName GetItemNameSyntaxElementImpl( Synt::ComplexName base, const llvm::ArrayRef<std::string> components )
+{
+	if( components.empty() )
+		return base;
+
+	auto names_scope_name_fetch=
+		std::make_unique<Synt::NamesScopeNameFetch>(
+			Synt::NamesScopeNameFetch{ g_dummy_src_loc, components.front(), std::move(base) } );
+
+	return GetItemNameSyntaxElementImpl( std::move(names_scope_name_fetch), components.slice(1) );
+}
+
+Synt::ComplexName GetItemNameSyntaxElement( const ItemName& item_name )
+{
+	Synt::RootNamespaceNameLookup root_namespace_name_lookup( g_dummy_src_loc );
+	root_namespace_name_lookup.name= item_name.front();
+
+	return
+		GetItemNameSyntaxElementImpl(
+			std::move( root_namespace_name_lookup ), llvm::ArrayRef<std::string>( item_name ).slice(1) );
+}
+
 class CppAstConsumer final : public clang::ASTConsumer
 {
 public:
@@ -77,8 +99,6 @@ public:
 	virtual void HandleTranslationUnit( clang::ASTContext& ast_context ) override;
 
 private:
-	using TypeNamesMap= std::unordered_map<const clang::Type*, std::string>;
-
 	// Use ordered map in order to emit elements in stable order.
 	template<typename K, typename V>
 	using NamesMapContainer= std::map<K, V>;
@@ -98,7 +118,7 @@ private:
 	// Translated/renamed enum names.
 	using EnumNamesSet= std::unordered_set<std::string>;
 
-	using TypeNamesMapFull= std::unordered_map< const clang::Type*, ItemName >;
+	using TypeNamesMap= std::unordered_map< const clang::Type*, ItemName >;
 
 private:
 	void ProcessDecl( const clang::Decl& decl );
@@ -115,21 +135,21 @@ private:
 
 	void CollectSubrecords();
 
-	void BuildTypeNamesMapFull( TypeNamesMapFull& map, ItemName& prefix, const NamespaceItem& item );
-	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const NamespaceItemNamespace& item );
-	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::FunctionDecl* item );
-	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const NamespaceItemRecord& item );
-	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::TypedefNameDecl* item );
-	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::EnumDecl* item );
-	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::VarDecl* item );
+	void BuildTypeNamesMap( TypeNamesMap& map, ItemName& prefix, const NamespaceItem& item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemNamespace& item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::FunctionDecl* item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemRecord& item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::TypedefNameDecl* item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::EnumDecl* item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::VarDecl* item );
 
-	void EmitItem( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const NamespaceItem& item );
-	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const NamespaceItemNamespace& item );
-	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const clang::FunctionDecl* item );
-	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const NamespaceItemRecord& item );
-	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const clang::TypedefNameDecl* item );
-	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const clang::EnumDecl* item  );
-	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const clang::VarDecl* item );
+	void EmitItem( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItem& item );
+	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item );
+	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const clang::FunctionDecl* item );
+	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemRecord& item );
+	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const clang::TypedefNameDecl* item );
+	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const clang::EnumDecl* item  );
+	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const clang::VarDecl* item );
 	using NamedVariableDeclarations= NamesMapContainer<std::string, const clang::VarDecl*>;
 
 	void EmitFunctions( const NamedFunctionDeclarations& function_declarations, const TypeNamesMap& type_names_map );
@@ -227,26 +247,17 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 {
 	(void)ast_context;
 
-	TypeNamesMapFull type_names_map_full;
-	ItemName prefix;
-	BuildTypeNamesMapFullImpl( type_names_map_full, prefix, root_namespace_ );
+	TypeNamesMap type_names_map;
 
-	for( const auto& pair : type_names_map_full )
 	{
-		std::string name_full;
-		for( const auto& component : pair.second )
-		{
-			name_full+= "::";
-			name_full+= component;
-		}
-
-		std::cout << "Has type " << name_full << std::endl;
+		ItemName prefix;
+		BuildTypeNamesMapImpl( type_names_map, prefix, root_namespace_ );
 	}
 
 	Synt::ProgramElementsList::Builder root_program_elements;
 
 	for( const auto& pair : root_namespace_.items )
-		EmitItem( root_program_elements, pair.first, pair.second );
+		EmitItem( root_program_elements, type_names_map, pair.first, pair.second );
 
 	out_program_elements_= root_program_elements.Build();
 }
@@ -329,7 +340,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 {
 	// Records, typedefs, enums should have names in this map.
 	if( const auto named_type_it= type_names_map.find( &in_type ); named_type_it != type_names_map.end() )
-		return StringToTypeName( named_type_it->second );
+		return Synt::ComplexNameToTypeName( GetItemNameSyntaxElement( named_type_it->second ) );
 
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
 		return StringToTypeName( GetUFundamentalType( *built_in_type ) );
@@ -671,63 +682,63 @@ void CppAstConsumer::CollectSubrecords()
 	}
 }
 
-void CppAstConsumer::BuildTypeNamesMapFull( TypeNamesMapFull& map, ItemName& prefix, const NamespaceItem& item )
+void CppAstConsumer::BuildTypeNamesMap( TypeNamesMap& map, ItemName& prefix, const NamespaceItem& item )
 {
-	std::visit( [&]( const auto& t ) { BuildTypeNamesMapFullImpl( map, prefix, t ); }, item );
+	std::visit( [&]( const auto& t ) { BuildTypeNamesMapImpl( map, prefix, t ); }, item );
 }
 
-void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const NamespaceItemNamespace& item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemNamespace& item )
 {
 	for( const auto& pair : item.items )
 	{
 		prefix.push_back( pair.first );
-		BuildTypeNamesMapFull( map, prefix, pair.second );
+		BuildTypeNamesMap( map, prefix, pair.second );
 		prefix.pop_back();
 	}
 }
 
-void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::FunctionDecl* const item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::FunctionDecl* const item )
 {
 	(void)map;
 	(void)prefix;
 	(void)item;
 }
 
-void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const NamespaceItemRecord& item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemRecord& item )
 {
 	map.emplace( item.record_decl->getTypeForDecl(), prefix );
-	BuildTypeNamesMapFullImpl( map, prefix, item.namespace_ );
+	BuildTypeNamesMapImpl( map, prefix, item.namespace_ );
 }
 
-void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::TypedefNameDecl* const item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::TypedefNameDecl* const item )
 {
 	map.emplace( ast_context_.getTypedefType( item ).getTypePtr(), prefix );
 }
 
-void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::EnumDecl* const item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::EnumDecl* const item )
 {
 	map.emplace( item->getTypeForDecl(), prefix );
 }
 
-void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::VarDecl* const item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::VarDecl* const item )
 {
 	(void)map;
 	(void)prefix;
 	(void)item;
 }
 
-void CppAstConsumer::EmitItem( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const NamespaceItem& item )
+void CppAstConsumer::EmitItem( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItem& item )
 {
-	std::visit( [&]( const auto& t ) { EmitItemImpl( out_items, name, t ); }, item );
+	std::visit( [&]( const auto& t ) { EmitItemImpl( out_items, type_names_map, name, t ); }, item );
 }
 
-void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const NamespaceItemNamespace& item )
+void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItemNamespace& item )
 {
 	Synt::ProgramElementsList::Builder namespace_items_builder;
 
 	for( const auto& pair : item.items )
 	{
-		EmitItem( namespace_items_builder, pair.first, pair.second );
+		EmitItem( namespace_items_builder, type_names_map, pair.first, pair.second );
 	}
 
 	Synt::Namespace namespace_( g_dummy_src_loc );
@@ -737,10 +748,8 @@ void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items
 	out_items.Append( std::move( namespace_ ) );
 }
 
-void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::FunctionDecl* const item )
+void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const clang::FunctionDecl* const item )
 {
-	TypeNamesMap type_names_map; // TODO - use real one, not this dummy.
-
 	const clang::FunctionDecl& function_decl= *item;
 
 	Synt::Function func(g_dummy_src_loc);
@@ -774,10 +783,8 @@ void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items
 	out_items.Append( std::move( func ) );
 }
 
-void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const NamespaceItemRecord& item )
+void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItemRecord& item )
 {
-	TypeNamesMap type_names_map; // TODO - use real one, not this dummy.
-
 	const clang::RecordDecl& record_declaration= *item.record_decl;
 
 	if( record_declaration.isStruct() || record_declaration.isClass() )
@@ -936,10 +943,8 @@ void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items
 	}
 }
 
-void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::TypedefNameDecl* const item )
+void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const clang::TypedefNameDecl* const item )
 {
-	TypeNamesMap type_names_map; // TODO - use real one, not this dummy.
-
 	Synt::TypeAlias type_alias( g_dummy_src_loc );
 	type_alias.name= name;
 	type_alias.value= TranslateType( *item->getUnderlyingType().getTypePtr(), type_names_map );
@@ -947,8 +952,10 @@ void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items
 	out_items.Append( std::move(type_alias ) );
 }
 
-void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::EnumDecl* const item )
+void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const clang::EnumDecl* const item )
 {
+	(void)type_names_map;
+
 	const clang::EnumDecl& enum_declaration= *item;
 
 	if( !enum_declaration.isComplete() )
@@ -1042,10 +1049,8 @@ void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items
 	}
 }
 
-void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::VarDecl* const item )
+void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const clang::VarDecl* const item )
 {
-	TypeNamesMap type_names_map; // TODO - use real one, not this dummy.
-
 	const clang::VarDecl& variable= *item;
 
 	if( !variable.getType().isConstant( ast_context_ ) )
