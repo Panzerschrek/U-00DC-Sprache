@@ -36,7 +36,7 @@ class CppAstConsumer final : public clang::ASTConsumer
 {
 public:
 	CppAstConsumer(
-		Synt::ProgramElementsList::Builder& out_elements,
+		Synt::ProgramElementsList& out_elements,
 		const clang::SourceManager& source_manager,
 		clang::Preprocessor& preprocessor,
 		const clang::TargetInfo& target_info,
@@ -177,7 +177,8 @@ private:
 	Synt::Expression TranslateNumericLiteral( const clang::Token& token );
 
 private:
-	Synt::ProgramElementsList::Builder& root_program_elements_;
+	Synt::ProgramElementsList& out_program_elements_;
+	Synt::ProgramElementsList::Builder root_program_elements_;
 
 	const clang::SourceManager& source_manager_;
 	clang::Preprocessor& preprocessor_;
@@ -214,7 +215,7 @@ private:
 };
 
 CppAstConsumer::CppAstConsumer(
-	Synt::ProgramElementsList::Builder& out_elements,
+	Synt::ProgramElementsList& out_elements,
 	const clang::SourceManager& source_manager,
 	clang::Preprocessor& preprocessor,
 	const clang::TargetInfo& target_info,
@@ -222,7 +223,7 @@ CppAstConsumer::CppAstConsumer(
 	const clang::LangOptions& lang_options,
 	const clang::ASTContext& ast_context,
 	const bool skip_declarations_from_includes )
-	: root_program_elements_(out_elements)
+	: out_program_elements_(out_elements)
 	, source_manager_(source_manager)
 	, preprocessor_(preprocessor)
 	, target_info_(target_info)
@@ -289,6 +290,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	EmitVariables( variable_names, type_names_map );
 
 	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names, extra_enum_names, variable_names );
+
+	out_program_elements_= root_program_elements_.Build();
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
