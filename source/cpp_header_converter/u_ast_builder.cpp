@@ -182,8 +182,6 @@ private:
 	template<typename ListBuilder>
 	void EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const clang::VarDecl* item );
 
-	using NamedVariableDeclarations= NamesMapContainer<std::string, const clang::VarDecl*>;
-
 	Synt::ClassElementsList MakeOpaqueRecordElements(
 		const TypeNamesMap& type_names_map,
 		const clang::RecordDecl& record_declaration,
@@ -196,15 +194,7 @@ private:
 
 	Synt::Initializer TranslateVariableInitializer_r( const clang::Type& variable_type, const clang::APValue& value );
 
-	/*
-	void EmitDefinitionsForMacros(
-		const NamedFunctionDeclarations& named_function_declarations,
-		const NamedRecordDeclarations& named_record_declarations,
-		const NamedTypedefDeclarations& named_typedef_declarations,
-		const NamedEnumDeclarations& named_enum_declarations,
-		const EnumNamesSet& enum_names,
-		const NamedVariableDeclarations& named_variable_declarations );
-	*/
+	void EmitDefinitionsForMacros( Synt::ProgramElementsList::Builder& out_items );
 
 	Synt::Expression TranslateNumericLiteral( const clang::Token& token );
 
@@ -285,9 +275,9 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	for( const auto& pair : root_namespace_.items )
 		EmitItem( root_program_elements, type_names_map, pair.first, pair.second );
 
-	out_program_elements_= root_program_elements.Build();
+	EmitDefinitionsForMacros( root_program_elements );
 
-	(void)preprocessor_; // TODO - use it.
+	out_program_elements_= root_program_elements.Build();
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
@@ -1103,6 +1093,7 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 		out_items.Append( std::move(type_alias) );
 	}
 
+	/*
 	if( enum_declaration.isScoped() )
 	{
 		std::string namespace_name( name );
@@ -1126,6 +1117,7 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 
 		out_items.Append( std::move(namespace_) );
 	}
+	*/
 }
 
 template<typename ListBuilder>
@@ -1388,49 +1380,8 @@ Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::T
 	return Synt::EmptyVariant();
 }
 
-/*
-void CppAstConsumer::EmitDefinitionsForMacros(
-	const NamedFunctionDeclarations& named_function_declarations,
-	const NamedRecordDeclarations& named_record_declarations,
-	const NamedTypedefDeclarations& named_typedef_declarations,
-	const NamedEnumDeclarations& named_enum_declarations,
-	const EnumNamesSet& enum_names,
-	const NamedVariableDeclarations& named_variable_declarations )
+void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builder& out_items )
 {
-	// Populate a hash-map of original to translated type names.
-	std::unordered_map< std::string, std::string > type_original_to_translated_name_map;
-
-	for( const auto& pair : named_record_declarations )
-	{
-		std::string original_name= pair.second->getName().str();
-		if( type_original_to_translated_name_map.count( original_name ) == 0 )
-			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
-	}
-
-	for( const auto& pair : named_typedef_declarations )
-	{
-		std::string original_name= pair.second->getName().str();
-		if( type_original_to_translated_name_map.count( original_name ) == 0 )
-			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
-	}
-
-	for( const auto& pair : named_enum_declarations )
-	{
-		std::string original_name= pair.second->getName().str();
-		if( type_original_to_translated_name_map.count( original_name ) == 0 )
-			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
-	}
-
-	// Populate a hash-map of original to translated variable names.
-	std::unordered_map< std::string, std::string > variable_original_to_translated_name_map;
-
-	for( const auto& pair : named_variable_declarations )
-	{
-		std::string original_name= pair.second->getName().str();
-		if( variable_original_to_translated_name_map.count( original_name ) == 0 )
-			variable_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
-	}
-
 	// Extract all macros and sort them by their location.
 	// We need natural order here (from includes to the main file, line-by-line in each file).
 
@@ -1471,9 +1422,6 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			return source_manager_.isBeforeInTranslationUnit( l.second->getLocation(), r.second->getLocation() );
 		} );
 
-	// Maintain a hash-set of emitted macro names (to avoid duplication).
-	std::unordered_set<std::string> emitted_macro_names;
-
 	for( const MacroPair& macro_pair : macro_directives )
 	{
 		const clang::MacroInfo* const macro_info= macro_pair.second->getMacroInfo();
@@ -1487,16 +1435,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 		std::string macro_translated_name= TranslateIdentifier( macro_original_name );
 
-		// Rename to avoid name conflicts.
-		while(
-			named_function_declarations.count( macro_translated_name ) != 0 ||
-			named_record_declarations.count( macro_translated_name ) != 0 ||
-			named_typedef_declarations.count( macro_translated_name ) != 0 ||
-			named_enum_declarations.count( macro_translated_name ) != 0 ||
-			enum_names.count( macro_translated_name ) != 0 ||
-			named_variable_declarations.count( macro_translated_name ) != 0 ||
-			emitted_macro_names.count( macro_translated_name ) != 0 )
-			macro_translated_name+= "_";
+		if( root_namespace_.items.count( macro_translated_name ) != 0 )
+			continue;
 
 		clang::MacroInfo::const_tokens_iterator tokens_begin= macro_info->tokens_begin();
 		clang::MacroInfo::const_tokens_iterator tokens_end= macro_info->tokens_end();
@@ -1523,10 +1463,10 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 				auto_variable_declaration.name= macro_translated_name;
 				auto_variable_declaration.initializer_expression= TranslateNumericLiteral( token );
 
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+				out_items.Append( std::move( auto_variable_declaration ) );
 
-				variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-				emitted_macro_names.insert( macro_translated_name );
+				//variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+				//emitted_macro_names.insert( macro_translated_name );
 			}
 			else if( clang::tok::isStringLiteral( token.getKind() ) )
 			{
@@ -1545,10 +1485,10 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
-					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+					out_items.Append( std::move( auto_variable_declaration ) );
 
-					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-					emitted_macro_names.insert( macro_translated_name );
+					//variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+					//emitted_macro_names.insert( macro_translated_name );
 				}
 				else if( string_literal_parser.isUTF16() ||
 					( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 16 ) )
@@ -1563,10 +1503,10 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					string_constant->type_suffix= "u16";
 
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
-					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+					out_items.Append( std::move( auto_variable_declaration ) );
 
-					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-					emitted_macro_names.insert( macro_translated_name );
+					//variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+					//emitted_macro_names.insert( macro_translated_name );
 				}
 				else if( string_literal_parser.isUTF32() ||
 					( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
@@ -1580,10 +1520,10 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					string_constant->type_suffix= "u32";
 
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
-					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+					out_items.Append( std::move( auto_variable_declaration ) );
 
-					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-					emitted_macro_names.insert( macro_translated_name );
+					//variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+					//emitted_macro_names.insert( macro_translated_name );
 				}
 			}
 			else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
@@ -1605,15 +1545,16 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					char_literal.code_point= uint32_t( char_literal_parser.getValue() );
 
 					auto_variable_declaration.initializer_expression= std::move(char_literal);
-					root_program_elements_.Append( std::move( auto_variable_declaration ) );
+					out_items.Append( std::move( auto_variable_declaration ) );
 
-					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-					emitted_macro_names.insert( macro_translated_name );
+					//variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+					//emitted_macro_names.insert( macro_translated_name );
 				}
 			}
 			else if( token.getKind() == clang::tok::identifier )
 			{
 				// Something like #define X Y.
+				/*
 
 				if( const auto identifier_info= token.getIdentifierInfo() )
 				{
@@ -1632,10 +1573,10 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						name_lookup.name= idenfier_name;
 
 						auto_variable_declaration.initializer_expression= std::move( name_lookup );
-						root_program_elements_.Append( std::move( auto_variable_declaration ) );
+						out_items.Append( std::move( auto_variable_declaration ) );
 
-						variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-						emitted_macro_names.insert( macro_translated_name );
+						//variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+						//emitted_macro_names.insert( macro_translated_name );
 					}
 					else if(
 						const auto variable_name_it= variable_original_to_translated_name_map.find( idenfier_name );
@@ -1651,10 +1592,10 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						name_lookup.name= variable_name_it->second;
 
 						auto_variable_declaration.initializer_expression= std::move( name_lookup );
-						root_program_elements_.Append( std::move( auto_variable_declaration ) );
+						out_items.Append( std::move( auto_variable_declaration ) );
 
-						variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-						emitted_macro_names.insert( macro_translated_name );
+						//variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+						//emitted_macro_names.insert( macro_translated_name );
 					}
 					else if(
 						const auto type_name_it= type_original_to_translated_name_map.find( idenfier_name );
@@ -1669,12 +1610,13 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						name_lookup.name= type_name_it->second;
 
 						type_alias.value= std::move( name_lookup );
-						root_program_elements_.Append( std::move( type_alias ) );
+						out_items.Append( std::move( type_alias ) );
 
-						type_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-						emitted_macro_names.insert( macro_translated_name );
+						//type_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+						//emitted_macro_names.insert( macro_translated_name );
 					}
 				}
+				*/
 			}
 		}
 		else if( tokens_end - tokens_begin == 2 )
@@ -1694,15 +1636,14 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 				minus->expression= TranslateNumericLiteral( token1 );
 				auto_variable_declaration.initializer_expression= std::move( minus );
 
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+				out_items.Append( std::move( auto_variable_declaration ) );
 
-				variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-				emitted_macro_names.insert( macro_translated_name );
+				//variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
+				//emitted_macro_names.insert( macro_translated_name );
 			}
 		}
 	} // for defines
 }
-*/
 
 Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& token )
 {
