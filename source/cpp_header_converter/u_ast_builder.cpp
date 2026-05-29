@@ -123,6 +123,14 @@ private:
 	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::EnumDecl* item );
 	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::VarDecl* item );
 
+	void EmitItem( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const NamespaceItem& item );
+	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const NamespaceItemNamespace& item );
+	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const clang::FunctionDecl* item );
+	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const NamespaceItemRecord& item );
+	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const clang::TypedefNameDecl* item );
+	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const clang::EnumDecl* item  );
+	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, std::string_view name, const clang::VarDecl* item );
+
 	NamedFunctionDeclarations GenerateFunctionNames();
 
 	NamedRecordDeclarations GenerateRecordNames( const NamedFunctionDeclarations& named_function_declarations );
@@ -299,6 +307,12 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			std::cout << "Has type " << name_full << std::endl;
 		}
+
+		for( const auto& pair : root_namespace_.items )
+			EmitItem( root_program_elements_, pair.first, pair.second );
+
+		out_program_elements_= root_program_elements_.Build();
+		return;
 	}
 
 	(void)ast_context;
@@ -785,6 +799,96 @@ void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName&
 {
 	(void)map;
 	(void)prefix;
+	(void)item;
+}
+
+void CppAstConsumer::EmitItem( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const NamespaceItem& item )
+{
+	std::visit( [&]( const auto& t ) { EmitItemImpl( out_items, name, t ); }, item );
+}
+
+void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const NamespaceItemNamespace& item )
+{
+	Synt::ProgramElementsList::Builder namespace_items_builder;
+
+	for( const auto& pair : item.items )
+	{
+		EmitItem( namespace_items_builder, pair.first, pair.second );
+	}
+
+	Synt::Namespace namespace_( g_dummy_src_loc );
+	namespace_.name= name;
+	namespace_.elements= namespace_items_builder.Build();
+
+	out_items.Append( std::move( namespace_ ) );
+}
+
+void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::FunctionDecl* const item )
+{
+	TypeNamesMap type_names_map; // TODO - use real one, not this dummy.
+
+	const clang::FunctionDecl& function_decl= *item;
+
+	Synt::Function func(g_dummy_src_loc);
+
+	func.name.push_back( Synt::Function::NameComponent{ std::string( name ), g_dummy_src_loc } );
+
+	func.no_mangle= true; // For now import only C functions without mangling.
+
+	if( function_decl.hasAttr<clang::WarnUnusedResultAttr>() )
+		func.no_discard= true;
+
+	func.type= TranslateFunctionType( *function_decl.getFunctionType(), type_names_map );
+
+	func.type.params.reserve( function_decl.param_size() );
+	size_t i= 0u;
+	for( const clang::ParmVarDecl* const in_param : function_decl.parameters() )
+	{
+		Synt::FunctionParam out_param( g_dummy_src_loc );
+
+		const auto src_name= in_param->getName();
+		if( src_name.empty() )
+			out_param.name= "param" + std::to_string(i);
+		else
+			out_param.name= TranslateIdentifier( src_name );
+
+		out_param.type= TranslateType( *in_param->getType().getTypePtr(), type_names_map );
+		func.type.params.push_back(std::move(out_param));
+		++i;
+	}
+
+	out_items.Append( std::move( func ) );
+}
+
+void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const NamespaceItemRecord& item )
+{
+	// TODO
+	(void)out_items;
+	(void)name;
+	(void)item;
+}
+
+void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::TypedefNameDecl* const item )
+{
+	// TODO
+	(void)out_items;
+	(void)name;
+	(void)item;
+}
+
+void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::EnumDecl* const item )
+{
+	// TODO
+	(void)out_items;
+	(void)name;
+	(void)item;
+}
+
+void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::VarDecl* const item )
+{
+	// TODO
+	(void)out_items;
+	(void)name;
 	(void)item;
 }
 
