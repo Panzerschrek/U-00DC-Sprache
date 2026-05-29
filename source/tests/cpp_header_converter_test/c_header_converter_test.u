@@ -256,7 +256,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	unsafe( SillyFunction( 33.3f ) );
 
 	{
-		var struct_::SillyStructWithAStrangeField s{ .SillyName_= zero_init };
+		var struct_::SillyStructWithAStrangeField s{ .SillyName= zero_init };
 	}
 
 	{
