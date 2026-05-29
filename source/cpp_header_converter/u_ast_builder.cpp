@@ -44,7 +44,6 @@ using NamespaceItem=
 		const clang::EnumDecl*,
 		const clang::VarDecl* >;
 
-
 struct NamespaceItemNamespace
 {
 	// Use ordered map for stable deterministic order.
@@ -56,6 +55,29 @@ struct NamespaceItemRecord
 	const clang::RecordDecl* record_decl;
 	NamespaceItemNamespace namespace_;
 };
+
+void AddTaggedItem(
+	const std::string& tag_kind,
+	std::map<std::string, NamespaceItem>& items,
+	std::string name,
+	NamespaceItem item )
+{
+	// Tagged names (structs, unions, enums) in C build a separae namespace.
+	// So, put tags into separate Ü namespace.
+
+	if( const auto it= items.find( tag_kind ); it != items.end() )
+		std::get<NamespaceItemNamespace>( it->second ).items.emplace( std::move(name), std::move(item) );
+	else
+	{
+		NamespaceItemNamespace namespace_;
+		namespace_.items.emplace( std::move(name), std::move(item) );
+		items.emplace( tag_kind, std::move(namespace_) );
+	}
+}
+
+const std::string g_struct_kind_tag= "struct_";
+const std::string g_union_kind_tag= "union_";
+const std::string g_enum_kind_tag= "enum_";
 
 using ItemName= std::vector<std::string>;
 
@@ -282,8 +304,11 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 			record_declarations_.push_back( record_decl );
 
-			root_namespace_.items.emplace(
-				std::move(name), NamespaceItem( NamespaceItemRecord{ record_decl, NamespaceItemNamespace() } ) );
+			AddTaggedItem(
+				record_decl->isUnion() ? g_union_kind_tag : g_struct_kind_tag,
+				root_namespace_.items,
+				std::move(name),
+				NamespaceItemRecord{ record_decl, NamespaceItemNamespace() } );
 		}
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
@@ -318,7 +343,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 		else
 			name= src_name;
 
-		root_namespace_.items.emplace( std::move( name ),  NamespaceItem( enum_decl ) );
+		AddTaggedItem( g_enum_kind_tag, root_namespace_.items, std::move(name), enum_decl );
 	}
 	else if( const auto decl_context= llvm::dyn_cast<clang::DeclContext>(&decl) )
 	{
