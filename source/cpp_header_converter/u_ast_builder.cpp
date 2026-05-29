@@ -1382,6 +1382,19 @@ Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::T
 
 void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builder& out_items )
 {
+	std::unordered_set< std::string > translated_type_names, translated_variable_names;
+	for( const auto& pair : root_namespace_.items )
+	{
+		if( std::holds_alternative< NamespaceItemRecord >( pair.second ) ||
+			std::holds_alternative< const clang::TypedefNameDecl* >( pair.second ) ||
+			std::holds_alternative< const clang::EnumDecl* >( pair.second ) )
+			translated_type_names.insert( pair.first );
+		else if(
+			std::holds_alternative< NamespaceItemEnumElement >( pair.second ) ||
+			std::holds_alternative< const clang::VarDecl* >( pair.second ))
+			translated_variable_names.insert( pair.first );
+	}
+
 	// Extract all macros and sort them by their location.
 	// We need natural order here (from includes to the main file, line-by-line in each file).
 
@@ -1435,7 +1448,9 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 
 		std::string macro_translated_name= TranslateIdentifier( macro_original_name );
 
-		if( root_namespace_.items.count( macro_translated_name ) != 0 )
+		if( root_namespace_.items.count( macro_translated_name ) != 0 ||
+			translated_type_names.count( macro_translated_name ) != 0 ||
+			translated_variable_names.count( macro_translated_name ) != 0 )
 			continue;
 
 		clang::MacroInfo::const_tokens_iterator tokens_begin= macro_info->tokens_begin();
@@ -1554,12 +1569,28 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 			else if( token.getKind() == clang::tok::identifier )
 			{
 				// Something like #define X Y.
-				/*
 
 				if( const auto identifier_info= token.getIdentifierInfo() )
 				{
-					const std::string idenfier_name= identifier_info->getName().str();
+					const std::string idenfier_name= TranslateIdentifier( identifier_info->getName().str() );
 
+					if( translated_type_names.count( idenfier_name ) != 0 )
+					{
+						// For types create a type alias.
+
+						Synt::TypeAlias type_alias( g_dummy_src_loc );
+						type_alias.name= macro_translated_name;
+
+						Synt::NameLookup name_lookup( g_dummy_src_loc );
+						name_lookup.name= idenfier_name;
+
+						type_alias.value= std::move( name_lookup );
+						out_items.Append( std::move( type_alias ) );
+
+						translated_type_names.insert( macro_translated_name );
+					}
+
+					/*
 					if( named_function_declarations.count( idenfier_name ) != 0 )
 					{
 						// For functions just create "auto x= y;".
@@ -1596,27 +1627,8 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 
 						//variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
 						//emitted_macro_names.insert( macro_translated_name );
-					}
-					else if(
-						const auto type_name_it= type_original_to_translated_name_map.find( idenfier_name );
-						type_name_it != type_original_to_translated_name_map.end() )
-					{
-						// For types create a type alias.
-
-						Synt::TypeAlias type_alias( g_dummy_src_loc );
-						type_alias.name= macro_translated_name;
-
-						Synt::NameLookup name_lookup( g_dummy_src_loc );
-						name_lookup.name= type_name_it->second;
-
-						type_alias.value= std::move( name_lookup );
-						out_items.Append( std::move( type_alias ) );
-
-						//type_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-						//emitted_macro_names.insert( macro_translated_name );
-					}
+					}*/
 				}
-				*/
 			}
 		}
 		else if( tokens_end - tokens_begin == 2 )
