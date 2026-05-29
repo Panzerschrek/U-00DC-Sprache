@@ -137,6 +137,8 @@ private:
 private:
 	void ProcessDecl( const clang::Decl& decl );
 
+	std::string GetAnonymousItemUniqueName( std::string_view prefix, const clang::SourceLocation& location );
+
 	Synt::TypeName TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::TypeName StringToTypeName( std::string_view s );
@@ -210,8 +212,6 @@ private:
 	const bool skip_declarations_from_includes_;
 
 	NamespaceItemNamespace root_namespace_;
-
-	size_t unique_name_index_= 0u;
 };
 
 class CppAstProcessor final : public clang::ASTFrontendAction
@@ -294,7 +294,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 			std::string name;
 			if( src_name.empty() )
-				name= "anon_record_" + std::to_string( ++unique_name_index_ );
+				name= GetAnonymousItemUniqueName( "anon_record", record_decl->getLocation() );
 			else
 				name= TranslateIdentifier( src_name );
 
@@ -329,7 +329,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 		std::string name;
 		if( src_name.empty() )
-			name= "anon_enum_" + std::to_string( ++unique_name_index_ );
+			name= GetAnonymousItemUniqueName( "anon_enum", enum_decl->getLocation() );
 		else
 			name= src_name;
 
@@ -363,6 +363,37 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 		if( var_decl->hasInit() && var_decl->hasConstantInitialization() )
 			root_namespace_.items.emplace( TranslateIdentifier( var_decl->getName() ),  NamespaceItem( var_decl ) );
 	}
+}
+
+std::string CppAstConsumer::GetAnonymousItemUniqueName( std::string_view prefix, const clang::SourceLocation& location )
+{
+	// Use prefix_device_file_line_column format.
+	// This provides stable and deterministic names (at least on single machine).
+
+	std::string name= std::string( prefix );
+
+	if( location.isValid() )
+	{
+		const auto decomposed_loc= source_manager_.getDecomposedLoc( location );
+		const clang::FileID file_id= decomposed_loc.first;
+		if( file_id.isValid() )
+		{
+			if( const clang::FileEntry* const entry= source_manager_.getFileEntryForID( file_id ))
+			{
+				const llvm::sys::fs::UniqueID unique_id= entry->getUniqueID();
+				name+= "_";
+				name+= std::to_string( unique_id.getDevice() );
+				name+= "_";
+				name+= std::to_string( unique_id.getFile() );
+			}
+		}
+		name+= "_";
+		name+= std::to_string( source_manager_.getLineNumber( file_id, decomposed_loc.second ) );
+		name+= "_";
+		name+= std::to_string( source_manager_.getColumnNumber( file_id, decomposed_loc.second ) );
+	}
+
+	return name;
 }
 
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map )
@@ -761,7 +792,7 @@ void CppAstConsumer::CollectSubrecords( NamespaceItem& item )
 
 					std::string name;
 					if( src_name.empty() )
-						name= "anon_record_" + std::to_string( ++unique_name_index_ );
+						name= GetAnonymousItemUniqueName( "anon_record", subrecord->getLocation() );
 					else
 						name= TranslateIdentifier( src_name );
 
@@ -970,8 +1001,9 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 					field.type= TranslateType( *field_declaration->getType().getTypePtr(), type_names_map );
 
 					const auto src_name= field_declaration->getName();
+
 					if( src_name.empty() )
-						field.name= "anon_field_" + std::to_string( ++unique_name_index_ );
+						field.name= GetAnonymousItemUniqueName( "anon_field", field_declaration->getSourceRange().getBegin() );
 					else
 						field.name= TranslateIdentifier( src_name );
 
