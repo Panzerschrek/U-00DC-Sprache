@@ -32,6 +32,33 @@ static Synt::Function GetDeletedDefaultConstructor()
 	return func;
 }
 
+struct NamespaceItemNamespace;
+struct NamespaceItemRecord;
+
+using NamespaceItem=
+	std::variant<
+		NamespaceItemNamespace,
+		const clang::FunctionDecl*,
+		NamespaceItemRecord,
+		const clang::TypedefNameDecl*,
+		const clang::EnumDecl*,
+		const clang::VarDecl* >;
+
+
+struct NamespaceItemNamespace
+{
+	// Use ordered map for stable deterministic order.
+	std::map<std::string, NamespaceItem> items;
+};
+
+struct NamespaceItemRecord
+{
+	const clang::RecordDecl* record_decl;
+	NamespaceItemNamespace namespace_;
+};
+
+using ItemName= std::vector<std::string>;
+
 class CppAstConsumer final : public clang::ASTConsumer
 {
 public:
@@ -71,6 +98,8 @@ private:
 	// Translated/renamed enum names.
 	using EnumNamesSet= std::unordered_set<std::string>;
 
+	using TypeNamesMapFull= std::unordered_map< const clang::Type*, ItemName >;
+
 private:
 	void ProcessDecl( const clang::Decl& decl );
 
@@ -85,6 +114,14 @@ private:
 	std::string TranslateIdentifier( llvm::StringRef identifier );
 
 	void CollectSubrecords();
+
+	void BuildTypeNamesMapFull( TypeNamesMapFull& map, ItemName& prefix, const NamespaceItem& item );
+	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const NamespaceItemNamespace& item );
+	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::FunctionDecl* item );
+	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const NamespaceItemRecord& item );
+	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::TypedefNameDecl* item );
+	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::EnumDecl* item );
+	void BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::VarDecl* item );
 
 	NamedFunctionDeclarations GenerateFunctionNames();
 
@@ -196,6 +233,8 @@ private:
 	std::vector< const clang::EnumDecl* > enum_declarations_;
 	std::vector< const clang::VarDecl* > variable_declarations_;
 
+	NamespaceItemNamespace root_namespace_;
+
 	size_t unique_name_index_= 0u;
 };
 
@@ -243,6 +282,25 @@ bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 
 void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 {
+	if( true )
+	{
+		TypeNamesMapFull type_names_map_full;
+		ItemName prefix;
+		BuildTypeNamesMapFullImpl( type_names_map_full, prefix, root_namespace_ );
+
+		for( const auto& pair : type_names_map_full )
+		{
+			std::string name_full;
+			for( const auto& component : pair.second )
+			{
+				name_full+= "::";
+				name_full+= component;
+			}
+
+			std::cout << "Has type " << name_full << std::endl;
+		}
+	}
+
 	(void)ast_context;
 
 	// Collect subrecords.
@@ -306,11 +364,24 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 			record_declarations_.push_back( record_decl );
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
+	{
 		typedef_declarations_.push_back( type_alias_decl );
+
+		root_namespace_.items.emplace( TranslateIdentifier( type_alias_decl->getName() ), NamespaceItem( type_alias_decl ) );
+	}
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
 		if( func_decl->isFirstDecl() || func_decl->getBuiltinID() != 0 )
+		{
 			function_declarations_.push_back( func_decl );
+
+			if( func_decl->getIdentifier() != nullptr )
+			{
+				std::string name= func_decl->getName().str();
+				if( !name.empty() && !IsKeyword( name ) && name.front() != '_' )
+					root_namespace_.items.emplace( std::move( name ),  NamespaceItem( func_decl ) );
+			}
+		}
 	}
 	else if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>(&decl) )
 		enum_declarations_.push_back( enum_decl );
@@ -670,6 +741,51 @@ void CppAstConsumer::CollectSubrecords()
 			}
 		}
 	}
+}
+
+void CppAstConsumer::BuildTypeNamesMapFull( TypeNamesMapFull& map, ItemName& prefix, const NamespaceItem& item )
+{
+	std::visit( [&]( const auto& t ) { BuildTypeNamesMapFullImpl( map, prefix, t ); }, item );
+}
+
+void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const NamespaceItemNamespace& item )
+{
+	for( const auto& pair : item.items )
+	{
+		prefix.push_back( pair.first );
+		BuildTypeNamesMapFull( map, prefix, pair.second );
+		prefix.pop_back();
+	}
+}
+
+void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::FunctionDecl* const item )
+{
+	(void)map;
+	(void)prefix;
+	(void)item;
+}
+
+void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const NamespaceItemRecord& item )
+{
+	map.emplace( item.record_decl->getTypeForDecl(), prefix );
+	BuildTypeNamesMapFullImpl( map, prefix, item.namespace_ );
+}
+
+void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::TypedefNameDecl* const item )
+{
+	map.emplace( ast_context_.getTypedefType( item ).getTypePtr(), prefix );
+}
+
+void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::EnumDecl* const item )
+{
+	map.emplace( item->getTypeForDecl(), prefix );
+}
+
+void CppAstConsumer::BuildTypeNamesMapFullImpl( TypeNamesMapFull& map, ItemName& prefix, const clang::VarDecl* const item )
+{
+	(void)map;
+	(void)prefix;
+	(void)item;
 }
 
 CppAstConsumer::NamedFunctionDeclarations CppAstConsumer::GenerateFunctionNames()
