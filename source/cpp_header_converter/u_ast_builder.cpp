@@ -319,7 +319,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 			{
 				std::string name= func_decl->getName().str();
 				if( !name.empty() && !IsKeyword( name ) && name.front() != '_' )
-					root_namespace_.items.emplace( std::move( name ),  NamespaceItem( func_decl ) );
+					root_namespace_.items.emplace( std::move( name ), NamespaceItem( func_decl ) );
 			}
 		}
 	}
@@ -331,7 +331,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 		if( src_name.empty() )
 			name= GetAnonymousItemUniqueName( "anon_enum", enum_decl->getLocation() );
 		else
-			name= src_name;
+			name= TranslateIdentifier( src_name );
 
 		// Tagged names (structs, unions, enums) in C build a separae namespace.
 		// So, put tags into separate Ü namespace.
