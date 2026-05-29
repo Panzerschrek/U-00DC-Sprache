@@ -163,8 +163,6 @@ private:
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
 
-	void CollectSubrecords();
-
 	void BuildTypeNamesMap( TypeNamesMap& map, ItemName& prefix, const NamespaceItem& item );
 	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemNamespace& item );
 	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::FunctionDecl* item );
@@ -216,14 +214,6 @@ private:
 	const clang::LangOptions& lang_options_;
 	const clang::ASTContext& ast_context_;
 	const bool skip_declarations_from_includes_;
-
-	// Declaration of symbols to translate.
-	// Use vector, because we need stable order in order to perform (if necessary) consistent renaming.
-	std::vector< const clang::FunctionDecl* > function_declarations_;
-	std::vector< const clang::RecordDecl* > record_declarations_;
-	std::vector< const clang::TypedefNameDecl* > typedef_declarations_;
-	std::vector< const clang::EnumDecl* > enum_declarations_;
-	std::vector< const clang::VarDecl* > variable_declarations_;
 
 	NamespaceItemNamespace root_namespace_;
 
@@ -311,8 +301,6 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 			else
 				name= TranslateIdentifier( src_name );
 
-			record_declarations_.push_back( record_decl );
-
 			AddTaggedItem(
 				record_decl->isUnion() ? g_union_kind_tag : g_struct_kind_tag,
 				root_namespace_.items,
@@ -321,17 +309,11 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 		}
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
-	{
-		typedef_declarations_.push_back( type_alias_decl );
-
 		root_namespace_.items.emplace( TranslateIdentifier( type_alias_decl->getName() ), NamespaceItem( type_alias_decl ) );
-	}
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
 		if( func_decl->isFirstDecl() || func_decl->getBuiltinID() != 0 )
 		{
-			function_declarations_.push_back( func_decl );
-
 			if( func_decl->getIdentifier() != nullptr )
 			{
 				std::string name= func_decl->getName().str();
@@ -342,8 +324,6 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	}
 	else if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>(&decl) )
 	{
-		enum_declarations_.push_back( enum_decl );
-
 		const auto src_name= enum_decl->getName();
 
 		std::string name;
@@ -373,11 +353,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	else if( const auto var_decl= llvm::dyn_cast<clang::VarDecl>(&decl) )
 	{
 		if( var_decl->hasInit() && var_decl->hasConstantInitialization() )
-		{
-			variable_declarations_.push_back( var_decl );
-
 			root_namespace_.items.emplace( TranslateIdentifier( var_decl->getName() ),  NamespaceItem( var_decl ) );
-		}
 	}
 }
 
@@ -704,27 +680,6 @@ std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifie
 		return (identifier + "_").str();
 
 	return identifier.str();
-}
-
-void CppAstConsumer::CollectSubrecords()
-{
-	// Use index-based for loop, since container may be modified.
-	for( size_t i= 0; i < record_declarations_.size(); ++i )
-	{
-		const auto record_declaration= record_declarations_[i];
-		for( const clang::Decl* const sub_decl : record_declaration->decls() )
-		{
-			// Collect sub-structs into flat result container.
-			// Doing so we force move nested records into the root namespace.
-			// This may cause renaming due to name conflicts.
-			// But it's not so bad.
-			if( const auto subrecord= llvm::dyn_cast<clang::RecordDecl>( sub_decl ) )
-			{
-				if( subrecord->isCompleteDefinition() && !subrecord->isTemplated() )
-					record_declarations_.push_back( subrecord );
-			}
-		}
-	}
 }
 
 void CppAstConsumer::BuildTypeNamesMap( TypeNamesMap& map, ItemName& prefix, const NamespaceItem& item )
