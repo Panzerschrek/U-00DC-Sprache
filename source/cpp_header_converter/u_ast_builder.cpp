@@ -432,7 +432,11 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	else if( const auto var_decl= llvm::dyn_cast<clang::VarDecl>(&decl) )
 	{
 		if( var_decl->hasInit() && var_decl->hasConstantInitialization() )
+		{
 			variable_declarations_.push_back( var_decl );
+
+			root_namespace_.items.emplace( TranslateIdentifier( var_decl->getName() ),  NamespaceItem( var_decl ) );
+		}
 	}
 }
 
@@ -1155,10 +1159,66 @@ void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items
 
 void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::VarDecl* const item )
 {
-	// TODO
-	(void)out_items;
-	(void)name;
-	(void)item;
+	TypeNamesMap type_names_map; // TODO - use real one, not this dummy.
+
+	const clang::VarDecl& variable= *item;
+
+	if( !variable.getType().isConstant( ast_context_ ) )
+	{
+		// Ignore non-constants.
+		return;
+	}
+
+	const clang::APValue* const init_val= variable.evaluateValue();
+	if( init_val == nullptr )
+		return;
+
+	const clang::Type* variable_type= variable.getType().getTypePtr();
+	while(true)
+	{
+		if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( variable_type ) )
+			variable_type= paren_type->getInnerType().getTypePtr();
+		else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( variable_type ) )
+			variable_type= elaborated_type->desugar().getTypePtr();
+		else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( variable_type ) )
+			variable_type= attributed_type->desugar().getTypePtr(); // TODO - maybe collect such attributes?
+		else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>( variable_type ) )
+		{
+			const auto aliased_type= typedef_type->desugar().getTypePtr();
+			if( aliased_type == nullptr )
+				break;
+			variable_type= aliased_type;
+		}
+		else if( const auto auto_type= llvm::dyn_cast<clang::AutoType>( variable_type ) )
+		{
+			const clang::QualType deduced_type= auto_type->getDeducedType();
+			if( !deduced_type.isNull() )
+				variable_type= deduced_type.getTypePtr();
+			else
+				break;
+		}
+		else
+			break;
+	}
+
+	Synt::Initializer initializer= TranslateVariableInitializer_r( *variable_type, *init_val );
+	if( std::holds_alternative<Synt::EmptyVariant>( initializer ) )
+		return;
+
+	Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+	variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
+
+	{
+		Synt::VariablesDeclaration::VariableEntry entry;
+		entry.src_loc= g_dummy_src_loc;
+		entry.name= name;
+		entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
+		entry.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+
+		variables_declaration.variables.push_back( std::move(entry) );
+	}
+
+	out_items.Append( std::move( variables_declaration ) );
 }
 
 CppAstConsumer::NamedFunctionDeclarations CppAstConsumer::GenerateFunctionNames()
