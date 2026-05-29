@@ -1382,10 +1382,13 @@ Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::T
 
 void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builder& out_items )
 {
-	std::unordered_set< std::string > translated_type_names, translated_variable_names;
+	std::unordered_set< std::string > translated_function_names, translated_type_names, translated_variable_names;
 	for( const auto& pair : root_namespace_.items )
 	{
-		if( std::holds_alternative< NamespaceItemRecord >( pair.second ) ||
+		if( std::holds_alternative< const clang::FunctionDecl* >( pair.second ) )
+			translated_function_names.insert( pair.first );
+		else if(
+			std::holds_alternative< NamespaceItemRecord >( pair.second ) ||
 			std::holds_alternative< const clang::TypedefNameDecl* >( pair.second ) ||
 			std::holds_alternative< const clang::EnumDecl* >( pair.second ) )
 			translated_type_names.insert( pair.first );
@@ -1449,6 +1452,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 		std::string macro_translated_name= TranslateIdentifier( macro_original_name );
 
 		if( root_namespace_.items.count( macro_translated_name ) != 0 ||
+			translated_function_names.count( macro_translated_name ) != 0 ||
 			translated_type_names.count( macro_translated_name ) != 0 ||
 			translated_variable_names.count( macro_translated_name ) != 0 )
 			continue;
@@ -1568,7 +1572,24 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 				{
 					const std::string idenfier_name= TranslateIdentifier( identifier_info->getName().str() );
 
-					if( translated_variable_names.count( idenfier_name ) != 0 )
+					if( translated_function_names.count( idenfier_name ) != 0 )
+					{
+						// For functions just create "auto x= y;".
+						// This creates a function-pointer variable.
+
+						Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+						auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+						auto_variable_declaration.name= macro_translated_name;
+
+						Synt::NameLookup name_lookup( g_dummy_src_loc );
+						name_lookup.name= idenfier_name;
+
+						auto_variable_declaration.initializer_expression= std::move( name_lookup );
+
+						out_items.Append( std::move( auto_variable_declaration ) );
+						translated_variable_names.insert( macro_translated_name );
+					}
+					else if( translated_variable_names.count( idenfier_name ) != 0 )
 					{
 						// For variables just create "auto& x= y;"
 						Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
@@ -1599,26 +1620,6 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 						out_items.Append( std::move( type_alias ) );
 						translated_type_names.insert( macro_translated_name );
 					}
-
-					/*
-					if( named_function_declarations.count( idenfier_name ) != 0 )
-					{
-						// For functions just create "auto x= y;".
-						// This creates a function-pointer variable.
-
-						Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
-						auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-						auto_variable_declaration.name= macro_translated_name;
-
-						Synt::NameLookup name_lookup( g_dummy_src_loc );
-						name_lookup.name= idenfier_name;
-
-						auto_variable_declaration.initializer_expression= std::move( name_lookup );
-						out_items.Append( std::move( auto_variable_declaration ) );
-
-						//variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-						//emitted_macro_names.insert( macro_translated_name );
-					}*/
 				}
 			}
 		}
