@@ -184,25 +184,6 @@ public:
 	virtual void HandleTranslationUnit( clang::ASTContext& ast_context ) override;
 
 private:
-	// Use ordered map in order to emit elements in stable order.
-	template<typename K, typename V>
-	using NamesMapContainer= std::map<K, V>;
-
-	// Translated/renamed name to function declaration map.
-	using NamedFunctionDeclarations= NamesMapContainer<std::string, const clang::FunctionDecl*>;
-
-	// Translated/renamed name to record declaration map.
-	using NamedRecordDeclarations= NamesMapContainer<std::string, const clang::RecordDecl*>;
-
-	// Translated/renamed name to typedef declaration map.
-	using NamedTypedefDeclarations= NamesMapContainer<std::string, const clang::TypedefNameDecl*>;
-
-	// Translated/renamed name to enum declaration map.
-	using NamedEnumDeclarations= NamesMapContainer<std::string, const clang::EnumDecl*>;
-
-	// Translated/renamed enum names.
-	using EnumNamesSet= std::unordered_set<std::string>;
-
 	using TypeNamesMap= std::unordered_map< const clang::Type*, ItemName >;
 
 private:
