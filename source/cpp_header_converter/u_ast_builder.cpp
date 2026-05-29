@@ -994,6 +994,8 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 			}
 			else
 			{
+				uint32_t anonymous_field_index= 0u;
+
 				for( const clang::FieldDecl* const field_declaration : record_declaration.fields() )
 				{
 					Synt::ClassField field( g_dummy_src_loc );
@@ -1003,7 +1005,12 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 					const auto src_name= field_declaration->getName();
 
 					if( src_name.empty() )
-						field.name= GetAnonymousItemUniqueName( "anon_field", field_declaration->getSourceRange().getBegin() );
+					{
+						// Name anonymous fields sequentially by using a simple counter.
+						// It's fine, since these names should be unique only within this struct.
+						field.name= "anon_field_" + std::to_string( anonymous_field_index );
+						++anonymous_field_index;
+					}
 					else
 						field.name= TranslateIdentifier( src_name );
 
