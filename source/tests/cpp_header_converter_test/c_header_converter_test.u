@@ -318,8 +318,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	// C empty struct aren't really empty. At least on some compilers.
 	static_if( string_equals( compiler::target::os, "windows" ) )
 	{
-		static_assert( typeinfo</EmptyStruct/>.size_of > 0s );
-		static_assert( typeinfo</StructOfEmptyStructs/>.size_of == 5s * typeinfo</EmptyStruct/>.size_of );
+		static_assert( typeinfo</struct_::EmptyStruct/>.size_of > 0s );
+		static_assert( typeinfo</struct_::StructOfEmptyStructs/>.size_of == 5s * typeinfo</struct_::EmptyStruct/>.size_of );
 	}
 
 	// Leading underscore should be moved to identifier end.
