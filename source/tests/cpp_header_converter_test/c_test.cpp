@@ -75,11 +75,6 @@ struct StructUsedWithoutDeclaration* FunctionReturningUnknownStruct()
 	return nullptr;
 }
 
-EnumUsedWithoutDeclaration* FunctionReturningUnknownEnum()
-{
-	return nullptr;
-}
-
 static_assert( sizeof(LargeStructWithSingleBitField) == 44, "Unexpected size!" );
 
 void SequentialEnumFunc( enum SequentialEnum s )

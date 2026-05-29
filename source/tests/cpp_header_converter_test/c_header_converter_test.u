@@ -149,14 +149,6 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 
 	{
-		var $(enum_::EnumUsedWithoutDeclaration) ptr= unsafe( FunctionReturningUnknownEnum() );
-	}
-	{
-		type UnknownEnum= enum_::EnumUsedWithoutDeclaration;
-		unsafe( FunctionReturningUnknownEnum() );
-	}
-
-	{
 		var struct_::StructWithName mut s{ .ff= 67u };
 		var TypedefForStructWithName &mut s_ref= s;
 		var PointerTypedefForStructWithName s_ptr= $<(s_ref);

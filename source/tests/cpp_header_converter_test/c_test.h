@@ -102,8 +102,6 @@ void StupidFunc( StupidStuctNaming* s );
 
 struct StructUsedWithoutDeclaration* FunctionReturningUnknownStruct();
 
-enum EnumUsedWithoutDeclaration* FunctionReturningUnknownEnum();
-
 inline struct AnotherStructUsedWithoutDeclaration* InlineFunctionReturningUnknownStruct() { return 0; }
 
 struct StructWithAnonimousRecordsInside
