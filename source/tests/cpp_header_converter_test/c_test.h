@@ -181,8 +181,8 @@ struct LargeStructWithSingleBitField
 	int arr2[5];
 };
 
+// A tricky case. Two anonymous records are created via a single macro. They should be distinct from each other.
 #define TWO_ANON_STRUCTS struct { int x; int y; } anon_struct_value0; struct { int z; int w; } anon_struct_value1;
-
 struct StructWithTwoAnonStructsInside
 {
 	TWO_ANON_STRUCTS

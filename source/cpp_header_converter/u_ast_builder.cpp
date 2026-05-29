@@ -189,7 +189,7 @@ private:
 private:
 	void ProcessDecl( const clang::Decl& decl );
 
-	std::string GetAnonymousItemUniqueName( std::string_view prefix, const clang::SourceLocation& location );
+	std::string GetAnonymousItemUniqueName( std::string_view prefix, clang::SourceLocation location );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
@@ -415,32 +415,42 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	}
 }
 
-std::string CppAstConsumer::GetAnonymousItemUniqueName( std::string_view prefix, const clang::SourceLocation& location )
+std::string CppAstConsumer::GetAnonymousItemUniqueName( std::string_view prefix, clang::SourceLocation location )
 {
 	// Use prefix_device_file_line_column format.
 	// This provides stable and deterministic names (at least on single machine).
 
 	std::string name= std::string( prefix );
 
-	if( location.isValid() )
+	// Use a loop to include locations of each macro expansion in the result name.
+	while( true )
 	{
-		const auto decomposed_loc= source_manager_.getDecomposedLoc( location );
+		if( !location.isValid() )
+			break;
+
+		const auto decomposed_loc=
+			source_manager_.getDecomposedLoc( source_manager_.getImmediateSpellingLoc( location ) );
 		const clang::FileID file_id= decomposed_loc.first;
 		if( file_id.isValid() )
 		{
-			if( const clang::FileEntry* const entry= source_manager_.getFileEntryForID( file_id ))
+			if( const clang::FileEntry* const entry= source_manager_.getFileEntryForID( file_id ) )
 			{
 				const llvm::sys::fs::UniqueID unique_id= entry->getUniqueID();
-				name+= "_";
+				name+= "_d";
 				name+= std::to_string( unique_id.getDevice() );
-				name+= "_";
+				name+= "_f";
 				name+= std::to_string( unique_id.getFile() );
 			}
 		}
-		name+= "_";
+		name+= "_l";
 		name+= std::to_string( source_manager_.getLineNumber( file_id, decomposed_loc.second ) );
-		name+= "_";
+		name+= "_c";
 		name+= std::to_string( source_manager_.getColumnNumber( file_id, decomposed_loc.second ) );
+
+		if( location.isMacroID() )
+			location= source_manager_.getImmediateExpansionRange( location ).getBegin();
+		else
+			break;
 	}
 
 	return name;
