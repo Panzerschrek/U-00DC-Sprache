@@ -398,7 +398,19 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 		}
 	}
 	else if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>(&decl) )
+	{
 		enum_declarations_.push_back( enum_decl );
+
+		const auto src_name= enum_decl->getName();
+
+		std::string name;
+		if( src_name.empty() )
+			name= "anon_enum_" + std::to_string( ++unique_name_index_ );
+		else
+			name= src_name;
+
+		root_namespace_.items.emplace( std::move( name ),  NamespaceItem( enum_decl ) );
+	}
 	else if( const auto decl_context= llvm::dyn_cast<clang::DeclContext>(&decl) )
 	{
 		for( const clang::Decl* const sub_decl : decl_context->decls() )
@@ -870,18 +882,108 @@ void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items
 
 void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::TypedefNameDecl* const item )
 {
-	// TODO
-	(void)out_items;
-	(void)name;
-	(void)item;
+	TypeNamesMap type_names_map; // TODO - use real one, not this dummy.
+
+	Synt::TypeAlias type_alias( g_dummy_src_loc );
+	type_alias.name= name;
+	type_alias.value= TranslateType( *item->getUnderlyingType().getTypePtr(), type_names_map );
+
+	out_items.Append( std::move(type_alias ) );
 }
 
 void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::EnumDecl* const item )
 {
-	// TODO
-	(void)out_items;
-	(void)name;
-	(void)item;
+	const clang::EnumDecl& enum_declaration= *item;
+
+	if( !enum_declaration.isComplete() )
+	{
+		// Create dummy class with deleted default constructor for incomplete enums.
+
+		Synt::Class enum_class_( g_dummy_src_loc );
+		enum_class_.name= name;
+
+		Synt::ClassElementsList::Builder class_elements;
+		class_elements.Append( GetDeletedDefaultConstructor() );
+		enum_class_.elements= class_elements.Build();
+
+		out_items.Append( std::move( enum_class_ ) );
+
+		return;
+	}
+
+	// Always create a type alias and a bunch of enumerator constants for C and C++ enums.
+	// We can't use Ü enums, since C enums may be unsequentional and it's not guaranteed, that a varible of enum type has one of the listed values.
+	// We can't use a wrapper struct, since on some ABIs structs are passed differently from enums.
+	// For C++ scoped enums we create a namespace with "_" postfix, where all enumerators are stored.
+	// A type alias is created even for an anonymous enum, since such enum may be used inside "typedef" and we need some name for typedef source type (even if it's generated).
+
+	{
+		Synt::TypeAlias type_alias( g_dummy_src_loc );
+		type_alias.name= name;
+
+		std::string_view underlying_type_name;
+		if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getIntegerType().getTypePtr() ) )
+			underlying_type_name= GetUFundamentalType( *built_in_type );
+		else if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getPromotionType().getTypePtr() ) )
+			underlying_type_name= GetUFundamentalType( *built_in_type );
+		else
+		{
+			// Some very strange enum. Assume it's int.
+			// This strange code from Darwin header "vm_types.h" produces such enum.
+			/*
+				__enum_decl(mach_vm_range_flavor_t, uint32_t, {
+					MACH_VM_RANGE_FLAVOR_INVALID,
+					MACH_VM_RANGE_FLAVOR_V1,
+				});
+			*/
+			if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( ast_context_.IntTy.getTypePtr() ) )
+				underlying_type_name= GetUFundamentalType(* built_in_type );
+			else
+				underlying_type_name= Keyword( Keywords::i32_ );
+		}
+
+		type_alias.value= StringToTypeName( underlying_type_name );
+
+		out_items.Append( std::move(type_alias) );
+	}
+
+	if( enum_declaration.isScoped() )
+	{
+		std::string namespace_name( name );
+		namespace_name+= "_";
+
+		Synt::Namespace namespace_( g_dummy_src_loc );
+		namespace_.name= std::move( namespace_name );
+
+		{
+			Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+			variables_declaration.type= StringToTypeName( name );
+
+			for( const clang::EnumConstantDecl* const enumerator : enum_declaration.enumerators() )
+				variables_declaration.variables.push_back( TranslateEnumElement( *enumerator, enumerator->getName().str() ) );
+
+			Synt::ProgramElementsList::Builder builder;
+			builder.Append( std::move(variables_declaration) );
+
+			namespace_.elements= builder.Build();
+		}
+
+		out_items.Append( std::move(namespace_) );
+	}
+	else
+	{
+		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+		variables_declaration.type= StringToTypeName( name );
+
+		for( const clang::EnumConstantDecl* const enumerator : enum_declaration.enumerators() )
+		{
+			std::string name= TranslateIdentifier( enumerator->getName() );
+
+			variables_declaration.variables.push_back( TranslateEnumElement( *enumerator, std::move(name) ) );
+		}
+
+		out_items.Append( std::move(variables_declaration) );
+	}
 }
 
 void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const std::string_view name, const clang::VarDecl* const item )
