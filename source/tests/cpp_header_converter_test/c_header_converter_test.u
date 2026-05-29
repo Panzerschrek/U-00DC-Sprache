@@ -332,8 +332,8 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// Leading underscore should be moved to identifier end.
 	{
-		var UnderscoredStruct_ underscored_struct{ .x= 0 };
-		var TripleUnderscoredStruct___ triple_underscored_struct{ .y= 1.0f, .z= 'Y' };
+		var struct_::UnderscoredStruct_ underscored_struct{ .x= 0 };
+		var struct_::TripleUnderscoredStruct___ triple_underscored_struct{ .y= 1.0f, .z= 'Y' };
 	}
 	static_assert( same_type</ n64_int_from_c__, u64 /> );
 
@@ -360,15 +360,12 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Define alias for types.
 	static_assert( same_type</ CPP_CHAR8, CPP_char8 /> );
 	static_assert( same_type</ ARRAY_TYPE15, ArrayType15 /> );
-	static_assert( same_type</ REGULAR_STRUCT, RegularStruct /> );
 	static_assert( same_type</ TYPEDEFED_STRUCT, TypedefedStruct /> );
 	static_assert( same_type</ STUPID_STRUCT_NAMING, StupidStuctNaming /> );
-	static_assert( same_type</ UNION_ALIGN_1, UnionAlign1 /> );
-	static_assert( same_type</ SEQUENTIAL_ENUM, SequentialEnum /> );
-	static_assert( same_type</ NON_SEQUENTIAL_ENUM, NonSequentialEnum /> );
+	static_assert( same_type</ NUMBERS_ENUM, NumbersEnum /> );
 	static_assert( same_type</ TYPEDEF_FOR_ENUM_ABC, TypedefForEnumABC /> );
-	static_assert( same_type</ REGULAR_STRUCT_COPY, REGULAR_STRUCT /> );
-	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT___, TripleUnderscoredStruct___ /> );
+	static_assert( same_type</ REGULAR_STRUCT_COPY, TYPEDEFED_STRUCT /> );
+	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT___, TripleUnderscoredStructTypedef___ /> );
 	static_assert( same_type</ n64_INT_FROM_C__, n64_int_from_c__ /> );
 	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT, TRIPLE_UNDERSCORED_STRUCT___ /> );
 	static_assert( same_type</ CPP_CHAR8_COPY, CPP_CHAR8 /> );

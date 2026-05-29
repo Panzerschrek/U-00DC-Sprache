@@ -403,11 +403,11 @@ struct _UnderscoredStruct
 	int x;
 };
 
-struct ___TripleUnderscoredStruct
+typedef struct ___TripleUnderscoredStruct
 {
 	float y;
 	char z;
-};
+} ___TripleUnderscoredStructTypedef;
 
 // Should proper handle identifiers with underscore prefix followed by number.
 typedef unsigned long long int __64_int_from_c;
@@ -429,15 +429,12 @@ typedef unsigned long long int __64_int_from_c;
 // Should translate define - alias for a type name.
 #define CPP_CHAR8 CPP_char8
 #define ARRAY_TYPE15 ArrayType15
-#define REGULAR_STRUCT RegularStruct
 #define TYPEDEFED_STRUCT TypedefedStruct
 #define STUPID_STRUCT_NAMING StupidStuctNaming
-#define UNION_ALIGN_1 UnionAlign1
-#define SEQUENTIAL_ENUM SequentialEnum
-#define NON_SEQUENTIAL_ENUM NonSequentialEnum
+#define NUMBERS_ENUM NumbersEnum
 #define TYPEDEF_FOR_ENUM_ABC TypedefForEnumABC
-#define REGULAR_STRUCT_COPY REGULAR_STRUCT
-#define ___TRIPLE_UNDERSCORED_STRUCT ___TripleUnderscoredStruct
+#define REGULAR_STRUCT_COPY TYPEDEFED_STRUCT
+#define ___TRIPLE_UNDERSCORED_STRUCT ___TripleUnderscoredStructTypedef
 #define __64_INT_FROM_C __64_int_from_c
 #define TRIPLE_UNDERSCORED_STRUCT ___TRIPLE_UNDERSCORED_STRUCT
 #define CPP_CHAR8_COPY ( CPP_CHAR8 )
