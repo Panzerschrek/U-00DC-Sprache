@@ -42,6 +42,20 @@ void DuplicatedProto( int xx );
 
 extern int ExternallyDeclaredFunction( const char* s );
 
+// All these functions SHOULD NOT be translated, since it's impossible without renaming them.
+void yield();
+void i1024();
+void zero_init();
+void struct_();
+void union_();
+void enum_();
+void scoped_enum_();
+void anon_enum();
+void anon_field_();
+void _single_underscored();
+void __double_underscored();
+void exercitU__();
+
 typedef char CPP_char8;
 typedef   signed char  CPP_i8;
 typedef unsigned char  CPP_u8;
