@@ -46,11 +46,11 @@ using NamespaceItem=
 		NamespaceItemEnumElement,
 		const clang::VarDecl* >;
 
+// Use ordered map for stable deterministic order.
 using ItemsMap= std::map<std::string, NamespaceItem>;
 
 struct NamespaceItemNamespace
 {
-	// Use ordered map for stable deterministic order.
 	ItemsMap items;
 };
 
@@ -83,12 +83,12 @@ std::string TranslateIdentifier( const llvm::StringRef identifier )
 
 	const auto& c_coded_name_postfix= "U__";
 
-	// Add single trailing underscope for keywords.
+	// Add single trailing underscope for Ü keywords.
 	if( IsKeyword( identifier ) )
 		return ( identifier + "_" ).str();
 
 	size_t num_leading_underscores= 0;
-	while( num_leading_underscores < identifier.size() && identifier[num_leading_underscores] == '_' )
+	while( num_leading_underscores < identifier.size() && identifier[ num_leading_underscores ] == '_' )
 		++num_leading_underscores;
 
 	if(
@@ -109,8 +109,10 @@ std::string TranslateIdentifier( const llvm::StringRef identifier )
 		identifier.endswith( c_coded_name_postfix ) )
 	{
 		std::string name_coded;
+
 		if( num_leading_underscores == identifier.size() )
 		{
+			// For identifiers having noting than underscores add leading "u".
 			name_coded+= "u";
 			name_coded+= std::to_string( num_leading_underscores );
 		}
@@ -120,23 +122,26 @@ std::string TranslateIdentifier( const llvm::StringRef identifier )
 				identifier[ num_leading_underscores ] >= '0' && identifier[ num_leading_underscores ] <= '9';
 
 			if( first_non_underscore_char_is_digit )
-				name_coded+= "n";
+				name_coded+= "n"; // Add leading "n" to avoid starting an identifier with digit.
 
+			// Code the number of leading underscores.
 			name_coded+= identifier.substr( num_leading_underscores );
 			name_coded+= "_";
 
 			if( first_non_underscore_char_is_digit )
-				name_coded+= "n";
+				name_coded+= "n"; // Indicate that leading "n" was added.
 
 			name_coded+= std::to_string( num_leading_underscores );
 
 		}
 
+		// Add a postfix for all coded names.
 		name_coded+= c_coded_name_postfix;
 
 		return name_coded;
 	}
 
+	// Return idenitifier as is. It happens for the majority of cases.
 	return identifier.str();
 }
 
