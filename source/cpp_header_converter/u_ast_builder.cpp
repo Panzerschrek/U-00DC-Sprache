@@ -104,6 +104,7 @@ std::string TranslateIdentifier( const llvm::StringRef identifier )
 const std::string g_struct_kind_tag= "struct_";
 const std::string g_union_kind_tag= "union_";
 const std::string g_enum_kind_tag= "enum_";
+const std::string g_scoped_enum_namespace_kind_tag= "scoped_enum_";
 
 using ItemName= std::vector<std::string>;
 
@@ -388,11 +389,27 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 		// Insert if has no entry, replace if is complete definition.
 		if( items_map.count( name ) == 0 || enum_decl->isComplete() )
-			items_map.insert_or_assign( std::move(name), enum_decl );
+			items_map.insert_or_assign( name, enum_decl );
 
 		if( enum_decl->isComplete() )
 		{
-			if( !enum_decl->isScoped() )
+			if( enum_decl->isScoped() )
+			{
+				// Create a namespace for elements of a scoped enum within "scoped_enum_" namespace.
+				// Doing so we avoid possible name conflicts and preserve enum elements in single place.
+
+				ItemsMap& scoped_enum_items_map=
+					std::get< NamespaceItemNamespace>( root_namespace_.items[ g_scoped_enum_namespace_kind_tag ] ).items;
+
+				ItemsMap& scoped_enum_members_map=
+					std::get< NamespaceItemNamespace>( scoped_enum_items_map[ name ] ).items;
+
+				for( const clang::EnumConstantDecl* const enumerator : enum_decl->enumerators() )
+					scoped_enum_members_map.emplace(
+						TranslateIdentifier( enumerator->getName() ),
+						NamespaceItemEnumElement{ enum_decl->getTypeForDecl(), enumerator } );
+			}
+			else
 			{
 				for( const clang::EnumConstantDecl* const enumerator : enum_decl->enumerators() )
 					root_namespace_.items.emplace(
@@ -1143,32 +1160,6 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 
 		out_items.Append( std::move(type_alias) );
 	}
-
-	/*
-	if( enum_declaration.isScoped() )
-	{
-		std::string namespace_name( name );
-		namespace_name+= "_";
-
-		Synt::Namespace namespace_( g_dummy_src_loc );
-		namespace_.name= std::move( namespace_name );
-
-		{
-			Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
-			variables_declaration.type= StringToTypeName( name );
-
-			for( const clang::EnumConstantDecl* const enumerator : enum_declaration.enumerators() )
-				variables_declaration.variables.push_back( TranslateEnumElement( *enumerator, enumerator->getName().str() ) );
-
-			Synt::ProgramElementsList::Builder builder;
-			builder.Append( std::move(variables_declaration) );
-
-			namespace_.elements= builder.Build();
-		}
-
-		out_items.Append( std::move(namespace_) );
-	}
-	*/
 }
 
 template<typename ListBuilder>

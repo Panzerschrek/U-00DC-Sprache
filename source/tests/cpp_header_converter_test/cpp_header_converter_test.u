@@ -30,25 +30,25 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( OldStyle1 == enum_::CppOldStyleEnum(1) );
 	static_assert( OldStyle2 == enum_::CppOldStyleEnum(2) );
 
-	static_assert( same_type</enum_::CppEnumClass, i32/> | same_type</CppEnumClass, u32/> );
-	static_assert( CppEnumClass_::S == enum_::CppEnumClass(0) );
-	static_assert( CppEnumClass_::Z == enum_::CppEnumClass(1) );
-	static_assert( CppEnumClass_::T == enum_::CppEnumClass(2) );
-	static_assert( CppEnumClass_::L == enum_::CppEnumClass(3) );
-	static_assert( CppEnumClass_::J == enum_::CppEnumClass(4) );
-	static_assert( CppEnumClass_::I == enum_::CppEnumClass(5) );
-	static_assert( CppEnumClass_::O == enum_::CppEnumClass(6) );
+	static_assert( same_type</enum_::CppEnumClass, i32/> | same_type</enum_::CppEnumClass, u32/> );
+	static_assert( scoped_enum_::CppEnumClass::S == enum_::CppEnumClass(0) );
+	static_assert( scoped_enum_::CppEnumClass::Z == enum_::CppEnumClass(1) );
+	static_assert( scoped_enum_::CppEnumClass::T == enum_::CppEnumClass(2) );
+	static_assert( scoped_enum_::CppEnumClass::L == enum_::CppEnumClass(3) );
+	static_assert( scoped_enum_::CppEnumClass::J == enum_::CppEnumClass(4) );
+	static_assert( scoped_enum_::CppEnumClass::I == enum_::CppEnumClass(5) );
+	static_assert( scoped_enum_::CppEnumClass::O == enum_::CppEnumClass(6) );
 
 	static_assert( same_type</enum_::CppUnsequentialEnumClass, i32/> | same_type</enum_::CppUnsequentialEnumClass, u32/> );
-	static_assert( CppUnsequentialEnumClass_::One == enum_::CppUnsequentialEnumClass(1) );
-	static_assert( CppUnsequentialEnumClass_::TwentyTwo == enum_::CppUnsequentialEnumClass(22) );
-	static_assert( CppUnsequentialEnumClass_::Eight == enum_::CppUnsequentialEnumClass(8) );
+	static_assert( scoped_enum_::CppUnsequentialEnumClass::One == enum_::CppUnsequentialEnumClass(1) );
+	static_assert( scoped_enum_::CppUnsequentialEnumClass::TwentyTwo == enum_::CppUnsequentialEnumClass(22) );
+	static_assert( scoped_enum_::CppUnsequentialEnumClass::Eight == enum_::CppUnsequentialEnumClass(8) );
 
 	static_assert( same_type</enum_::CppEnumWithUnderlyingType, u8/> );
-	static_assert( CppEnumWithUnderlyingType_::UC0 == 0u8 );
-	static_assert( CppEnumWithUnderlyingType_::UC1 == 1u8 );
-	static_assert( CppEnumWithUnderlyingType_::UC2 == 2u8 );
-	static_assert( CppEnumWithUnderlyingType_::UC45 == 45u8 );
+	static_assert( scoped_enum_::CppEnumWithUnderlyingType::UC0 == 0u8 );
+	static_assert( scoped_enum_::CppEnumWithUnderlyingType::UC1 == 1u8 );
+	static_assert( scoped_enum_::CppEnumWithUnderlyingType::UC2 == 2u8 );
+	static_assert( scoped_enum_::CppEnumWithUnderlyingType::UC45 == 45u8 );
 
 	{
 		static_assert( typeinfo</struct_::Vec2f/>.size_of == typeinfo</f32/>.size_of * 2s );
@@ -79,7 +79,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( g_group_constant2 == 2633676u );
 	static_assert( g_group_constant3 == u32(g_some_int_contant) * 5u );
 	static_assert( g_float_constant == -17.5f );
-	static_assert( g_enum_constant == CppEnumClass_::I );
+	static_assert( g_enum_constant == scoped_enum_::CppEnumClass::I );
 	static_assert( g_constant_with_constexpr_call_initializer == '7' );
 	static_assert( g_constant_with_constructor_initializer == 3.1415926535 );
 	static_assert( g_constant_with_universal_initializer == -612 );
