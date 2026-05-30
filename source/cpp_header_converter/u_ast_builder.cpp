@@ -70,10 +70,10 @@ struct NamespaceItemEnumElement
 	const clang::EnumConstantDecl* enum_constant_decl;
 };
 
-const std::string g_struct_kind_tag= "struct_";
-const std::string g_union_kind_tag= "union_";
-const std::string g_enum_kind_tag= "enum_";
-const std::string g_scoped_enum_namespace_kind_tag= "scoped_enum_";
+const auto& g_struct_kind_tag= "struct_";
+const auto& g_union_kind_tag= "union_";
+const auto& g_enum_kind_tag= "enum_";
+const auto& g_scoped_enum_namespace_kind_tag= "scoped_enum_";
 
 const auto& g_anon_record_prefix= "anon_record";
 const auto& g_anon_enum_prefix= "anon_enum";
