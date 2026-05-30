@@ -362,12 +362,10 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	{
 		if( func_decl->isFirstDecl() || func_decl->getBuiltinID() != 0 )
 		{
-			if( func_decl->getIdentifier() != nullptr )
+			if( func_decl->getIdentifier() != nullptr && !( func_decl->hasBody() && func_decl->isInlineSpecified() ) )
 			{
 				std::string name= func_decl->getName().str();
 
-				if( !name.empty() && name.back() == '_' )
-					std::cout << "Function with trailing underscore " << name << std::endl;
 				if( !name.empty() && !IsKeyword( name ) && name.front() != '_' )
 					root_namespace_.items.emplace( std::move( name ), NamespaceItem( func_decl ) );
 			}
