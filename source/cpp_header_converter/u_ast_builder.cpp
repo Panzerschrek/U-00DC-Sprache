@@ -149,7 +149,8 @@ std::string TranslateIdentifier( const llvm::StringRef identifier )
 	return identifier.str();
 }
 
-using ItemName= std::vector<std::string>;
+// Name including all parent namespaces/structs.
+using ItemFullName= std::vector<std::string>;
 
 Synt::ComplexName GetItemNameSyntaxElementImpl( Synt::ComplexName base, const llvm::ArrayRef<std::string> components )
 {
@@ -163,7 +164,7 @@ Synt::ComplexName GetItemNameSyntaxElementImpl( Synt::ComplexName base, const ll
 	return GetItemNameSyntaxElementImpl( std::move(names_scope_name_fetch), components.slice(1) );
 }
 
-Synt::ComplexName GetItemNameSyntaxElement( const ItemName& item_name )
+Synt::ComplexName GetItemNameSyntaxElement( const ItemFullName& item_name )
 {
 	Synt::RootNamespaceNameLookup root_namespace_name_lookup( g_dummy_src_loc );
 	root_namespace_name_lookup.name= item_name.front();
@@ -228,7 +229,7 @@ public:
 	virtual void HandleTranslationUnit( clang::ASTContext& ast_context ) override;
 
 private:
-	using TypeNamesMap= std::unordered_map< const clang::Type*, ItemName >;
+	using TypeNamesMap= std::unordered_map< const clang::Type*, ItemFullName >;
 
 private:
 	void ProcessDecl( const clang::Decl& decl );
@@ -240,14 +241,14 @@ private:
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionType& in_type, const TypeNamesMap& type_names_map );
 
-	void BuildTypeNamesMap( TypeNamesMap& map, ItemName& prefix, const NamespaceItem& item );
-	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemNamespace& item );
-	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::FunctionDecl* item );
-	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemRecord& item );
-	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::TypedefNameDecl* item );
-	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::EnumDecl* item );
-	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemEnumElement& item );
-	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::VarDecl* item );
+	void BuildTypeNamesMap( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItem& item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemNamespace& item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::FunctionDecl* item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemRecord& item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::TypedefNameDecl* item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::EnumDecl* item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemEnumElement& item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::VarDecl* item );
 
 	void CollectSubrecords( NamespaceItem& item );
 
@@ -390,7 +391,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	TypeNamesMap type_names_map;
 
 	{
-		ItemName prefix;
+		ItemFullName prefix;
 		BuildTypeNamesMapImpl( type_names_map, prefix, root_namespace_ );
 	}
 
@@ -832,12 +833,12 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionT
 	return function_type;
 }
 
-void CppAstConsumer::BuildTypeNamesMap( TypeNamesMap& map, ItemName& prefix, const NamespaceItem& item )
+void CppAstConsumer::BuildTypeNamesMap( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItem& item )
 {
 	std::visit( [&]( const auto& t ) { BuildTypeNamesMapImpl( map, prefix, t ); }, item );
 }
 
-void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemNamespace& item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemNamespace& item )
 {
 	for( const auto& pair : item.items )
 	{
@@ -847,14 +848,14 @@ void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix,
 	}
 }
 
-void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::FunctionDecl* const item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::FunctionDecl* const item )
 {
 	(void)map;
 	(void)prefix;
 	(void)item;
 }
 
-void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemRecord& item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemRecord& item )
 {
 	map.emplace( item.record_decl->getTypeForDecl(), prefix );
 
@@ -866,24 +867,24 @@ void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix,
 	}
 }
 
-void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::TypedefNameDecl* const item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::TypedefNameDecl* const item )
 {
 	map.emplace( ast_context_.getTypedefType( item ).getTypePtr(), prefix );
 }
 
-void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::EnumDecl* const item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::EnumDecl* const item )
 {
 	map.emplace( item->getTypeForDecl(), prefix );
 }
 
-void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemEnumElement& item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemEnumElement& item )
 {
 	(void)map;
 	(void)prefix;
 	(void)item;
 }
 
-void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::VarDecl* const item )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::VarDecl* const item )
 {
 	(void)map;
 	(void)prefix;
