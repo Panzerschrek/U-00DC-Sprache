@@ -572,7 +572,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		// Normally we should create entries for records in types map.
 		// Here we process some special types.
 
-		if(const auto decl= record_type->getDecl() )
+		if( const auto decl= record_type->getDecl() )
 			if( decl->getIdentifier() != nullptr && decl->getName() == "__va_list_tag" )
 				return CreateFundamentalTypeName( Keyword( Keywords::byte8_ ) );
 	}
@@ -935,13 +935,13 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 {
 	// Emit namespace elements in their definition order.
 	// If can't do this - sort by name.
-	// Using defenition order increases readability.
+	// Using definition order increases readability.
 	// Sorting names with no location is important to produce deterministic result and avoid emitting items in hash-map order.
 
 	struct ItemToSort
 	{
 		clang::SourceLocation location;
-		llvm::StringRef name;
+		llvm::StringRef name; // Points to the entry in the items map given to this function.
 	};
 
 	std::vector<ItemToSort> items_to_sort_by_location;
