@@ -330,7 +330,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		static_assert( typeinfo</struct_::StructOfEmptyStructs/>.size_of == 5s * typeinfo</struct_::EmptyStruct/>.size_of );
 	}
 
-	// Leading underscore should be moved to identifier end.
+	// Names with leading uderscores should be renamed.
 	{
 		var struct_::UnderscoredStruct_1U__ underscored_struct{ .x= 0 };
 		var struct_::TripleUnderscoredStruct_3U__ triple_underscored_struct{ .y= 1.0f, .z= 'Y' };
@@ -369,7 +369,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( same_type</ STUPID_STRUCT_NAMING, StupidStuctNaming /> );
 	static_assert( same_type</ NUMBERS_ENUM, NumbersEnum /> );
 	static_assert( same_type</ TYPEDEF_FOR_ENUM_ABC, TypedefForEnumABC /> );
-	static_assert( same_type</ REGULAR_STRUCT_COPY, TYPEDEFED_STRUCT /> );
+	static_assert( same_type</ TYPEDEFED_STRUCT_COPY, TYPEDEFED_STRUCT /> );
 	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT_3U__, TripleUnderscoredStructTypedef_3U__ /> );
 	static_assert( same_type</ n64_INT_FROM_C_n2U__, n64_int_from_c_n2U__ /> );
 	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT, TRIPLE_UNDERSCORED_STRUCT_3U__ /> );

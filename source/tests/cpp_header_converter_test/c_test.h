@@ -457,7 +457,7 @@ typedef unsigned long long int __64_int_from_c;
 #define STUPID_STRUCT_NAMING StupidStuctNaming
 #define NUMBERS_ENUM NumbersEnum
 #define TYPEDEF_FOR_ENUM_ABC TypedefForEnumABC
-#define REGULAR_STRUCT_COPY TYPEDEFED_STRUCT
+#define TYPEDEFED_STRUCT_COPY TYPEDEFED_STRUCT
 #define ___TRIPLE_UNDERSCORED_STRUCT ___TripleUnderscoredStructTypedef
 #define __64_INT_FROM_C __64_int_from_c
 #define TRIPLE_UNDERSCORED_STRUCT ___TRIPLE_UNDERSCORED_STRUCT
