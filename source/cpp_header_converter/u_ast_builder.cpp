@@ -248,6 +248,9 @@ private:
 	void CollectSubrecords( NamespaceItem& item );
 
 	template<typename ListBuilder>
+	void EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const ItemsMap& items );
+
+	template<typename ListBuilder>
 	void EmitItem( ListBuilder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItem& item );
 
 	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item );
@@ -359,8 +362,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	Synt::ProgramElementsList::Builder root_program_elements;
 
-	for( const auto& pair : root_namespace_.items )
-		EmitItem( root_program_elements, type_names_map, pair.first, pair.second );
+	EmitItemsSorted( root_program_elements, type_names_map, root_namespace_.items );
 
 	EmitDefinitionsForMacros( root_program_elements );
 
@@ -889,6 +891,55 @@ void CppAstConsumer::CollectSubrecords( NamespaceItem& item )
 }
 
 template<typename ListBuilder>
+void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const ItemsMap& items )
+{
+	// Emit namespace elements in their definition order (if can).
+	struct ItemToSort
+	{
+		clang::SourceLocation location;
+		std::string name;
+	};
+
+	std::vector<ItemToSort> items_to_sort_by_location;
+	std::vector<std::string> items_to_emit_without_sorting;
+
+	for( const auto& pair : items )
+	{
+		clang::SourceLocation location;
+
+		if( const auto function_decl_ptr = std::get_if< const clang::FunctionDecl* >( &pair.second ) )
+			location= (*function_decl_ptr)->getLocation();
+		else if( const auto typedef_ptr = std::get_if< const clang::TypedefNameDecl* >( &pair.second ) )
+			location= (*typedef_ptr)->getLocation();
+		else if( const auto enum_ptr = std::get_if< const clang::EnumDecl* >( &pair.second ) )
+			location= (*enum_ptr)->getLocation();
+		else if( const auto enum_element = std::get_if< NamespaceItemEnumElement >( &pair.second ) )
+			location= enum_element->enum_constant_decl->getLocation();
+		else if( const auto var_ptr = std::get_if< const clang::VarDecl* >( &pair.second ) )
+			location= (*var_ptr)->getLocation();
+
+		if( location.isValid() )
+			items_to_sort_by_location.push_back( ItemToSort{ location, pair.first } );
+		else
+			items_to_emit_without_sorting.push_back( pair.first );
+	}
+
+	std::sort(
+		items_to_sort_by_location.begin(),
+		items_to_sort_by_location.end(),
+		[&]( const ItemToSort& l, const ItemToSort& r )
+		{
+			return source_manager_.isBeforeInTranslationUnit( l.location, r.location );
+		} );
+
+	for( const ItemToSort& item : items_to_sort_by_location )
+		EmitItem( out_items, type_names_map, item.name, items.find( item.name )->second );
+
+	for( const std::string& name : items_to_emit_without_sorting )
+		EmitItem( out_items, type_names_map, name, items.find( name )->second );
+}
+
+template<typename ListBuilder>
 void CppAstConsumer::EmitItem( ListBuilder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItem& item )
 {
 	std::visit( [&]( const auto& t ) { EmitItemImpl( out_items, type_names_map, name, t ); }, item );
@@ -898,10 +949,7 @@ void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items
 {
 	Synt::ProgramElementsList::Builder namespace_items_builder;
 
-	for( const auto& pair : item.items )
-	{
-		EmitItem( namespace_items_builder, type_names_map, pair.first, pair.second );
-	}
+	EmitItemsSorted( namespace_items_builder, type_names_map, item.items );
 
 	Synt::Namespace namespace_( g_dummy_src_loc );
 	namespace_.name= name;
@@ -916,8 +964,7 @@ void CppAstConsumer::EmitItemImpl( Synt::ClassElementsList::Builder& out_items, 
 
 	Synt::ClassElementsList::Builder class_items_builder;
 
-	for( const auto& pair : item.items )
-		EmitItem( class_items_builder, type_names_map, pair.first, pair.second );
+	EmitItemsSorted( class_items_builder, type_names_map, item.items );
 
 	Synt::Class class_( g_dummy_src_loc );
 	class_.name= name;
@@ -1094,8 +1141,7 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 
 				// Assume we have at least one field (which is necessary for all structs in C).
 
-				for( const auto& pair : item.namespace_.items )
-					EmitItem( class_elements, type_names_map, pair.first, pair.second );
+				EmitItemsSorted( class_elements, type_names_map, item.namespace_.items );
 
 				class_.elements= class_elements.Build();
 			}
@@ -1128,8 +1174,7 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 			Synt::ClassElementsList::Builder class_elements;
 			class_elements.Append( GetDeletedDefaultConstructor() );
 
-			for( const auto& pair : item.namespace_.items )
-				EmitItem( class_elements, type_names_map, pair.first, pair.second );
+			EmitItemsSorted( class_elements, type_names_map, item.namespace_.items );
 
 			class_.elements= class_elements.Build();
 		}
@@ -1316,8 +1361,7 @@ Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
 	Synt::ClassElementsList::Builder class_elements;
 	class_elements.Append( std::move(field) );
 
-	for( const auto& pair : subitems )
-		EmitItem( class_elements, type_names_map, pair.first, pair.second );
+	EmitItemsSorted( class_elements, type_names_map, subitems );
 
 	return class_elements.Build();
 }
