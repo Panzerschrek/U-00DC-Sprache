@@ -111,6 +111,14 @@ public:
 	int* some_field;
 };
 
+class ClassWithSubtypeDeclarationsInside
+{
+public:
+	struct Point{ float x; float y; };
+
+	// TODO - support enums.
+};
+
 constexpr int g_some_int_contant= 37;
 
 constexpr unsigned int g_group_constant0= 11, g_group_constant1= 0xFF, g_group_constant2= 2633676, g_group_constant3= g_some_int_contant * 5;

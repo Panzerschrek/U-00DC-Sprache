@@ -104,6 +104,11 @@ fn nomangle main() call_conv( "C" ) : i32
 		static_assert( typeinfo</struct_::CppDerived/>.size_of == typeinfo</ $(byte8) />.size_of * 2s );
 	}
 
+	{
+		// A structure defined within a C++ class should be properly translated.
+		var struct_::ClassWithSubtypeDeclarationsInside::struct_::Point point{ .x= 1.0f, .y= 2.0f };
+	}
+
 	static_assert( g_some_int_contant == 37 );
 	static_assert( g_group_constant0 == 11u );
 	static_assert( g_group_constant1 == 0xFFu );
