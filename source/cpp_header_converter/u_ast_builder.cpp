@@ -174,10 +174,13 @@ Synt::ComplexName GetItemNameSyntaxElement( const ItemFullName& item_name )
 			std::move( root_namespace_name_lookup ), llvm::ArrayRef<std::string>( item_name ).slice(1) );
 }
 
-Synt::TypeName StringToTypeName( const std::string_view s )
+Synt::TypeName CreateFundamentalTypeName( const std::string_view name )
 {
+	// Use simple name lookup (not root namespace name lookup) for simplicity.
+	// Redefining fundamental type names isn't possible, so they are always acccessible.
+
 	Synt::NameLookup name_lookup( g_dummy_src_loc );
-	name_lookup.name= s;
+	name_lookup.name= name;
 	return std::move(name_lookup);
 }
 
@@ -560,7 +563,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		return Synt::ComplexNameToTypeName( GetItemNameSyntaxElement( named_type_it->second ) );
 
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
-		return StringToTypeName( GetUFundamentalType( *built_in_type ) );
+		return CreateFundamentalTypeName( GetUFundamentalType( *built_in_type ) );
 	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
 	{
 		// Normally we should create entries for typedefs in types map.
@@ -574,7 +577,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 		if(const auto decl= record_type->getDecl() )
 			if( decl->getIdentifier() != nullptr && decl->getName() == "__va_list_tag" )
-				return StringToTypeName( Keyword( Keywords::byte8_ ) );
+				return CreateFundamentalTypeName( Keyword( Keywords::byte8_ ) );
 	}
 	else if( const auto atomic_type= llvm::dyn_cast<clang::AtomicType>(&in_type) )
 	{
@@ -683,7 +686,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		// This is function type and not function pointer type.
 		// This is typical in typedefs.
 		// We can't transalte such types, so, use void stub.
-		return StringToTypeName( Keyword( Keywords::void_ ) );
+		return CreateFundamentalTypeName( Keyword( Keywords::void_ ) );
 	}
 	else if( const auto pointer_type= llvm::dyn_cast<clang::PointerType>(&in_type) )
 	{
@@ -716,7 +719,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 	}
 
 	// Fallback for some unlikely case.
-	return StringToTypeName( Keyword( Keywords::void_ ) );
+	return CreateFundamentalTypeName( Keyword( Keywords::void_ ) );
 }
 
 std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
@@ -1319,7 +1322,7 @@ void CppAstConsumer::EmitItemImpl(
 				underlying_type_name= Keyword( Keywords::i32_ );
 		}
 
-		type_alias.value= StringToTypeName( underlying_type_name );
+		type_alias.value= CreateFundamentalTypeName( underlying_type_name );
 
 		out_items.Append( std::move(type_alias) );
 	}
@@ -1463,7 +1466,7 @@ Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
 	};
 
 	auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
-	array_type->element_type= StringToTypeName( byte_name );
+	array_type->element_type= CreateFundamentalTypeName( byte_name );
 
 	Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
 	numeric_constant.num.value= num_elements;
