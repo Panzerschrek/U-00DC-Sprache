@@ -526,6 +526,21 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 		return std::move(raw_pointer_type);
 	}
+	else if( const auto vector_type= llvm::dyn_cast<clang::VectorType>( &in_type ) )
+	{
+		// For now translate vector types as arrays.
+		// It's not fully correct, since vector types may use custom alignment larger than element aligment.
+		// But at least result size matches, which is important if such type is used for a struct field.
+
+		auto out_array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
+		out_array_type->element_type= TranslateType( *vector_type->getElementType().getTypePtr(), type_names_map );
+
+		Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
+		numeric_constant.num.value= vector_type->getNumElements();
+		out_array_type->size= std::move(numeric_constant);
+
+		return std::move(out_array_type);
+	}
 	else if( const auto decayed_type= llvm::dyn_cast<clang::DecayedType>(&in_type) )
 	{
 		// Decayed type - implicit array to pointer conversion.
