@@ -72,31 +72,53 @@ std::string TranslateIdentifier( const llvm::StringRef identifier )
 {
 	U_ASSERT( !identifier.empty() );
 
-	size_t num_underscores= 0;
-	while( num_underscores < identifier.size() && identifier[num_underscores] == '_' )
-		++num_underscores;
+	const auto& c_coded_name_postfix= "U__";
 
-	// In Ü identifier can not start with "_", so, move all leading underscores to the end.
-	if( num_underscores > 0 )
+	// Add single trailing underscope for keywords.
+	if( IsKeyword( identifier ) )
+		return ( identifier + "_" ).str();
+
+	size_t num_leading_underscores= 0;
+	while( num_leading_underscores < identifier.size() && identifier[num_leading_underscores] == '_' )
+		++num_leading_underscores;
+
+	if(
+		// Code identifiers with leading underscores. Ü doesn't support them.
+		num_leading_underscores > 0 ||
+		// If an identifier is an Ü keyword with trailing underscore, code it,
+		// since it may conflict with coding of identifiers which are Ü keywords.
+		( identifier.back() == '_' && IsKeyword( identifier.substr( 0, identifier.size() - 1 ) ) ) ||
+		// Code identifiers having coded name prefix.
+		identifier.endswith( c_coded_name_postfix ) )
 	{
-		std::string res;
-		res.resize( identifier.size() );
-		std::memcpy( res.data(), identifier.data() + num_underscores, identifier.size() - num_underscores );
-		std::memset( res.data() + identifier.size() - num_underscores, '_', num_underscores );
-
-		if( res.front() >= '0' && res.front() <= '9' )
+		std::string name_coded;
+		if( num_leading_underscores == identifier.size() )
 		{
-			// After dropping underscores it may happen that identifier starts with numeric symbol.
-			// In such case we need to prefix it with some other valid identifier start char.
-			res.insert( res.begin(), 'n' );
+			name_coded+= "u";
+			name_coded+= std::to_string( num_leading_underscores );
+		}
+		else
+		{
+			const bool first_non_underscore_char_is_digit=
+				identifier[ num_leading_underscores ] >= '0' && identifier[ num_leading_underscores ] <= '9';
+
+			if( first_non_underscore_char_is_digit )
+				name_coded+= "n";
+
+			name_coded+= identifier.substr( num_leading_underscores );
+			name_coded+= "_";
+
+			if( first_non_underscore_char_is_digit )
+				name_coded+= "n";
+
+			name_coded+= std::to_string( num_leading_underscores );
+
 		}
 
-		return res;
-	}
+		name_coded+= c_coded_name_postfix;
 
-	// Avoid using keywords as names.
-	if( IsKeyword( identifier ) )
-		return (identifier + "_").str();
+		return name_coded;
+	}
 
 	return identifier.str();
 }
