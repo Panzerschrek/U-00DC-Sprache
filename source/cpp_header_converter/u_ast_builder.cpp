@@ -252,28 +252,62 @@ private:
 	void EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const ItemsMap& items );
 
 	template<typename ListBuilder>
-	void EmitItem( ListBuilder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItem& item );
+	void EmitItem(
+		ListBuilder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItem& item );
 
-	void EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item );
-	void EmitItemImpl( Synt::ClassElementsList::Builder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item );
+	void EmitItemImpl(
+		Synt::ProgramElementsList::Builder& out_items,
+		const TypeNamesMap& type_names_map,
+		std::string_view name,
+		const NamespaceItemNamespace& item );
 
-	template<typename ListBuilder>
-	void EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const clang::FunctionDecl* item );
-
-	template<typename ListBuilder>
-	void EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemRecord& item );
-
-	template<typename ListBuilder>
-	void EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const clang::TypedefNameDecl* item );
-
-	template<typename ListBuilder>
-	void EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const clang::EnumDecl* item );
+	void EmitItemImpl(
+		Synt::ClassElementsList::Builder& out_items,
+		const TypeNamesMap& type_names_map,
+		std::string_view name,
+		const NamespaceItemNamespace& item );
 
 	template<typename ListBuilder>
-	void EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemEnumElement& item );
+	void EmitItemImpl(
+		ListBuilder& out_items,
+		const TypeNamesMap& type_names_map,
+		std::string_view name,
+		const clang::FunctionDecl* item );
 
 	template<typename ListBuilder>
-	void EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const clang::VarDecl* item );
+	void EmitItemImpl(
+		ListBuilder& out_items,
+		const TypeNamesMap& type_names_map,
+		std::string_view name,
+		const NamespaceItemRecord& item );
+
+	template<typename ListBuilder>
+	void EmitItemImpl(
+		ListBuilder& out_items,
+		const TypeNamesMap& type_names_map,
+		std::string_view name,
+		const clang::TypedefNameDecl* item );
+
+	template<typename ListBuilder>
+	void EmitItemImpl(
+		ListBuilder& out_items,
+		const TypeNamesMap& type_names_map,
+		std::string_view name,
+		const clang::EnumDecl* item );
+
+	template<typename ListBuilder>
+	void EmitItemImpl(
+		ListBuilder& out_items,
+		const TypeNamesMap& type_names_map,
+		std::string_view name,
+		const NamespaceItemEnumElement& item );
+
+	template<typename ListBuilder>
+	void EmitItemImpl(
+		ListBuilder& out_items,
+		const TypeNamesMap& type_names_map,
+		std::string_view name,
+		const clang::VarDecl* item );
 
 	Synt::ClassElementsList MakeOpaqueRecordElements(
 		const TypeNamesMap& type_names_map,
@@ -943,12 +977,17 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 }
 
 template<typename ListBuilder>
-void CppAstConsumer::EmitItem( ListBuilder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItem& item )
+void CppAstConsumer::EmitItem(
+	ListBuilder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItem& item )
 {
 	std::visit( [&]( const auto& t ) { EmitItemImpl( out_items, type_names_map, name, t ); }, item );
 }
 
-void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item )
+void CppAstConsumer::EmitItemImpl(
+	Synt::ProgramElementsList::Builder& out_items,
+	const TypeNamesMap& type_names_map,
+	const std::string_view name,
+	const NamespaceItemNamespace& item )
 {
 	Synt::ProgramElementsList::Builder namespace_items_builder;
 
@@ -961,7 +1000,11 @@ void CppAstConsumer::EmitItemImpl( Synt::ProgramElementsList::Builder& out_items
 	out_items.Append( std::move( namespace_ ) );
 }
 
-void CppAstConsumer::EmitItemImpl( Synt::ClassElementsList::Builder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item )
+void CppAstConsumer::EmitItemImpl(
+	Synt::ClassElementsList::Builder& out_items,
+	const TypeNamesMap& type_names_map,
+	const std::string_view name,
+	const NamespaceItemNamespace& item )
 {
 	// Ü has no namespaces in classes. So, create a class instead.
 
@@ -977,7 +1020,11 @@ void CppAstConsumer::EmitItemImpl( Synt::ClassElementsList::Builder& out_items, 
 }
 
 template<typename ListBuilder>
-void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const clang::FunctionDecl* const item )
+void CppAstConsumer::EmitItemImpl(
+	ListBuilder& out_items,
+	const TypeNamesMap& type_names_map,
+	const std::string_view name,
+	const clang::FunctionDecl* const item )
 {
 	const clang::FunctionDecl& function_decl= *item;
 
@@ -1013,7 +1060,11 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 }
 
 template<typename ListBuilder>
-void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItemRecord& item )
+void CppAstConsumer::EmitItemImpl(
+	ListBuilder& out_items,
+	const TypeNamesMap& type_names_map,
+	const std::string_view name,
+	const NamespaceItemRecord& item )
 {
 	const clang::RecordDecl& record_declaration= *item.record_decl;
 
@@ -1187,7 +1238,11 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 }
 
 template<typename ListBuilder>
-void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const clang::TypedefNameDecl* const item )
+void CppAstConsumer::EmitItemImpl(
+	ListBuilder& out_items,
+	const TypeNamesMap& type_names_map,
+	const std::string_view name,
+	const clang::TypedefNameDecl* const item )
 {
 	Synt::TypeAlias type_alias( g_dummy_src_loc );
 	type_alias.name= name;
@@ -1197,7 +1252,11 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 }
 
 template<typename ListBuilder>
-void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const clang::EnumDecl* const item )
+void CppAstConsumer::EmitItemImpl(
+	ListBuilder& out_items,
+	const TypeNamesMap& type_names_map,
+	const std::string_view name,
+	const clang::EnumDecl* const item )
 {
 	(void)type_names_map;
 
@@ -1257,7 +1316,11 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 }
 
 template<typename ListBuilder>
-void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemEnumElement& item )
+void CppAstConsumer::EmitItemImpl(
+	ListBuilder& out_items,
+	const TypeNamesMap& type_names_map,
+	const std::string_view name,
+	const NamespaceItemEnumElement& item )
 {
 	Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
 	variables_declaration.type= TranslateType( *item.enum_type, type_names_map );
@@ -1302,7 +1365,11 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 }
 
 template<typename ListBuilder>
-void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const clang::VarDecl* const item )
+void CppAstConsumer::EmitItemImpl(
+	ListBuilder& out_items,
+	const TypeNamesMap& type_names_map,
+	const std::string_view name,
+	const clang::VarDecl* const item )
 {
 	const clang::VarDecl& variable= *item;
 
