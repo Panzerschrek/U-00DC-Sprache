@@ -1534,7 +1534,7 @@ Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::T
 	{
 		if( const auto array_type= llvm::dyn_cast<clang::ConstantArrayType>( &variable_type ) )
 		{
-			if( array_type->getSize() == value.getArraySize() )
+			if( array_type->getSize() == value.getArrayInitializedElts() )
 			{
 				const clang::Type* element_type= array_type->getElementType().getTypePtr();
 				while(true)
