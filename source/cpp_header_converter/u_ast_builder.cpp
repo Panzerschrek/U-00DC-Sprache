@@ -436,7 +436,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 		}
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
-		root_namespace_.items.insert_or_assign( TranslateIdentifier( type_alias_decl->getName() ), NamespaceItem( type_alias_decl ) );
+		root_namespace_.items.insert_or_assign( TranslateIdentifier( type_alias_decl->getName() ), type_alias_decl );
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
 		if( func_decl->isFirstDecl() || func_decl->getBuiltinID() != 0 )
@@ -446,7 +446,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 				const llvm::StringRef original_name= func_decl->getName();
 
 				if( TranslateIdentifier( original_name ) == original_name )
-					root_namespace_.items.insert_or_assign( original_name, NamespaceItem( func_decl ) );
+					root_namespace_.items.insert_or_assign( original_name, func_decl );
 				else
 				{
 					// If it's impossible to use the original name for a function - ignore it.
@@ -508,7 +508,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	else if( const auto var_decl= llvm::dyn_cast<clang::VarDecl>(&decl) )
 	{
 		if( var_decl->hasInit() && var_decl->hasConstantInitialization() )
-			root_namespace_.items.insert_or_assign( TranslateIdentifier( var_decl->getName() ),  NamespaceItem( var_decl ) );
+			root_namespace_.items.insert_or_assign( TranslateIdentifier( var_decl->getName() ), var_decl );
 	}
 }
 
