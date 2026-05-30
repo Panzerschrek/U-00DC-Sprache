@@ -16,6 +16,7 @@ using CppFunctionPointerWithReferences= const int&(*)( int& a, const float& b );
 using CppDoubleReference= CppStyleTypeAlias&;
 using CppDoubleConstReference= const CppStyleTypeAlias&;
 using CppDoubleRValueReference= double&&;
+using CppNullptrT= decltype(nullptr);
 
 enum CppOldStyleEnum
 {

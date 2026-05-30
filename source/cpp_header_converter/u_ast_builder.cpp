@@ -701,7 +701,8 @@ std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& 
 	case clang::BuiltinType::Char16: return Keyword( Keywords::char16_ );
 	case clang::BuiltinType::Char32: return Keyword( Keywords::char32_ );
 
-	case clang::BuiltinType::NullPtr: return Keyword( Keywords::size_type_ );
+	// nullptr_t is a pointer type.
+	case clang::BuiltinType::NullPtr: return "$(byte8)";
 
 	default:
 		const auto size= ast_context_.getTypeSize( &in_type );
