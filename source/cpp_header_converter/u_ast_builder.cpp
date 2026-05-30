@@ -46,8 +46,9 @@ using NamespaceItem=
 		NamespaceItemEnumElement,
 		const clang::VarDecl* >;
 
-// Use ordered map for stable deterministic order.
-using ItemsMap= std::map<std::string, NamespaceItem>;
+// Use string map for items, since it's pretty fast.
+// WARNING! Don't emit items in order of the map, sort them instead!
+using ItemsMap= llvm::StringMap<NamespaceItem>;
 
 struct NamespaceItemNamespace
 {
@@ -399,7 +400,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 		}
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
-		root_namespace_.items.emplace( TranslateIdentifier( type_alias_decl->getName() ), NamespaceItem( type_alias_decl ) );
+		root_namespace_.items.insert_or_assign( TranslateIdentifier( type_alias_decl->getName() ), NamespaceItem( type_alias_decl ) );
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
 		if( func_decl->isFirstDecl() || func_decl->getBuiltinID() != 0 )
@@ -410,7 +411,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 				std::string name= TranslateIdentifier( original_name );
 
 				if( name == original_name )
-					root_namespace_.items.emplace( std::move( name ), NamespaceItem( func_decl ) );
+					root_namespace_.items.insert_or_assign( std::move( name ), NamespaceItem( func_decl ) );
 				else
 				{
 					// If it's impossible to use the original name for a function - ignore it.
@@ -452,14 +453,14 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 					std::get< NamespaceItemNamespace>( scoped_enum_items_map[ name ] ).items;
 
 				for( const clang::EnumConstantDecl* const enumerator : enum_decl->enumerators() )
-					scoped_enum_members_map.emplace(
+					scoped_enum_members_map.insert_or_assign(
 						TranslateIdentifier( enumerator->getName() ),
 						NamespaceItemEnumElement{ enum_decl->getTypeForDecl(), enumerator } );
 			}
 			else
 			{
 				for( const clang::EnumConstantDecl* const enumerator : enum_decl->enumerators() )
-					root_namespace_.items.emplace(
+					root_namespace_.items.insert_or_assign(
 						TranslateIdentifier( enumerator->getName() ),
 						NamespaceItemEnumElement{ enum_decl->getTypeForDecl(), enumerator } );
 			}
@@ -473,7 +474,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	else if( const auto var_decl= llvm::dyn_cast<clang::VarDecl>(&decl) )
 	{
 		if( var_decl->hasInit() && var_decl->hasConstantInitialization() )
-			root_namespace_.items.emplace( TranslateIdentifier( var_decl->getName() ),  NamespaceItem( var_decl ) );
+			root_namespace_.items.insert_or_assign( TranslateIdentifier( var_decl->getName() ),  NamespaceItem( var_decl ) );
 	}
 }
 
@@ -807,8 +808,8 @@ void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix,
 {
 	for( const auto& pair : item.items )
 	{
-		prefix.push_back( pair.first );
-		BuildTypeNamesMap( map, prefix, pair.second );
+		prefix.push_back( pair.getKey().str() );
+		BuildTypeNamesMap( map, prefix, pair.getValue() );
 		prefix.pop_back();
 	}
 }
@@ -893,15 +894,19 @@ void CppAstConsumer::CollectSubrecords( NamespaceItem& item )
 template<typename ListBuilder>
 void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const ItemsMap& items )
 {
-	// Emit namespace elements in their definition order (if can).
+	// Emit namespace elements in their definition order.
+	// If can't do this - sort by name.
+	// Using defenition order increases readability.
+	// Sorting names with no location is important to produce deterministic result and avoid emitting items in hash-map order.
+
 	struct ItemToSort
 	{
 		clang::SourceLocation location;
-		std::string name;
+		llvm::StringRef name;
 	};
 
 	std::vector<ItemToSort> items_to_sort_by_location;
-	std::vector<std::string> items_to_emit_without_sorting;
+	std::vector<llvm::StringRef> items_to_sort_by_name;
 
 	for( const auto& pair : items )
 	{
@@ -919,9 +924,9 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 			location= (*var_ptr)->getLocation();
 
 		if( location.isValid() )
-			items_to_sort_by_location.push_back( ItemToSort{ location, pair.first } );
+			items_to_sort_by_location.push_back( ItemToSort{ location, pair.getKey() } );
 		else
-			items_to_emit_without_sorting.push_back( pair.first );
+			items_to_sort_by_name.push_back( pair.getKey() );
 	}
 
 	std::sort(
@@ -935,7 +940,9 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 	for( const ItemToSort& item : items_to_sort_by_location )
 		EmitItem( out_items, type_names_map, item.name, items.find( item.name )->second );
 
-	for( const std::string& name : items_to_emit_without_sorting )
+	std::sort( items_to_sort_by_name.begin(), items_to_sort_by_name.end() );
+
+	for( const llvm::StringRef name : items_to_sort_by_name )
 		EmitItem( out_items, type_names_map, name, items.find( name )->second );
 }
 
@@ -1514,20 +1521,20 @@ Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::T
 
 void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builder& out_items )
 {
-	std::unordered_set< std::string > translated_function_names, translated_type_names, translated_variable_names;
+	llvm::StringSet translated_function_names, translated_type_names, translated_variable_names;
 	for( const auto& pair : root_namespace_.items )
 	{
-		if( std::holds_alternative< const clang::FunctionDecl* >( pair.second ) )
-			translated_function_names.insert( pair.first );
+		if( std::holds_alternative< const clang::FunctionDecl* >( pair.getValue() ) )
+			translated_function_names.insert( pair.getKey() );
 		else if(
-			std::holds_alternative< NamespaceItemRecord >( pair.second ) ||
-			std::holds_alternative< const clang::TypedefNameDecl* >( pair.second ) ||
-			std::holds_alternative< const clang::EnumDecl* >( pair.second ) )
-			translated_type_names.insert( pair.first );
+			std::holds_alternative< NamespaceItemRecord >( pair.getValue() ) ||
+			std::holds_alternative< const clang::TypedefNameDecl* >( pair.getValue() ) ||
+			std::holds_alternative< const clang::EnumDecl* >( pair.getValue() ) )
+			translated_type_names.insert( pair.getKey() );
 		else if(
-			std::holds_alternative< NamespaceItemEnumElement >( pair.second ) ||
-			std::holds_alternative< const clang::VarDecl* >( pair.second ))
-			translated_variable_names.insert( pair.first );
+			std::holds_alternative< NamespaceItemEnumElement >( pair.getValue() ) ||
+			std::holds_alternative< const clang::VarDecl* >( pair.getValue() ) )
+			translated_variable_names.insert( pair.getKey() );
 	}
 
 	// Extract all macros and sort them by their location.
