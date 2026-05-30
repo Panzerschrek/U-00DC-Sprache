@@ -419,11 +419,10 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 		{
 			const auto src_name= record_decl->getName();
 
-			std::string name;
-			if( src_name.empty() )
-				name= GetAnonymousItemUniqueName( g_anon_record_prefix, record_decl->getLocation() );
-			else
-				name= TranslateIdentifier( src_name );
+			const std::string name_translated=
+				src_name.empty()
+					? GetAnonymousItemUniqueName( g_anon_record_prefix, record_decl->getLocation() )
+					: TranslateIdentifier( src_name );
 
 			// Tagged names (structs, unions, enums) in C build a separae namespace.
 			// So, put tags into separate Ü namespace.
@@ -432,8 +431,8 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 				std::get< NamespaceItemNamespace>( root_namespace_.items[ record_decl->isUnion() ? g_union_kind_tag : g_struct_kind_tag ] ).items;
 
 			// Insert if has no entry, replace if is complete definition.
-			if( items_map.count( name ) == 0 || record_decl->isCompleteDefinition() )
-				items_map.insert_or_assign( std::move(name), NamespaceItemRecord{ record_decl, NamespaceItemsMap() } );
+			if( items_map.count( name_translated ) == 0 || record_decl->isCompleteDefinition() )
+				items_map.insert_or_assign( name_translated, NamespaceItemRecord{ record_decl, NamespaceItemsMap() } );
 		}
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
@@ -445,10 +444,9 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 			if( func_decl->getIdentifier() != nullptr && !( func_decl->hasBody() && func_decl->isInlineSpecified() ) )
 			{
 				const llvm::StringRef original_name= func_decl->getName();
-				std::string name= TranslateIdentifier( original_name );
 
-				if( name == original_name )
-					root_namespace_.items.insert_or_assign( std::move( name ), NamespaceItem( func_decl ) );
+				if( TranslateIdentifier( original_name ) == original_name )
+					root_namespace_.items.insert_or_assign( original_name, NamespaceItem( func_decl ) );
 				else
 				{
 					// If it's impossible to use the original name for a function - ignore it.
@@ -461,11 +459,10 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	{
 		const auto src_name= enum_decl->getName();
 
-		std::string name;
-		if( src_name.empty() )
-			name= GetAnonymousItemUniqueName( g_anon_enum_prefix, enum_decl->getLocation() );
-		else
-			name= TranslateIdentifier( src_name );
+		const std::string name_translated=
+			src_name.empty()
+				? GetAnonymousItemUniqueName( g_anon_enum_prefix, enum_decl->getLocation() )
+				: TranslateIdentifier( src_name );
 
 		// Tagged names (structs, unions, enums) in C build a separae namespace.
 		// So, put tags into separate Ü namespace.
@@ -473,8 +470,8 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 		NamespaceItemsMap& items_map= std::get< NamespaceItemNamespace>( root_namespace_.items[ g_enum_kind_tag ] ).items;
 
 		// Insert if has no entry, replace if is complete definition.
-		if( items_map.count( name ) == 0 || enum_decl->isComplete() )
-			items_map.insert_or_assign( name, enum_decl );
+		if( items_map.count( name_translated ) == 0 || enum_decl->isComplete() )
+			items_map.insert_or_assign( name_translated, enum_decl );
 
 		if( enum_decl->isComplete() )
 		{
@@ -487,7 +484,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 					std::get< NamespaceItemNamespace>( root_namespace_.items[ g_scoped_enum_namespace_kind_tag ] ).items;
 
 				NamespaceItemsMap& scoped_enum_members_map=
-					std::get< NamespaceItemNamespace>( scoped_enum_items_map[ name ] ).items;
+					std::get< NamespaceItemNamespace>( scoped_enum_items_map[ name_translated ] ).items;
 
 				for( const clang::EnumConstantDecl* const enumerator : enum_decl->enumerators() )
 					scoped_enum_members_map.insert_or_assign(
@@ -911,20 +908,19 @@ void CppAstConsumer::CollectSubrecords( NamespaceItem& item )
 				{
 					const auto src_name= subrecord->getName();
 
-					std::string name;
-					if( src_name.empty() )
-						name= GetAnonymousItemUniqueName( g_anon_record_prefix, subrecord->getLocation() );
-					else
-						name= TranslateIdentifier( src_name );
+					const std::string name_translated=
+						src_name.empty()
+							? GetAnonymousItemUniqueName( g_anon_record_prefix, subrecord->getLocation() )
+							: TranslateIdentifier( src_name );
 
 					NamespaceItemsMap& items_map=
 						std::get< NamespaceItemNamespace >( record_item->items[ subrecord->isUnion() ? g_union_kind_tag : g_struct_kind_tag ] ).items;
 
 					// Insert if has no entry, replace if is complete definition.
-					if( items_map.count( name ) == 0 || subrecord->isCompleteDefinition() )
+					if( items_map.count( name_translated ) == 0 || subrecord->isCompleteDefinition() )
 					{
 						NamespaceItem& subrecord_item=
-							items_map.insert_or_assign( std::move(name), NamespaceItemRecord{ subrecord, NamespaceItemsMap() } ).first->second;
+							items_map.insert_or_assign( name_translated, NamespaceItemRecord{ subrecord, NamespaceItemsMap() } ).first->second;
 						if( subrecord->isCompleteDefinition() )
 							CollectSubrecords( subrecord_item );
 					}
@@ -1659,9 +1655,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 		if( macro_info->getNumParams() != 0u || macro_info->isFunctionLike() )
 			continue;
 
-		const std::string& macro_original_name= macro_pair.first;
-
-		std::string macro_translated_name= TranslateIdentifier( macro_original_name );
+		const std::string macro_translated_name= TranslateIdentifier( macro_pair.first );
 
 		if( root_namespace_.items.count( macro_translated_name ) != 0 ||
 			translated_function_names.count( macro_translated_name ) != 0 ||
