@@ -17,7 +17,7 @@ Alternatively it is possible to build the tool with prebuilt LLVM library, that 
 Run the tool with provided input and output file names.
 Specify C (or C++) compiler-specific options after --.
 
-Result Ü file will include declarations for all functions, types and some define-constants, including declarations from included files.
+The result Ü file will include declarations for functions, types and some define-constants, including declarations from included files.
 Alternatively it is possible to disable taking declarations from included files via *--skip-declarations-from-includes* option.
 Also it's possible to add imports section into result file, using option *--force-import*.
 
@@ -32,21 +32,16 @@ In order to obtain shared declarations properly it is recommended to create some
 
 The tool has a lot of limitations, since C and Ü are pretty different languages:
 
-* Functions with invalid for Ü names are skipped - like functions starting with underscore.
+* Functions with invalid for Ü names are skipped, this includes functions starting with underscore or having name which is a keyword in Ü.
+* Other names (types, variables, fields, etc.) are renamed if their original name isn't a valid identifier in Ü or if it may create a name conflict with some special names used by C++ header converter.
 * Variadic functions aren't fully supported - variadic parameters are removed.
-* Types with names invalid for Ü are renamed.
-* Types with names identical to a function are renamed. C allows such types (at least structs), Ü - doesn't.
-* Nested structs are moved into the global namespace and (if necessary) renamed, in order to fix some name resolution problems.
-* Fields with names identical to type names are renamed in order to avoid naming conflicts.
 * Contents of unions is replaced with simple byte arrays - Ü doesn't support C-style unions.
+* Contents of structs having bit-fields is replaced with simple byte arrays - Ü doesn't support bit-fields.
 * `size_t` isn't translated like `size_type` in Ü, since in C it's just a type alias for some fundamental integer type.
 * Typedefs for function types are broken, but typedefs for function pointer types work fine.
 * Some C calling conventions aren't supported by Ü, so, functions declarations may have wrong calling conventions.
 * Constants for `#define`s are created, but only limited defines are supported - numeric literals, char literals and strings.
-
-Also *CPPHeaderConverter* doesn't preserve declarations order, it emits symbols sorted by kind and by name instead.
-It's done due to implementation reasons.
-And it's not necessary to preserve original order, since Ü has order-independent top level declarations.
+* Alias defines (like #define X Y) can be created for functions, types, variables, enum members, but more complex defines can't be translated.
 
 
 ### Clang headers
