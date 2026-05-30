@@ -601,9 +601,17 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 		return std::move(array_type);
 	}
+	else if( const auto incomplete_array_type= llvm::dyn_cast<clang::IncompleteArrayType>(&in_type) )
+	{
+		// Translate incomplete array types as raw pointers.
+		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+		raw_pointer_type->element_type= TranslateType( *incomplete_array_type->getPointeeType().getTypePtr(), type_names_map );
+
+		return std::move(raw_pointer_type);
+	}
 	else if( const auto array_type= llvm::dyn_cast<clang::ArrayType>(&in_type) )
 	{
-		// For other variants of array types use zero size.
+		// For other kinds of array types use zero size.
 		auto out_array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
 		out_array_type->element_type= TranslateType( *array_type->getElementType().getTypePtr(), type_names_map );
 
@@ -612,14 +620,6 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		out_array_type->size= std::move(numeric_constant);
 
 		return std::move(out_array_type);
-	}
-	else if( const auto incomplete_array_type= llvm::dyn_cast<clang::IncompleteArrayType>(&in_type) )
-	{
-		// Translate incomplete array types as raw pointers.
-		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
-		raw_pointer_type->element_type= TranslateType( *incomplete_array_type->getPointeeType().getTypePtr(), type_names_map );
-
-		return std::move(raw_pointer_type);
 	}
 	else if( const auto vector_type= llvm::dyn_cast<clang::VectorType>( &in_type ) )
 	{
