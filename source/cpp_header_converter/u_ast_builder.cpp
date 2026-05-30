@@ -281,10 +281,6 @@ private:
 		std::string_view kind_name,
 		const ItemsMap& subitems );
 
-	Synt::VariablesDeclaration::VariableEntry TranslateEnumElement(
-		const clang::EnumConstantDecl& enumerator,
-		std::string name );
-
 	Synt::Initializer TranslateVariableInitializer_r( const clang::Type& variable_type, const clang::APValue& value );
 
 	void EmitDefinitionsForMacros( Synt::ProgramElementsList::Builder& out_items );
@@ -1265,7 +1261,43 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 {
 	Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
 	variables_declaration.type= TranslateType( *item.enum_type, type_names_map );
-	variables_declaration.variables.push_back( TranslateEnumElement( *item.enum_constant_decl, std::string(name) ) );
+
+	{
+		Synt::VariablesDeclaration::VariableEntry var;
+		var.src_loc= g_dummy_src_loc;
+		var.name= std::move(name);
+
+		var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+
+		{
+			Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
+
+			const llvm::APSInt val= item.enum_constant_decl->getInitVal();
+			{
+				Synt::IntegerNumericConstant initializer_number( g_dummy_src_loc );
+
+				if( val.isNegative() )
+				{
+					initializer_number.num.value= uint64_t( -val.getExtValue() );
+
+					Synt::UnaryMinus unary_minus( g_dummy_src_loc );
+					unary_minus.expression= std::move( initializer_number );
+
+					constructor_initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
+				}
+				else
+				{
+					initializer_number.num.value= val.getLimitedValue();
+					constructor_initializer.arguments.push_back( std::move(initializer_number) );
+				}
+			}
+
+			var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
+		}
+
+		variables_declaration.variables.push_back( std::move( var ) );
+	}
+
 	out_items.Append( std::move(variables_declaration) );
 }
 
@@ -1371,45 +1403,6 @@ Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
 	EmitItemsSorted( class_elements, type_names_map, subitems );
 
 	return class_elements.Build();
-}
-
-Synt::VariablesDeclaration::VariableEntry CppAstConsumer::TranslateEnumElement(
-	const clang::EnumConstantDecl& enumerator,
-	std::string name )
-{
-	Synt::VariablesDeclaration::VariableEntry var;
-	var.src_loc= g_dummy_src_loc;
-	var.name= std::move(name);
-
-	var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-
-	{
-		Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
-
-		const llvm::APSInt val= enumerator.getInitVal();
-		{
-			Synt::IntegerNumericConstant initializer_number( g_dummy_src_loc );
-
-			if( val.isNegative() )
-			{
-				initializer_number.num.value= uint64_t( -val.getExtValue() );
-
-				Synt::UnaryMinus unary_minus( g_dummy_src_loc );
-				unary_minus.expression= std::move( initializer_number );
-
-				constructor_initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
-			}
-			else
-			{
-				initializer_number.num.value= val.getLimitedValue();
-				constructor_initializer.arguments.push_back( std::move(initializer_number) );
-			}
-		}
-
-		var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
-	}
-
-	return var;
 }
 
 Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::Type& variable_type, const clang::APValue& value )
