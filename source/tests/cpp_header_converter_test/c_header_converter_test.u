@@ -357,6 +357,11 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( CHAR_CONSTANT_COPY_A_2U__ == CHAR_CONSTANT );
 	static_assert( CHAR_CONSTANT_COPY_B_2U__ == CHAR_CONSTANT );
 
+	// Define alias for enum values.
+	static_assert( ANON_Y == AnonY );
+	static_assert( MINUS_TWO == MinusTwo );
+	static_assert( ANON_Y_COPY == ANON_Y );
+
 	// Define alias for types.
 	static_assert( same_type</ CPP_CHAR8, CPP_char8 /> );
 	static_assert( same_type</ ARRAY_TYPE15, ArrayType15 /> );

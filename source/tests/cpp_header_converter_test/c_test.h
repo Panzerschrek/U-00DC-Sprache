@@ -445,6 +445,11 @@ typedef unsigned long long int __64_int_from_c;
 #define __CHAR_CONSTANT_COPY_A CHAR_CONSTANT
 #define __CHAR_CONSTANT_COPY_B __CHAR_CONSTANT_COPY_A
 
+// Should translate define - alias for an enum value.
+#define ANON_Y AnonY
+#define MINUS_TWO MinusTwo
+#define ANON_Y_COPY ANON_Y
+
 // Should translate define - alias for a type name.
 #define CPP_CHAR8 CPP_char8
 #define ARRAY_TYPE15 ArrayType15
