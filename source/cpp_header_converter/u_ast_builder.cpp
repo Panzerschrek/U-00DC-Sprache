@@ -387,10 +387,16 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 		{
 			if( func_decl->getIdentifier() != nullptr && !( func_decl->hasBody() && func_decl->isInlineSpecified() ) )
 			{
-				std::string name= func_decl->getName().str();
+				const llvm::StringRef original_name= func_decl->getName();
+				std::string name= TranslateIdentifier( original_name );
 
-				if( !name.empty() && !IsKeyword( name ) && name.front() != '_' )
+				if( name == original_name )
 					root_namespace_.items.emplace( std::move( name ), NamespaceItem( func_decl ) );
+				else
+				{
+					// If it's impossible to use the original name for a function - ignore it.
+					// Emitting it as renaming is useless, since calling such function isn't possible anyway.
+				}
 			}
 		}
 	}
