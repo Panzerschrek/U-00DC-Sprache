@@ -66,6 +66,11 @@ struct NamespaceItemEnumElement
 	const clang::EnumConstantDecl* enum_constant_decl;
 };
 
+const std::string g_struct_kind_tag= "struct_";
+const std::string g_union_kind_tag= "union_";
+const std::string g_enum_kind_tag= "enum_";
+const std::string g_scoped_enum_namespace_kind_tag= "scoped_enum_";
+
 // This function should map C names to Ü names without any possibility of collision,
 // so that no two C names can get identical Ü name.
 std::string TranslateIdentifier( const llvm::StringRef identifier )
@@ -83,6 +88,11 @@ std::string TranslateIdentifier( const llvm::StringRef identifier )
 		++num_leading_underscores;
 
 	if(
+		// Code identifiers used for some needs of C++ header converter.
+		identifier == g_struct_kind_tag ||
+		identifier == g_union_kind_tag ||
+		identifier == g_enum_kind_tag ||
+		identifier == g_scoped_enum_namespace_kind_tag ||
 		// Code identifiers with leading underscores. Ü doesn't support them.
 		num_leading_underscores > 0 ||
 		// If an identifier is an Ü keyword with trailing underscore, code it,
@@ -122,11 +132,6 @@ std::string TranslateIdentifier( const llvm::StringRef identifier )
 
 	return identifier.str();
 }
-
-const std::string g_struct_kind_tag= "struct_";
-const std::string g_union_kind_tag= "union_";
-const std::string g_enum_kind_tag= "enum_";
-const std::string g_scoped_enum_namespace_kind_tag= "scoped_enum_";
 
 using ItemName= std::vector<std::string>;
 

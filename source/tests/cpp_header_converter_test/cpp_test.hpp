@@ -37,6 +37,42 @@ enum class CppEnumWithUnderlyingType : unsigned char
 	UC0, UC1, UC2, UC45= 45,
 };
 
+enum class EnumWithExoticMemberNames
+{
+	// Special names used by C++ header converter. Should code specially.
+	struct_,
+	union_,
+	enum_,
+	scoped_enum_,
+	// Ü keywords. Should add trailing underscore.
+	yield,
+	cast_ref_unsafe,
+	// Ü keywords with trailing underscrore. Should code specially.
+	virtual_,
+	if_coro_advance_,
+	// Names with underscores should be generally preserved.
+	SomeNameWithUnderscore_,
+	some_name_with_many_underscores_______,
+	// Names with leading underscopre should be coded.
+	_single_leading_underscore,
+	__two_leading_underscores,
+	___three_leading_underscores,
+	____________________twenty_leading_underscores,
+	// Names with a digit number after leading underscores should get special prefix.
+	_6name_with_single_leading_underscore_and_digit,
+	___0_name_with_three_leading_underscores_and_digit,
+	// Names consisting of underscores only
+	_,
+	__,
+	___,
+	____,
+	// Names with coded postfix should be coded.
+	MANU__,
+	GENU__,
+	CORNU__,
+	METU__,
+};
+
 struct Vec2f
 {
 	float x;

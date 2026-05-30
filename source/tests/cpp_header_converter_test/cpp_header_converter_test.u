@@ -50,6 +50,31 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( scoped_enum_::CppEnumWithUnderlyingType::UC2 == 2u8 );
 	static_assert( scoped_enum_::CppEnumWithUnderlyingType::UC45 == 45u8 );
 
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::struct__0U__ == enum_::EnumWithExoticMemberNames(0) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::union__0U__ == enum_::EnumWithExoticMemberNames(1) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::enum__0U__ == enum_::EnumWithExoticMemberNames(2) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::scoped_enum__0U__ == enum_::EnumWithExoticMemberNames(3) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::yield_ == enum_::EnumWithExoticMemberNames(4) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::cast_ref_unsafe_ == enum_::EnumWithExoticMemberNames(5) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::virtual__0U__ == enum_::EnumWithExoticMemberNames(6) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::if_coro_advance__0U__ == enum_::EnumWithExoticMemberNames(7) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::SomeNameWithUnderscore_ == enum_::EnumWithExoticMemberNames(8) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::some_name_with_many_underscores_______ == enum_::EnumWithExoticMemberNames(9) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::single_leading_underscore_1U__ == enum_::EnumWithExoticMemberNames(10) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::two_leading_underscores_2U__ == enum_::EnumWithExoticMemberNames(11) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::three_leading_underscores_3U__ == enum_::EnumWithExoticMemberNames(12) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::twenty_leading_underscores_20U__ == enum_::EnumWithExoticMemberNames(13) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::n6name_with_single_leading_underscore_and_digit_n1U__ == enum_::EnumWithExoticMemberNames(14) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::n0_name_with_three_leading_underscores_and_digit_n3U__ == enum_::EnumWithExoticMemberNames(15) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::u1U__ == enum_::EnumWithExoticMemberNames(16) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::u2U__ == enum_::EnumWithExoticMemberNames(17) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::u3U__ == enum_::EnumWithExoticMemberNames(18) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::u4U__ == enum_::EnumWithExoticMemberNames(19) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::MANU___0U__ == enum_::EnumWithExoticMemberNames(20) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::GENU___0U__ == enum_::EnumWithExoticMemberNames(21) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::CORNU___0U__ == enum_::EnumWithExoticMemberNames(22) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::METU___0U__ == enum_::EnumWithExoticMemberNames(23) );
+
 	{
 		static_assert( typeinfo</struct_::Vec2f/>.size_of == typeinfo</f32/>.size_of * 2s );
 		var struct_::Vec2f v{ .x= 78.0f, .y= -1.2345f };
