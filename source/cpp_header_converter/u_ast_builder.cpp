@@ -32,6 +32,9 @@ static Synt::Function GetDeletedDefaultConstructor()
 	return func;
 }
 
+// Maintain an internal recursive structure representing rough structure of the given C header.
+// It's used almsot 1 to 1 to emit Ü definitions.
+
 struct NamespaceItemNamespace;
 struct NamespaceItemRecord;
 struct NamespaceItemEnumElement;
@@ -48,17 +51,17 @@ using NamespaceItem=
 
 // Use string map for items, since it's pretty fast.
 // WARNING! Don't emit items in order of the map, sort them instead!
-using ItemsMap= llvm::StringMap<NamespaceItem>;
+using NamespaceItemsMap= llvm::StringMap<NamespaceItem>;
 
 struct NamespaceItemNamespace
 {
-	ItemsMap items;
+	NamespaceItemsMap items;
 };
 
 struct NamespaceItemRecord
 {
 	const clang::RecordDecl* record_decl;
-	NamespaceItemNamespace namespace_;
+	NamespaceItemsMap items;
 };
 
 struct NamespaceItemEnumElement
@@ -249,7 +252,7 @@ private:
 	void CollectSubrecords( NamespaceItem& item );
 
 	template<typename ListBuilder>
-	void EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const ItemsMap& items );
+	void EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const NamespaceItemsMap& items );
 
 	template<typename ListBuilder>
 	void EmitItem(
@@ -313,7 +316,7 @@ private:
 		const TypeNamesMap& type_names_map,
 		const clang::RecordDecl& record_declaration,
 		std::string_view kind_name,
-		const ItemsMap& subitems );
+		const NamespaceItemsMap& subitems );
 
 	Synt::Initializer TranslateVariableInitializer_r( const clang::Type& variable_type, const clang::APValue& value );
 
@@ -421,12 +424,12 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 			// Tagged names (structs, unions, enums) in C build a separae namespace.
 			// So, put tags into separate Ü namespace.
 
-			ItemsMap& items_map=
+			NamespaceItemsMap& items_map=
 				std::get< NamespaceItemNamespace>( root_namespace_.items[ record_decl->isUnion() ? g_union_kind_tag : g_struct_kind_tag ] ).items;
 
 			// Insert if has no entry, replace if is complete definition.
 			if( items_map.count( name ) == 0 || record_decl->isCompleteDefinition() )
-				items_map.insert_or_assign( std::move(name), NamespaceItemRecord{ record_decl, NamespaceItemNamespace() } );
+				items_map.insert_or_assign( std::move(name), NamespaceItemRecord{ record_decl, NamespaceItemsMap() } );
 		}
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
@@ -463,7 +466,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 		// Tagged names (structs, unions, enums) in C build a separae namespace.
 		// So, put tags into separate Ü namespace.
 
-		ItemsMap& items_map= std::get< NamespaceItemNamespace>( root_namespace_.items[ g_enum_kind_tag ] ).items;
+		NamespaceItemsMap& items_map= std::get< NamespaceItemNamespace>( root_namespace_.items[ g_enum_kind_tag ] ).items;
 
 		// Insert if has no entry, replace if is complete definition.
 		if( items_map.count( name ) == 0 || enum_decl->isComplete() )
@@ -476,10 +479,10 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 				// Create a namespace for elements of a scoped enum within "scoped_enum_" namespace.
 				// Doing so we avoid possible name conflicts and preserve enum elements in single place.
 
-				ItemsMap& scoped_enum_items_map=
+				NamespaceItemsMap& scoped_enum_items_map=
 					std::get< NamespaceItemNamespace>( root_namespace_.items[ g_scoped_enum_namespace_kind_tag ] ).items;
 
-				ItemsMap& scoped_enum_members_map=
+				NamespaceItemsMap& scoped_enum_members_map=
 					std::get< NamespaceItemNamespace>( scoped_enum_items_map[ name ] ).items;
 
 				for( const clang::EnumConstantDecl* const enumerator : enum_decl->enumerators() )
@@ -854,7 +857,13 @@ void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix,
 void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const NamespaceItemRecord& item )
 {
 	map.emplace( item.record_decl->getTypeForDecl(), prefix );
-	BuildTypeNamesMapImpl( map, prefix, item.namespace_ );
+
+	for( const auto& pair : item.items )
+	{
+		prefix.push_back( pair.getKey().str() );
+		BuildTypeNamesMap( map, prefix, pair.getValue() );
+		prefix.pop_back();
+	}
 }
 
 void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemName& prefix, const clang::TypedefNameDecl* const item )
@@ -904,14 +913,14 @@ void CppAstConsumer::CollectSubrecords( NamespaceItem& item )
 					else
 						name= TranslateIdentifier( src_name );
 
-					ItemsMap& items_map=
-						std::get< NamespaceItemNamespace >( record_item->namespace_.items[ subrecord->isUnion() ? g_union_kind_tag : g_struct_kind_tag ] ).items;
+					NamespaceItemsMap& items_map=
+						std::get< NamespaceItemNamespace >( record_item->items[ subrecord->isUnion() ? g_union_kind_tag : g_struct_kind_tag ] ).items;
 
 					// Insert if has no entry, replace if is complete definition.
 					if( items_map.count( name ) == 0 || subrecord->isCompleteDefinition() )
 					{
 						NamespaceItem& subrecord_item=
-							items_map.insert_or_assign( std::move(name), NamespaceItemRecord{ subrecord, NamespaceItemNamespace() } ).first->second;
+							items_map.insert_or_assign( std::move(name), NamespaceItemRecord{ subrecord, NamespaceItemsMap() } ).first->second;
 						if( subrecord->isCompleteDefinition() )
 							CollectSubrecords( subrecord_item );
 					}
@@ -922,7 +931,7 @@ void CppAstConsumer::CollectSubrecords( NamespaceItem& item )
 }
 
 template<typename ListBuilder>
-void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const ItemsMap& items )
+void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const NamespaceItemsMap& items )
 {
 	// Emit namespace elements in their definition order.
 	// If can't do this - sort by name.
@@ -1160,13 +1169,13 @@ void CppAstConsumer::EmitItemImpl(
 			{
 				// Ü has no bitfields support. And generally we can't replace C bitfields with something else.
 				// So, for now just create stub struct.
-				class_.elements= MakeOpaqueRecordElements( type_names_map, record_declaration, "struct_with_bitfields", item.namespace_.items );
+				class_.elements= MakeOpaqueRecordElements( type_names_map, record_declaration, "struct_with_bitfields", item.items );
 			}
 			else if( is_empty )
 			{
 				// If struct has no fields we may still need to create some fields for it.
 				// It may be necessary in C++ mode, where empty structs have size 1.
-				class_.elements= MakeOpaqueRecordElements( type_names_map, record_declaration, "empty_struct", item.namespace_.items );
+				class_.elements= MakeOpaqueRecordElements( type_names_map, record_declaration, "empty_struct", item.items );
 			}
 			else
 			{
@@ -1195,7 +1204,7 @@ void CppAstConsumer::EmitItemImpl(
 
 				// Assume we have at least one field (which is necessary for all structs in C).
 
-				EmitItemsSorted( class_elements, type_names_map, item.namespace_.items );
+				EmitItemsSorted( class_elements, type_names_map, item.items );
 
 				class_.elements= class_elements.Build();
 			}
@@ -1221,14 +1230,14 @@ void CppAstConsumer::EmitItemImpl(
 			class_.no_discard= true;
 
 		if( record_declaration.isCompleteDefinition() )
-			class_.elements= MakeOpaqueRecordElements( type_names_map, record_declaration, "union", item.namespace_.items );
+			class_.elements= MakeOpaqueRecordElements( type_names_map, record_declaration, "union", item.items );
 		else
 		{
 			// Add deleted default constructor.
 			Synt::ClassElementsList::Builder class_elements;
 			class_elements.Append( GetDeletedDefaultConstructor() );
 
-			EmitItemsSorted( class_elements, type_names_map, item.namespace_.items );
+			EmitItemsSorted( class_elements, type_names_map, item.items );
 
 			class_.elements= class_elements.Build();
 		}
@@ -1435,7 +1444,7 @@ Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
 	const TypeNamesMap& type_names_map,
 	const clang::RecordDecl& record_declaration,
 	const std::string_view kind_name,
-	const ItemsMap& subitems )
+	const NamespaceItemsMap& subitems )
 {
 	const auto size= ( ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) + 7u ) / 8u;
 	const auto byte_size= ( ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) + 7u ) / 8u;
