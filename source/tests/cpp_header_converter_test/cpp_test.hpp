@@ -71,6 +71,10 @@ enum class EnumWithExoticMemberNames
 	GENU__,
 	CORNU__,
 	METU__,
+	// Name prefixes used by C++ header converter for anonymous items.
+	anon_record,
+	anon_enum,
+	anon_field_,
 };
 
 struct Vec2f

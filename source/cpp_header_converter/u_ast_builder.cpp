@@ -71,6 +71,10 @@ const std::string g_union_kind_tag= "union_";
 const std::string g_enum_kind_tag= "enum_";
 const std::string g_scoped_enum_namespace_kind_tag= "scoped_enum_";
 
+const auto& g_anon_record_prefix= "anon_record";
+const auto& g_anon_enum_prefix= "anon_enum";
+const auto& g_anon_field_prefix= "anon_field_";
+
 // This function should map C names to Ü names without any possibility of collision,
 // so that no two C names can get identical Ü name.
 std::string TranslateIdentifier( const llvm::StringRef identifier )
@@ -93,6 +97,9 @@ std::string TranslateIdentifier( const llvm::StringRef identifier )
 		identifier == g_union_kind_tag ||
 		identifier == g_enum_kind_tag ||
 		identifier == g_scoped_enum_namespace_kind_tag ||
+		identifier == g_anon_record_prefix ||
+		identifier == g_anon_enum_prefix ||
+		identifier == g_anon_field_prefix ||
 		// Code identifiers with leading underscores. Ü doesn't support them.
 		num_leading_underscores > 0 ||
 		// If an identifier is an Ü keyword with trailing underscore, code it,
@@ -369,7 +376,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 			std::string name;
 			if( src_name.empty() )
-				name= GetAnonymousItemUniqueName( "anon_record", record_decl->getLocation() );
+				name= GetAnonymousItemUniqueName( g_anon_record_prefix, record_decl->getLocation() );
 			else
 				name= TranslateIdentifier( src_name );
 
@@ -411,7 +418,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 		std::string name;
 		if( src_name.empty() )
-			name= GetAnonymousItemUniqueName( "anon_enum", enum_decl->getLocation() );
+			name= GetAnonymousItemUniqueName( g_anon_enum_prefix, enum_decl->getLocation() );
 		else
 			name= TranslateIdentifier( src_name );
 
@@ -854,7 +861,7 @@ void CppAstConsumer::CollectSubrecords( NamespaceItem& item )
 
 					std::string name;
 					if( src_name.empty() )
-						name= GetAnonymousItemUniqueName( "anon_record", subrecord->getLocation() );
+						name= GetAnonymousItemUniqueName( g_anon_record_prefix, subrecord->getLocation() );
 					else
 						name= TranslateIdentifier( src_name );
 
@@ -1070,7 +1077,7 @@ void CppAstConsumer::EmitItemImpl( ListBuilder& out_items, const TypeNamesMap& t
 					{
 						// Name anonymous fields sequentially by using a simple counter.
 						// It's fine, since these names should be unique only within this struct.
-						field.name= "anon_field_" + std::to_string( anonymous_field_index );
+						field.name= g_anon_field_prefix + std::to_string( anonymous_field_index );
 						++anonymous_field_index;
 					}
 					else

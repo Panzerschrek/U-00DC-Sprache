@@ -74,6 +74,9 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( scoped_enum_::EnumWithExoticMemberNames::GENU___0U__ == enum_::EnumWithExoticMemberNames(21) );
 	static_assert( scoped_enum_::EnumWithExoticMemberNames::CORNU___0U__ == enum_::EnumWithExoticMemberNames(22) );
 	static_assert( scoped_enum_::EnumWithExoticMemberNames::METU___0U__ == enum_::EnumWithExoticMemberNames(23) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::anon_record_0U__ == enum_::EnumWithExoticMemberNames(24) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::anon_enum_0U__ == enum_::EnumWithExoticMemberNames(25) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::anon_field__0U__ == enum_::EnumWithExoticMemberNames(26) );
 
 	{
 		static_assert( typeinfo</struct_::Vec2f/>.size_of == typeinfo</f32/>.size_of * 2s );
