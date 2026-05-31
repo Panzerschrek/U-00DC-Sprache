@@ -838,10 +838,13 @@ void ElementWrite( const Namespace& namespace_ ) const
 
 void ElementWrite( const VariablesDeclaration& variables_declaration ) const
 {
+	if( variables_declaration.variables.empty() )
+		return;
+
 	stream_ << Keyword( Keywords::var_ ) << " ";
 	ElementWrite( variables_declaration.type );
 
-	if( variables_declaration.variables.size () <= 1 )
+	if( variables_declaration.variables.size() <= 1 )
 	{
 		stream_ << " ";
 		for( const VariablesDeclaration::VariableEntry& var : variables_declaration.variables )

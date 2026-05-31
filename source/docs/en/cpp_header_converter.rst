@@ -20,6 +20,7 @@ But there are still a lot of limitations caused by differences between C and Ü:
 * Most functions are translated properly as ``nomangle`` functions with ``C`` calling convention.
 * Functions with names matching an Ü keyword are ignored - they can't be used.
   Also functions starting with ``_`` are ignored, since in Ü identifiers can't start with ``_``.
+  Some functions (with names conflicting with special names used by C++ header converter) are also ignored.
 * Functions with variadic arguments in Ü aren't supported, C variadic functions become non-variadic in Ü.
 * C built-in types are mapped to Ü types (where it's possible).
 * Structs are translated properly as Ü structs with ``ordered`` marker.
@@ -29,15 +30,16 @@ But there are still a lot of limitations caused by differences between C and Ü:
 * Both ``const`` and non-``const`` pointers are translated as raw pointers in Ü, which are always assumed to be mutable (non-``const``).
 * Enums are always translated as their underlying types, enum members are translated as global constant variables.
 * Anonymous structs and enums are translated with a generated name given, since in Ü there are no anonymous structs and enums.
-* Typedefs are translated as Ü type aliases, including typedefs combined with struct/enum declarations.
-* Names except function names may be renamed, if a name can't be valid Ü name or in case of name conflicts.
-* Nested structs are moved into the global namespace (for simplicity), possible with renaming to avoid name conflicts.
+* Typedefs are translated as Ü type aliases.
+* Names except function names may be renamed, if a name can't be valid Ü name or in case of name conflicts with special names used by C++ header converter.
+* Structs are placed inside ``struct_`` namespace, unions inside ``union_`` namespace, enums inside ``enum_`` namespace, since in C these names are called *tags* and use a separate logical namespace.
 * Global variables are translated, but only if they are ``const`` and have compile-time initializer.
   Variables of scalar types are supported.
   Arrays are supported too, but only with number of initializers matching array size.
   Struct/union types aren't supported.
-* Simple defines containing integer, char or string literals are translated as global constants.
-  More complex defines are ignored, even defines for negative numbers.
+* Simple constant defines containing integer, char or string literals are translated as global constants.
+  Simple alias defines (like #define X Y) can also be created in some cases.
+  More complex defines are ignored.
 
 Possibilities and limitations for conversion of C++ headers:
 
@@ -46,7 +48,8 @@ Possibilities and limitations for conversion of C++ headers:
 * Classes are translated as structs, visibility labels and member functions are ignored.
 * Polymorph classes/classes with inheritance aren't handled properly.
 * Scoped enums are translated as type alias for their underlying integer type.
-  A namespace with ``_`` suffix is created for members of such enums.
+  A namespace within namespace named ``scoped_enum_`` is created for members of such enums.
+* Structs, classes, unions, enums are placed in ``struct_``, ``union_``, ``enum_`` namespaces, even in this isn't necessary according to C++ rules.
 * Namespaces aren't supported, they will likely break the tool.
 * No templates are supported, they will likely break the tool.
 

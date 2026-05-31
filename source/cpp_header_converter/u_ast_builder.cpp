@@ -32,11 +32,193 @@ static Synt::Function GetDeletedDefaultConstructor()
 	return func;
 }
 
+// Maintain an internal recursive structure representing rough structure of the given C header.
+// It's used almsot 1 to 1 to emit Ü definitions.
+
+struct NamespaceItemNamespace;
+struct NamespaceItemRecord;
+struct NamespaceItemEnumElement;
+
+using NamespaceItem=
+	std::variant<
+		NamespaceItemNamespace, // Keep it first here, so that operator[] creates a namespace.
+		const clang::FunctionDecl*,
+		NamespaceItemRecord,
+		const clang::TypedefNameDecl*,
+		const clang::EnumDecl*,
+		NamespaceItemEnumElement,
+		const clang::VarDecl* >;
+
+// Use string map for items, since it's pretty fast.
+// WARNING! Don't emit items in order of the map, sort them instead!
+using NamespaceItemsMap= llvm::StringMap<NamespaceItem>;
+
+struct NamespaceItemNamespace
+{
+	NamespaceItemsMap items;
+};
+
+struct NamespaceItemRecord
+{
+	const clang::RecordDecl* record_decl;
+	NamespaceItemsMap items;
+};
+
+struct NamespaceItemEnumElement
+{
+	const clang::Type* enum_type;
+	const clang::EnumConstantDecl* enum_constant_decl;
+};
+
+const auto& g_struct_kind_tag= "struct_";
+const auto& g_union_kind_tag= "union_";
+const auto& g_enum_kind_tag= "enum_";
+const auto& g_scoped_enum_namespace_kind_tag= "scoped_enum_";
+
+const auto& g_anon_record_prefix= "anon_record";
+const auto& g_anon_enum_prefix= "anon_enum";
+const auto& g_anon_field_prefix= "anon_field_";
+
+// This function should map C names to Ü names without any possibility of collision,
+// so that no two C names can get identical Ü name.
+std::string TranslateIdentifier( const llvm::StringRef identifier )
+{
+	U_ASSERT( !identifier.empty() );
+
+	const auto& c_coded_name_postfix= "U__";
+
+	// Add single trailing underscope for Ü keywords.
+	if( IsKeyword( identifier ) )
+		return ( identifier + "_" ).str();
+
+	size_t num_leading_underscores= 0;
+	while( num_leading_underscores < identifier.size() && identifier[ num_leading_underscores ] == '_' )
+		++num_leading_underscores;
+
+	if(
+		// Code identifiers used for some needs of C++ header converter.
+		identifier == g_struct_kind_tag ||
+		identifier == g_union_kind_tag ||
+		identifier == g_enum_kind_tag ||
+		identifier == g_scoped_enum_namespace_kind_tag ||
+		identifier == g_anon_record_prefix ||
+		identifier == g_anon_enum_prefix ||
+		identifier == g_anon_field_prefix ||
+		// Code identifiers with leading underscores. Ü doesn't support them.
+		num_leading_underscores > 0 ||
+		// If an identifier is an Ü keyword with trailing underscore, code it,
+		// since it may conflict with coding of identifiers which are Ü keywords.
+		( identifier.back() == '_' && IsKeyword( identifier.substr( 0, identifier.size() - 1 ) ) ) ||
+		// Code identifiers having coded name prefix.
+		identifier.endswith( c_coded_name_postfix ) )
+	{
+		std::string name_coded;
+
+		if( num_leading_underscores == identifier.size() )
+		{
+			// For identifiers having noting than underscores add leading "u".
+			name_coded+= "u";
+			name_coded+= std::to_string( num_leading_underscores );
+		}
+		else
+		{
+			const bool first_non_underscore_char_is_digit=
+				identifier[ num_leading_underscores ] >= '0' && identifier[ num_leading_underscores ] <= '9';
+
+			if( first_non_underscore_char_is_digit )
+				name_coded+= "n"; // Add leading "n" to avoid starting an identifier with digit.
+
+			// Code the number of leading underscores.
+			name_coded+= identifier.substr( num_leading_underscores );
+			name_coded+= "_";
+
+			if( first_non_underscore_char_is_digit )
+				name_coded+= "n"; // Indicate that leading "n" was added.
+
+			name_coded+= std::to_string( num_leading_underscores );
+
+		}
+
+		// Add a postfix for all coded names.
+		name_coded+= c_coded_name_postfix;
+
+		return name_coded;
+	}
+
+	// Return idenitifier as is. It happens for the majority of cases.
+	return identifier.str();
+}
+
+// Name including all parent namespaces/structs.
+using ItemFullName= std::vector<std::string>;
+
+Synt::ComplexName GetItemNameSyntaxElementImpl( Synt::ComplexName base, const llvm::ArrayRef<std::string> components )
+{
+	if( components.empty() )
+		return base;
+
+	auto names_scope_name_fetch=
+		std::make_unique<Synt::NamesScopeNameFetch>(
+			Synt::NamesScopeNameFetch{ g_dummy_src_loc, components.front(), std::move(base) } );
+
+	return GetItemNameSyntaxElementImpl( std::move(names_scope_name_fetch), components.slice(1) );
+}
+
+Synt::ComplexName GetItemNameSyntaxElement( const ItemFullName& item_name )
+{
+	Synt::RootNamespaceNameLookup root_namespace_name_lookup( g_dummy_src_loc );
+	root_namespace_name_lookup.name= item_name.front();
+
+	return
+		GetItemNameSyntaxElementImpl(
+			std::move( root_namespace_name_lookup ), llvm::ArrayRef<std::string>( item_name ).slice(1) );
+}
+
+Synt::TypeName CreateFundamentalTypeName( const std::string_view name )
+{
+	// Use simple name lookup (not root namespace name lookup) for simplicity.
+	// Redefining fundamental type names isn't possible, so they are always acccessible.
+
+	Synt::NameLookup name_lookup( g_dummy_src_loc );
+	name_lookup.name= name;
+	return std::move(name_lookup);
+}
+
+std::optional<std::string> TranslateCallingConventionImpl( const clang::FunctionType& in_type )
+{
+	// TODO - handle/introduce other calling conventions.
+	switch( in_type.getCallConv() )
+	{
+	case clang::CallingConv::CC_C:
+		return "C";
+	case clang::CallingConv::CC_X86StdCall:
+		return "system";
+	case clang::CallingConv::CC_X86FastCall:
+		return "fast";
+	default: break;
+	}
+
+	return std::nullopt;
+}
+
+std::unique_ptr<const Synt::Expression> TranslateCallingConvention( const clang::FunctionType& in_type )
+{
+	if( auto cc= TranslateCallingConventionImpl( in_type ) )
+	{
+		auto string_literal= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
+		string_literal->value= std::move(*cc);
+
+		return std::make_unique<Synt::Expression>( std::move(string_literal) );
+	}
+
+	return nullptr;
+}
+
 class CppAstConsumer final : public clang::ASTConsumer
 {
 public:
 	CppAstConsumer(
-		Synt::ProgramElementsList::Builder& out_elements,
+		Synt::ProgramElementsList& out_elements,
 		const clang::SourceManager& source_manager,
 		clang::Preprocessor& preprocessor,
 		const clang::TargetInfo& target_info,
@@ -50,134 +232,68 @@ public:
 	virtual void HandleTranslationUnit( clang::ASTContext& ast_context ) override;
 
 private:
-	using TypeNamesMap= std::unordered_map<const clang::Type*, std::string>;
-
-	// Use ordered map in order to emit elements in stable order.
-	template<typename K, typename V>
-	using NamesMapContainer= std::map<K, V>;
-
-	// Translated/renamed name to function declaration map.
-	using NamedFunctionDeclarations= NamesMapContainer<std::string, const clang::FunctionDecl*>;
-
-	// Translated/renamed name to record declaration map.
-	using NamedRecordDeclarations= NamesMapContainer<std::string, const clang::RecordDecl*>;
-
-	// Translated/renamed name to typedef declaration map.
-	using NamedTypedefDeclarations= NamesMapContainer<std::string, const clang::TypedefNameDecl*>;
-
-	// Translated/renamed name to enum declaration map.
-	using NamedEnumDeclarations= NamesMapContainer<std::string, const clang::EnumDecl*>;
-
-	// Translated/renamed enum names.
-	using EnumNamesSet= std::unordered_set<std::string>;
+	using TypeNamesMap= std::unordered_map< const clang::Type*, ItemFullName >;
 
 private:
 	void ProcessDecl( const clang::Decl& decl );
 
+	std::string GetAnonymousItemUniqueName( std::string_view prefix, clang::SourceLocation location );
+
 	Synt::TypeName TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
-	Synt::TypeName StringToTypeName( std::string_view s );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionType& in_type, const TypeNamesMap& type_names_map );
-	std::unique_ptr<const Synt::Expression> TranslateCallingConvention( const clang::FunctionType& in_type );
-	std::optional<std::string> TranslateCallingConventionImpl( const clang::FunctionType& in_type );
 
-	std::string TranslateIdentifier( llvm::StringRef identifier );
+	void BuildTypeNamesMap( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItem& item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemNamespace& item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::FunctionDecl* item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemRecord& item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::TypedefNameDecl* item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::EnumDecl* item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemEnumElement& item );
+	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::VarDecl* item );
 
-	void CollectSubrecords();
+	void CollectSubrecords( NamespaceItem& item );
 
-	NamedFunctionDeclarations GenerateFunctionNames();
+	template<typename ListBuilder>
+	void EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const NamespaceItemsMap& items );
 
-	NamedRecordDeclarations GenerateRecordNames( const NamedFunctionDeclarations& named_function_declarations );
+	// Emit classes for namespaces, since actual namespaces can't be placed in classes, but we need this sometimes.
+	Synt::Class EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item );
 
-	NamedTypedefDeclarations GenerateTypedefNames(
-		const NamedFunctionDeclarations& named_function_declarations,
-		const NamedRecordDeclarations& named_record_declarations );
+	Synt::Function EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const clang::FunctionDecl* item );
 
-	NamedEnumDeclarations GenerateEnumNames(
-		const NamedFunctionDeclarations& named_function_declarations,
-		const NamedRecordDeclarations& named_record_declarations,
-		const NamedTypedefDeclarations& named_typedef_declarations );
+	Synt::Class EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemRecord& item );
 
-	TypeNamesMap BuildTypeNamesMap(
-		const NamedRecordDeclarations& named_record_declarations,
-		const NamedTypedefDeclarations& named_typedef_declarations,
-		const NamedEnumDeclarations& named_enum_declarations );
+	Synt::TypeAlias EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const clang::TypedefNameDecl* item );
 
-	using NamedVariableDeclarations= NamesMapContainer<std::string, const clang::VarDecl*>;
-	NamedVariableDeclarations GenerateVariableNames(
-		const NamedFunctionDeclarations& named_function_declarations,
-		const NamedRecordDeclarations& named_record_declarations,
-		const NamedTypedefDeclarations& named_typedef_declarations,
-		const NamedEnumDeclarations& named_enum_declarations,
-		const EnumNamesSet& enum_names );
+	Synt::TypeAlias EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const clang::EnumDecl* item );
 
-	void EmitFunctions( const NamedFunctionDeclarations& function_declarations, const TypeNamesMap& type_names_map );
-	void EmitFunction( const std::string& name, const clang::FunctionDecl& function_decl, const TypeNamesMap& type_names_map );
+	Synt::VariablesDeclaration EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemEnumElement& item );
 
-	void EmitRecords(
-		const NamedRecordDeclarations& record_declarations,
-		const NamedTypedefDeclarations& named_typedef_declarations,
-		const NamedEnumDeclarations& named_enum_declarations,
-		const TypeNamesMap& type_names_map );
-
-	void EmitRecord(
-		const std::string& name,
-		const clang::RecordDecl& record_declaration,
-		const NamedRecordDeclarations& named_record_declarations,
-		const NamedTypedefDeclarations& named_typedef_declarations,
-		const NamedEnumDeclarations& named_enum_declarations,
-		const TypeNamesMap& type_names_map );
+	Synt::VariablesDeclaration EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const clang::VarDecl* item );
 
 	Synt::ClassElementsList MakeOpaqueRecordElements(
+		const TypeNamesMap& type_names_map,
 		const clang::RecordDecl& record_declaration,
-		std::string_view kind_name );
-
-	void EmitTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map );
-	void EmitTypedef( const std::string& name, const clang::TypedefNameDecl& typedef_declaration, const TypeNamesMap& type_names_map );
-
-	void EmitEnums(
-		const NamedFunctionDeclarations& named_function_declarations,
-		const NamedRecordDeclarations& named_record_declarations,
-		const NamedTypedefDeclarations& named_typedef_declarations,
-		const NamedEnumDeclarations& named_enum_declarations,
-		EnumNamesSet& out_enum_names );
-
-	void EmitEnum(
-		const std::string& name,
-		const clang::EnumDecl& enum_declaration,
-		const NamedFunctionDeclarations& named_function_declarations,
-		const NamedRecordDeclarations& named_record_declarations,
-		const NamedTypedefDeclarations& named_typedef_declarations,
-		const NamedEnumDeclarations& named_enum_declarations,
-		EnumNamesSet& out_enum_names );
-
-	Synt::VariablesDeclaration::VariableEntry TranslateEnumElement(
-		const clang::EnumConstantDecl& enumerator,
-		std::string name );
-
-	void EmitVariables(
-		const NamedVariableDeclarations& named_variable_declarations,
-		const TypeNamesMap& type_names_map );
-
-	void EmitVariable(
-		const std::string& name, const clang::VarDecl& variable,
-		const TypeNamesMap& type_names_map );
+		std::string_view kind_name,
+		const NamespaceItemsMap& subitems );
 
 	Synt::Initializer TranslateVariableInitializer_r( const clang::Type& variable_type, const clang::APValue& value );
 
-	void EmitDefinitionsForMacros(
-		const NamedFunctionDeclarations& named_function_declarations,
-		const NamedRecordDeclarations& named_record_declarations,
-		const NamedTypedefDeclarations& named_typedef_declarations,
-		const NamedEnumDeclarations& named_enum_declarations,
-		const EnumNamesSet& enum_names,
-		const NamedVariableDeclarations& named_variable_declarations );
+	void EmitDefinitionsForMacros( Synt::ProgramElementsList::Builder& out_items );
 
 	Synt::Expression TranslateNumericLiteral( const clang::Token& token );
 
 private:
-	Synt::ProgramElementsList::Builder& root_program_elements_;
+	Synt::ProgramElementsList& out_program_elements_;
 
 	const clang::SourceManager& source_manager_;
 	clang::Preprocessor& preprocessor_;
@@ -187,15 +303,7 @@ private:
 	const clang::ASTContext& ast_context_;
 	const bool skip_declarations_from_includes_;
 
-	// Declaration of symbols to translate.
-	// Use vector, because we need stable order in order to perform (if necessary) consistent renaming.
-	std::vector< const clang::FunctionDecl* > function_declarations_;
-	std::vector< const clang::RecordDecl* > record_declarations_;
-	std::vector< const clang::TypedefNameDecl* > typedef_declarations_;
-	std::vector< const clang::EnumDecl* > enum_declarations_;
-	std::vector< const clang::VarDecl* > variable_declarations_;
-
-	size_t unique_name_index_= 0u;
+	NamespaceItemNamespace root_namespace_;
 };
 
 class CppAstProcessor final : public clang::ASTFrontendAction
@@ -214,7 +322,7 @@ private:
 };
 
 CppAstConsumer::CppAstConsumer(
-	Synt::ProgramElementsList::Builder& out_elements,
+	Synt::ProgramElementsList& out_elements,
 	const clang::SourceManager& source_manager,
 	clang::Preprocessor& preprocessor,
 	const clang::TargetInfo& target_info,
@@ -222,7 +330,7 @@ CppAstConsumer::CppAstConsumer(
 	const clang::LangOptions& lang_options,
 	const clang::ASTContext& ast_context,
 	const bool skip_declarations_from_includes )
-	: root_program_elements_(out_elements)
+	: out_program_elements_(out_elements)
 	, source_manager_(source_manager)
 	, preprocessor_(preprocessor)
 	, target_info_(target_info)
@@ -244,51 +352,23 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 {
 	(void)ast_context;
 
-	// Collect subrecords.
-	// Do it via a separate step in order to process all subrecords late and avoid renaming of main records in case of naming conflicts.
-	CollectSubrecords();
+	for( auto& pair : root_namespace_.items )
+		CollectSubrecords( pair.second );
 
-	// First, generate names for functions.
-	// This step is first, since we need to try to preserve original names.
-	// It's fine to rename types later, if they conflict with function names.
-	const NamedFunctionDeclarations function_names= GenerateFunctionNames();
+	TypeNamesMap type_names_map;
 
-	// Second, generate names for types.
-	// We can rename them in case of conflicts.
-	// It's fine to rename, since type names in C aren't used for symbols mangling.
-	const NamedRecordDeclarations record_names= GenerateRecordNames( function_names );
+	{
+		ItemFullName prefix;
+		BuildTypeNamesMapImpl( type_names_map, prefix, root_namespace_ );
+	}
 
-	// Third, generate names for typedefs.
-	// Rename in case of conflicts, if necessary.
-	const NamedTypedefDeclarations typedef_names= GenerateTypedefNames( function_names, record_names );
+	Synt::ProgramElementsList::Builder root_program_elements;
 
-	// Lastly, generate names for enums.
-	// Skip anonymous enums, rename, if necessary.
-	const NamedEnumDeclarations enum_names= GenerateEnumNames( function_names, record_names, typedef_names );
+	EmitItemsSorted( root_program_elements, type_names_map, root_namespace_.items );
 
-	// Build types map to referr to types by name (possible renamed).
-	const TypeNamesMap type_names_map= BuildTypeNamesMap( record_names, typedef_names, enum_names );
+	EmitDefinitionsForMacros( root_program_elements );
 
-	//
-	// Emit symbols.
-	//
-
-	EmitFunctions( function_names, type_names_map );
-
-	EmitRecords( record_names, typedef_names, enum_names, type_names_map );
-
-	EmitTypedefs( typedef_names, type_names_map );
-
-	// While emitting enums we emit also variables for members of enums.
-	// Use this variables list later to avoid naming conflicts.
-	EnumNamesSet extra_enum_names;
-	EmitEnums( function_names, record_names, typedef_names, enum_names, extra_enum_names );
-
-	// Build variables as last.
-	const NamedVariableDeclarations variable_names= GenerateVariableNames( function_names, record_names, typedef_names, enum_names, extra_enum_names );
-	EmitVariables( variable_names, type_names_map );
-
-	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names, extra_enum_names, variable_names );
+	out_program_elements_= root_program_elements.Build();
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
@@ -299,18 +379,91 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 	if( const auto record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
 	{
-		if( record_decl->isCompleteDefinition() && !record_decl->isTemplated() )
-			record_declarations_.push_back( record_decl );
+		if( !record_decl->isTemplated() )
+		{
+			const auto src_name= record_decl->getName();
+
+			const std::string name_translated=
+				src_name.empty()
+					? GetAnonymousItemUniqueName( g_anon_record_prefix, record_decl->getLocation() )
+					: TranslateIdentifier( src_name );
+
+			// Tagged names (structs, unions, enums) in C build a separae namespace.
+			// So, put tags into separate Ü namespace.
+
+			NamespaceItemsMap& items_map=
+				std::get< NamespaceItemNamespace>( root_namespace_.items[ record_decl->isUnion() ? g_union_kind_tag : g_struct_kind_tag ] ).items;
+
+			// Insert if has no entry, replace if is complete definition.
+			if( items_map.count( name_translated ) == 0 || record_decl->isCompleteDefinition() )
+				items_map.insert_or_assign( name_translated, NamespaceItemRecord{ record_decl, NamespaceItemsMap() } );
+		}
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
-		typedef_declarations_.push_back( type_alias_decl );
+		root_namespace_.items.insert_or_assign( TranslateIdentifier( type_alias_decl->getName() ), type_alias_decl );
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
 		if( func_decl->isFirstDecl() || func_decl->getBuiltinID() != 0 )
-			function_declarations_.push_back( func_decl );
+		{
+			if( func_decl->getIdentifier() != nullptr && !( func_decl->hasBody() && func_decl->isInlineSpecified() ) )
+			{
+				const llvm::StringRef original_name= func_decl->getName();
+
+				if( TranslateIdentifier( original_name ) == original_name )
+					root_namespace_.items.insert_or_assign( original_name, func_decl );
+				else
+				{
+					// If it's impossible to use the original name for a function - ignore it.
+					// Emitting it as renaming is useless, since calling such function isn't possible anyway.
+				}
+			}
+		}
 	}
 	else if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>(&decl) )
-		enum_declarations_.push_back( enum_decl );
+	{
+		const auto src_name= enum_decl->getName();
+
+		const std::string name_translated=
+			src_name.empty()
+				? GetAnonymousItemUniqueName( g_anon_enum_prefix, enum_decl->getLocation() )
+				: TranslateIdentifier( src_name );
+
+		// Tagged names (structs, unions, enums) in C build a separae namespace.
+		// So, put tags into separate Ü namespace.
+
+		NamespaceItemsMap& items_map= std::get< NamespaceItemNamespace>( root_namespace_.items[ g_enum_kind_tag ] ).items;
+
+		// Insert if has no entry, replace if is complete definition.
+		if( items_map.count( name_translated ) == 0 || enum_decl->isComplete() )
+			items_map.insert_or_assign( name_translated, enum_decl );
+
+		if( enum_decl->isComplete() )
+		{
+			if( enum_decl->isScoped() )
+			{
+				// Create a namespace for elements of a scoped enum within "scoped_enum_" namespace.
+				// Doing so we avoid possible name conflicts and preserve enum elements in single place.
+
+				NamespaceItemsMap& scoped_enum_items_map=
+					std::get< NamespaceItemNamespace>( root_namespace_.items[ g_scoped_enum_namespace_kind_tag ] ).items;
+
+				NamespaceItemsMap& scoped_enum_members_map=
+					std::get< NamespaceItemNamespace>( scoped_enum_items_map[ name_translated ] ).items;
+
+				for( const clang::EnumConstantDecl* const enumerator : enum_decl->enumerators() )
+					scoped_enum_members_map.insert_or_assign(
+						TranslateIdentifier( enumerator->getName() ),
+						NamespaceItemEnumElement{ enum_decl->getTypeForDecl(), enumerator } );
+			}
+			else
+			{
+				for( const clang::EnumConstantDecl* const enumerator : enum_decl->enumerators() )
+					root_namespace_.items.insert_or_assign(
+						TranslateIdentifier( enumerator->getName() ),
+						NamespaceItemEnumElement{ enum_decl->getTypeForDecl(), enumerator } );
+			}
+		}
+	}
 	else if( const auto decl_context= llvm::dyn_cast<clang::DeclContext>(&decl) )
 	{
 		for( const clang::Decl* const sub_decl : decl_context->decls() )
@@ -318,24 +471,76 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	}
 	else if( const auto var_decl= llvm::dyn_cast<clang::VarDecl>(&decl) )
 	{
-		if( var_decl->hasInit() && var_decl->hasConstantInitialization() )
-			variable_declarations_.push_back( var_decl );
+		if( var_decl->hasInit() &&
+			var_decl->hasConstantInitialization() &&
+			var_decl->getType().isConstant( ast_context_ ) )
+			root_namespace_.items.insert_or_assign( TranslateIdentifier( var_decl->getName() ), var_decl );
 	}
+}
+
+std::string CppAstConsumer::GetAnonymousItemUniqueName( std::string_view prefix, clang::SourceLocation location )
+{
+	// Use prefix_device_file_line_column format.
+	// This provides stable and deterministic names (at least on single machine).
+
+	std::string name= std::string( prefix );
+
+	// Use a loop to include locations of each macro expansion in the result name.
+	while( true )
+	{
+		if( !location.isValid() )
+			break;
+
+		const auto decomposed_loc=
+			source_manager_.getDecomposedLoc( source_manager_.getImmediateSpellingLoc( location ) );
+		const clang::FileID file_id= decomposed_loc.first;
+		if( file_id.isValid() )
+		{
+			if( const clang::FileEntry* const entry= source_manager_.getFileEntryForID( file_id ) )
+			{
+				const llvm::sys::fs::UniqueID unique_id= entry->getUniqueID();
+				name+= "_d";
+				name+= std::to_string( unique_id.getDevice() );
+				name+= "_f";
+				name+= std::to_string( unique_id.getFile() );
+			}
+		}
+		name+= "_l";
+		name+= std::to_string( source_manager_.getLineNumber( file_id, decomposed_loc.second ) );
+		name+= "_c";
+		name+= std::to_string( source_manager_.getColumnNumber( file_id, decomposed_loc.second ) );
+
+		if( location.isMacroID() )
+			location= source_manager_.getImmediateExpansionRange( location ).getBegin();
+		else
+			break;
+	}
+
+	return name;
 }
 
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map )
 {
 	// Records, typedefs, enums should have names in this map.
 	if( const auto named_type_it= type_names_map.find( &in_type ); named_type_it != type_names_map.end() )
-		return StringToTypeName( named_type_it->second );
+		return Synt::ComplexNameToTypeName( GetItemNameSyntaxElement( named_type_it->second ) );
 
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
-		return StringToTypeName( GetUFundamentalType( *built_in_type ) );
+		return CreateFundamentalTypeName( GetUFundamentalType( *built_in_type ) );
 	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
 	{
 		// Normally we should create entries for typedefs in types map.
 		// But if this doesn't work, use underlying type instead.
 		return TranslateType( *typedef_type->desugar().getTypePtr(), type_names_map );
+	}
+	else if( const clang::RecordType* record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
+	{
+		// Normally we should create entries for records in types map.
+		// Here we process some special types.
+
+		if( const auto decl= record_type->getDecl() )
+			if( decl->getIdentifier() != nullptr && decl->getName() == "__va_list_tag" )
+				return CreateFundamentalTypeName( Keyword( Keywords::byte8_ ) );
 	}
 	else if( const auto atomic_type= llvm::dyn_cast<clang::AtomicType>(&in_type) )
 	{
@@ -366,9 +571,16 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 		return std::move(array_type);
 	}
+	else if( const auto incomplete_array_type= llvm::dyn_cast<clang::IncompleteArrayType>(&in_type) )
+	{
+		// Translate incomplete array types as raw pointers.
+		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+		raw_pointer_type->element_type= TranslateType( *incomplete_array_type->getArrayElementTypeNoTypeQual(), type_names_map );
+		return std::move(raw_pointer_type);
+	}
 	else if( const auto array_type= llvm::dyn_cast<clang::ArrayType>(&in_type) )
 	{
-		// For other variants of array types use zero size.
+		// For other kinds of array types use zero size.
 		auto out_array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
 		out_array_type->element_type= TranslateType( *array_type->getElementType().getTypePtr(), type_names_map );
 
@@ -378,13 +590,20 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 		return std::move(out_array_type);
 	}
-	else if( const auto incomplete_array_type= llvm::dyn_cast<clang::IncompleteArrayType>(&in_type) )
+	else if( const auto vector_type= llvm::dyn_cast<clang::VectorType>( &in_type ) )
 	{
-		// Translate incomplete array types as raw pointers.
-		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
-		raw_pointer_type->element_type= TranslateType( *incomplete_array_type->getPointeeType().getTypePtr(), type_names_map );
+		// For now translate vector types as arrays.
+		// It's not fully correct, since vector types may use custom alignment larger than element aligment.
+		// But at least result size matches, which is important if such type is used for a struct field.
 
-		return std::move(raw_pointer_type);
+		auto out_array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
+		out_array_type->element_type= TranslateType( *vector_type->getElementType().getTypePtr(), type_names_map );
+
+		Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
+		numeric_constant.num.value= vector_type->getNumElements();
+		out_array_type->size= std::move(numeric_constant);
+
+		return std::move(out_array_type);
 	}
 	else if( const auto decayed_type= llvm::dyn_cast<clang::DecayedType>(&in_type) )
 	{
@@ -429,7 +648,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		// This is function type and not function pointer type.
 		// This is typical in typedefs.
 		// We can't transalte such types, so, use void stub.
-		return StringToTypeName( Keyword( Keywords::void_ ) );
+		return CreateFundamentalTypeName( Keyword( Keywords::void_ ) );
 	}
 	else if( const auto pointer_type= llvm::dyn_cast<clang::PointerType>(&in_type) )
 	{
@@ -462,7 +681,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 	}
 
 	// Fallback for some unlikely case.
-	return StringToTypeName( Keyword( Keywords::void_ ) );
+	return CreateFundamentalTypeName( Keyword( Keywords::void_ ) );
 }
 
 std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
@@ -484,7 +703,8 @@ std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& 
 	case clang::BuiltinType::Char16: return Keyword( Keywords::char16_ );
 	case clang::BuiltinType::Char32: return Keyword( Keywords::char32_ );
 
-	case clang::BuiltinType::NullPtr: return Keyword( Keywords::size_type_ );
+	// nullptr_t is a pointer type.
+	case clang::BuiltinType::NullPtr: return "$(byte8)";
 
 	default:
 		const auto size= ast_context_.getTypeSize( &in_type );
@@ -515,13 +735,6 @@ std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& 
 		}
 		return Keyword( Keywords::void_ );
 	};
-}
-
-Synt::TypeName CppAstConsumer::StringToTypeName( const std::string_view s )
-{
-	Synt::NameLookup name_lookup( g_dummy_src_loc );
-	name_lookup.name= s;
-	return std::move(name_lookup);
 }
 
 Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map )
@@ -585,368 +798,188 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionT
 	return function_type;
 }
 
-std::unique_ptr<const Synt::Expression> CppAstConsumer::TranslateCallingConvention( const clang::FunctionType& in_type )
+void CppAstConsumer::BuildTypeNamesMap( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItem& item )
 {
-	if( auto cc= TranslateCallingConventionImpl( in_type ) )
-	{
-		auto string_literal= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
-		string_literal->value= std::move(*cc);
-
-		return std::make_unique<Synt::Expression>( std::move(string_literal) );
-	}
-
-	return nullptr;
+	std::visit( [&]( const auto& t ) { BuildTypeNamesMapImpl( map, prefix, t ); }, item );
 }
 
-std::optional<std::string> CppAstConsumer::TranslateCallingConventionImpl( const clang::FunctionType& in_type )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemNamespace& item )
 {
-	// TODO - handle/introduce other calling conventions.
-	switch( in_type.getCallConv() )
+	for( const auto& pair : item.items )
 	{
-	case clang::CallingConv::CC_C:
-		return "C";
-	case clang::CallingConv::CC_X86StdCall:
-		return "system";
-	case clang::CallingConv::CC_X86FastCall:
-		return "fast";
-	default: break;
+		prefix.push_back( pair.getKey().str() );
+		BuildTypeNamesMap( map, prefix, pair.getValue() );
+		prefix.pop_back();
 	}
-
-	return std::nullopt;
 }
 
-std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifier )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::FunctionDecl* const item )
 {
-	U_ASSERT( !identifier.empty() );
+	(void)map;
+	(void)prefix;
+	(void)item;
+}
 
-	size_t num_underscores= 0;
-	while( num_underscores < identifier.size() && identifier[num_underscores] == '_' )
-		++num_underscores;
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemRecord& item )
+{
+	map.emplace( item.record_decl->getTypeForDecl(), prefix );
 
-	// In Ü identifier can not start with "_", so, move all leading underscores to the end.
-	if( num_underscores > 0 )
+	for( const auto& pair : item.items )
 	{
-		std::string res;
-		res.resize( identifier.size() );
-		std::memcpy( res.data(), identifier.data() + num_underscores, identifier.size() - num_underscores );
-		std::memset( res.data() + identifier.size() - num_underscores, '_', num_underscores );
+		prefix.push_back( pair.getKey().str() );
+		BuildTypeNamesMap( map, prefix, pair.getValue() );
+		prefix.pop_back();
+	}
+}
 
-		if( res.front() >= '0' && res.front() <= '9' )
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::TypedefNameDecl* const item )
+{
+	map.emplace( ast_context_.getTypedefType( item ).getTypePtr(), prefix );
+}
+
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::EnumDecl* const item )
+{
+	map.emplace( item->getTypeForDecl(), prefix );
+}
+
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemEnumElement& item )
+{
+	(void)map;
+	(void)prefix;
+	(void)item;
+}
+
+void CppAstConsumer::BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::VarDecl* const item )
+{
+	(void)map;
+	(void)prefix;
+	(void)item;
+}
+
+void CppAstConsumer::CollectSubrecords( NamespaceItem& item )
+{
+	if( const auto namespace_= std::get_if< NamespaceItemNamespace >( &item ) )
+	{
+		for( auto& pair : namespace_->items )
+			CollectSubrecords( pair.second );
+	}
+	else if( const auto record_item	= std::get_if< NamespaceItemRecord >( &item ) )
+	{
+		for( const clang::Decl* const sub_decl : record_item->record_decl->decls() )
 		{
-			// After dropping underscores it may happen that identifier starts with numeric symbol.
-			// In such case we need to prefix it with some other valid identifier start char.
-			res.insert( res.begin(), 'n' );
-		}
-
-		return res;
-	}
-
-	// Avoid using keywords as names.
-	if( IsKeyword( identifier ) )
-		return (identifier + "_").str();
-
-	return identifier.str();
-}
-
-void CppAstConsumer::CollectSubrecords()
-{
-	// Use index-based for loop, since container may be modified.
-	for( size_t i= 0; i < record_declarations_.size(); ++i )
-	{
-		const auto record_declaration= record_declarations_[i];
-		for( const clang::Decl* const sub_decl : record_declaration->decls() )
-		{
-			// Collect sub-structs into flat result container.
-			// Doing so we force move nested records into the root namespace.
-			// This may cause renaming due to name conflicts.
-			// But it's not so bad.
 			if( const auto subrecord= llvm::dyn_cast<clang::RecordDecl>( sub_decl ) )
 			{
-				if( subrecord->isCompleteDefinition() && !subrecord->isTemplated() )
-					record_declarations_.push_back( subrecord );
-			}
-		}
-	}
-}
-
-CppAstConsumer::NamedFunctionDeclarations CppAstConsumer::GenerateFunctionNames()
-{
-	NamedFunctionDeclarations named_declarations;
-	for( const auto function_declaration : function_declarations_ )
-	{
-		if( function_declaration->getIdentifier() == nullptr )
-			continue;
-
-		std::string name= function_declaration->getName().str();
-		if( IsKeyword( name ) || ( !name.empty() && name[0] == '_' ) )
-		{
-			// It's for now impossible to use a function with name, which isn't a valid Ü identifier.
-			continue;
-		}
-
-		if( named_declarations.count( name ) != 0 )
-			continue; // Aleady has this declaration.
-
-		named_declarations.emplace( std::move(name), function_declaration );
-	}
-
-	return named_declarations;
-}
-
-CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( const NamedFunctionDeclarations& named_function_declarations )
-{
-	NamedRecordDeclarations named_declarations;
-
-	for( const auto record_declaration : record_declarations_ )
-	{
-		const auto src_name= record_declaration->getName();
-
-		std::string name;
-		if( src_name.empty() )
-			name= "anon_record_" + std::to_string( ++unique_name_index_ );
-		else
-			name= TranslateIdentifier( src_name );
-
-		// Rename record until we have no name conflict.
-		while(
-			named_function_declarations.count( name ) != 0 ||
-			named_declarations.count( name ) != 0 )
-			name+= "_";
-
-		named_declarations.emplace( std::move(name), record_declaration );
-	}
-
-	// Collect declarations of incomplete records.
-	std::vector< const clang::RecordDecl* > incomplete_records;
-
-	for( const auto type : ast_context_.getTypes() )
-	{
-		if( const auto record_type= llvm::dyn_cast<clang::RecordType>( type ) )
-		{
-			if( const auto record_declaration= record_type->getDecl() )
-			{
-				// Process only incomplete records.
-				// ignore implicitely-defined records, like "_GUID".
-				if( record_type->isIncompleteType() && ! record_declaration->isImplicit() )
-					incomplete_records.push_back( record_declaration );
-			}
-		}
-	}
-
-	// Sort incomplete records in order to get stable order and thus consistent renaming.
-	std::sort(
-		incomplete_records.begin(),
-		incomplete_records.end(),
-		[]( const clang::RecordDecl* const l, const clang::RecordDecl* const r )
-		{
-			return l->getSourceRange().getBegin() < r->getSourceRange().getBegin();
-		} );
-
-	// Add names of incomplete records.
-	for( const clang::RecordDecl* const incomplete_record : incomplete_records )
-	{
-		const auto src_name= incomplete_record->getName();
-
-		std::string name;
-		if( src_name.empty() )
-			name= "anon_record_" + std::to_string( ++unique_name_index_ );
-		else
-			name= TranslateIdentifier( src_name );
-
-		// Rename record until we have no name conflict.
-		while(
-			named_function_declarations.count( name ) != 0 ||
-			named_declarations.count( name ) != 0 )
-			name+= "_";
-
-		named_declarations.emplace( std::move(name), incomplete_record );
-	}
-
-	return named_declarations;
-}
-
-CppAstConsumer::NamedTypedefDeclarations CppAstConsumer::GenerateTypedefNames(
-	const NamedFunctionDeclarations& named_function_declarations,
-	const NamedRecordDeclarations& named_record_declarations )
-{
-	NamedTypedefDeclarations named_declarations;
-
-	for( const auto typedef_decl : typedef_declarations_ )
-	{
-		const auto src_name= typedef_decl->getName();
-		if( src_name.empty() )
-			continue; // Is it possible?
-
-		// Handle special case - try avoid emitting type alias for "typedef struct Some {} Some;" or "typedef enum Some {} Some;".
-		{
-			const clang::Type* src_type= typedef_decl->getUnderlyingType().getTypePtr();
-
-			while(true)
-			{
-				if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( src_type ) )
-					src_type= elaborated_type->desugar().getTypePtr();
-				else
-					break;
-			}
-
-			if( const auto record_type= llvm::dyn_cast<clang::RecordType>( src_type ) )
-			{
-				if( const auto record_decl= record_type->getDecl() )
-					if( record_decl->getName() == src_name )
-						continue;
-			}
-			if( const auto enum_type= llvm::dyn_cast<clang::EnumType>( src_type ) )
-			{
-				if( const auto enum_decl= enum_type->getDecl() )
-					if( enum_decl->getName() == src_name )
-						continue;
-			}
-		}
-
-		std::string name= TranslateIdentifier( src_name );
-
-		// Rename typedef until we have no name conflict.
-		while(
-			named_function_declarations.count( name ) != 0 ||
-			named_record_declarations.count( name ) != 0 ||
-			named_declarations.count( name ) != 0 )
-			name+= "_";
-
-		named_declarations.emplace( std::move(name), typedef_decl );
-	}
-
-	// Add some implicit typedefs.
-
-	const std::string size_t_name= "size_t";
-	const llvm::StringRef builtin_va_list_name= "__builtin_va_list";
-
-	for( const auto type : ast_context_.getTypes() )
-	{
-		if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(type) )
-		{
-			if( const auto decl= typedef_type->getDecl() )
-			{
-				// Add implicit size_t.
-				if( decl->getName() == size_t_name &&
-					named_function_declarations.count( size_t_name ) == 0 &&
-					named_record_declarations.count( size_t_name ) == 0 &&
-					named_declarations.count( size_t_name ) == 0 )
+				if( !subrecord->isTemplated() )
 				{
-					named_declarations.emplace( size_t_name, decl );
-				}
+					const auto src_name= subrecord->getName();
 
-				// Add implicit "__builtin_va_list".
-				if( decl->getName() == builtin_va_list_name )
-				{
-					const auto builtin_va_list_name_translated= TranslateIdentifier( builtin_va_list_name );
+					const std::string name_translated=
+						src_name.empty()
+							? GetAnonymousItemUniqueName( g_anon_record_prefix, subrecord->getLocation() )
+							: TranslateIdentifier( src_name );
 
-					if( named_function_declarations.count( builtin_va_list_name_translated ) == 0 &&
-						named_record_declarations.count( builtin_va_list_name_translated ) == 0 &&
-						named_declarations.count( builtin_va_list_name_translated ) == 0 )
+					NamespaceItemsMap& items_map=
+						std::get< NamespaceItemNamespace >( record_item->items[ subrecord->isUnion() ? g_union_kind_tag : g_struct_kind_tag ] ).items;
+
+					// Insert if has no entry, replace if is complete definition.
+					if( items_map.count( name_translated ) == 0 || subrecord->isCompleteDefinition() )
 					{
-						named_declarations.emplace( builtin_va_list_name_translated, decl );
+						NamespaceItem& subrecord_item=
+							items_map.insert_or_assign( name_translated, NamespaceItemRecord{ subrecord, NamespaceItemsMap() } ).first->second;
+						if( subrecord->isCompleteDefinition() )
+							CollectSubrecords( subrecord_item );
 					}
 				}
 			}
 		}
-
 	}
-
-	return named_declarations;
 }
 
-CppAstConsumer::NamedEnumDeclarations CppAstConsumer::GenerateEnumNames(
-	const NamedFunctionDeclarations& named_function_declarations,
-	const NamedRecordDeclarations& named_record_declarations,
-	const NamedTypedefDeclarations& named_typedef_declarations )
+template<typename ListBuilder>
+void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const NamespaceItemsMap& items )
 {
-	NamedEnumDeclarations named_declarations;
+	// Emit namespace elements in their definition order.
+	// If can't do this - sort by name.
+	// Using definition order increases readability.
+	// Sorting names with no location is important to produce deterministic result and avoid emitting items in hash-map order.
 
-	for( const auto enum_decl : enum_declarations_ )
+	struct ItemToSort
 	{
-		const auto src_name= enum_decl->getName();
+		clang::SourceLocation location;
+		llvm::StringRef name; // Points to the entry in the items map given to this function.
+	};
 
-		std::string name;
-		if( src_name.empty() )
-			name= "anon_enum_" + std::to_string( ++unique_name_index_ );
+	std::vector<ItemToSort> items_to_sort_by_location;
+	std::vector<llvm::StringRef> items_to_sort_by_name;
+
+	for( const auto& pair : items )
+	{
+		clang::SourceLocation location;
+
+		if( const auto function_decl_ptr = std::get_if< const clang::FunctionDecl* >( &pair.second ) )
+			location= (*function_decl_ptr)->getLocation();
+		else if( const auto typedef_ptr = std::get_if< const clang::TypedefNameDecl* >( &pair.second ) )
+			location= (*typedef_ptr)->getLocation();
+		else if( const auto enum_ptr = std::get_if< const clang::EnumDecl* >( &pair.second ) )
+			location= (*enum_ptr)->getLocation();
+		else if( const auto enum_element = std::get_if< NamespaceItemEnumElement >( &pair.second ) )
+			location= enum_element->enum_constant_decl->getLocation();
+		else if( const auto var_ptr = std::get_if< const clang::VarDecl* >( &pair.second ) )
+			location= (*var_ptr)->getLocation();
+
+		if( location.isValid() )
+			items_to_sort_by_location.push_back( ItemToSort{ location, pair.getKey() } );
 		else
-			name= TranslateIdentifier( src_name );
-
-		// Rename enum until we have no name conflict.
-		while(
-			named_function_declarations.count( name ) != 0 ||
-			named_record_declarations.count( name ) != 0 ||
-			named_typedef_declarations.count( name ) != 0 ||
-			named_declarations.count( name ) != 0 )
-			name+= "_";
-
-		named_declarations.emplace( std::move(name), enum_decl );
+			items_to_sort_by_name.push_back( pair.getKey() );
 	}
 
-	return named_declarations;
-}
+	std::sort(
+		items_to_sort_by_location.begin(),
+		items_to_sort_by_location.end(),
+		[&]( const ItemToSort& l, const ItemToSort& r )
+		{
+			return source_manager_.isBeforeInTranslationUnit( l.location, r.location );
+		} );
 
-CppAstConsumer::TypeNamesMap CppAstConsumer::BuildTypeNamesMap(
-	const NamedRecordDeclarations& named_record_declarations,
-	const NamedTypedefDeclarations& named_typedef_declarations,
-	const NamedEnumDeclarations& named_enum_declarations )
-{
-	TypeNamesMap res;
-
-	for( const auto& pair : named_record_declarations )
-		res[ pair.second->getTypeForDecl() ] = pair.first;
-
-	for( const auto& pair : named_typedef_declarations )
-		res[ ast_context_.getTypedefType( pair.second ).getTypePtr() ] = pair.first;
-
-	for( const auto& pair : named_enum_declarations )
-		res[ pair.second->getTypeForDecl() ] = pair.first;
-
-	return res;
-}
-
-CppAstConsumer::NamedVariableDeclarations CppAstConsumer::GenerateVariableNames(
-	const NamedFunctionDeclarations& named_function_declarations,
-	const NamedRecordDeclarations& named_record_declarations,
-	const NamedTypedefDeclarations& named_typedef_declarations,
-	const NamedEnumDeclarations& named_enum_declarations,
-	const EnumNamesSet& enum_names )
-{
-	NamedVariableDeclarations named_declarations;
-
-	for( const auto var_decl : variable_declarations_ )
+	for( const ItemToSort& item : items_to_sort_by_location )
 	{
-		const auto src_name= var_decl->getName();
-
-		std::string name= TranslateIdentifier( src_name );
-
-		// Rename variable until we have no name conflict.
-		while(
-			named_function_declarations.count( name ) != 0 ||
-			named_record_declarations.count( name ) != 0 ||
-			named_typedef_declarations.count( name ) != 0 ||
-			named_enum_declarations.count( name ) != 0 ||
-			enum_names.count( name ) != 0 ||
-			named_declarations.count( name ) != 0 )
-			name+= "_";
-
-		named_declarations.emplace( std::move(name), var_decl );
+		std::visit(
+			[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, item.name, t ) ); },
+			items.find( item.name )->second );
 	}
 
-	return named_declarations;
+	std::sort( items_to_sort_by_name.begin(), items_to_sort_by_name.end() );
+
+	for( const llvm::StringRef name : items_to_sort_by_name )
+	{
+		std::visit(
+			[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, name, t ) ); },
+			items.find( name )->second );
+	}
 }
 
-void CppAstConsumer::EmitFunctions( const NamedFunctionDeclarations& function_declarations, const TypeNamesMap& type_names_map )
+Synt::Class CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItemNamespace& item )
 {
-	for( const auto& pair : function_declarations )
-		EmitFunction( pair.first, *pair.second, type_names_map );
+	Synt::ClassElementsList::Builder class_items_builder;
+
+	EmitItemsSorted( class_items_builder, type_names_map, item.items );
+
+	Synt::Class class_( g_dummy_src_loc );
+	class_.name= name;
+	class_.elements= class_items_builder.Build();
+
+	return class_;
 }
 
-void CppAstConsumer::EmitFunction( const std::string& name, const clang::FunctionDecl& function_decl, const TypeNamesMap& type_names_map )
+Synt::Function CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const clang::FunctionDecl* const item )
 {
+	const clang::FunctionDecl& function_decl= *item;
+
 	Synt::Function func(g_dummy_src_loc);
 
-	func.name.push_back( Synt::Function::NameComponent{ name, g_dummy_src_loc } );
+	func.name.push_back( Synt::Function::NameComponent{ std::string( name ), g_dummy_src_loc } );
 
 	func.no_mangle= true; // For now import only C functions without mangling.
 
@@ -972,37 +1005,23 @@ void CppAstConsumer::EmitFunction( const std::string& name, const clang::Functio
 		++i;
 	}
 
-	root_program_elements_.Append( std::move(func) );
+	return func;
 }
 
-void CppAstConsumer::EmitRecords(
-	const NamedRecordDeclarations& record_declarations,
-	const NamedTypedefDeclarations& named_typedef_declarations,
-	const NamedEnumDeclarations& named_enum_declarations,
-	const TypeNamesMap& type_names_map )
+Synt::Class CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItemRecord& item )
 {
-	for( const auto& pair : record_declarations )
-		EmitRecord( pair.first, *pair.second, record_declarations, named_typedef_declarations, named_enum_declarations, type_names_map );
-}
+	const clang::RecordDecl& record_declaration= *item.record_decl;
 
-void CppAstConsumer::EmitRecord(
-	const std::string& name,
-	const clang::RecordDecl& record_declaration,
-	const NamedRecordDeclarations& named_record_declarations,
-	const NamedTypedefDeclarations& named_typedef_declarations,
-	const NamedEnumDeclarations& named_enum_declarations,
-	const TypeNamesMap& type_names_map )
-{
+	Synt::Class class_(g_dummy_src_loc);
+	class_.name= name;
+	class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
+	if( record_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
+		class_.no_discard= true;
+
 	if( record_declaration.isStruct() || record_declaration.isClass() )
 	{
-		Synt::Class class_(g_dummy_src_loc);
-		class_.name= name;
-
-		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
-
-		if( record_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
-			class_.no_discard= true;
-
 		if( record_declaration.isCompleteDefinition() )
 		{
 			bool has_bitfields= false;
@@ -1085,41 +1104,57 @@ void CppAstConsumer::EmitRecord(
 			{
 				// Ü has no bitfields support. And generally we can't replace C bitfields with something else.
 				// So, for now just create stub struct.
-				class_.elements= MakeOpaqueRecordElements( record_declaration, "struct_with_bitfields" );
+				class_.elements= MakeOpaqueRecordElements( type_names_map, record_declaration, "struct_with_bitfields", item.items );
 			}
 			else if( is_empty )
 			{
 				// If struct has no fields we may still need to create some fields for it.
 				// It may be necessary in C++ mode, where empty structs have size 1.
-				class_.elements= MakeOpaqueRecordElements( record_declaration, "empty_struct" );
+				class_.elements= MakeOpaqueRecordElements( type_names_map, record_declaration, "empty_struct", item.items );
 			}
 			else
 			{
+				uint32_t anonymous_field_index= 0u;
+
 				for( const clang::FieldDecl* const field_declaration : record_declaration.fields() )
 				{
 					Synt::ClassField field( g_dummy_src_loc );
 
-					field.type= TranslateType( *field_declaration->getType().getTypePtr(), type_names_map );
+					const clang::Type& field_type= *field_declaration->getType().getTypePtr();
+
+					if( record_declaration.hasFlexibleArrayMember() && field_type.isIncompleteArrayType() )
+					{
+						// Create a zero-sized array for a flexible array member.
+						auto array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
+						array_type->element_type= TranslateType( *field_type.getArrayElementTypeNoTypeQual(), type_names_map );
+
+						Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
+						numeric_constant.num.value= 0;
+						array_type->size= std::move(numeric_constant);
+
+						field.type= std::move( array_type );
+					}
+					else
+						field.type= TranslateType( field_type, type_names_map );
 
 					const auto src_name= field_declaration->getName();
+
 					if( src_name.empty() )
-						field.name= "anon_field_" + std::to_string( ++unique_name_index_ );
+					{
+						// Name anonymous fields sequentially by using a simple counter.
+						// It's fine, since these names should be unique only within this struct.
+						field.name= g_anon_field_prefix + std::to_string( anonymous_field_index );
+						++anonymous_field_index;
+					}
 					else
 						field.name= TranslateIdentifier( src_name );
-
-					// HACK!
-					// For cases where field name is the same as some global name, add name suffix to avoid collisions.
-					// C allows such collisions, but Ü doesn't.
-					while(
-						named_record_declarations.count( field.name ) != 0 ||
-						named_typedef_declarations.count( field.name ) != 0 ||
-						named_enum_declarations.count( field.name ) != 0 )
-						field.name+= "_";
 
 					class_elements.Append( std::move(field) );
 				}
 
 				// Assume we have at least one field (which is necessary for all structs in C).
+
+				EmitItemsSorted( class_elements, type_names_map, item.items );
 
 				class_.elements= class_elements.Build();
 			}
@@ -1131,126 +1166,44 @@ void CppAstConsumer::EmitRecord(
 			class_elements.Append( GetDeletedDefaultConstructor() );
 			class_.elements= class_elements.Build();
 		}
-
-		root_program_elements_.Append( std::move(class_ ) );
 	}
 	else if( record_declaration.isUnion() )
 	{
 		// Emulate union, using array of bytes with required alignment.
-		Synt::Class class_(g_dummy_src_loc);
-		class_.name= name;
-		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
-
-		if( record_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
-			class_.no_discard= true;
 
 		if( record_declaration.isCompleteDefinition() )
-			class_.elements= MakeOpaqueRecordElements( record_declaration, "union" );
+			class_.elements= MakeOpaqueRecordElements( type_names_map, record_declaration, "union", item.items );
 		else
 		{
 			// Add deleted default constructor.
 			Synt::ClassElementsList::Builder class_elements;
 			class_elements.Append( GetDeletedDefaultConstructor() );
+
+			EmitItemsSorted( class_elements, type_names_map, item.items );
+
 			class_.elements= class_elements.Build();
 		}
-
-		root_program_elements_.Append( std::move(class_ ) );
 	}
+
+	return class_;
 }
 
-Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
-	const clang::RecordDecl& record_declaration,
-	const std::string_view kind_name )
-{
-	const auto size= ( ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) + 7u ) / 8u;
-	const auto byte_size= ( ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) + 7u ) / 8u;
-	const auto num_elements= ( size + byte_size - 1u ) / byte_size;
-
-	std::string_view byte_name;
-	switch(byte_size)
-	{
-	case  1: byte_name= Keyword( Keywords::  byte8_ ); break;
-	case  2: byte_name= Keyword( Keywords:: byte16_ ); break;
-	case  4: byte_name= Keyword( Keywords:: byte32_ ); break;
-	case  8: byte_name= Keyword( Keywords:: byte64_ ); break;
-	case 16: byte_name= Keyword( Keywords::byte128_ ); break;
-	default: U_ASSERT(false); break;
-	};
-
-	auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
-	array_type->element_type= StringToTypeName( byte_name );
-
-	Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
-	numeric_constant.num.value= num_elements;
-	array_type->size= std::move(numeric_constant);
-
-	Synt::ClassField field( g_dummy_src_loc );
-	field.name+= kind_name;
-	field.name+= "_contents";
-	field.type= std::move(array_type);
-
-	Synt::ClassElementsList::Builder class_elements;
-	class_elements.Append( std::move(field) );
-	return class_elements.Build();
-}
-
-void CppAstConsumer::EmitTypedefs( const NamedTypedefDeclarations& typedef_declarations, const TypeNamesMap& type_names_map )
-{
-	for( const auto& pair : typedef_declarations )
-		EmitTypedef( pair.first, *pair.second, type_names_map );
-}
-
-void CppAstConsumer::EmitTypedef( const std::string& name, const clang::TypedefNameDecl& typedef_declaration, const TypeNamesMap& type_names_map )
+Synt::TypeAlias CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const clang::TypedefNameDecl* const item )
 {
 	Synt::TypeAlias type_alias( g_dummy_src_loc );
 	type_alias.name= name;
-	type_alias.value= TranslateType( *typedef_declaration.getUnderlyingType().getTypePtr(), type_names_map );
+	type_alias.value= TranslateType( *item->getUnderlyingType().getTypePtr(), type_names_map );
 
-	root_program_elements_.Append( std::move(type_alias ) );
+	return type_alias;
 }
 
-void CppAstConsumer::EmitEnums(
-	const NamedFunctionDeclarations& named_function_declarations,
-	const NamedRecordDeclarations& named_record_declarations,
-	const NamedTypedefDeclarations& named_typedef_declarations,
-	const NamedEnumDeclarations& named_enum_declarations,
-	EnumNamesSet& out_enum_names )
+Synt::TypeAlias CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const clang::EnumDecl* const item )
 {
-	for( const auto& pair: named_enum_declarations )
-		EmitEnum(
-			pair.first,
-			*pair.second,
-			named_function_declarations,
-			named_record_declarations,
-			named_typedef_declarations,
-			named_enum_declarations,
-			out_enum_names );
-}
+	(void)type_names_map;
 
-void CppAstConsumer::EmitEnum(
-	const std::string& name,
-	const clang::EnumDecl& enum_declaration,
-	const NamedFunctionDeclarations& named_function_declarations,
-	const NamedRecordDeclarations& named_record_declarations,
-	const NamedTypedefDeclarations& named_typedef_declarations,
-	const NamedEnumDeclarations& named_enum_declarations,
-	EnumNamesSet& out_enum_names )
-{
-	if( !enum_declaration.isComplete() )
-	{
-		// Create dummy class with deleted default constructor for incomplete enums.
-
-		Synt::Class enum_class_( g_dummy_src_loc );
-		enum_class_.name= name;
-
-		Synt::ClassElementsList::Builder class_elements;
-		class_elements.Append( GetDeletedDefaultConstructor() );
-		enum_class_.elements= class_elements.Build();
-
-		root_program_elements_.Append( std::move(enum_class_ ) );
-
-		return;
-	}
+	const clang::EnumDecl& enum_declaration= *item;
 
 	// Always create a type alias and a bunch of enumerator constants for C and C++ enums.
 	// We can't use Ü enums, since C enums may be unsequentional and it's not guaranteed, that a varible of enum type has one of the listed values.
@@ -1258,10 +1211,11 @@ void CppAstConsumer::EmitEnum(
 	// For C++ scoped enums we create a namespace with "_" postfix, where all enumerators are stored.
 	// A type alias is created even for an anonymous enum, since such enum may be used inside "typedef" and we need some name for typedef source type (even if it's generated).
 
-	{
-		Synt::TypeAlias type_alias( g_dummy_src_loc );
-		type_alias.name= name;
+	Synt::TypeAlias type_alias( g_dummy_src_loc );
+	type_alias.name= name;
 
+	if( enum_declaration.isComplete() )
+	{
 		std::string_view underlying_type_name;
 		if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getIntegerType().getTypePtr() ) )
 			underlying_type_name= GetUFundamentalType( *built_in_type );
@@ -1283,129 +1237,73 @@ void CppAstConsumer::EmitEnum(
 				underlying_type_name= Keyword( Keywords::i32_ );
 		}
 
-		type_alias.value= StringToTypeName( underlying_type_name );
-
-		root_program_elements_.Append( std::move(type_alias) );
-	}
-
-	if( enum_declaration.isScoped() )
-	{
-		std::string namespace_name= name;
-		// Avoid posssible name conflicts of this namespace with some other names.
-		while(
-			named_function_declarations.count( namespace_name) != 0 ||
-			named_record_declarations.count( namespace_name ) != 0 ||
-			named_typedef_declarations.count( namespace_name ) != 0 ||
-			named_enum_declarations.count( namespace_name ) != 0 )
-			namespace_name+= "_";
-
-		out_enum_names.insert( namespace_name );
-
-		Synt::Namespace namespace_( g_dummy_src_loc );
-		namespace_.name= std::move( namespace_name );
-
-		{
-			Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
-			variables_declaration.type= StringToTypeName( name );
-
-			for( const clang::EnumConstantDecl* const enumerator : enum_declaration.enumerators() )
-				variables_declaration.variables.push_back( TranslateEnumElement( *enumerator, enumerator->getName().str() ) );
-
-			Synt::ProgramElementsList::Builder builder;
-			builder.Append( std::move(variables_declaration) );
-
-			namespace_.elements= builder.Build();
-		}
-
-		root_program_elements_.Append( std::move(namespace_) );
+		type_alias.value= CreateFundamentalTypeName( underlying_type_name );
 	}
 	else
 	{
-		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
-		variables_declaration.type= StringToTypeName( name );
-
-		for( const clang::EnumConstantDecl* const enumerator : enum_declaration.enumerators() )
-		{
-			std::string name= TranslateIdentifier( enumerator->getName() );
-
-			// Avoid name conflicts, since we emit non-scoped enum members into enclosded namespace.
-			while(
-				named_function_declarations.count( name ) != 0 ||
-				named_record_declarations.count( name ) != 0 ||
-				named_typedef_declarations.count( name ) != 0 ||
-				named_enum_declarations.count( name ) != 0 )
-				name+= "_";
-
-			out_enum_names.insert( name );
-
-			variables_declaration.variables.push_back( TranslateEnumElement( *enumerator, std::move(name) ) );
-		}
-
-		root_program_elements_.Append( std::move(variables_declaration) );
+		// use "void" as alis for incomplete enums.
+		type_alias.value= CreateFundamentalTypeName( Keyword( Keywords::void_ ) );
 	}
+
+	return type_alias;
 }
 
-Synt::VariablesDeclaration::VariableEntry CppAstConsumer::TranslateEnumElement(
-	const clang::EnumConstantDecl& enumerator,
-	std::string name )
+Synt::VariablesDeclaration CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItemEnumElement& item )
 {
-	Synt::VariablesDeclaration::VariableEntry var;
-	var.src_loc= g_dummy_src_loc;
-	var.name= std::move(name);
-
-	var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+	Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+	variables_declaration.type= TranslateType( *item.enum_type, type_names_map );
 
 	{
-		Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
+		Synt::VariablesDeclaration::VariableEntry var;
+		var.src_loc= g_dummy_src_loc;
+		var.name= std::move(name);
 
-		const llvm::APSInt val= enumerator.getInitVal();
+		var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+
 		{
-			Synt::IntegerNumericConstant initializer_number( g_dummy_src_loc );
+			Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
 
-			if( val.isNegative() )
+			const llvm::APSInt val= item.enum_constant_decl->getInitVal();
 			{
-				initializer_number.num.value= uint64_t( -val.getExtValue() );
+				Synt::IntegerNumericConstant initializer_number( g_dummy_src_loc );
 
-				Synt::UnaryMinus unary_minus( g_dummy_src_loc );
-				unary_minus.expression= std::move( initializer_number );
+				if( val.isNegative() )
+				{
+					initializer_number.num.value= uint64_t( -val.getExtValue() );
 
-				constructor_initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
+					Synt::UnaryMinus unary_minus( g_dummy_src_loc );
+					unary_minus.expression= std::move( initializer_number );
+
+					constructor_initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
+				}
+				else
+				{
+					initializer_number.num.value= val.getLimitedValue();
+					constructor_initializer.arguments.push_back( std::move(initializer_number) );
+				}
 			}
-			else
-			{
-				initializer_number.num.value= val.getLimitedValue();
-				constructor_initializer.arguments.push_back( std::move(initializer_number) );
-			}
+
+			var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
 		}
 
-		var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
+		variables_declaration.variables.push_back( std::move( var ) );
 	}
 
-	return var;
+	return variables_declaration;
 }
 
-void CppAstConsumer::EmitVariables(
-	const NamedVariableDeclarations& named_variable_declarations,
-	const TypeNamesMap& type_names_map )
+Synt::VariablesDeclaration CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const clang::VarDecl* const item )
 {
-	for( const auto& pair: named_variable_declarations )
-		EmitVariable( pair.first, *pair.second, type_names_map );
-}
+	const clang::VarDecl& variable= *item;
 
-void CppAstConsumer::EmitVariable(
-	const std::string& name,
-	const clang::VarDecl& variable,
-	const TypeNamesMap& type_names_map )
-{
-	if( !variable.getType().isConstant( ast_context_ ) )
-	{
-		// Ignore non-constants.
-		return;
-	}
+	Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+	variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
 
 	const clang::APValue* const init_val= variable.evaluateValue();
 	if( init_val == nullptr )
-		return;
+		return variables_declaration;
 
 	const clang::Type* variable_type= variable.getType().getTypePtr();
 	while(true)
@@ -1437,22 +1335,58 @@ void CppAstConsumer::EmitVariable(
 
 	Synt::Initializer initializer= TranslateVariableInitializer_r( *variable_type, *init_val );
 	if( std::holds_alternative<Synt::EmptyVariant>( initializer ) )
-		return;
+		return variables_declaration;
 
-	Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
-	variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
+	Synt::VariablesDeclaration::VariableEntry entry;
+	entry.src_loc= g_dummy_src_loc;
+	entry.name= name;
+	entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
+	entry.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 
+	variables_declaration.variables.push_back( std::move(entry) );
+
+	return variables_declaration;
+}
+
+Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
+	const TypeNamesMap& type_names_map,
+	const clang::RecordDecl& record_declaration,
+	const std::string_view kind_name,
+	const NamespaceItemsMap& subitems )
+{
+	const auto size= ( ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) + 7u ) / 8u;
+	const auto byte_size= ( ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) + 7u ) / 8u;
+	const auto num_elements= ( size + byte_size - 1u ) / byte_size;
+
+	std::string_view byte_name;
+	switch(byte_size)
 	{
-		Synt::VariablesDeclaration::VariableEntry entry;
-		entry.src_loc= g_dummy_src_loc;
-		entry.name= name;
-		entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
-		entry.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+	case  1: byte_name= Keyword( Keywords::  byte8_ ); break;
+	case  2: byte_name= Keyword( Keywords:: byte16_ ); break;
+	case  4: byte_name= Keyword( Keywords:: byte32_ ); break;
+	case  8: byte_name= Keyword( Keywords:: byte64_ ); break;
+	case 16: byte_name= Keyword( Keywords::byte128_ ); break;
+	default: U_ASSERT(false); break;
+	};
 
-		variables_declaration.variables.push_back( std::move(entry) );
-	}
+	auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
+	array_type->element_type= CreateFundamentalTypeName( byte_name );
 
-	root_program_elements_.Append( std::move( variables_declaration ) );
+	Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
+	numeric_constant.num.value= num_elements;
+	array_type->size= std::move(numeric_constant);
+
+	Synt::ClassField field( g_dummy_src_loc );
+	field.name+= kind_name;
+	field.name+= "_contents";
+	field.type= std::move(array_type);
+
+	Synt::ClassElementsList::Builder class_elements;
+	class_elements.Append( std::move(field) );
+
+	EmitItemsSorted( class_elements, type_names_map, subitems );
+
+	return class_elements.Build();
 }
 
 Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::Type& variable_type, const clang::APValue& value )
@@ -1517,7 +1451,7 @@ Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::T
 	{
 		if( const auto array_type= llvm::dyn_cast<clang::ConstantArrayType>( &variable_type ) )
 		{
-			if( array_type->getSize() == value.getArraySize() )
+			if( array_type->getSize() == value.getArrayInitializedElts() )
 			{
 				const clang::Type* element_type= array_type->getElementType().getTypePtr();
 				while(true)
@@ -1562,46 +1496,22 @@ Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::T
 	return Synt::EmptyVariant();
 }
 
-void CppAstConsumer::EmitDefinitionsForMacros(
-	const NamedFunctionDeclarations& named_function_declarations,
-	const NamedRecordDeclarations& named_record_declarations,
-	const NamedTypedefDeclarations& named_typedef_declarations,
-	const NamedEnumDeclarations& named_enum_declarations,
-	const EnumNamesSet& enum_names,
-	const NamedVariableDeclarations& named_variable_declarations )
+void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builder& out_items )
 {
-	// Populate a hash-map of original to translated type names.
-	std::unordered_map< std::string, std::string > type_original_to_translated_name_map;
-
-	for( const auto& pair : named_record_declarations )
+	llvm::StringSet translated_function_names, translated_type_names, translated_variable_names;
+	for( const auto& pair : root_namespace_.items )
 	{
-		std::string original_name= pair.second->getName().str();
-		if( type_original_to_translated_name_map.count( original_name ) == 0 )
-			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
-	}
-
-	for( const auto& pair : named_typedef_declarations )
-	{
-		std::string original_name= pair.second->getName().str();
-		if( type_original_to_translated_name_map.count( original_name ) == 0 )
-			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
-	}
-
-	for( const auto& pair : named_enum_declarations )
-	{
-		std::string original_name= pair.second->getName().str();
-		if( type_original_to_translated_name_map.count( original_name ) == 0 )
-			type_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
-	}
-
-	// Populate a hash-map of original to translated variable names.
-	std::unordered_map< std::string, std::string > variable_original_to_translated_name_map;
-
-	for( const auto& pair : named_variable_declarations )
-	{
-		std::string original_name= pair.second->getName().str();
-		if( variable_original_to_translated_name_map.count( original_name ) == 0 )
-			variable_original_to_translated_name_map[ std::move( original_name ) ]= pair.first;
+		if( std::holds_alternative< const clang::FunctionDecl* >( pair.getValue() ) )
+			translated_function_names.insert( pair.getKey() );
+		else if(
+			std::holds_alternative< NamespaceItemRecord >( pair.getValue() ) ||
+			std::holds_alternative< const clang::TypedefNameDecl* >( pair.getValue() ) ||
+			std::holds_alternative< const clang::EnumDecl* >( pair.getValue() ) )
+			translated_type_names.insert( pair.getKey() );
+		else if(
+			std::holds_alternative< NamespaceItemEnumElement >( pair.getValue() ) ||
+			std::holds_alternative< const clang::VarDecl* >( pair.getValue() ) )
+			translated_variable_names.insert( pair.getKey() );
 	}
 
 	// Extract all macros and sort them by their location.
@@ -1644,9 +1554,6 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			return source_manager_.isBeforeInTranslationUnit( l.second->getLocation(), r.second->getLocation() );
 		} );
 
-	// Maintain a hash-set of emitted macro names (to avoid duplication).
-	std::unordered_set<std::string> emitted_macro_names;
-
 	for( const MacroPair& macro_pair : macro_directives )
 	{
 		const clang::MacroInfo* const macro_info= macro_pair.second->getMacroInfo();
@@ -1656,20 +1563,13 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 		if( macro_info->getNumParams() != 0u || macro_info->isFunctionLike() )
 			continue;
 
-		const std::string& macro_original_name= macro_pair.first;
+		const std::string macro_translated_name= TranslateIdentifier( macro_pair.first );
 
-		std::string macro_translated_name= TranslateIdentifier( macro_original_name );
-
-		// Rename to avoid name conflicts.
-		while(
-			named_function_declarations.count( macro_translated_name ) != 0 ||
-			named_record_declarations.count( macro_translated_name ) != 0 ||
-			named_typedef_declarations.count( macro_translated_name ) != 0 ||
-			named_enum_declarations.count( macro_translated_name ) != 0 ||
-			enum_names.count( macro_translated_name ) != 0 ||
-			named_variable_declarations.count( macro_translated_name ) != 0 ||
-			emitted_macro_names.count( macro_translated_name ) != 0 )
-			macro_translated_name+= "_";
+		if( root_namespace_.items.count( macro_translated_name ) != 0 ||
+			translated_function_names.count( macro_translated_name ) != 0 ||
+			translated_type_names.count( macro_translated_name ) != 0 ||
+			translated_variable_names.count( macro_translated_name ) != 0 )
+			continue;
 
 		clang::MacroInfo::const_tokens_iterator tokens_begin= macro_info->tokens_begin();
 		clang::MacroInfo::const_tokens_iterator tokens_end= macro_info->tokens_end();
@@ -1696,10 +1596,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 				auto_variable_declaration.name= macro_translated_name;
 				auto_variable_declaration.initializer_expression= TranslateNumericLiteral( token );
 
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
-
-				variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-				emitted_macro_names.insert( macro_translated_name );
+				out_items.Append( std::move( auto_variable_declaration ) );
+				translated_variable_names.insert( macro_translated_name );
 			}
 			else if( clang::tok::isStringLiteral( token.getKind() ) )
 			{
@@ -1718,10 +1616,9 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
-					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
-					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-					emitted_macro_names.insert( macro_translated_name );
+					out_items.Append( std::move( auto_variable_declaration ) );
+					translated_variable_names.insert( macro_translated_name );
 				}
 				else if( string_literal_parser.isUTF16() ||
 					( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 16 ) )
@@ -1736,10 +1633,9 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					string_constant->type_suffix= "u16";
 
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
-					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
-					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-					emitted_macro_names.insert( macro_translated_name );
+					out_items.Append( std::move( auto_variable_declaration ) );
+					translated_variable_names.insert( macro_translated_name );
 				}
 				else if( string_literal_parser.isUTF32() ||
 					( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
@@ -1753,10 +1649,9 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					string_constant->type_suffix= "u32";
 
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
-					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
-					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-					emitted_macro_names.insert( macro_translated_name );
+					out_items.Append( std::move( auto_variable_declaration ) );
+					translated_variable_names.insert( macro_translated_name );
 				}
 			}
 			else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
@@ -1778,10 +1673,9 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					char_literal.code_point= uint32_t( char_literal_parser.getValue() );
 
 					auto_variable_declaration.initializer_expression= std::move(char_literal);
-					root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
-					variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-					emitted_macro_names.insert( macro_translated_name );
+					out_items.Append( std::move( auto_variable_declaration ) );
+					translated_variable_names.insert( macro_translated_name );
 				}
 			}
 			else if( token.getKind() == clang::tok::identifier )
@@ -1790,9 +1684,9 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 				if( const auto identifier_info= token.getIdentifierInfo() )
 				{
-					const std::string idenfier_name= identifier_info->getName().str();
+					const std::string idenfier_name= TranslateIdentifier( identifier_info->getName().str() );
 
-					if( named_function_declarations.count( idenfier_name ) != 0 )
+					if( translated_function_names.count( idenfier_name ) != 0 )
 					{
 						// For functions just create "auto x= y;".
 						// This creates a function-pointer variable.
@@ -1805,14 +1699,11 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						name_lookup.name= idenfier_name;
 
 						auto_variable_declaration.initializer_expression= std::move( name_lookup );
-						root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
-						variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-						emitted_macro_names.insert( macro_translated_name );
+						out_items.Append( std::move( auto_variable_declaration ) );
+						translated_variable_names.insert( macro_translated_name );
 					}
-					else if(
-						const auto variable_name_it= variable_original_to_translated_name_map.find( idenfier_name );
-						variable_name_it != variable_original_to_translated_name_map.end() )
+					else if( translated_variable_names.count( idenfier_name ) != 0 )
 					{
 						// For variables just create "auto& x= y;"
 						Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
@@ -1821,17 +1712,14 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
 
 						Synt::NameLookup name_lookup( g_dummy_src_loc );
-						name_lookup.name= variable_name_it->second;
+						name_lookup.name= idenfier_name;
 
 						auto_variable_declaration.initializer_expression= std::move( name_lookup );
-						root_program_elements_.Append( std::move( auto_variable_declaration ) );
 
-						variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-						emitted_macro_names.insert( macro_translated_name );
+						out_items.Append( std::move( auto_variable_declaration ) );
+						translated_variable_names.insert( macro_translated_name );
 					}
-					else if(
-						const auto type_name_it= type_original_to_translated_name_map.find( idenfier_name );
-						type_name_it != type_original_to_translated_name_map.end() )
+					else if( translated_type_names.count( idenfier_name ) != 0 )
 					{
 						// For types create a type alias.
 
@@ -1839,13 +1727,12 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 						type_alias.name= macro_translated_name;
 
 						Synt::NameLookup name_lookup( g_dummy_src_loc );
-						name_lookup.name= type_name_it->second;
+						name_lookup.name= idenfier_name;
 
 						type_alias.value= std::move( name_lookup );
-						root_program_elements_.Append( std::move( type_alias ) );
 
-						type_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-						emitted_macro_names.insert( macro_translated_name );
+						out_items.Append( std::move( type_alias ) );
+						translated_type_names.insert( macro_translated_name );
 					}
 				}
 			}
@@ -1867,10 +1754,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 				minus->expression= TranslateNumericLiteral( token1 );
 				auto_variable_declaration.initializer_expression= std::move( minus );
 
-				root_program_elements_.Append( std::move( auto_variable_declaration ) );
-
-				variable_original_to_translated_name_map[ macro_original_name ]= macro_translated_name;
-				emitted_macro_names.insert( macro_translated_name );
+				out_items.Append( std::move( auto_variable_declaration ) );
+				translated_variable_names.insert( macro_translated_name );
 			}
 		}
 	} // for defines

@@ -20,57 +20,93 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Reference params and return types are translated as raw pointers.
 	static_assert( same_type</CppFunctionPointerWithReferences, ( fn( $(i32) a, $(f32) b ) unsafe call_conv( "C" ) : $(i32) )/> );
 
-	// Generally all C+= reference types are translated as raw pointers.
+	// Generally all C++ reference types are translated as raw pointers.
 	static_assert( same_type</CppDoubleReference, $(f64)/> );
 	static_assert( same_type</CppDoubleConstReference, $(f64)/> );
 	static_assert( same_type</CppDoubleRValueReference, $(f64)/> );
 
-	static_assert( same_type</CppOldStyleEnum, i32/> | same_type</CppOldStyleEnum, u32/> );
-	static_assert( OldStyle0 == CppOldStyleEnum(0) );
-	static_assert( OldStyle1 == CppOldStyleEnum(1) );
-	static_assert( OldStyle2 == CppOldStyleEnum(2) );
+	// nullpr_t from C++ should be translated as basic raw pointer type.
+	static_assert( same_type</CppNullptrT, $(byte8) /> );
 
-	static_assert( same_type</CppEnumClass, i32/> | same_type</CppEnumClass, u32/> );
-	static_assert( CppEnumClass_::S == CppEnumClass(0) );
-	static_assert( CppEnumClass_::Z == CppEnumClass(1) );
-	static_assert( CppEnumClass_::T == CppEnumClass(2) );
-	static_assert( CppEnumClass_::L == CppEnumClass(3) );
-	static_assert( CppEnumClass_::J == CppEnumClass(4) );
-	static_assert( CppEnumClass_::I == CppEnumClass(5) );
-	static_assert( CppEnumClass_::O == CppEnumClass(6) );
+	static_assert( same_type</enum_::CppOldStyleEnum, i32/> | same_type</enum_::CppOldStyleEnum, u32/> );
+	static_assert( OldStyle0 == enum_::CppOldStyleEnum(0) );
+	static_assert( OldStyle1 == enum_::CppOldStyleEnum(1) );
+	static_assert( OldStyle2 == enum_::CppOldStyleEnum(2) );
 
-	static_assert( same_type</CppUnsequentialEnumClass, i32/> | same_type</CppUnsequentialEnumClass, u32/> );
-	static_assert( CppUnsequentialEnumClass_::One == CppUnsequentialEnumClass(1) );
-	static_assert( CppUnsequentialEnumClass_::TwentyTwo == CppUnsequentialEnumClass(22) );
-	static_assert( CppUnsequentialEnumClass_::Eight == CppUnsequentialEnumClass(8) );
+	static_assert( same_type</enum_::CppEnumClass, i32/> | same_type</enum_::CppEnumClass, u32/> );
+	static_assert( scoped_enum_::CppEnumClass::S == enum_::CppEnumClass(0) );
+	static_assert( scoped_enum_::CppEnumClass::Z == enum_::CppEnumClass(1) );
+	static_assert( scoped_enum_::CppEnumClass::T == enum_::CppEnumClass(2) );
+	static_assert( scoped_enum_::CppEnumClass::L == enum_::CppEnumClass(3) );
+	static_assert( scoped_enum_::CppEnumClass::J == enum_::CppEnumClass(4) );
+	static_assert( scoped_enum_::CppEnumClass::I == enum_::CppEnumClass(5) );
+	static_assert( scoped_enum_::CppEnumClass::O == enum_::CppEnumClass(6) );
 
-	static_assert( same_type</CppEnumWithUnderlyingType, u8/> );
-	static_assert( CppEnumWithUnderlyingType_::UC0 == 0u8 );
-	static_assert( CppEnumWithUnderlyingType_::UC1 == 1u8 );
-	static_assert( CppEnumWithUnderlyingType_::UC2 == 2u8 );
-	static_assert( CppEnumWithUnderlyingType_::UC45 == 45u8 );
+	static_assert( same_type</enum_::CppUnsequentialEnumClass, i32/> | same_type</enum_::CppUnsequentialEnumClass, u32/> );
+	static_assert( scoped_enum_::CppUnsequentialEnumClass::One == enum_::CppUnsequentialEnumClass(1) );
+	static_assert( scoped_enum_::CppUnsequentialEnumClass::TwentyTwo == enum_::CppUnsequentialEnumClass(22) );
+	static_assert( scoped_enum_::CppUnsequentialEnumClass::Eight == enum_::CppUnsequentialEnumClass(8) );
+
+	static_assert( same_type</enum_::CppEnumWithUnderlyingType, u8/> );
+	static_assert( scoped_enum_::CppEnumWithUnderlyingType::UC0 == 0u8 );
+	static_assert( scoped_enum_::CppEnumWithUnderlyingType::UC1 == 1u8 );
+	static_assert( scoped_enum_::CppEnumWithUnderlyingType::UC2 == 2u8 );
+	static_assert( scoped_enum_::CppEnumWithUnderlyingType::UC45 == 45u8 );
+
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::struct__0U__ == enum_::EnumWithExoticMemberNames(0) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::union__0U__ == enum_::EnumWithExoticMemberNames(1) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::enum__0U__ == enum_::EnumWithExoticMemberNames(2) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::scoped_enum__0U__ == enum_::EnumWithExoticMemberNames(3) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::yield_ == enum_::EnumWithExoticMemberNames(4) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::cast_ref_unsafe_ == enum_::EnumWithExoticMemberNames(5) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::virtual__0U__ == enum_::EnumWithExoticMemberNames(6) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::if_coro_advance__0U__ == enum_::EnumWithExoticMemberNames(7) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::SomeNameWithUnderscore_ == enum_::EnumWithExoticMemberNames(8) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::some_name_with_many_underscores_______ == enum_::EnumWithExoticMemberNames(9) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::single_leading_underscore_1U__ == enum_::EnumWithExoticMemberNames(10) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::two_leading_underscores_2U__ == enum_::EnumWithExoticMemberNames(11) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::three_leading_underscores_3U__ == enum_::EnumWithExoticMemberNames(12) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::twenty_leading_underscores_20U__ == enum_::EnumWithExoticMemberNames(13) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::n6name_with_single_leading_underscore_and_digit_n1U__ == enum_::EnumWithExoticMemberNames(14) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::n0_name_with_three_leading_underscores_and_digit_n3U__ == enum_::EnumWithExoticMemberNames(15) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::u1U__ == enum_::EnumWithExoticMemberNames(16) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::u2U__ == enum_::EnumWithExoticMemberNames(17) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::u3U__ == enum_::EnumWithExoticMemberNames(18) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::u4U__ == enum_::EnumWithExoticMemberNames(19) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::MANU___0U__ == enum_::EnumWithExoticMemberNames(20) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::GENU___0U__ == enum_::EnumWithExoticMemberNames(21) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::CORNU___0U__ == enum_::EnumWithExoticMemberNames(22) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::METU___0U__ == enum_::EnumWithExoticMemberNames(23) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::anon_record_0U__ == enum_::EnumWithExoticMemberNames(24) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::anon_enum_0U__ == enum_::EnumWithExoticMemberNames(25) );
+	static_assert( scoped_enum_::EnumWithExoticMemberNames::anon_field__0U__ == enum_::EnumWithExoticMemberNames(26) );
 
 	{
-		static_assert( typeinfo</Vec2f/>.size_of == typeinfo</f32/>.size_of * 2s );
-		var Vec2f v{ .x= 78.0f, .y= -1.2345f };
+		static_assert( typeinfo</struct_::Vec2f/>.size_of == typeinfo</f32/>.size_of * 2s );
+		var struct_::Vec2f v{ .x= 78.0f, .y= -1.2345f };
 	}
 
 	// In C++ empty structs aren't really empty - they have one byte size.
-	static_assert( typeinfo</CppEmptyStruct/>.size_of == 1s );
+	static_assert( typeinfo</struct_::CppEmptyStruct/>.size_of == 1s );
 
 	{
 		// C++ classes should be transformed as structs.
-		var CppClass c{ .b_= false, .x_= 13.2f, .y_= 87 };
+		var struct_::CppClass c{ .b_= false, .x_= 13.2f, .y_= 87 };
 	}
 
 	{ // C++ class with virtual method declaration shouldn't be empty and should contain virtual table pointer field.
-		static_assert( typeinfo</CppInterface/>.size_of == typeinfo</$(byte8)/>.size_of );
-		var CppInterface cpp_interface{ .ü_vptr= zero_init };
+		static_assert( typeinfo</struct_::CppInterface/>.size_of == typeinfo</$(byte8)/>.size_of );
+		var struct_::CppInterface cpp_interface{ .ü_vptr= zero_init };
 		static_assert( same_type</ typeof( cpp_interface.ü_vptr ), $(byte8) /> );
 	}
 	{ // Virtual table pointer isn't created if class has a base, which has a virtual table pointer.
-		var CppDerived cpp_derived{ .ü_base0{ .ü_vptr= zero_init }, .some_field= zero_init };
-		static_assert( typeinfo</CppDerived/>.size_of == typeinfo</ $(byte8) />.size_of * 2s );
+		var struct_::CppDerived cpp_derived{ .ü_base0{ .ü_vptr= zero_init }, .some_field= zero_init };
+		static_assert( typeinfo</struct_::CppDerived/>.size_of == typeinfo</ $(byte8) />.size_of * 2s );
+	}
+
+	{
+		// A structure defined within a C++ class should be properly translated.
+		var struct_::ClassWithSubtypeDeclarationsInside::struct_::Point point{ .x= 1.0f, .y= 2.0f };
 	}
 
 	static_assert( g_some_int_contant == 37 );
@@ -79,7 +115,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( g_group_constant2 == 2633676u );
 	static_assert( g_group_constant3 == u32(g_some_int_contant) * 5u );
 	static_assert( g_float_constant == -17.5f );
-	static_assert( g_enum_constant == CppEnumClass_::I );
+	static_assert( g_enum_constant == scoped_enum_::CppEnumClass::I );
 	static_assert( g_constant_with_constexpr_call_initializer == '7' );
 	static_assert( g_constant_with_constructor_initializer == 3.1415926535 );
 	static_assert( g_constant_with_universal_initializer == -612 );

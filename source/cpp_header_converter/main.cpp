@@ -67,7 +67,7 @@ int main( int argc, const char* argv[] )
 		out_file << "import " << "\"" << import << "\"\n";
 
 	for( auto& unit : *parsed_units )
-		U::Synt::WriteProgram( unit.second.Build(), out_file );
+		U::Synt::WriteProgram( unit.second, out_file );
 
 	out_file.flush();
 

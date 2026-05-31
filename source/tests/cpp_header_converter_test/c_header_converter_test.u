@@ -64,6 +64,9 @@ fn nomangle main() call_conv( "C" ) : i32
 		var $(i32) r2= Function_RetConstPtr();
 		var $($(f32)) ptr_to_ptr_to_f= Function_RetPtrToPtr();
 		Function_ArgPtrToPtr( ptr_to_ptr_to_f );
+		var [ f64, 4 ] mut double_arr= zero_init;
+		Function_SizedArrayArg( $<( double_arr[0] ) ); // Sized array argument should be translated as raw pointer.
+		Function_UnsizedArrayArg( r1 ); // Unsized array argument should be translated as raw pointer.
 		Function_UnnamedArgs( 0, 0.0f, 0.0 );
 		DuplicatedProto(0);
 
@@ -100,7 +103,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		var i32 mut a= 0, mut b= 0;
 		var $(i32) mut a_ptr= $<(a);
 		var $(byte8) mut a_ptr_as_byte8= unsafe( $<(cast_ref_unsafe</byte8/>(a)) );
-		var RegularStruct s
+		var struct_::RegularStruct s
 		{
 			.x= 0,
 			.y= 0.0f,
@@ -119,7 +122,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		s.data[0u]= 'f';
 	}
 	{
-		var StructWithAnonimousRecordsInside mut s
+		var struct_::StructWithAnonimousRecordsInside mut s
 		{
 			.anon_struct{ .anon_struct_content= 0 },
 			.anon_union= zero_init,
@@ -129,10 +132,8 @@ fn nomangle main() call_conv( "C" ) : i32
 		s.anon_struct_as_array[2u].anon_struct_as_array_content= 66;
 	}
 	{
-		// For now "InnerC" is declared outside "StructWithNamedRecordsInside".
-		// It's too complicated to declare it inside, as in original C code.
-		var InnerC mut inner_c= zero_init;
-		var StructWithNamedRecordsInside s
+		var struct_::StructWithNamedRecordsInside::struct_::InnerB::struct_::InnerC mut inner_c= zero_init;
+		var struct_::StructWithNamedRecordsInside s
 		{
 			.a_arr[ { .x=55u, .y= 1.25f }, { .x=66u, .y= 2.5f  } ],
 			.b{ .s= zero_init, .c_ptr= $<(inner_c) }
@@ -143,15 +144,15 @@ fn nomangle main() call_conv( "C" ) : i32
 		unsafe( StupidFunc( $<(s) ) );
 	}
 	{
-		var $(StructUsedWithoutDeclaration) ptr= unsafe( FunctionReturningUnknownStruct() );
+		var $(struct_::StructUsedWithoutDeclaration) ptr= unsafe( FunctionReturningUnknownStruct() );
 	}
 	{
-		type UnknownStruct= StructUsedWithoutDeclaration;
+		type UnknownStruct= struct_::StructUsedWithoutDeclaration;
 		unsafe( FunctionReturningUnknownStruct() );
 	}
 
 	{
-		var StructWithName mut s{ .ff= 67u };
+		var struct_::StructWithName mut s{ .ff= 67u };
 		var TypedefForStructWithName &mut s_ref= s;
 		var PointerTypedefForStructWithName s_ptr= $<(s_ref);
 	}
@@ -164,34 +165,42 @@ fn nomangle main() call_conv( "C" ) : i32
 		var typeof( typeinfo</PointerToPointerToAnonStruct/>.element_type.element_type )::src_type s{ .zdf= "ZDF" };
 	}
 
-	static_assert( typeinfo</UnionAlign1/>.size_of == 1s );
-	static_assert( typeinfo</UnionAlign1/>.align_of == 1s );
-	static_assert( typeinfo</UnionAlign2/>.size_of == 2s );
-	static_assert( typeinfo</UnionAlign2/>.align_of == 2s );
-	static_assert( typeinfo</UnionAlign4/>.size_of == 4s );
-	static_assert( typeinfo</UnionAlign4/>.align_of == 4s );
+	static_assert( typeinfo</union_::UnionAlign1/>.size_of == 1s );
+	static_assert( typeinfo</union_::UnionAlign1/>.align_of == 1s );
+	static_assert( typeinfo</union_::UnionAlign2/>.size_of == 2s );
+	static_assert( typeinfo</union_::UnionAlign2/>.align_of == 2s );
+	static_assert( typeinfo</union_::UnionAlign4/>.size_of == 4s );
+	static_assert( typeinfo</union_::UnionAlign4/>.align_of == 4s );
 
 	{
-		var $(UnionForwardDeclaration) u_ptr= zero_init;
+		var $(union_::UnionForwardDeclaration) u_ptr= zero_init;
 	}
 
-	static_assert( typeinfo</StructWithBitFields/>.size_of == 8s );
-	static_assert( typeinfo</StructWithBitFields/>.align_of == 4s );
+	static_assert( typeinfo</struct_::StructWithBitFields/>.size_of == 8s );
+	static_assert( typeinfo</struct_::StructWithBitFields/>.align_of == 4s );
 
-	static_assert( typeinfo</StructWithOnlyBitFields/>.size_of == 2s );
-	static_assert( typeinfo</StructWithOnlyBitFields/>.align_of == 2s );
+	static_assert( typeinfo</struct_::StructWithOnlyBitFields/>.size_of == 2s );
+	static_assert( typeinfo</struct_::StructWithOnlyBitFields/>.align_of == 2s );
 
-	static_assert( typeinfo</LargeStructWithSingleBitField/>.size_of == 44s );
-	static_assert( typeinfo</LargeStructWithSingleBitField/>.align_of == 4s );
+	static_assert( typeinfo</struct_::LargeStructWithSingleBitField/>.size_of == 44s );
+	static_assert( typeinfo</struct_::LargeStructWithSingleBitField/>.align_of == 4s );
 
-	static_assert( same_type</SequentialEnum, i32/> | same_type</SequentialEnum, u32/> );
-	static_assert( Red == SequentialEnum(0) );
-	static_assert( Green == SequentialEnum(1) );
-	static_assert( Blue == SequentialEnum(2) );
+	{
+		var struct_::StructWithTwoAnonStructsInside s
+		{
+			.anon_struct_value0{ .x= 1, .y= 2 },
+			.anon_struct_value1{ .z= 3, .w= 4 },
+		};
+	}
+
+	static_assert( same_type</enum_::SequentialEnum, i32/> | same_type</enum_::SequentialEnum, u32/> );
+	static_assert( Red == enum_::SequentialEnum(0) );
+	static_assert( Green == enum_::SequentialEnum(1) );
+	static_assert( Blue == enum_::SequentialEnum(2) );
 
 	unsafe( SequentialEnumFunc( Blue ) );
 
-	static_assert( same_type</NonSequentialEnum, i32/> );
+	static_assert( same_type</enum_::NonSequentialEnum, i32/> );
 	static_assert( Zero == 0 );
 	static_assert( One == 1 );
 	static_assert( Ten == 10 );
@@ -201,7 +210,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	unsafe( NonSequentialEnumFunc( MinusTwo ) );
 
-	var NonSequentialEnum ersatz_enum_value= Zero;
+	var enum_::NonSequentialEnum ersatz_enum_value= Zero;
 
 	static_assert( same_type</ TypedefForEnumABC, i32 /> | same_type</ TypedefForEnumABC, u32 /> );
 	var TypedefForEnumABC typedefed_sequential_enum_value= AnonB;
@@ -222,7 +231,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( c_fully_anon_enum_var3 == FullyAnonEnum3 );
 	static_assert( c_fully_anon_enum_var67 == FullyAnonEnum67 );
 
-	static_assert( same_type</LargeValuesEnum, u64/> );
+	static_assert( same_type</enum_::LargeValuesEnum, u64/> );
 	static_assert( LV_Large == 987654321u64 );
 	static_assert( LV_EvenLarger == 123456789101112u64 );
 
@@ -235,13 +244,13 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	var SameNameForStructAndTypedef same_name_for_struct_and_typedef{ .dummy= 666 };
 
-	var DifferentNamesForStructAndTypedef_0 different_names_for_struct_and_typedef_0{ .dummy0= 0, .dummy1= 0.0f };
+	var struct_::DifferentNamesForStructAndTypedef_0 different_names_for_struct_and_typedef_0{ .dummy0= 0, .dummy1= 0.0f };
 	var DifferentNamesForStructAndTypedef_1 different_names_for_struct_and_typedef_1{ .dummy0= 1, .dummy1= 1.0f };
-	static_assert( same_type</ DifferentNamesForStructAndTypedef_0 , DifferentNamesForStructAndTypedef_1 /> );
+	static_assert( same_type</ struct_::DifferentNamesForStructAndTypedef_0 , DifferentNamesForStructAndTypedef_1 /> );
 
 	{
-		var SomeForwardDeclaration v{ .contents= 2, .contents2= -2.5f };
-		type OpaqueStructUsage= SomeForwardDeclarationWithoutLaterDefinition;
+		var struct_::SomeForwardDeclaration v{ .contents= 2, .contents2= -2.5f };
+		type OpaqueStructUsage= struct_::SomeForwardDeclarationWithoutLaterDefinition;
 	}
 
 	static_assert( typeinfo</NumbersEnum/>.is_integer );
@@ -250,16 +259,16 @@ fn nomangle main() call_conv( "C" ) : i32
 	unsafe( SillyFunction( 33.3f ) );
 
 	{
-		var SillyStructWithAStrangeField s{ .SillyName_= zero_init };
+		var struct_::SillyStructWithAStrangeField s{ .SillyName= zero_init };
 	}
 
 	{
-		var SameNameForStructAndFunc1_ mut s= zero_init;
+		var struct_::SameNameForStructAndFunc1 mut s= zero_init;
 		unsafe( SameNameForStructAndFunc1( $<(s) ) );
 	}
 
 	{
-		var $(SameNameForStructAndFunc2_) ptr= unsafe( SameNameForStructAndFunc2() );
+		var $(struct_::SameNameForStructAndFunc2) ptr= unsafe( SameNameForStructAndFunc2() );
 	}
 
 	{
@@ -284,7 +293,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		static_assert( typeinfo</ TypedefForFunctionType />.is_void );
 
 		// But ising this typedef in combination with pointer should work.
-		var StructWithFunctionTypePtrField s= zero_init;
+		var struct_::StructWithFunctionTypePtrField s= zero_init;
 		static_assert( typeinfo</ typeof(s.ptr) />.is_function_pointer );
 		static_assert( same_type</ typeof(s.ptr), fn( i32 arg0, $(byte8) arg1 ) unsafe call_conv("C") : i32 /> );
 	}
@@ -313,23 +322,23 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 
 	// Should retrieve "nodiscard" for some types.
-	static_assert( typeinfo</SomeNoDiscardStruct/>.is_nodiscard );
+	static_assert( typeinfo</struct_::SomeNoDiscardStruct/>.is_nodiscard );
 
 	var i32 nodiscard_res= unsafe( CNoDiscardFunc() );
 
 	// C empty struct aren't really empty. At least on some compilers.
 	static_if( string_equals( compiler::target::os, "windows" ) )
 	{
-		static_assert( typeinfo</EmptyStruct/>.size_of > 0s );
-		static_assert( typeinfo</StructOfEmptyStructs/>.size_of == 5s * typeinfo</EmptyStruct/>.size_of );
+		static_assert( typeinfo</struct_::EmptyStruct/>.size_of > 0s );
+		static_assert( typeinfo</struct_::StructOfEmptyStructs/>.size_of == 5s * typeinfo</struct_::EmptyStruct/>.size_of );
 	}
 
-	// Leading underscore should be moved to identifier end.
+	// Names with leading uderscores should be renamed.
 	{
-		var UnderscoredStruct_ underscored_struct{ .x= 0 };
-		var TripleUnderscoredStruct___ triple_underscored_struct{ .y= 1.0f, .z= 'Y' };
+		var struct_::UnderscoredStruct_1U__ underscored_struct{ .x= 0 };
+		var struct_::TripleUnderscoredStruct_3U__ triple_underscored_struct{ .y= 1.0f, .z= 'Y' };
 	}
-	static_assert( same_type</ n64_int_from_c__, u64 /> );
+	static_assert( same_type</ n64_int_from_c_n2U__, u64 /> );
 
 	// Call a function by using a define for it.
 	unsafe( FUNCTION_ZERO_ARGS() );
@@ -348,23 +357,25 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( STRING_CONSTANT_ASCII_COPY == "WTF?009a\u0000" );
 	static_assert( CHAR_CONSTANT_COPY == 'Z' );
 	static_assert( UNSIGNED_CONSTANT_COPY_COPY == 12345u );
-	static_assert( CHAR_CONSTANT_COPY_A__ == CHAR_CONSTANT );
-	static_assert( CHAR_CONSTANT_COPY_B__ == CHAR_CONSTANT );
+	static_assert( CHAR_CONSTANT_COPY_A_2U__ == CHAR_CONSTANT );
+	static_assert( CHAR_CONSTANT_COPY_B_2U__ == CHAR_CONSTANT );
+
+	// Define alias for enum values.
+	static_assert( ANON_Y == AnonY );
+	static_assert( MINUS_TWO == MinusTwo );
+	static_assert( ANON_Y_COPY == ANON_Y );
 
 	// Define alias for types.
 	static_assert( same_type</ CPP_CHAR8, CPP_char8 /> );
 	static_assert( same_type</ ARRAY_TYPE15, ArrayType15 /> );
-	static_assert( same_type</ REGULAR_STRUCT, RegularStruct /> );
 	static_assert( same_type</ TYPEDEFED_STRUCT, TypedefedStruct /> );
 	static_assert( same_type</ STUPID_STRUCT_NAMING, StupidStuctNaming /> );
-	static_assert( same_type</ UNION_ALIGN_1, UnionAlign1 /> );
-	static_assert( same_type</ SEQUENTIAL_ENUM, SequentialEnum /> );
-	static_assert( same_type</ NON_SEQUENTIAL_ENUM, NonSequentialEnum /> );
+	static_assert( same_type</ NUMBERS_ENUM, NumbersEnum /> );
 	static_assert( same_type</ TYPEDEF_FOR_ENUM_ABC, TypedefForEnumABC /> );
-	static_assert( same_type</ REGULAR_STRUCT_COPY, REGULAR_STRUCT /> );
-	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT___, TripleUnderscoredStruct___ /> );
-	static_assert( same_type</ n64_INT_FROM_C__, n64_int_from_c__ /> );
-	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT, TRIPLE_UNDERSCORED_STRUCT___ /> );
+	static_assert( same_type</ TYPEDEFED_STRUCT_COPY, TYPEDEFED_STRUCT /> );
+	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT_3U__, TripleUnderscoredStructTypedef_3U__ /> );
+	static_assert( same_type</ n64_INT_FROM_C_n2U__, n64_int_from_c_n2U__ /> );
+	static_assert( same_type</ TRIPLE_UNDERSCORED_STRUCT, TRIPLE_UNDERSCORED_STRUCT_3U__ /> );
 	static_assert( same_type</ CPP_CHAR8_COPY, CPP_CHAR8 /> );
 
 	return 0;

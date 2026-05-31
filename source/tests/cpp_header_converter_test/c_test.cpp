@@ -27,6 +27,16 @@ void Function_ArgPtrToPtr( float** x )
 	(void)x;
 }
 
+void Function_SizedArrayArg( double arr[4] )
+{
+	(void)arr;
+}
+
+void Function_UnsizedArrayArg( int arr[] )
+{
+	(void)arr;
+}
+
 int Function_RetVal()
 {
 	return 0;

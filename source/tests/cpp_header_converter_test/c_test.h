@@ -30,6 +30,8 @@ void Function_ArgVal( int x );
 void Function_ArgPtr( int* x );
 void Function_ArgConstPtr( const int* x );
 void Function_ArgPtrToPtr( float** f );
+void Function_SizedArrayArg( double arr[4] );
+void Function_UnsizedArrayArg( int arr[] );
 int Function_RetVal();
 int* Function_RetPtr();
 const int* Function_RetConstPtr();
@@ -41,6 +43,20 @@ void DuplicatedProto( int x );
 void DuplicatedProto( int xx );
 
 extern int ExternallyDeclaredFunction( const char* s );
+
+// All these functions SHOULD NOT be translated, since it's impossible without renaming them.
+void yield();
+void i1024();
+void zero_init();
+void struct_();
+void union_();
+void enum_();
+void scoped_enum_();
+void anon_enum();
+void anon_field_();
+void _single_underscored();
+void __double_underscored();
+void exercitU__();
 
 typedef char CPP_char8;
 typedef   signed char  CPP_i8;
@@ -179,6 +195,13 @@ struct LargeStructWithSingleBitField
 	int f: 2;
 	float x;
 	int arr2[5];
+};
+
+// A tricky case. Two anonymous records are created via a single macro. They should be distinct from each other.
+#define TWO_ANON_STRUCTS struct { int x; int y; } anon_struct_value0; struct { int z; int w; } anon_struct_value1;
+struct StructWithTwoAnonStructsInside
+{
+	TWO_ANON_STRUCTS
 };
 
 enum SequentialEnum
@@ -401,11 +424,11 @@ struct _UnderscoredStruct
 	int x;
 };
 
-struct ___TripleUnderscoredStruct
+typedef struct ___TripleUnderscoredStruct
 {
 	float y;
 	char z;
-};
+} ___TripleUnderscoredStructTypedef;
 
 // Should proper handle identifiers with underscore prefix followed by number.
 typedef unsigned long long int __64_int_from_c;
@@ -424,18 +447,20 @@ typedef unsigned long long int __64_int_from_c;
 #define __CHAR_CONSTANT_COPY_A CHAR_CONSTANT
 #define __CHAR_CONSTANT_COPY_B __CHAR_CONSTANT_COPY_A
 
+// Should translate define - alias for an enum value.
+#define ANON_Y AnonY
+#define MINUS_TWO MinusTwo
+#define ANON_Y_COPY ANON_Y
+
 // Should translate define - alias for a type name.
 #define CPP_CHAR8 CPP_char8
 #define ARRAY_TYPE15 ArrayType15
-#define REGULAR_STRUCT RegularStruct
 #define TYPEDEFED_STRUCT TypedefedStruct
 #define STUPID_STRUCT_NAMING StupidStuctNaming
-#define UNION_ALIGN_1 UnionAlign1
-#define SEQUENTIAL_ENUM SequentialEnum
-#define NON_SEQUENTIAL_ENUM NonSequentialEnum
+#define NUMBERS_ENUM NumbersEnum
 #define TYPEDEF_FOR_ENUM_ABC TypedefForEnumABC
-#define REGULAR_STRUCT_COPY REGULAR_STRUCT
-#define ___TRIPLE_UNDERSCORED_STRUCT ___TripleUnderscoredStruct
+#define TYPEDEFED_STRUCT_COPY TYPEDEFED_STRUCT
+#define ___TRIPLE_UNDERSCORED_STRUCT ___TripleUnderscoredStructTypedef
 #define __64_INT_FROM_C __64_int_from_c
 #define TRIPLE_UNDERSCORED_STRUCT ___TRIPLE_UNDERSCORED_STRUCT
 #define CPP_CHAR8_COPY ( CPP_CHAR8 )
