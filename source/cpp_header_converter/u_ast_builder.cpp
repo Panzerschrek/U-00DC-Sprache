@@ -609,8 +609,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 	{
 		// Translate incomplete array types as raw pointers.
 		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
-		raw_pointer_type->element_type= TranslateType( *incomplete_array_type->getPointeeType().getTypePtr(), type_names_map );
-
+		raw_pointer_type->element_type= TranslateType( *incomplete_array_type->getArrayElementTypeNoTypeQual(), type_names_map );
 		return std::move(raw_pointer_type);
 	}
 	else if( const auto array_type= llvm::dyn_cast<clang::ArrayType>(&in_type) )
