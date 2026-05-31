@@ -11,8 +11,6 @@ fn nomangle main() call_conv( "C" ) : i32
 	auto strcpy_func= strcpy;
 	auto fread_func= fread;
 	auto fwrite_func= fwrite;
-	auto isalpha_func= isalpha;
-	auto tolower_func= tolower;
 	auto cos_func= cosf;
 	auto atan2_func= atan2;
 	auto pow_func= pow;
