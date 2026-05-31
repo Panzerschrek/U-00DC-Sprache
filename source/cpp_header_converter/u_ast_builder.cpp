@@ -1184,7 +1184,22 @@ void CppAstConsumer::EmitItemImpl(
 				{
 					Synt::ClassField field( g_dummy_src_loc );
 
-					field.type= TranslateType( *field_declaration->getType().getTypePtr(), type_names_map );
+					const clang::Type& field_type= *field_declaration->getType().getTypePtr();
+
+					if( record_declaration.hasFlexibleArrayMember() && field_type.isIncompleteArrayType() )
+					{
+						// Create a zero-sized array for a flexible array member.
+						auto array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
+						array_type->element_type= TranslateType( *field_type.getArrayElementTypeNoTypeQual(), type_names_map );
+
+						Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
+						numeric_constant.num.value= 0;
+						array_type->size= std::move(numeric_constant);
+
+						field.type= std::move( array_type );
+					}
+					else
+						field.type= TranslateType( field_type, type_names_map );
 
 					const auto src_name= field_declaration->getName();
 

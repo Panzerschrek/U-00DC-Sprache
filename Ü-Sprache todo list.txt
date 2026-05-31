@@ -220,7 +220,6 @@ C++ header converter:
 *) Support converting constant variables - arrays with fillers
 *) Support converting auto constant variables - arrays
 *) Support converting constant variables - structs
-*) Handle specially structs having the last member - unsized array
 *) Add an option to generate a dependency file
 *) Consider ignoring symbols to emit based on a special define (like #define U_CPP_HEADER_CONVERTER_IGNORE)
 *) Disable copy constructors, copy-assignment operators, equality-compare operators for incomplete types
