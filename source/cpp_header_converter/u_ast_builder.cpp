@@ -258,63 +258,27 @@ private:
 	template<typename ListBuilder>
 	void EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const NamespaceItemsMap& items );
 
-	template<typename ListBuilder>
-	void EmitItem(
-		ListBuilder& out_items, const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItem& item );
+	// Emit classes for namespaces, since actual namespaces can't be placed in classes, but we need this sometimes.
+	Synt::Class EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item );
 
-	void EmitItemImpl(
-		Synt::ProgramElementsList::Builder& out_items,
-		const TypeNamesMap& type_names_map,
-		std::string_view name,
-		const NamespaceItemNamespace& item );
+	Synt::Function EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const clang::FunctionDecl* item );
 
-	void EmitItemImpl(
-		Synt::ClassElementsList::Builder& out_items,
-		const TypeNamesMap& type_names_map,
-		std::string_view name,
-		const NamespaceItemNamespace& item );
+	Synt::Class EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemRecord& item );
 
-	template<typename ListBuilder>
-	void EmitItemImpl(
-		ListBuilder& out_items,
-		const TypeNamesMap& type_names_map,
-		std::string_view name,
-		const clang::FunctionDecl* item );
+	Synt::TypeAlias EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const clang::TypedefNameDecl* item );
 
-	template<typename ListBuilder>
-	void EmitItemImpl(
-		ListBuilder& out_items,
-		const TypeNamesMap& type_names_map,
-		std::string_view name,
-		const NamespaceItemRecord& item );
+	Synt::TypeAlias EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const clang::EnumDecl* item );
 
-	template<typename ListBuilder>
-	void EmitItemImpl(
-		ListBuilder& out_items,
-		const TypeNamesMap& type_names_map,
-		std::string_view name,
-		const clang::TypedefNameDecl* item );
+	Synt::VariablesDeclaration EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemEnumElement& item );
 
-	template<typename ListBuilder>
-	void EmitItemImpl(
-		ListBuilder& out_items,
-		const TypeNamesMap& type_names_map,
-		std::string_view name,
-		const clang::EnumDecl* item );
-
-	template<typename ListBuilder>
-	void EmitItemImpl(
-		ListBuilder& out_items,
-		const TypeNamesMap& type_names_map,
-		std::string_view name,
-		const NamespaceItemEnumElement& item );
-
-	template<typename ListBuilder>
-	void EmitItemImpl(
-		ListBuilder& out_items,
-		const TypeNamesMap& type_names_map,
-		std::string_view name,
-		const clang::VarDecl* item );
+	Synt::VariablesDeclaration EmitItemImpl(
+		const TypeNamesMap& type_names_map, std::string_view name, const clang::VarDecl* item );
 
 	Synt::ClassElementsList MakeOpaqueRecordElements(
 		const TypeNamesMap& type_names_map,
@@ -507,7 +471,9 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	}
 	else if( const auto var_decl= llvm::dyn_cast<clang::VarDecl>(&decl) )
 	{
-		if( var_decl->hasInit() && var_decl->hasConstantInitialization() )
+		if( var_decl->hasInit() &&
+			var_decl->hasConstantInitialization() &&
+			var_decl->getType().isConstant( ast_context_ ) )
 			root_namespace_.items.insert_or_assign( TranslateIdentifier( var_decl->getName() ), var_decl );
 	}
 }
@@ -976,46 +942,25 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 		} );
 
 	for( const ItemToSort& item : items_to_sort_by_location )
-		EmitItem( out_items, type_names_map, item.name, items.find( item.name )->second );
+	{
+		std::visit(
+			[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, item.name, t ) ); },
+			items.find( item.name )->second );
+	}
 
 	std::sort( items_to_sort_by_name.begin(), items_to_sort_by_name.end() );
 
 	for( const llvm::StringRef name : items_to_sort_by_name )
-		EmitItem( out_items, type_names_map, name, items.find( name )->second );
+	{
+		std::visit(
+			[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, name, t ) ); },
+			items.find( name )->second );
+	}
 }
 
-template<typename ListBuilder>
-void CppAstConsumer::EmitItem(
-	ListBuilder& out_items, const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItem& item )
+Synt::Class CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItemNamespace& item )
 {
-	std::visit( [&]( const auto& t ) { EmitItemImpl( out_items, type_names_map, name, t ); }, item );
-}
-
-void CppAstConsumer::EmitItemImpl(
-	Synt::ProgramElementsList::Builder& out_items,
-	const TypeNamesMap& type_names_map,
-	const std::string_view name,
-	const NamespaceItemNamespace& item )
-{
-	Synt::ProgramElementsList::Builder namespace_items_builder;
-
-	EmitItemsSorted( namespace_items_builder, type_names_map, item.items );
-
-	Synt::Namespace namespace_( g_dummy_src_loc );
-	namespace_.name= name;
-	namespace_.elements= namespace_items_builder.Build();
-
-	out_items.Append( std::move( namespace_ ) );
-}
-
-void CppAstConsumer::EmitItemImpl(
-	Synt::ClassElementsList::Builder& out_items,
-	const TypeNamesMap& type_names_map,
-	const std::string_view name,
-	const NamespaceItemNamespace& item )
-{
-	// Ü has no namespaces in classes. So, create a class instead.
-
 	Synt::ClassElementsList::Builder class_items_builder;
 
 	EmitItemsSorted( class_items_builder, type_names_map, item.items );
@@ -1024,15 +969,11 @@ void CppAstConsumer::EmitItemImpl(
 	class_.name= name;
 	class_.elements= class_items_builder.Build();
 
-	out_items.Append( std::move( class_ ) );
+	return class_;
 }
 
-template<typename ListBuilder>
-void CppAstConsumer::EmitItemImpl(
-	ListBuilder& out_items,
-	const TypeNamesMap& type_names_map,
-	const std::string_view name,
-	const clang::FunctionDecl* const item )
+Synt::Function CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const clang::FunctionDecl* const item )
 {
 	const clang::FunctionDecl& function_decl= *item;
 
@@ -1064,28 +1005,23 @@ void CppAstConsumer::EmitItemImpl(
 		++i;
 	}
 
-	out_items.Append( std::move( func ) );
+	return func;
 }
 
-template<typename ListBuilder>
-void CppAstConsumer::EmitItemImpl(
-	ListBuilder& out_items,
-	const TypeNamesMap& type_names_map,
-	const std::string_view name,
-	const NamespaceItemRecord& item )
+Synt::Class CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItemRecord& item )
 {
 	const clang::RecordDecl& record_declaration= *item.record_decl;
 
+	Synt::Class class_(g_dummy_src_loc);
+	class_.name= name;
+	class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
+	if( record_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
+		class_.no_discard= true;
+
 	if( record_declaration.isStruct() || record_declaration.isClass() )
 	{
-		Synt::Class class_(g_dummy_src_loc);
-		class_.name= name;
-
-		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
-
-		if( record_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
-			class_.no_discard= true;
-
 		if( record_declaration.isCompleteDefinition() )
 		{
 			bool has_bitfields= false;
@@ -1230,18 +1166,10 @@ void CppAstConsumer::EmitItemImpl(
 			class_elements.Append( GetDeletedDefaultConstructor() );
 			class_.elements= class_elements.Build();
 		}
-
-		out_items.Append( std::move(class_ ) );
 	}
 	else if( record_declaration.isUnion() )
 	{
 		// Emulate union, using array of bytes with required alignment.
-		Synt::Class class_(g_dummy_src_loc);
-		class_.name= name;
-		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
-
-		if( record_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
-			class_.no_discard= true;
 
 		if( record_declaration.isCompleteDefinition() )
 			class_.elements= MakeOpaqueRecordElements( type_names_map, record_declaration, "union", item.items );
@@ -1255,51 +1183,27 @@ void CppAstConsumer::EmitItemImpl(
 
 			class_.elements= class_elements.Build();
 		}
-
-		out_items.Append( std::move(class_ ) );
 	}
+
+	return class_;
 }
 
-template<typename ListBuilder>
-void CppAstConsumer::EmitItemImpl(
-	ListBuilder& out_items,
-	const TypeNamesMap& type_names_map,
-	const std::string_view name,
-	const clang::TypedefNameDecl* const item )
+Synt::TypeAlias CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const clang::TypedefNameDecl* const item )
 {
 	Synt::TypeAlias type_alias( g_dummy_src_loc );
 	type_alias.name= name;
 	type_alias.value= TranslateType( *item->getUnderlyingType().getTypePtr(), type_names_map );
 
-	out_items.Append( std::move(type_alias ) );
+	return type_alias;
 }
 
-template<typename ListBuilder>
-void CppAstConsumer::EmitItemImpl(
-	ListBuilder& out_items,
-	const TypeNamesMap& type_names_map,
-	const std::string_view name,
-	const clang::EnumDecl* const item )
+Synt::TypeAlias CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const clang::EnumDecl* const item )
 {
 	(void)type_names_map;
 
 	const clang::EnumDecl& enum_declaration= *item;
-
-	if( !enum_declaration.isComplete() )
-	{
-		// Create dummy class with deleted default constructor for incomplete enums.
-
-		Synt::Class enum_class_( g_dummy_src_loc );
-		enum_class_.name= name;
-
-		Synt::ClassElementsList::Builder class_elements;
-		class_elements.Append( GetDeletedDefaultConstructor() );
-		enum_class_.elements= class_elements.Build();
-
-		out_items.Append( std::move( enum_class_ ) );
-
-		return;
-	}
 
 	// Always create a type alias and a bunch of enumerator constants for C and C++ enums.
 	// We can't use Ü enums, since C enums may be unsequentional and it's not guaranteed, that a varible of enum type has one of the listed values.
@@ -1307,10 +1211,11 @@ void CppAstConsumer::EmitItemImpl(
 	// For C++ scoped enums we create a namespace with "_" postfix, where all enumerators are stored.
 	// A type alias is created even for an anonymous enum, since such enum may be used inside "typedef" and we need some name for typedef source type (even if it's generated).
 
-	{
-		Synt::TypeAlias type_alias( g_dummy_src_loc );
-		type_alias.name= name;
+	Synt::TypeAlias type_alias( g_dummy_src_loc );
+	type_alias.name= name;
 
+	if( enum_declaration.isComplete() )
+	{
 		std::string_view underlying_type_name;
 		if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getIntegerType().getTypePtr() ) )
 			underlying_type_name= GetUFundamentalType( *built_in_type );
@@ -1333,17 +1238,18 @@ void CppAstConsumer::EmitItemImpl(
 		}
 
 		type_alias.value= CreateFundamentalTypeName( underlying_type_name );
-
-		out_items.Append( std::move(type_alias) );
 	}
+	else
+	{
+		// use "void" as alis for incomplete enums.
+		type_alias.value= CreateFundamentalTypeName( Keyword( Keywords::void_ ) );
+	}
+
+	return type_alias;
 }
 
-template<typename ListBuilder>
-void CppAstConsumer::EmitItemImpl(
-	ListBuilder& out_items,
-	const TypeNamesMap& type_names_map,
-	const std::string_view name,
-	const NamespaceItemEnumElement& item )
+Synt::VariablesDeclaration CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItemEnumElement& item )
 {
 	Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
 	variables_declaration.type= TranslateType( *item.enum_type, type_names_map );
@@ -1384,27 +1290,20 @@ void CppAstConsumer::EmitItemImpl(
 		variables_declaration.variables.push_back( std::move( var ) );
 	}
 
-	out_items.Append( std::move(variables_declaration) );
+	return variables_declaration;
 }
 
-template<typename ListBuilder>
-void CppAstConsumer::EmitItemImpl(
-	ListBuilder& out_items,
-	const TypeNamesMap& type_names_map,
-	const std::string_view name,
-	const clang::VarDecl* const item )
+Synt::VariablesDeclaration CppAstConsumer::EmitItemImpl(
+	const TypeNamesMap& type_names_map, const std::string_view name, const clang::VarDecl* const item )
 {
 	const clang::VarDecl& variable= *item;
 
-	if( !variable.getType().isConstant( ast_context_ ) )
-	{
-		// Ignore non-constants.
-		return;
-	}
+	Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+	variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
 
 	const clang::APValue* const init_val= variable.evaluateValue();
 	if( init_val == nullptr )
-		return;
+		return variables_declaration;
 
 	const clang::Type* variable_type= variable.getType().getTypePtr();
 	while(true)
@@ -1436,22 +1335,17 @@ void CppAstConsumer::EmitItemImpl(
 
 	Synt::Initializer initializer= TranslateVariableInitializer_r( *variable_type, *init_val );
 	if( std::holds_alternative<Synt::EmptyVariant>( initializer ) )
-		return;
+		return variables_declaration;
 
-	Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
-	variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
+	Synt::VariablesDeclaration::VariableEntry entry;
+	entry.src_loc= g_dummy_src_loc;
+	entry.name= name;
+	entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
+	entry.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 
-	{
-		Synt::VariablesDeclaration::VariableEntry entry;
-		entry.src_loc= g_dummy_src_loc;
-		entry.name= name;
-		entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
-		entry.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+	variables_declaration.variables.push_back( std::move(entry) );
 
-		variables_declaration.variables.push_back( std::move(entry) );
-	}
-
-	out_items.Append( std::move( variables_declaration ) );
+	return variables_declaration;
 }
 
 Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
