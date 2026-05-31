@@ -30,6 +30,8 @@ void Function_ArgVal( int x );
 void Function_ArgPtr( int* x );
 void Function_ArgConstPtr( const int* x );
 void Function_ArgPtrToPtr( float** f );
+void Function_SizedArrayArg( double arr[4] );
+void Function_UnsizedArrayArg( int arr[] );
 int Function_RetVal();
 int* Function_RetPtr();
 const int* Function_RetConstPtr();

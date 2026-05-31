@@ -64,6 +64,9 @@ fn nomangle main() call_conv( "C" ) : i32
 		var $(i32) r2= Function_RetConstPtr();
 		var $($(f32)) ptr_to_ptr_to_f= Function_RetPtrToPtr();
 		Function_ArgPtrToPtr( ptr_to_ptr_to_f );
+		var [ f64, 4 ] mut double_arr= zero_init;
+		Function_SizedArrayArg( $<( double_arr[0] ) ); // Sized array argument should be translated as raw pointer.
+		Function_UnsizedArrayArg( r1 ); // Unsized array argument should be translated as raw pointer.
 		Function_UnnamedArgs( 0, 0.0f, 0.0 );
 		DuplicatedProto(0);
 
