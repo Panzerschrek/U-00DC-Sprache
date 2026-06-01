@@ -16,6 +16,14 @@ struct BStruct
 	char data[240];
 };
 
+// Should ignore names where the ignore directive is defined.
+#define U_CPP_HEADER_CONVERTER_IGNORE
+void BIgnoredFunc();
+typedef unsigned int BIgnoredTypedef;
+struct BIgnoredStruct{ char c; short s; };
+enum BIgnoredEnum{ BIgnored0, BIgnored1, BIgnored2, BIgnored3 };
+#undef U_CPP_HEADER_CONVERTER_IGNORE
+
 enum BEnum
 {
 	B_0, B_1, B_2

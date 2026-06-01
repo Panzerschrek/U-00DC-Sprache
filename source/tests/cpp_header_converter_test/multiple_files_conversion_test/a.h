@@ -16,6 +16,14 @@ struct AStruct
 	float b;
 };
 
+// Should ignore names where the ignore directive is defined.
+#define U_CPP_HEADER_CONVERTER_IGNORE
+void AIgnoredFunc();
+typedef unsigned int AIgnoredTypedef;
+struct AIgnoredStruct{ char c; short s; };
+enum AIgnoredEnum{ AIgnored0, AIgnored1, AIgnored2, AIgnored3 };
+#undef U_CPP_HEADER_CONVERTER_IGNORE
+
 enum AEnum
 {
 	A_0, A_1, A_2, A_3
