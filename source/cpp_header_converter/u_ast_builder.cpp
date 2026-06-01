@@ -214,6 +214,78 @@ std::unique_ptr<const Synt::Expression> TranslateCallingConvention( const clang:
 	return nullptr;
 }
 
+struct CppHeaderConverterIgnoreMacro
+{
+	enum class Kind : uint8_t
+	{
+		Define,
+		Undefine,
+	};
+
+	Kind kind= Kind::Define;
+	clang::SourceLocation location;
+};
+
+using CppHeaderConverterIgnoreMacros= std::vector<CppHeaderConverterIgnoreMacro>;
+
+using CppHeaderConverterIgnoreMacroPtr= std::shared_ptr<CppHeaderConverterIgnoreMacros>;
+
+class PreprocessorCallbacks final : public clang::PPCallbacks
+{
+public:
+	PreprocessorCallbacks( CppHeaderConverterIgnoreMacroPtr ignore_macros )
+		: ignore_macros_( std::move( ignore_macros ) )
+	{}
+
+public:
+	virtual void MacroDefined(
+		const clang::Token& macro_name_token,
+		const clang::MacroDirective* const macro_directive ) override
+	{
+		if( macro_directive == nullptr )
+			return;
+
+		const clang::IdentifierInfo* const identifier_info= macro_name_token.getIdentifierInfo();
+		if( identifier_info == nullptr )
+			return;
+
+		if( identifier_info->getName() == c_ignore_directive_name )
+		{
+			const clang::SourceLocation location= macro_directive->getLocation();
+			if( location.isValid() )
+				ignore_macros_->push_back(
+					CppHeaderConverterIgnoreMacro{ CppHeaderConverterIgnoreMacro::Kind::Define, location } );
+		}
+	}
+
+	virtual void MacroUndefined(
+		const clang::Token& macro_name_token,
+		const clang::MacroDefinition& macro_definition,
+		const clang::MacroDirective* const macro_directive ) override
+	{
+		(void)macro_definition;
+		(void)macro_directive;
+
+		const clang::IdentifierInfo* const identifier_info= macro_name_token.getIdentifierInfo();
+		if( identifier_info == nullptr )
+			return;
+
+		if( identifier_info->getName() == c_ignore_directive_name )
+		{
+			const clang::SourceLocation location= macro_directive->getLocation();
+			if( location.isValid() )
+				ignore_macros_->push_back(
+					CppHeaderConverterIgnoreMacro{ CppHeaderConverterIgnoreMacro::Kind::Undefine, location } );
+		}
+	}
+
+private:
+	static constexpr auto& c_ignore_directive_name= "U_CPP_HEADER_CONVERTER_IGNORE";
+
+private:
+	const CppHeaderConverterIgnoreMacroPtr ignore_macros_;
+};
+
 class CppAstConsumer final : public clang::ASTConsumer
 {
 public:
@@ -242,6 +314,8 @@ private:
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionType& in_type, const TypeNamesMap& type_names_map );
+
+	void PrepareIgnoreDirectives();
 
 	void BuildTypeNamesMap( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItem& item );
 	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemNamespace& item );
@@ -301,6 +375,8 @@ private:
 	const clang::LangOptions& lang_options_;
 	const clang::ASTContext& ast_context_;
 
+	const CppHeaderConverterIgnoreMacroPtr ignore_macros_;
+
 	NamespaceItemNamespace root_namespace_;
 };
 
@@ -332,7 +408,9 @@ CppAstConsumer::CppAstConsumer(
 	, diagnostic_engine_(diagnostic_engine)
 	, lang_options_(lang_options)
 	, ast_context_(ast_context)
+	, ignore_macros_( std::make_shared<CppHeaderConverterIgnoreMacros>() )
 {
+	preprocessor_.addPPCallbacks( std::make_unique<PreprocessorCallbacks>( ignore_macros_ ) );
 }
 
 bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
@@ -344,6 +422,8 @@ bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 
 void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 {
+	PrepareIgnoreDirectives();
+
 	(void)ast_context;
 
 	for( auto& pair : root_namespace_.items )
@@ -786,6 +866,29 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionT
 	function_type.calling_convention= TranslateCallingConvention( in_type );
 
 	return function_type;
+}
+
+void CppAstConsumer::PrepareIgnoreDirectives()
+{
+	// We are not sure that ignore macros are emitted in their natural order.
+	// So, sort them.
+	std::sort(
+		ignore_macros_->begin(),
+		ignore_macros_->end(),
+		[&]( const CppHeaderConverterIgnoreMacro& l, const CppHeaderConverterIgnoreMacro& r )
+		{
+			return source_manager_.isBeforeInTranslationUnit( l.location, r.location );
+		} );
+
+	for( const CppHeaderConverterIgnoreMacro& m : *ignore_macros_ )
+	{
+		const auto loc= source_manager_.getDecomposedLoc( m.location );
+		const uint32_t line= source_manager_.getLineNumber( loc.first, loc.second );
+		if( m.kind == CppHeaderConverterIgnoreMacro::Kind::Define )
+			std::cout << "Ignore defined in line " << line << std::endl;
+		else
+			std::cout << "Ignore undefined in line " << line << std::endl;
+	}
 }
 
 void CppAstConsumer::BuildTypeNamesMap( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItem& item )
