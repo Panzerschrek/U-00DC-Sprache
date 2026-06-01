@@ -80,7 +80,7 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 	add_custom_command( TARGET CppHeaderConverterTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND CppHeaderConverterTest${CURRENT_COMPILER_GENERATION} )
 
 	##
-	## Test for converting several files.
+	## Test for converting several C headers using a common header and imported result files in a single Ü file.
 	##
 
 	add_custom_command(
@@ -120,7 +120,8 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 			Compiler${CURRENT_COMPILER_GENERATION}
 		COMMAND
 			Compiler${CURRENT_COMPILER_GENERATION}
-			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/main.u -o ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/main.o
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/main.u
+			-o ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/main.o
 			${SPRACHE_COMPILER_PIC_OPTIONS}
 			${SPRACHE_COMPILER_OPT_OPTIONS}
 			--allow-unused-names # Allow unused variables - in this test we only check initialization for them.

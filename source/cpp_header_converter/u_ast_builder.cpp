@@ -217,7 +217,7 @@ std::unique_ptr<const Synt::Expression> TranslateCallingConvention( const clang:
 clang::SourceLocation GetNamespaceItemSourceLocationImpl( const NamespaceItemNamespace& item )
 {
 	(void)item;
-	return clang::SourceLocation(); // Produces invalid location.
+	return clang::SourceLocation(); // Default constructor produces invalid location.
 }
 
 
@@ -242,6 +242,7 @@ clang::SourceLocation GetNamespaceItemSourceLocation( const NamespaceItem& item 
 	return std::visit( [&]( const auto& t ) { return GetNamespaceItemSourceLocationImpl( t ); }, item );
 }
 
+// A macro directive allowing ignoring some names.
 struct CppHeaderConverterIgnoreMacro
 {
 	enum class Kind : uint8_t
@@ -256,19 +257,18 @@ struct CppHeaderConverterIgnoreMacro
 
 using CppHeaderConverterIgnoreMacros= std::vector<CppHeaderConverterIgnoreMacro>;
 
-using CppHeaderConverterIgnoreMacroPtr= std::shared_ptr<CppHeaderConverterIgnoreMacros>;
+using CppHeaderConverterIgnoreMacrosPtr= std::shared_ptr<CppHeaderConverterIgnoreMacros>;
 
 class PreprocessorCallbacks final : public clang::PPCallbacks
 {
 public:
-	PreprocessorCallbacks( CppHeaderConverterIgnoreMacroPtr ignore_macros )
+	PreprocessorCallbacks( CppHeaderConverterIgnoreMacrosPtr ignore_macros )
 		: ignore_macros_( std::move( ignore_macros ) )
 	{}
 
 public:
 	virtual void MacroDefined(
-		const clang::Token& macro_name_token,
-		const clang::MacroDirective* const macro_directive ) override
+		const clang::Token& macro_name_token, const clang::MacroDirective* const macro_directive ) override
 	{
 		if( macro_directive == nullptr )
 			return;
@@ -311,7 +311,7 @@ private:
 	static constexpr auto& c_ignore_directive_name= "U_CPP_HEADER_CONVERTER_IGNORE";
 
 private:
-	const CppHeaderConverterIgnoreMacroPtr ignore_macros_;
+	const CppHeaderConverterIgnoreMacrosPtr ignore_macros_;
 };
 
 class CppAstConsumer final : public clang::ASTConsumer
@@ -407,7 +407,7 @@ private:
 	const clang::LangOptions& lang_options_;
 	const clang::ASTContext& ast_context_;
 
-	const CppHeaderConverterIgnoreMacroPtr ignore_macros_;
+	const CppHeaderConverterIgnoreMacrosPtr ignore_macros_;
 
 	NamespaceItemNamespace root_namespace_;
 };
@@ -442,6 +442,7 @@ CppAstConsumer::CppAstConsumer(
 	, ast_context_(ast_context)
 	, ignore_macros_( std::make_shared<CppHeaderConverterIgnoreMacros>() )
 {
+	// Install preprocessor callbacks to be able to extract all locations of ignore macros usage.
 	preprocessor_.addPPCallbacks( std::make_unique<PreprocessorCallbacks>( ignore_macros_ ) );
 }
 
@@ -937,7 +938,7 @@ bool CppAstConsumer::ShouldSkipEmittingItem( const clang::SourceLocation& locati
 
 	const CppHeaderConverterIgnoreMacro& closest_ignore_macro_before= *std::prev( it );
 
-	// If it's ignore definition - skip an item, else (if it's undefinition) - preserve it.
+	// If it's an ignore definition - skip the given item, else (if it's undefinition) - preserve it.
 	switch( closest_ignore_macro_before.kind )
 	{
 	case CppHeaderConverterIgnoreMacro::Kind::Define: return true;
