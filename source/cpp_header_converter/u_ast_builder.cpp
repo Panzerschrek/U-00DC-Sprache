@@ -917,7 +917,7 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionT
 void CppAstConsumer::PrepareIgnoreDirectives()
 {
 	// We are not sure that ignore macros are emitted in their natural order.
-	// So, sort them.
+	// So, sort them to be able to use binary search later.
 	std::sort(
 		ignore_macros_->begin(),
 		ignore_macros_->end(),
@@ -925,39 +925,39 @@ void CppAstConsumer::PrepareIgnoreDirectives()
 		{
 			return source_manager_.isBeforeInTranslationUnit( l.location, r.location );
 		} );
-
-	for( const CppHeaderConverterIgnoreMacro& m : *ignore_macros_ )
-	{
-		const auto loc= source_manager_.getDecomposedLoc( m.location );
-		const uint32_t line= source_manager_.getLineNumber( loc.first, loc.second );
-		if( m.kind == CppHeaderConverterIgnoreMacro::Kind::Define )
-			std::cout << "Ignore defined in line " << line << std::endl;
-		else
-			std::cout << "Ignore undefined in line " << line << std::endl;
-	}
 }
 
 bool CppAstConsumer::ShouldSkipEmittingItem( const clang::SourceLocation& location )
 {
-	if( ignore_macros_->empty() )
-		return false;
-
 	if( location.isInvalid() )
 		return false;
 
-	const CppHeaderConverterIgnoreMacro* closest_macro_before= nullptr;
+	// Use binary search in case if we have a lot of "ignore" directives.
 
-	// This finds the closest location before, since "ignore_macros_" is previously sorted.
-	// TODO - use faster search here?
-	for( const CppHeaderConverterIgnoreMacro& m : *ignore_macros_ )
+	const CppHeaderConverterIgnoreMacros& ignore_macros= *ignore_macros_;
+
+	const auto it=
+		std::lower_bound(
+			ignore_macros.begin(),
+			ignore_macros.end(),
+			location,
+			[&]( const CppHeaderConverterIgnoreMacro& l, const clang::SourceLocation& r )
+			{
+				return source_manager_.isBeforeInTranslationUnit( l.location, r );
+			} );
+
+	if( it == ignore_macros.begin() )
+		return false; // The given location is before the first "ignore" directive.
+
+	const CppHeaderConverterIgnoreMacro& closest_ignore_macro_before= *std::prev( it );
+
+	// If it's ignore definition - skip an item, else (if it's undefinition) - preserve it.
+	switch( closest_ignore_macro_before.kind )
 	{
-		if( source_manager_.isBeforeInTranslationUnit( m.location, location ) )
-			closest_macro_before= &m;
-	}
-
-	if( closest_macro_before != nullptr )
-		return closest_macro_before->kind == CppHeaderConverterIgnoreMacro::Kind::Define;
-
+	case CppHeaderConverterIgnoreMacro::Kind::Define: return true;
+	case CppHeaderConverterIgnoreMacro::Kind::Undefine: return false;
+	};
+	U_ASSERT(false);
 	return false;
 }
 
