@@ -26,12 +26,6 @@ int main( int argc, const char* argv[] )
 		llvm::cl::value_desc("filename"),
 		llvm::cl::cat(tool_category) );
 
-	llvm::cl::opt<bool> skip_declarations_from_includes(
-		"skip-declarations-from-includes",
-		llvm::cl::desc("Skip declarations from includes."),
-		llvm::cl::init(false),
-		llvm::cl::cat(tool_category) );
-
 	llvm::cl::list<std::string> force_import(
 		"force-import",
 		llvm::cl::CommaSeparated,
@@ -57,7 +51,7 @@ int main( int argc, const char* argv[] )
 	}
 
 	const auto parsed_units= std::make_shared<U::ParsedUnits>();
-	U::FrontendActionFactory factory(parsed_units, skip_declarations_from_includes);
+	U::FrontendActionFactory factory( parsed_units );
 	const int res= tool.run( &factory );
 	if( res != 0 )
 		return res;

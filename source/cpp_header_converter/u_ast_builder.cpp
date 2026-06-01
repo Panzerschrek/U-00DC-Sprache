@@ -224,8 +224,7 @@ public:
 		const clang::TargetInfo& target_info,
 		clang::DiagnosticsEngine& diagnostic_engine,
 		const clang::LangOptions& lang_options,
-		const clang::ASTContext& ast_context,
-		bool skip_declarations_from_includes );
+		const clang::ASTContext& ast_context );
 
 public:
 	virtual bool HandleTopLevelDecl( clang::DeclGroupRef decl_group ) override;
@@ -301,7 +300,6 @@ private:
 	clang::DiagnosticsEngine& diagnostic_engine_;
 	const clang::LangOptions& lang_options_;
 	const clang::ASTContext& ast_context_;
-	const bool skip_declarations_from_includes_;
 
 	NamespaceItemNamespace root_namespace_;
 };
@@ -309,16 +307,14 @@ private:
 class CppAstProcessor final : public clang::ASTFrontendAction
 {
 public:
-	CppAstProcessor( ParsedUnitsPtr out_result, bool skip_declarations_from_includes );
+	CppAstProcessor( ParsedUnitsPtr out_result );
 
 public:
 	virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
-		clang::CompilerInstance& compiler_intance,
-		llvm::StringRef in_file ) override;
+		clang::CompilerInstance& compiler_intance, llvm::StringRef in_file ) override;
 
 private:
 	const ParsedUnitsPtr out_result_;
-	const bool skip_declarations_from_includes_;
 };
 
 CppAstConsumer::CppAstConsumer(
@@ -328,8 +324,7 @@ CppAstConsumer::CppAstConsumer(
 	const clang::TargetInfo& target_info,
 	clang::DiagnosticsEngine& diagnostic_engine,
 	const clang::LangOptions& lang_options,
-	const clang::ASTContext& ast_context,
-	const bool skip_declarations_from_includes )
+	const clang::ASTContext& ast_context )
 	: out_program_elements_(out_elements)
 	, source_manager_(source_manager)
 	, preprocessor_(preprocessor)
@@ -337,7 +332,6 @@ CppAstConsumer::CppAstConsumer(
 	, diagnostic_engine_(diagnostic_engine)
 	, lang_options_(lang_options)
 	, ast_context_(ast_context)
-	, skip_declarations_from_includes_(skip_declarations_from_includes)
 {
 }
 
@@ -373,10 +367,6 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 {
-	if( skip_declarations_from_includes_ &&
-		source_manager_.getFileID( decl.getLocation() ) != source_manager_.getMainFileID() )
-		return;
-
 	if( const auto record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
 	{
 		if( !record_decl->isTemplated() )
@@ -1536,10 +1526,6 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 		if( macro_directive->getKind() != clang::MacroDirective::MD_Define )
 			continue; // Process only "define" but not "undef".
 
-		if( skip_declarations_from_includes_ &&
-			source_manager_.getFileID( macro_directive->getLocation() ) != source_manager_.getMainFileID() )
-			continue;
-
 		if( !macro_directive->getLocation().isValid() )
 			continue; // Ignore macros with no location. They all seems to be compiler built-in macros.
 
@@ -1820,35 +1806,33 @@ Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& to
 	}
 }
 
-CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result, const bool skip_declarations_from_includes )
-	: out_result_(std::move(out_result)), skip_declarations_from_includes_(skip_declarations_from_includes)
+CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result )
+	: out_result_(std::move(out_result))
 {}
 
 std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
-	clang::CompilerInstance& compiler_intance,
-	const llvm::StringRef in_file )
+	clang::CompilerInstance& compiler_intance, const llvm::StringRef in_file )
 {
 	return
 		std::make_unique<CppAstConsumer>(
-			(*out_result_)[in_file.str()],
+			(*out_result_)[ in_file.str() ],
 			compiler_intance.getSourceManager(),
 			compiler_intance.getPreprocessor(),
 			compiler_intance.getTarget(),
 			compiler_intance.getDiagnostics(),
 			compiler_intance.getLangOpts(),
-			compiler_intance.getASTContext(),
-			skip_declarations_from_includes_ );
+			compiler_intance.getASTContext() );
 }
 
 } // namespace
 
-FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result, const bool skip_declarations_from_includes )
-	: out_result_(std::move(out_result)), skip_declarations_from_includes_(skip_declarations_from_includes)
+FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result )
+	: out_result_(std::move(out_result))
 {}
 
 std::unique_ptr<clang::FrontendAction> FrontendActionFactory::create()
 {
-	return std::make_unique<CppAstProcessor>(out_result_, skip_declarations_from_includes_);
+	return std::make_unique<CppAstProcessor>( out_result_ );
 }
 
 } // namespace U
