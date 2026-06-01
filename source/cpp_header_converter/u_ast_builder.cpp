@@ -214,6 +214,48 @@ std::unique_ptr<const Synt::Expression> TranslateCallingConvention( const clang:
 	return nullptr;
 }
 
+clang::SourceLocation GetNamespaceItemSourceLocationImpl( const NamespaceItemNamespace& item )
+{
+	(void)item;
+	return clang::SourceLocation(); // Produces invalid location.
+}
+
+clang::SourceLocation GetNamespaceItemSourceLocationImpl( const clang::FunctionDecl* const item )
+{
+	return item->getLocation();
+}
+
+clang::SourceLocation GetNamespaceItemSourceLocationImpl( const NamespaceItemRecord& item )
+{
+	return item.record_decl->getLocation();
+}
+
+clang::SourceLocation GetNamespaceItemSourceLocationImpl( const clang::TypedefNameDecl* const item )
+{
+	return item->getLocation();
+}
+
+clang::SourceLocation GetNamespaceItemSourceLocationImpl( const clang::EnumDecl* const item )
+{
+	return item->getLocation();
+}
+
+clang::SourceLocation GetNamespaceItemSourceLocationImpl( const NamespaceItemEnumElement& item )
+{
+	return item.enum_constant_decl->getLocation();
+}
+
+clang::SourceLocation GetNamespaceItemSourceLocationImpl( const clang::VarDecl* const item )
+{
+	return item->getLocation();
+}
+
+// Returns invalid location if can't get actual location.
+clang::SourceLocation GetNamespaceItemSourceLocation( const NamespaceItem& item )
+{
+	return std::visit( [&]( const auto& t ) { return GetNamespaceItemSourceLocationImpl( t ); }, item );
+}
+
 struct CppHeaderConverterIgnoreMacro
 {
 	enum class Kind : uint8_t
@@ -1035,21 +1077,7 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 
 	for( const auto& pair : items )
 	{
-		clang::SourceLocation location;
-
-		// TODO - use std::visit here?
-		if( const auto function_decl_ptr = std::get_if< const clang::FunctionDecl* >( &pair.second ) )
-			location= (*function_decl_ptr)->getLocation();
-		else if( const auto record= std::get_if< NamespaceItemRecord >( &pair.second ) )
-			location= record->record_decl->getLocation();
-		else if( const auto typedef_ptr = std::get_if< const clang::TypedefNameDecl* >( &pair.second ) )
-			location= (*typedef_ptr)->getLocation();
-		else if( const auto enum_ptr = std::get_if< const clang::EnumDecl* >( &pair.second ) )
-			location= (*enum_ptr)->getLocation();
-		else if( const auto enum_element = std::get_if< NamespaceItemEnumElement >( &pair.second ) )
-			location= enum_element->enum_constant_decl->getLocation();
-		else if( const auto var_ptr = std::get_if< const clang::VarDecl* >( &pair.second ) )
-			location= (*var_ptr)->getLocation();
+		const clang::SourceLocation location= GetNamespaceItemSourceLocation( pair.second );
 
 		if( location.isValid() )
 		{
