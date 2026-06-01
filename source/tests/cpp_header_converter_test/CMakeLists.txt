@@ -125,7 +125,7 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 		CppHeaderConverterMultipleFilesTest${CURRENT_COMPILER_GENERATION}
 			${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/main.o
 			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/main.u
-			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/test.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/test.c
 			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/common.h
 			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/a.h
 			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/b.h )

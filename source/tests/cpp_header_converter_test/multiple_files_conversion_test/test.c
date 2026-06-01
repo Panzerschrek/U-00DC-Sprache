@@ -1,6 +1,3 @@
-extern "C"
-{
-
 #include "a.h"
 #include "b.h"
 
@@ -32,5 +29,3 @@ BTypedef BFunc()
 {
 	return 756;
 }
-
-} // extern "C"
