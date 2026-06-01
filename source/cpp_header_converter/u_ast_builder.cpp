@@ -1037,8 +1037,11 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 	{
 		clang::SourceLocation location;
 
+		// TODO - use std::visit here?
 		if( const auto function_decl_ptr = std::get_if< const clang::FunctionDecl* >( &pair.second ) )
 			location= (*function_decl_ptr)->getLocation();
+		else if( const auto record= std::get_if< NamespaceItemRecord >( &pair.second ) )
+			location= record->record_decl->getLocation();
 		else if( const auto typedef_ptr = std::get_if< const clang::TypedefNameDecl* >( &pair.second ) )
 			location= (*typedef_ptr)->getLocation();
 		else if( const auto enum_ptr = std::get_if< const clang::EnumDecl* >( &pair.second ) )
