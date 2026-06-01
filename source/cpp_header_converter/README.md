@@ -16,16 +16,11 @@ Alternatively it is possible to build the tool with prebuilt LLVM library, that 
 
 Run the tool with provided input and output file names.
 Specify C (or C++) compiler-specific options after --.
-
 The result Ü file will include declarations for functions, types and some define-constants, including declarations from included files.
-Alternatively it is possible to disable taking declarations from included files via *--skip-declarations-from-includes* option.
-Also it's possible to add imports section into result file, using option *--force-import*.
 
-It is preferred to use this tool with *--skip-declarations-from-includes* option.
-Without this option result Ü file will include declarations not only from given input file, but from all included files.
-This may cause a problem when multiple Ü files for multiple headers are generated.
-Ü compiler considers declarations with same name in different files distinct and produces redefinition error.
-In order to obtain shared declarations properly it is recommended to create some common-declarations C (or C++) header, with all necessary includes (like C standard library), generate common Ü file for it and add import of this file in other generated Ü bindings via option *--force-import*.
+It's possible to disable emitting some declarations using `#define U_CPP_HEADER_CONVERTER_IGNORE`.
+It may be useful, for example, in order to skip declarations from some specific header.
+But skipped declarations are still referenced, so that you may need to generate them via a separate invocation of C++ header converter and to import the result file using *--force-import* option.
 
 
 ### Limitations
