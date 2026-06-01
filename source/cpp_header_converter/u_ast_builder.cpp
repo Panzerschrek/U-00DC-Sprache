@@ -316,6 +316,7 @@ private:
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionType& in_type, const TypeNamesMap& type_names_map );
 
 	void PrepareIgnoreDirectives();
+	bool ShouldSkipEmittingItem( const clang::SourceLocation& location );
 
 	void BuildTypeNamesMap( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItem& item );
 	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemNamespace& item );
@@ -891,6 +892,30 @@ void CppAstConsumer::PrepareIgnoreDirectives()
 	}
 }
 
+bool CppAstConsumer::ShouldSkipEmittingItem( const clang::SourceLocation& location )
+{
+	if( ignore_macros_->empty() )
+		return false;
+
+	if( location.isInvalid() )
+		return false;
+
+	const CppHeaderConverterIgnoreMacro* closest_macro_before= nullptr;
+
+	// This finds the closest location before, since "ignore_macros_" is previously sorted.
+	// TODO - use faster search here?
+	for( const CppHeaderConverterIgnoreMacro& m : *ignore_macros_ )
+	{
+		if( source_manager_.isBeforeInTranslationUnit( m.location, location ) )
+			closest_macro_before= &m;
+	}
+
+	if( closest_macro_before != nullptr )
+		return closest_macro_before->kind == CppHeaderConverterIgnoreMacro::Kind::Define;
+
+	return false;
+}
+
 void CppAstConsumer::BuildTypeNamesMap( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItem& item )
 {
 	std::visit( [&]( const auto& t ) { BuildTypeNamesMapImpl( map, prefix, t ); }, item );
@@ -1021,7 +1046,10 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 			location= (*var_ptr)->getLocation();
 
 		if( location.isValid() )
-			items_to_sort_by_location.push_back( ItemToSort{ location, pair.getKey() } );
+		{
+			if( !ShouldSkipEmittingItem( location ) )
+				items_to_sort_by_location.push_back( ItemToSort{ location, pair.getKey() } );
+		}
 		else
 			items_to_sort_by_name.push_back( pair.getKey() );
 	}

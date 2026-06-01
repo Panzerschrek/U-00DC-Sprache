@@ -1,5 +1,8 @@
 #pragma once
+
+#define U_CPP_HEADER_CONVERTER_IGNORE
 #include "common.h"
+#undef U_CPP_HEADER_CONVERTER_IGNORE
 
 typedef int BTypedef;
 
