@@ -220,7 +220,6 @@ C++ header converter:
 *) Support converting auto constant variables - arrays
 *) Support converting constant variables - structs
 *) Add an option to generate a dependency file
-*) Disable copy constructors, copy-assignment operators, equality-compare operators for incomplete types
 *) Consider adding typedefs for structs/unions/enums while processing a header in C++ mode
 
 Ü Build system:

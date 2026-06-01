@@ -1339,6 +1339,9 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 		}
 		else
 		{
+			// Mark is at "class" to make it non copy-constructible.
+			class_.kind_attribute= Synt::ClassKindAttribute::Class;
+
 			// Add deleted default constructor.
 			Synt::ClassElementsList::Builder class_elements;
 			class_elements.Append( GetDeletedDefaultConstructor() );
@@ -1353,6 +1356,9 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 			class_.elements= MakeOpaqueRecordElements( type_names_map, record_declaration, "union", item.items );
 		else
 		{
+			// Mark is at "class" to make it non copy-constructible.
+			class_.kind_attribute= Synt::ClassKindAttribute::Class;
+
 			// Add deleted default constructor.
 			Synt::ClassElementsList::Builder class_elements;
 			class_elements.Append( GetDeletedDefaultConstructor() );
