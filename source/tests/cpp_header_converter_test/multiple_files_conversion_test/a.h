@@ -4,6 +4,8 @@
 #include "common.h"
 #undef U_CPP_HEADER_CONVERTER_IGNORE
 
+void AFuncUsingCommonDefinitions( CommonTypedef a, struct CommonStruct* b, enum CommonEnum c );
+
 typedef char ATypedef;
 
 ATypedef AFunc( ATypedef a );

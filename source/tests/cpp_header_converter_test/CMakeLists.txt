@@ -84,23 +84,31 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 	##
 
 	add_custom_command(
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/common.iu
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/common.h CppHeaderConverter
+		COMMAND
+			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/common.iu
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/common.h -- -std=c2x )
+
+	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/a.iu
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/a.h CppHeaderConverter
 		COMMAND
 			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/a.iu
-			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/a.h -- -std=c2x )
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/a.h --force-import "common.iu" -- -std=c2x )
 
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/b.iu
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/b.h CppHeaderConverter
 		COMMAND
 			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/b.iu
-			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/b.h -- -std=c2x )
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/b.h --force-import "common.iu" -- -std=c2x )
 
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/main.o
 		DEPENDS
 			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/main.u
+			${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/common.iu
 			${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/a.iu
 			${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/b.iu
 			Compiler${CURRENT_COMPILER_GENERATION}
