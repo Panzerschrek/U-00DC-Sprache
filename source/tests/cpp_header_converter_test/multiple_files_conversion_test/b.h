@@ -4,7 +4,7 @@
 #include "common.h"
 #undef U_CPP_HEADER_CONVERTER_IGNORE
 
-void BFuncUsingCommonDefinitions( CommonTypedef a, struct CommonStruct* b, enum CommonEnum c );
+void BFuncUsingCommonDefinitions( CommonTypedef a, const struct CommonStruct* b, enum CommonEnum c );
 
 typedef int BTypedef;
 

@@ -117,6 +117,7 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/main.u -o ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/main.o
 			${SPRACHE_COMPILER_PIC_OPTIONS}
 			${SPRACHE_COMPILER_OPT_OPTIONS}
+			--allow-unused-names # Allow unused variables - in this test we only check initialization for them.
 			--verify-module
 			--include-dir ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test )
 
