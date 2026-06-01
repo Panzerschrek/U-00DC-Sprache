@@ -220,24 +220,10 @@ clang::SourceLocation GetNamespaceItemSourceLocationImpl( const NamespaceItemNam
 	return clang::SourceLocation(); // Produces invalid location.
 }
 
-clang::SourceLocation GetNamespaceItemSourceLocationImpl( const clang::FunctionDecl* const item )
-{
-	return item->getLocation();
-}
 
 clang::SourceLocation GetNamespaceItemSourceLocationImpl( const NamespaceItemRecord& item )
 {
 	return item.record_decl->getLocation();
-}
-
-clang::SourceLocation GetNamespaceItemSourceLocationImpl( const clang::TypedefNameDecl* const item )
-{
-	return item->getLocation();
-}
-
-clang::SourceLocation GetNamespaceItemSourceLocationImpl( const clang::EnumDecl* const item )
-{
-	return item->getLocation();
 }
 
 clang::SourceLocation GetNamespaceItemSourceLocationImpl( const NamespaceItemEnumElement& item )
@@ -245,7 +231,7 @@ clang::SourceLocation GetNamespaceItemSourceLocationImpl( const NamespaceItemEnu
 	return item.enum_constant_decl->getLocation();
 }
 
-clang::SourceLocation GetNamespaceItemSourceLocationImpl( const clang::VarDecl* const item )
+clang::SourceLocation GetNamespaceItemSourceLocationImpl( const clang::Decl* const item )
 {
 	return item->getLocation();
 }
