@@ -332,6 +332,9 @@ private:
 	template<typename ListBuilder>
 	void EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const NamespaceItemsMap& items );
 
+	Synt::Namespace EmitNamespaceItem(
+		const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item );
+
 	// Emit classes for namespaces, since actual namespaces can't be placed in classes, but we need this sometimes.
 	Synt::Class EmitItemImpl(
 		const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item );
@@ -1062,21 +1065,57 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 			return source_manager_.isBeforeInTranslationUnit( l.location, r.location );
 		} );
 
-	for( const ItemToSort& item : items_to_sort_by_location )
+	for( const ItemToSort& item_to_sort : items_to_sort_by_location )
 	{
-		std::visit(
-			[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, item.name, t ) ); },
-			items.find( item.name )->second );
+		const NamespaceItem& item= items.find( item_to_sort.name )->second;
+
+		if( const auto namespace_= std::get_if< NamespaceItemNamespace >( &item ) )
+		{
+			// HACK! Emit a namespace if can, otherwise emit a class.
+			if constexpr( std::is_same_v< ListBuilder, Synt::ProgramElementsList::Builder > )
+				out_items.Append( EmitNamespaceItem( type_names_map, item_to_sort.name, *namespace_ ) );
+			else
+				out_items.Append( EmitItemImpl( type_names_map, item_to_sort.name, *namespace_ ) );
+		}
+		else
+			std::visit(
+				[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, item_to_sort.name, t ) ); },
+				item );
 	}
 
 	std::sort( items_to_sort_by_name.begin(), items_to_sort_by_name.end() );
 
-	for( const llvm::StringRef name : items_to_sort_by_name )
+	for( const llvm::StringRef item_name : items_to_sort_by_name )
 	{
-		std::visit(
-			[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, name, t ) ); },
-			items.find( name )->second );
+		const NamespaceItem& item= items.find( item_name )->second;
+
+		if( const auto namespace_= std::get_if< NamespaceItemNamespace >( &item ) )
+		{
+			// HACK! Emit a namespace if can, otherwise emit a class.
+			if constexpr( std::is_same_v< ListBuilder, Synt::ProgramElementsList::Builder > )
+				out_items.Append( EmitNamespaceItem( type_names_map, item_name, *namespace_ ) );
+			else
+				out_items.Append( EmitItemImpl( type_names_map, item_name, *namespace_ ) );
+		}
+		else
+			std::visit(
+				[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, item_name, t ) ); },
+				item );
 	}
+}
+
+Synt::Namespace CppAstConsumer::EmitNamespaceItem(
+	const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item )
+{
+	Synt::ProgramElementsList::Builder items_builder;
+
+	EmitItemsSorted( items_builder, type_names_map, item.items );
+
+	Synt::Namespace namespace_( g_dummy_src_loc );
+	namespace_.name= name;
+	namespace_.elements= items_builder.Build();
+
+	return namespace_;
 }
 
 Synt::Class CppAstConsumer::EmitItemImpl(
