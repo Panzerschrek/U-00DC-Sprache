@@ -214,14 +214,12 @@ Language server:
 C++ header converter:
 *) White list of converted symbols
 *) Black list of converted symbols
-*) Ignore some headers or split result into several files
 *) Handle "wchar_t" type specially, not as regular integer
 *) Add more satisfying defines conversion - where defined value is a constant expression
 *) Support converting constant variables - arrays with fillers
 *) Support converting auto constant variables - arrays
 *) Support converting constant variables - structs
 *) Add an option to generate a dependency file
-*) Consider ignoring symbols to emit based on a special define (like #define U_CPP_HEADER_CONVERTER_IGNORE)
 *) Disable copy constructors, copy-assignment operators, equality-compare operators for incomplete types
 *) Consider adding typedefs for structs/unions/enums while processing a header in C++ mode
 

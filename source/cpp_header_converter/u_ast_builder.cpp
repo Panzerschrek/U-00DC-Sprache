@@ -214,6 +214,106 @@ std::unique_ptr<const Synt::Expression> TranslateCallingConvention( const clang:
 	return nullptr;
 }
 
+clang::SourceLocation GetNamespaceItemSourceLocationImpl( const NamespaceItemNamespace& item )
+{
+	(void)item;
+	return clang::SourceLocation(); // Default constructor produces invalid location.
+}
+
+
+clang::SourceLocation GetNamespaceItemSourceLocationImpl( const NamespaceItemRecord& item )
+{
+	return item.record_decl->getLocation();
+}
+
+clang::SourceLocation GetNamespaceItemSourceLocationImpl( const NamespaceItemEnumElement& item )
+{
+	return item.enum_constant_decl->getLocation();
+}
+
+clang::SourceLocation GetNamespaceItemSourceLocationImpl( const clang::Decl* const item )
+{
+	return item->getLocation();
+}
+
+// Returns invalid location if can't get actual location.
+clang::SourceLocation GetNamespaceItemSourceLocation( const NamespaceItem& item )
+{
+	return std::visit( [&]( const auto& t ) { return GetNamespaceItemSourceLocationImpl( t ); }, item );
+}
+
+// A macro directive allowing ignoring some names.
+struct CppHeaderConverterIgnoreMacro
+{
+	enum class Kind : uint8_t
+	{
+		Define,
+		Undefine,
+	};
+
+	Kind kind= Kind::Define;
+	clang::SourceLocation location;
+};
+
+using CppHeaderConverterIgnoreMacros= std::vector<CppHeaderConverterIgnoreMacro>;
+
+using CppHeaderConverterIgnoreMacrosPtr= std::shared_ptr<CppHeaderConverterIgnoreMacros>;
+
+class PreprocessorCallbacks final : public clang::PPCallbacks
+{
+public:
+	PreprocessorCallbacks( CppHeaderConverterIgnoreMacrosPtr ignore_macros )
+		: ignore_macros_( std::move( ignore_macros ) )
+	{}
+
+public:
+	virtual void MacroDefined(
+		const clang::Token& macro_name_token, const clang::MacroDirective* const macro_directive ) override
+	{
+		if( macro_directive == nullptr )
+			return;
+
+		const clang::IdentifierInfo* const identifier_info= macro_name_token.getIdentifierInfo();
+		if( identifier_info == nullptr )
+			return;
+
+		if( identifier_info->getName() == c_ignore_directive_name )
+		{
+			const clang::SourceLocation location= macro_directive->getLocation();
+			if( location.isValid() )
+				ignore_macros_->push_back(
+					CppHeaderConverterIgnoreMacro{ CppHeaderConverterIgnoreMacro::Kind::Define, location } );
+		}
+	}
+
+	virtual void MacroUndefined(
+		const clang::Token& macro_name_token,
+		const clang::MacroDefinition& macro_definition,
+		const clang::MacroDirective* const macro_directive ) override
+	{
+		(void)macro_definition;
+		(void)macro_directive;
+
+		const clang::IdentifierInfo* const identifier_info= macro_name_token.getIdentifierInfo();
+		if( identifier_info == nullptr )
+			return;
+
+		if( identifier_info->getName() == c_ignore_directive_name )
+		{
+			const clang::SourceLocation location= macro_directive->getLocation();
+			if( location.isValid() )
+				ignore_macros_->push_back(
+					CppHeaderConverterIgnoreMacro{ CppHeaderConverterIgnoreMacro::Kind::Undefine, location } );
+		}
+	}
+
+private:
+	static constexpr auto& c_ignore_directive_name= "U_CPP_HEADER_CONVERTER_IGNORE";
+
+private:
+	const CppHeaderConverterIgnoreMacrosPtr ignore_macros_;
+};
+
 class CppAstConsumer final : public clang::ASTConsumer
 {
 public:
@@ -224,8 +324,7 @@ public:
 		const clang::TargetInfo& target_info,
 		clang::DiagnosticsEngine& diagnostic_engine,
 		const clang::LangOptions& lang_options,
-		const clang::ASTContext& ast_context,
-		bool skip_declarations_from_includes );
+		const clang::ASTContext& ast_context );
 
 public:
 	virtual bool HandleTopLevelDecl( clang::DeclGroupRef decl_group ) override;
@@ -244,6 +343,9 @@ private:
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionType& in_type, const TypeNamesMap& type_names_map );
 
+	void PrepareIgnoreDirectives();
+	bool ShouldSkipEmittingItem( const clang::SourceLocation& location );
+
 	void BuildTypeNamesMap( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItem& item );
 	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItemNamespace& item );
 	void BuildTypeNamesMapImpl( TypeNamesMap& map, ItemFullName& prefix, const clang::FunctionDecl* item );
@@ -257,6 +359,9 @@ private:
 
 	template<typename ListBuilder>
 	void EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const NamespaceItemsMap& items );
+
+	Synt::Namespace EmitNamespaceItem(
+		const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item );
 
 	// Emit classes for namespaces, since actual namespaces can't be placed in classes, but we need this sometimes.
 	Synt::Class EmitItemImpl(
@@ -301,7 +406,8 @@ private:
 	clang::DiagnosticsEngine& diagnostic_engine_;
 	const clang::LangOptions& lang_options_;
 	const clang::ASTContext& ast_context_;
-	const bool skip_declarations_from_includes_;
+
+	const CppHeaderConverterIgnoreMacrosPtr ignore_macros_;
 
 	NamespaceItemNamespace root_namespace_;
 };
@@ -309,16 +415,14 @@ private:
 class CppAstProcessor final : public clang::ASTFrontendAction
 {
 public:
-	CppAstProcessor( ParsedUnitsPtr out_result, bool skip_declarations_from_includes );
+	CppAstProcessor( ParsedUnitsPtr out_result );
 
 public:
 	virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
-		clang::CompilerInstance& compiler_intance,
-		llvm::StringRef in_file ) override;
+		clang::CompilerInstance& compiler_intance, llvm::StringRef in_file ) override;
 
 private:
 	const ParsedUnitsPtr out_result_;
-	const bool skip_declarations_from_includes_;
 };
 
 CppAstConsumer::CppAstConsumer(
@@ -328,8 +432,7 @@ CppAstConsumer::CppAstConsumer(
 	const clang::TargetInfo& target_info,
 	clang::DiagnosticsEngine& diagnostic_engine,
 	const clang::LangOptions& lang_options,
-	const clang::ASTContext& ast_context,
-	const bool skip_declarations_from_includes )
+	const clang::ASTContext& ast_context )
 	: out_program_elements_(out_elements)
 	, source_manager_(source_manager)
 	, preprocessor_(preprocessor)
@@ -337,8 +440,10 @@ CppAstConsumer::CppAstConsumer(
 	, diagnostic_engine_(diagnostic_engine)
 	, lang_options_(lang_options)
 	, ast_context_(ast_context)
-	, skip_declarations_from_includes_(skip_declarations_from_includes)
+	, ignore_macros_( std::make_shared<CppHeaderConverterIgnoreMacros>() )
 {
+	// Install preprocessor callbacks to be able to extract all locations of ignore macros usage.
+	preprocessor_.addPPCallbacks( std::make_unique<PreprocessorCallbacks>( ignore_macros_ ) );
 }
 
 bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
@@ -350,6 +455,8 @@ bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 
 void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 {
+	PrepareIgnoreDirectives();
+
 	(void)ast_context;
 
 	for( auto& pair : root_namespace_.items )
@@ -373,10 +480,6 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 {
-	if( skip_declarations_from_includes_ &&
-		source_manager_.getFileID( decl.getLocation() ) != source_manager_.getMainFileID() )
-		return;
-
 	if( const auto record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
 	{
 		if( !record_decl->isTemplated() )
@@ -798,6 +901,53 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionT
 	return function_type;
 }
 
+void CppAstConsumer::PrepareIgnoreDirectives()
+{
+	// We are not sure that ignore macros are emitted in their natural order.
+	// So, sort them to be able to use binary search later.
+	std::sort(
+		ignore_macros_->begin(),
+		ignore_macros_->end(),
+		[&]( const CppHeaderConverterIgnoreMacro& l, const CppHeaderConverterIgnoreMacro& r )
+		{
+			return source_manager_.isBeforeInTranslationUnit( l.location, r.location );
+		} );
+}
+
+bool CppAstConsumer::ShouldSkipEmittingItem( const clang::SourceLocation& location )
+{
+	if( location.isInvalid() )
+		return false;
+
+	// Use binary search in case if we have a lot of "ignore" directives.
+
+	const CppHeaderConverterIgnoreMacros& ignore_macros= *ignore_macros_;
+
+	const auto it=
+		std::lower_bound(
+			ignore_macros.begin(),
+			ignore_macros.end(),
+			location,
+			[&]( const CppHeaderConverterIgnoreMacro& l, const clang::SourceLocation& r )
+			{
+				return source_manager_.isBeforeInTranslationUnit( l.location, r );
+			} );
+
+	if( it == ignore_macros.begin() )
+		return false; // The given location is before the first "ignore" directive.
+
+	const CppHeaderConverterIgnoreMacro& closest_ignore_macro_before= *std::prev( it );
+
+	// If it's an ignore definition - skip the given item, else (if it's undefinition) - preserve it.
+	switch( closest_ignore_macro_before.kind )
+	{
+	case CppHeaderConverterIgnoreMacro::Kind::Define: return true;
+	case CppHeaderConverterIgnoreMacro::Kind::Undefine: return false;
+	};
+	U_ASSERT(false);
+	return false;
+}
+
 void CppAstConsumer::BuildTypeNamesMap( TypeNamesMap& map, ItemFullName& prefix, const NamespaceItem& item )
 {
 	std::visit( [&]( const auto& t ) { BuildTypeNamesMapImpl( map, prefix, t ); }, item );
@@ -914,21 +1064,13 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 
 	for( const auto& pair : items )
 	{
-		clang::SourceLocation location;
-
-		if( const auto function_decl_ptr = std::get_if< const clang::FunctionDecl* >( &pair.second ) )
-			location= (*function_decl_ptr)->getLocation();
-		else if( const auto typedef_ptr = std::get_if< const clang::TypedefNameDecl* >( &pair.second ) )
-			location= (*typedef_ptr)->getLocation();
-		else if( const auto enum_ptr = std::get_if< const clang::EnumDecl* >( &pair.second ) )
-			location= (*enum_ptr)->getLocation();
-		else if( const auto enum_element = std::get_if< NamespaceItemEnumElement >( &pair.second ) )
-			location= enum_element->enum_constant_decl->getLocation();
-		else if( const auto var_ptr = std::get_if< const clang::VarDecl* >( &pair.second ) )
-			location= (*var_ptr)->getLocation();
+		const clang::SourceLocation location= GetNamespaceItemSourceLocation( pair.second );
 
 		if( location.isValid() )
-			items_to_sort_by_location.push_back( ItemToSort{ location, pair.getKey() } );
+		{
+			if( !ShouldSkipEmittingItem( location ) )
+				items_to_sort_by_location.push_back( ItemToSort{ location, pair.getKey() } );
+		}
 		else
 			items_to_sort_by_name.push_back( pair.getKey() );
 	}
@@ -941,21 +1083,57 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 			return source_manager_.isBeforeInTranslationUnit( l.location, r.location );
 		} );
 
-	for( const ItemToSort& item : items_to_sort_by_location )
+	for( const ItemToSort& item_to_sort : items_to_sort_by_location )
 	{
-		std::visit(
-			[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, item.name, t ) ); },
-			items.find( item.name )->second );
+		const NamespaceItem& item= items.find( item_to_sort.name )->second;
+
+		if( const auto namespace_= std::get_if< NamespaceItemNamespace >( &item ) )
+		{
+			// HACK! Emit a namespace if can, otherwise emit a class.
+			if constexpr( std::is_same_v< ListBuilder, Synt::ProgramElementsList::Builder > )
+				out_items.Append( EmitNamespaceItem( type_names_map, item_to_sort.name, *namespace_ ) );
+			else
+				out_items.Append( EmitItemImpl( type_names_map, item_to_sort.name, *namespace_ ) );
+		}
+		else
+			std::visit(
+				[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, item_to_sort.name, t ) ); },
+				item );
 	}
 
 	std::sort( items_to_sort_by_name.begin(), items_to_sort_by_name.end() );
 
-	for( const llvm::StringRef name : items_to_sort_by_name )
+	for( const llvm::StringRef item_name : items_to_sort_by_name )
 	{
-		std::visit(
-			[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, name, t ) ); },
-			items.find( name )->second );
+		const NamespaceItem& item= items.find( item_name )->second;
+
+		if( const auto namespace_= std::get_if< NamespaceItemNamespace >( &item ) )
+		{
+			// HACK! Emit a namespace if can, otherwise emit a class.
+			if constexpr( std::is_same_v< ListBuilder, Synt::ProgramElementsList::Builder > )
+				out_items.Append( EmitNamespaceItem( type_names_map, item_name, *namespace_ ) );
+			else
+				out_items.Append( EmitItemImpl( type_names_map, item_name, *namespace_ ) );
+		}
+		else
+			std::visit(
+				[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, item_name, t ) ); },
+				item );
 	}
+}
+
+Synt::Namespace CppAstConsumer::EmitNamespaceItem(
+	const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item )
+{
+	Synt::ProgramElementsList::Builder items_builder;
+
+	EmitItemsSorted( items_builder, type_names_map, item.items );
+
+	Synt::Namespace namespace_( g_dummy_src_loc );
+	namespace_.name= name;
+	namespace_.elements= items_builder.Build();
+
+	return namespace_;
 }
 
 Synt::Class CppAstConsumer::EmitItemImpl(
@@ -1536,10 +1714,6 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 		if( macro_directive->getKind() != clang::MacroDirective::MD_Define )
 			continue; // Process only "define" but not "undef".
 
-		if( skip_declarations_from_includes_ &&
-			source_manager_.getFileID( macro_directive->getLocation() ) != source_manager_.getMainFileID() )
-			continue;
-
 		if( !macro_directive->getLocation().isValid() )
 			continue; // Ignore macros with no location. They all seems to be compiler built-in macros.
 
@@ -1556,7 +1730,8 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 
 	for( const MacroPair& macro_pair : macro_directives )
 	{
-		const clang::MacroInfo* const macro_info= macro_pair.second->getMacroInfo();
+		const clang::MacroDirective* const macro_directive= macro_pair.second;
+		const clang::MacroInfo* const macro_info= macro_directive->getMacroInfo();
 		if( macro_info->isBuiltinMacro() )
 			continue;
 
@@ -1570,6 +1745,13 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 			translated_type_names.count( macro_translated_name ) != 0 ||
 			translated_variable_names.count( macro_translated_name ) != 0 )
 			continue;
+
+		const auto append_item_if_should=
+			[&]( auto item )
+			{
+				if( !ShouldSkipEmittingItem( macro_directive->getLocation() ) )
+					out_items.Append( std::move( item ) );
+			};
 
 		clang::MacroInfo::const_tokens_iterator tokens_begin= macro_info->tokens_begin();
 		clang::MacroInfo::const_tokens_iterator tokens_end= macro_info->tokens_end();
@@ -1596,7 +1778,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 				auto_variable_declaration.name= macro_translated_name;
 				auto_variable_declaration.initializer_expression= TranslateNumericLiteral( token );
 
-				out_items.Append( std::move( auto_variable_declaration ) );
+				append_item_if_should( std::move( auto_variable_declaration ) );
 				translated_variable_names.insert( macro_translated_name );
 			}
 			else if( clang::tok::isStringLiteral( token.getKind() ) )
@@ -1617,7 +1799,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
 
-					out_items.Append( std::move( auto_variable_declaration ) );
+					append_item_if_should( std::move( auto_variable_declaration ) );
 					translated_variable_names.insert( macro_translated_name );
 				}
 				else if( string_literal_parser.isUTF16() ||
@@ -1634,7 +1816,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
 
-					out_items.Append( std::move( auto_variable_declaration ) );
+					append_item_if_should( std::move( auto_variable_declaration ) );
 					translated_variable_names.insert( macro_translated_name );
 				}
 				else if( string_literal_parser.isUTF32() ||
@@ -1650,7 +1832,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 
 					auto_variable_declaration.initializer_expression= std::move(string_constant);
 
-					out_items.Append( std::move( auto_variable_declaration ) );
+					append_item_if_should( std::move( auto_variable_declaration ) );
 					translated_variable_names.insert( macro_translated_name );
 				}
 			}
@@ -1674,7 +1856,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 
 					auto_variable_declaration.initializer_expression= std::move(char_literal);
 
-					out_items.Append( std::move( auto_variable_declaration ) );
+					append_item_if_should( std::move( auto_variable_declaration ) );
 					translated_variable_names.insert( macro_translated_name );
 				}
 			}
@@ -1700,7 +1882,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 
 						auto_variable_declaration.initializer_expression= std::move( name_lookup );
 
-						out_items.Append( std::move( auto_variable_declaration ) );
+						append_item_if_should( std::move( auto_variable_declaration ) );
 						translated_variable_names.insert( macro_translated_name );
 					}
 					else if( translated_variable_names.count( idenfier_name ) != 0 )
@@ -1716,7 +1898,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 
 						auto_variable_declaration.initializer_expression= std::move( name_lookup );
 
-						out_items.Append( std::move( auto_variable_declaration ) );
+						append_item_if_should( std::move( auto_variable_declaration ) );
 						translated_variable_names.insert( macro_translated_name );
 					}
 					else if( translated_type_names.count( idenfier_name ) != 0 )
@@ -1731,7 +1913,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 
 						type_alias.value= std::move( name_lookup );
 
-						out_items.Append( std::move( type_alias ) );
+						append_item_if_should( std::move( type_alias ) );
 						translated_type_names.insert( macro_translated_name );
 					}
 				}
@@ -1754,7 +1936,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 				minus->expression= TranslateNumericLiteral( token1 );
 				auto_variable_declaration.initializer_expression= std::move( minus );
 
-				out_items.Append( std::move( auto_variable_declaration ) );
+				append_item_if_should( std::move( auto_variable_declaration ) );
 				translated_variable_names.insert( macro_translated_name );
 			}
 		}
@@ -1820,35 +2002,33 @@ Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& to
 	}
 }
 
-CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result, const bool skip_declarations_from_includes )
-	: out_result_(std::move(out_result)), skip_declarations_from_includes_(skip_declarations_from_includes)
+CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result )
+	: out_result_(std::move(out_result))
 {}
 
 std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
-	clang::CompilerInstance& compiler_intance,
-	const llvm::StringRef in_file )
+	clang::CompilerInstance& compiler_intance, const llvm::StringRef in_file )
 {
 	return
 		std::make_unique<CppAstConsumer>(
-			(*out_result_)[in_file.str()],
+			(*out_result_)[ in_file.str() ],
 			compiler_intance.getSourceManager(),
 			compiler_intance.getPreprocessor(),
 			compiler_intance.getTarget(),
 			compiler_intance.getDiagnostics(),
 			compiler_intance.getLangOpts(),
-			compiler_intance.getASTContext(),
-			skip_declarations_from_includes_ );
+			compiler_intance.getASTContext() );
 }
 
 } // namespace
 
-FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result, const bool skip_declarations_from_includes )
-	: out_result_(std::move(out_result)), skip_declarations_from_includes_(skip_declarations_from_includes)
+FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result )
+	: out_result_(std::move(out_result))
 {}
 
 std::unique_ptr<clang::FrontendAction> FrontendActionFactory::create()
 {
-	return std::make_unique<CppAstProcessor>(out_result_, skip_declarations_from_includes_);
+	return std::make_unique<CppAstProcessor>( out_result_ );
 }
 
 } // namespace U

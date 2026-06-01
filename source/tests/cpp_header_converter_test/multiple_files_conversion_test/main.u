@@ -1,0 +1,55 @@
+import "/a.iu"
+import "/b.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	// Names from "common.h" should be visible.
+	{
+		var CommonTypedef a= -25.3;
+		unsafe( CommonFunction( CommonTypedef( 34 ) ) );
+		var struct_::CommonStruct mut b{ .x= 26, .y= -253 };
+		var enum_::CommonEnum c= CommonC;
+
+		static_assert( COMMON_DEFINE_INTEGER_CONSTANT == 78652 );
+		static_assert( COMMON_DEFINE_FLOATING_POINT_CONSTANT == 45.33 );
+		static_assert( COMMON_DEFINE_NEGATIVE_INTEGER_CONSTANT == -56 );
+		static_assert( COMMON_DEFINE_NEGATIVE_FLOATING_POINT_CONSTANT == -552123.4 );
+		static_assert( COMMON_DEFINE_STRING == "Some\0" );
+		static_assert( same_type</ COMMON_DEFINE_ALIAS, CommonTypedef /> );
+	}
+
+	// Names from "a.h" should be visible.
+	{
+		var ATypedef x= zero_init;
+		unsafe( AFunc( ATypedef(56) ) );
+		var struct_::AStruct s{ .a= 5, .b= 0.25f };
+		var enum_::AEnum e= A_2;
+
+		static_assert( COMMON_DEFINE_INTEGER_CONSTANT_COPY == COMMON_DEFINE_INTEGER_CONSTANT );
+		static_assert( A_CONSTANT == 78.2 );
+		static_assert( A_ALIAS == AFunc );
+	}
+
+	// Names from "b.h" should be visible.
+	{
+		var BTypedef x= zero_init;
+		unsafe( BFunc() );
+		var struct_::BStruct s{ .length= 3, .data[ ' ' ... ] };
+		var enum_::BEnum e= B_1;
+
+		static_assert( COMMON_DEFINE_FLOATING_POINT_CONSTANT_COPY == COMMON_DEFINE_FLOATING_POINT_CONSTANT );
+		static_assert( B_CONSTANT == 78.2 );
+		static_assert( same_type</ B_ALIAS, BTypedef /> );
+	}
+
+	// Call functions from "a.h" and "b.h" which use names from "common.h".
+	{
+		var CommonTypedef a= 1.0;
+		var struct_::CommonStruct mut b{ .x= 2, .y= 3 };
+		var enum_::CommonEnum c= CommonC;
+		unsafe( AFuncUsingCommonDefinitions( a, $<( b ), c ) );
+		unsafe( BFuncUsingCommonDefinitions( a, $<( b ), c ) );
+	}
+
+	return 0;
+}

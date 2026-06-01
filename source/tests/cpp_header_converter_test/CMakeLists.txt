@@ -79,6 +79,64 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 	# Run the test
 	add_custom_command( TARGET CppHeaderConverterTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND CppHeaderConverterTest${CURRENT_COMPILER_GENERATION} )
 
+	##
+	## Test for converting several C headers using a common header and imported result files in a single Ü file.
+	##
+
+	add_custom_command(
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/common.iu
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/common.h CppHeaderConverter
+		COMMAND
+			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/common.iu
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/common.h -- -std=c2x )
+
+	add_custom_command(
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/a.iu
+		DEPENDS
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/a.h
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/common.h
+			CppHeaderConverter
+		COMMAND
+			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/a.iu
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/a.h --force-import "common.iu" -- -std=c2x )
+
+	add_custom_command(
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/b.iu
+		DEPENDS
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/b.h
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/common.h
+			CppHeaderConverter
+		COMMAND
+			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/b.iu
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/b.h --force-import "common.iu" -- -std=c2x )
+
+	add_custom_command(
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/main.o
+		DEPENDS
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/main.u
+			${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/common.iu
+			${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/a.iu
+			${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/b.iu
+			Compiler${CURRENT_COMPILER_GENERATION}
+		COMMAND
+			Compiler${CURRENT_COMPILER_GENERATION}
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/main.u
+			-o ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/main.o
+			${SPRACHE_COMPILER_PIC_OPTIONS}
+			${SPRACHE_COMPILER_OPT_OPTIONS}
+			--allow-unused-names # Allow unused variables - in this test we only check initialization for them.
+			--verify-module
+			--include-dir ${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test )
+
+	add_executable(
+		CppHeaderConverterMultipleFilesTest${CURRENT_COMPILER_GENERATION}
+			${CMAKE_CURRENT_BINARY_DIR}/multiple_files_conversion_test/main.o
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/main.u
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/test.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/common.h
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/a.h
+			${CMAKE_CURRENT_SOURCE_DIR}/multiple_files_conversion_test/b.h )
+
 	if(WIN32)
 
 		#

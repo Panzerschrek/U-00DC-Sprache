@@ -53,6 +53,14 @@ Possibilities and limitations for conversion of C++ headers:
 * Namespaces aren't supported, they will likely break the tool.
 * No templates are supported, they will likely break the tool.
 
+*********************************
+*Custom preprocessor definitions*
+*********************************
+
+Defining ``U_CPP_HEADER_CONVERTER_IGNORE`` allows skipping declarations (functions, types, variables, etc.) until it isn't undefined.
+It may be useful for skipping contents of some specific included file, for example.
+But skipped declarations are still referenced, so that you may need to generate them via a separate invocation of C++ header converter and to import the result file using ``--force-import`` option.
+
 
 ************************
 *Command-line interface*
@@ -71,8 +79,6 @@ Available command-line options:
 ``-o`` - specify output file.
 
 ``--force-import`` - create an import statement inside output file, importing file specified.
-
-``--skip-declarations-from-includes`` - skip converting declarations from includes.
 
 Additionally C or C++ options may be specified after ``--``.
 Since C++ header converter is based on *clang*, many *clang* options are supported, see its documentation for more details.
