@@ -945,7 +945,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						return_type,
 						function_context );
 
-					llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( return_value_passing.llvm_type, expression_result->llvm_value );
+					llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( return_value_passing.llvm_type, temp );
 					load_instruction->setAlignment( data_layout_.getABITypeAlign( return_type.GetLLVMType() ) );
 					ret= load_instruction;
 
