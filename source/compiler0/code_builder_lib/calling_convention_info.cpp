@@ -126,6 +126,9 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 		return ReturnValuePassing{ ReturnValuePassingKind::Direct, first_scalars.front() };
 	}
 
+	if( true )
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm_type }; // An experiment - return all types directly.
+
 	// Return other composites via pointer.
 	return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 }
