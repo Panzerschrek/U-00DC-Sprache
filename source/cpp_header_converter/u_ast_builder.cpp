@@ -418,6 +418,8 @@ public:
 	CppAstProcessor( ParsedUnitsPtr out_result );
 
 public:
+	virtual bool PrepareToExecuteAction( clang::CompilerInstance& compiler_intance ) override;
+
 	virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
 		clang::CompilerInstance& compiler_intance, llvm::StringRef in_file ) override;
 
@@ -2011,6 +2013,19 @@ Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& to
 CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result )
 	: out_result_(std::move(out_result))
 {}
+
+bool CppAstProcessor::PrepareToExecuteAction( clang::CompilerInstance& compiler_intance )
+{
+	// TODO - set real names.
+	clang::DependencyOutputOptions opts;
+	opts.Targets.push_back( "test.iu" );
+	opts.OutputFile= "test.d";
+	opts.IncludeSystemHeaders= 1;
+
+	compiler_intance.addDependencyCollector( std::make_shared<clang::DependencyFileGenerator>(opts) );
+
+	return true;
+}
 
 std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
 	clang::CompilerInstance& compiler_intance, const llvm::StringRef in_file )
