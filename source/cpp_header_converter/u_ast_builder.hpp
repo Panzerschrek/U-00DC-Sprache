@@ -13,16 +13,25 @@ namespace U
 using ParsedUnits= std::unordered_map< std::string, Synt::ProgramElementsList >;
 using ParsedUnitsPtr= std::shared_ptr<ParsedUnits>;
 
+struct DepFileOptions
+{
+	std::string out_file;
+	std::string out_dep_file;
+};
+
+using DepFileOptionsOpt= std::optional<DepFileOptions>;
+
 class FrontendActionFactory final : public clang::tooling::FrontendActionFactory
 {
 public:
-	FrontendActionFactory( ParsedUnitsPtr out_result );
+	FrontendActionFactory( ParsedUnitsPtr out_result, DepFileOptionsOpt dep_file_options );
 
 public:
 	virtual std::unique_ptr<clang::FrontendAction> create() override;
 
 private:
 	const ParsedUnitsPtr out_result_;
+	const DepFileOptionsOpt dep_file_options_;
 };
 
 } // namespace U

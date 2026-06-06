@@ -26,6 +26,13 @@ int main( int argc, const char* argv[] )
 		llvm::cl::value_desc("filename"),
 		llvm::cl::cat(tool_category) );
 
+	llvm::cl::opt<std::string> dep_file_name(
+		"MF",
+		llvm::cl::desc("Output dependency file"),
+		llvm::cl::value_desc("filename"),
+		llvm::cl::Optional,
+		llvm::cl::cat(tool_category) );
+
 	llvm::cl::list<std::string> force_import(
 		"force-import",
 		llvm::cl::CommaSeparated,
@@ -50,8 +57,17 @@ int main( int argc, const char* argv[] )
 		return 1;
 	}
 
+	std::optional<U::DepFileOptions> dep_file_options_opt;
+	if( !dep_file_name.empty() )
+	{
+		U::DepFileOptions dep_file_options;
+		dep_file_options.out_file= output_file_name.getValue();
+		dep_file_options.out_dep_file= dep_file_name;
+		dep_file_options_opt= std::move( dep_file_options );
+	}
+
 	const auto parsed_units= std::make_shared<U::ParsedUnits>();
-	U::FrontendActionFactory factory( parsed_units );
+	U::FrontendActionFactory factory( parsed_units, std::move( dep_file_options_opt ) );
 	const int res= tool.run( &factory );
 	if( res != 0 )
 		return res;

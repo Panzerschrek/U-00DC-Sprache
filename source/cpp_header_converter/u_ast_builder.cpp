@@ -415,14 +415,17 @@ private:
 class CppAstProcessor final : public clang::ASTFrontendAction
 {
 public:
-	CppAstProcessor( ParsedUnitsPtr out_result );
+	CppAstProcessor( ParsedUnitsPtr out_result, DepFileOptionsOpt dep_file_options );
 
 public:
+	virtual bool PrepareToExecuteAction( clang::CompilerInstance& compiler_intance ) override;
+
 	virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
 		clang::CompilerInstance& compiler_intance, llvm::StringRef in_file ) override;
 
 private:
 	const ParsedUnitsPtr out_result_;
+	const DepFileOptionsOpt dep_file_options_;
 };
 
 CppAstConsumer::CppAstConsumer(
@@ -2008,9 +2011,24 @@ Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& to
 	}
 }
 
-CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result )
-	: out_result_(std::move(out_result))
+CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result, DepFileOptionsOpt dep_file_options )
+	: out_result_(std::move(out_result)), dep_file_options_( std::move(dep_file_options) )
 {}
+
+bool CppAstProcessor::PrepareToExecuteAction( clang::CompilerInstance& compiler_intance )
+{
+	if( dep_file_options_ != std::nullopt )
+	{
+		clang::DependencyOutputOptions opts;
+		opts.Targets.push_back( dep_file_options_->out_file );
+		opts.OutputFile= dep_file_options_->out_dep_file;
+		opts.IncludeSystemHeaders= 1;
+
+		compiler_intance.addDependencyCollector( std::make_shared<clang::DependencyFileGenerator>(opts) );
+	}
+
+	return true;
+}
 
 std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
 	clang::CompilerInstance& compiler_intance, const llvm::StringRef in_file )
@@ -2028,13 +2046,13 @@ std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
 
 } // namespace
 
-FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result )
-	: out_result_(std::move(out_result))
+FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result, DepFileOptionsOpt dep_file_options )
+	: out_result_(std::move(out_result)), dep_file_options_( std::move(dep_file_options) )
 {}
 
 std::unique_ptr<clang::FrontendAction> FrontendActionFactory::create()
 {
-	return std::make_unique<CppAstProcessor>( out_result_ );
+	return std::make_unique<CppAstProcessor>( out_result_, dep_file_options_ );
 }
 
 } // namespace U

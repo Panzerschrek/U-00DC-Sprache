@@ -78,6 +78,10 @@ Available command-line options:
 
 ``-o`` - specify output file.
 
+``-MF`` - specify output file name for a dependency file.
+Such file contains list of dependencies needed for compilation of given files, including imported and embedded files.
+This file has *ninja*-compatible format.
+
 ``--force-import`` - create an import statement inside output file, importing file specified.
 
 Additionally C or C++ options may be specified after ``--``.
