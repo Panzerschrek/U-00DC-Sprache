@@ -1570,7 +1570,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"inet_address.u",
 		"integer_parsing.u",
 		"stdin.u",
-		"string_conversions.u",
+		"string_conversions_integer.u",
 		"utf.u",
 	];
 
