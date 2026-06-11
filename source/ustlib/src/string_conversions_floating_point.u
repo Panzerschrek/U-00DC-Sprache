@@ -8,6 +8,22 @@ fn to_string8( f32 x ) : string8
 	return f32_impl::to_string8( x );
 }
 
+fn to_string16( f32 x ) : string16
+{
+	// For simplicity just stringify to string8 and convert the result into string16.
+	// It adds a little bit overhead, but it's not so problematic, since almost nobody actually uses char16-strings.
+	var string8 s= f32_impl::to_string8( x );
+	return string16::from_mapped_range( s.range(), lambda( char8 c ) : char16 { return char16(c); } );
+}
+
+fn to_string32( f32 x ) : string32
+{
+	// For simplicity just stringify to string8 and convert the result into string32.
+	// It adds a little bit overhead, but it's not so problematic, since almost nobody actually uses char32-strings.
+	var string8 s= f32_impl::to_string8( x );
+	return string32::from_mapped_range( s.range(), lambda( char8 c ) : char32 { return char32(c); } );
+}
+
 namespace f32_impl
 {
 

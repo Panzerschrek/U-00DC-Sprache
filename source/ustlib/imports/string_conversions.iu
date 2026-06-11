@@ -14,8 +14,6 @@ fn to_string8 ( u64 x ) : string8;
 fn to_string8 ( ssize_type x ) : string8;
 fn to_string8 ( size_type x ) : string8;
 
-fn to_string8( f32 x ) : string8;
-
 fn to_string16( i8 x ) : string16;
 fn to_string16( u8 x ) : string16;
 fn to_string16( i16 x ) : string16;
@@ -37,5 +35,9 @@ fn to_string32( i64 x ) : string32;
 fn to_string32( u64 x ) : string32;
 fn to_string32( ssize_type x ) : string32;
 fn to_string32( size_type x ) : string32;
+
+fn to_string8( f32 x ) : string8;
+fn to_string16( f32 x ) : string16;
+fn to_string32( f32 x ) : string32;
 
 } // namespace ust

@@ -13,6 +13,8 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	TestRandomF32Conversions();
 
+	TestF32ConversionsToWideStringTypes();
+
 	// Running conversion tests for all f32 numbers isn't fast.
 	// It may take 10 to 30 minutes (singlethreaded).
 	// So, disable it by-default.
@@ -151,6 +153,32 @@ fn TestRandomF32Conversions()
 
 		TestF32Conversion( f32( byte32( rand_bit_pattern ) ) );
 	}
+}
+
+fn TestF32ConversionsToWideStringTypes()
+{
+	// Test only some selected values.
+	// We don't require testing them all, since underlying implemetation should really not depend on string type.
+
+	halt if( ust::to_string16( 0.0f ) != "0"u16 );
+	halt if( ust::to_string16( -0.0f ) != "-0"u16 );
+	halt if( ust::to_string16( 0.0009765625f ) != "9765625e-10"u16 );
+	halt if( ust::to_string16( 675.125f ) != "675.125"u16 );
+	halt if( ust::to_string16( -266732.0f ) != "-266732"u16 );
+	halt if( ust::to_string16( 36893485948395847680.0f ) != "36893486e12"u16 );
+	halt if( ust::to_string16( ust::plus_inf </f32/>() ) !=  "inf"u16 );
+	halt if( ust::to_string16( ust::minus_inf</f32/>() ) != "-inf"u16 );
+	halt if( ust::to_string16( 0.0f / 0.0f ) != "nan"u16 );
+
+	halt if( ust::to_string32( 0.0f ) != "0"u32 );
+	halt if( ust::to_string32( -0.0f ) != "-0"u32 );
+	halt if( ust::to_string32( 0.0009765625f ) != "9765625e-10"u32 );
+	halt if( ust::to_string32( 675.125f ) != "675.125"u32 );
+	halt if( ust::to_string32( -266732.0f ) != "-266732"u32 );
+	halt if( ust::to_string32( 36893485948395847680.0f ) != "36893486e12"u32 );
+	halt if( ust::to_string32( ust::plus_inf </f32/>() ) !=  "inf"u32 );
+	halt if( ust::to_string32( ust::minus_inf</f32/>() ) != "-inf"u32 );
+	halt if( ust::to_string32( 0.0f / 0.0f ) != "nan"u32 );
 }
 
 fn TestAllF32Conversions()
