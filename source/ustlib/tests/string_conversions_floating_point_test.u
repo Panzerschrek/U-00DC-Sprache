@@ -7,6 +7,11 @@ fn nomangle main() call_conv( "C" ) : i32
 {
 	TestF32Conversions();
 
+	if( true )
+	{
+		TestAllF32Conversions();
+	}
+
 	return 0;
 }
 
@@ -86,7 +91,7 @@ fn TestF32Conversions()
 
 		if( ust::is_nan( num ) )
 		{
-			// For "nan"should parse "nan".
+			// For "nan" should parse "nan".
 			halt if( ! ust::is_nan( num_parsed ) );
 		}
 		else
@@ -101,6 +106,36 @@ fn TestF32Conversions()
 	{
 		var ust::string8 s= ust::to_string8( pair[0] );
 		halt if( s != pair[1] );
+	}
+}
+
+fn TestAllF32Conversions()
+{
+	// Test conversions of ALL f32 numbers. We have only 4294967296 such numbers.
+
+	auto mut i= 0u;
+	loop
+	{
+		var f32 num( byte32( i ) );
+		var ust::string8 s= ust::to_string8( num );
+		var f32 num_parsed= ParseF32( s );
+
+		if( ust::is_nan( num ) )
+		{
+			// For "nan" should parse "nan".
+			halt if( ! ust::is_nan( num_parsed ) );
+		}
+		else
+		{
+			// Compare exact result for non-"nan" values.
+			halt if( num_parsed != num );
+		}
+
+		if( i == 0xFFFFFFFFu )
+		{
+			break;
+		}
+		++i;
 	}
 }
 
