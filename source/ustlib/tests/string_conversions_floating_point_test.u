@@ -1,4 +1,6 @@
 //##success_test
+import "../imports/math.iu"
+import "../imports/scoped_array.iu"
 import "../imports/string_conversions.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
@@ -75,6 +77,25 @@ fn TestF32Conversions()
 		[ f32( byte32( 0x7fc00001u ) ), "nan" ], // Signaling NaN.
 	];
 
+	// Test against a parser - a stringified and then parsed number should remain the same.
+	foreach( &pair : special_numbers )
+	{
+		var f32 num= pair[0];
+		var ust::string8 s= ust::to_string8( num );
+		var f32 num_parsed= ParseF32( s );
+
+		if( ust::is_nan( num ) )
+		{
+			// For "nan"should parse "nan".
+			halt if( ! ust::is_nan( num_parsed ) );
+		}
+		else
+		{
+			// Compare exact result for non-"nan" values.
+			halt if( num_parsed != num );
+		}
+	}
+
 	// Test exact string output.
 	foreach( &pair : special_numbers )
 	{
@@ -82,3 +103,14 @@ fn TestF32Conversions()
 		halt if( s != pair[1] );
 	}
 }
+
+fn ParseF32( ust::string_view8 s ) : f32
+{
+	// Use a number parsing function from the C standard library.
+	scoped_array char8 s_nt[ s.size() + 1s ]( s.iter().chain( ust::string_view8( "\0" ).iter() ) );
+	var f64 res= unsafe( atof( s_nt.data() ) );
+	return f32(res);
+}
+
+// C standard library function.
+fn nomangle atof( $(char8) ptr ) unsafe call_conv( "C" ) : f64;
