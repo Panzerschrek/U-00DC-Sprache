@@ -2,6 +2,7 @@ import argparse
 import concurrent.futures
 import multiprocessing
 import os
+import platform
 import subprocess
 import sys
 
@@ -173,6 +174,15 @@ def DoSuccessTest( file_path ):
 	compiler_args= [ g_compiler_executable, file_path, "-o", executable_file, "--filetype", "exe", "--allow-unused-names", "--verify-module" ]
 	if g_use_position_independent_code :
 		compiler_args= compiler_args + [ "--relocation-model", "pic" ]
+
+	if  platform.machine() == "x86_64" or \
+		platform.machine() == "X86_64" or \
+		platform.machine() == "x86"    or \
+		platform.machine() == "X86"    or \
+		platform.machine() == "amd64"  or \
+		platform.machine() == "AMD64":
+		# Use the same CPU option as ustlib compiled with CMake uses.
+		compiler_args= compiler_args + [ "-mcpu=skylake" ]
 
 	for library in g_additional_libraries_to_link:
 		compiler_args.append( "-Wl," + library )

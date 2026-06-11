@@ -1,0 +1,241 @@
+//##success_test
+import "../imports/math.iu"
+import "../imports/scoped_array.iu"
+import "../imports/string_conversions.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	TestF32Conversions();
+
+	TestRepresentableIntegerF32Conversions();
+
+	TestSomeFractionalF32Conversions();
+
+	TestRandomF32Conversions();
+
+	TestF32ConversionsToWideStringTypes();
+
+	// Running conversion tests for all f32 numbers isn't fast.
+	// It may take 10 to 30 minutes (singlethreaded).
+	// So, disable it by-default.
+	// Enable it if you want to make changes in code performing "f32" stringification to make sure it's always correct.
+	if( false )
+	{
+		TestAllF32Conversions();
+	}
+
+	return 0;
+}
+
+fn TestF32Conversions()
+{
+	// Test exact string output for each given number.
+	// Doing so we ensure that the result is pretty enough.
+	// But if the implementation changes, we need to correct these test-cases.
+	var [ tup[ f32, ust::string_view8 ], 58 ] special_numbers
+	[
+		[ f32( byte32( 0xffc00001u ) ), "-nan" ], // Negative signaling NaN.
+		[ f32( byte32( 0xff800001u ) ), "-nan" ], // Negative quiet NaN.
+		[ -( 0.0f / 0.0f ), "-nan" ], // Negative NaN.
+		[ -1.0f / 0.0f, "-inf" ], // Negative infinity.
+		[ -3.402823466385288598117042e38f, "-34028235e31" ],
+		[ -678953536.0f, "-67895356e1" ],
+		[ -100500.0f, "-100500" ],
+		[ -2.25f, "-2.25" ],
+		[ -1.0f, "-1" ],
+		[ -0.125f, "-0.125" ],
+		[ -0.0f, "-0" ],
+		[ 0.0f, "0" ],
+		[ f32( byte32( 0x00000001u ) ), "17e-46" ], // Smallest subnormal number.
+		[ f32( byte32( 0x004244b9u ) ), "6085796e-45" ], // A subnormal number above the smallest and below the largest.
+		[ f32( byte32( 0x007fffffu ) ), "11754942e-45" ], // Largest subnormal number.
+		[ f32( byte32( 0x00800000u ) ), "11754944e-45" ], // Smallest normal number.
+		[ f32( byte32( 0x00800001u ) ), "11754945e-45" ], // Smallest normal number + 1.
+		[ f32( byte32( 0x027e35a1u ) ), "18676364e-44" ], // 1.8676364e-37
+		[ 0.0009765625f, "9765625e-10" ],
+		[ 0.001953125f, "1953125e-9" ],
+		[ 0.0234375f, "234375e-7" ],
+		[ 0.046875f, "46875e-6" ],
+		[ 0.0625f, "625e-4" ],
+		[ 0.125f, "0.125" ],
+		[ 0.1250000298023223876953125f, "0.12500003" ],
+		[ 0.300000011920928955078125f, "0.30000002" ], // Value closest to 0.3.
+		[ 0.875f, "0.875" ],
+		[ 0.999999940395355224609375f, "0.99999996" ],
+		[ 1.0f, "1" ],
+		[ 1.00000011920928955078125f, "1.0000001" ],
+		[ 1.0000005f, "1.0000005" ],
+		[ 1.2000000476837158203125f, "1.2000001" ], // Value closest to 1.2.
+		[ 2.0f, "2" ],
+		[ 2.0000002384185791015625f, "2.0000003" ],
+		[ 2.5f, "2.5" ],
+		[ 785.25f, "785.25" ],
+		[ 255.9999847412109375f, "255.99999" ],
+		[ 256.0f, "256" ],
+		[ 256.000030517578125f, "256.00004" ],
+		[ 1000.0f, "1000" ],
+		[ 20000.0f, "20000" ],
+		[ 21000.0f, "21000" ],
+		[ 3000000.0f, "3000000" ],
+		[ 4520000.0f, "4520000" ],
+		[ 5732546.0f, "5732546" ],
+		[ 5732546.5f, "5732546.7" ],
+		[ 354897568.0f, "35489758e1" ],
+		[ 6753467904.0f, "6753468e3" ],
+		[ 67554346597875712.0f, "67554348e9" ],
+		[ 36893485948395847680.0f, "36893486e12" ],
+		[ 57645866265625481818199293952.0f, "57645868e21" ],
+		[ 6.540669468281527821706070e35f, "65406696e28" ],
+		[ 3.402823263561192561600338e38f, "34028233e31" ], // Value previous to max finite f32.
+		[ 3.402823466385288598117042e38f, "34028235e31" ], // Max finite f32.
+		[ 1.0f / 0.0f, "inf" ], // Infinity.
+		[ 0.0f / 0.0f, "nan" ], // NaN.
+		[ f32( byte32( 0x7f800001u ) ), "nan" ], // Quiet NaN.
+		[ f32( byte32( 0x7fc00001u ) ), "nan" ], // Signaling NaN.
+	];
+
+	// Test conversion itself.
+	foreach( &pair : special_numbers )
+	{
+		TestF32Conversion( pair[0] );
+	}
+
+	// Test exact string output.
+	foreach( &pair : special_numbers )
+	{
+		var ust::string8 s= ust::to_string8( pair[0] );
+		halt if( s != pair[1] );
+	}
+}
+
+fn TestRepresentableIntegerF32Conversions()
+{
+	// Test several million or so integers converted to "f32",
+	// but only as long as we have enough precision to represent them exactly.
+
+	auto mut i= 0u;
+	loop
+	{
+		var f32 num(i);
+		if( u32(num) != i )
+		{
+			break;
+		}
+		++i;
+
+		TestF32Conversion( num );
+	}
+}
+
+fn TestSomeFractionalF32Conversions()
+{
+	// Test all values having the same binary order.
+
+	var f32 begin= 0.5f;
+	var f32 end= 1.0f;
+
+	for( var u32 mut i( byte32( begin ) ); i < u32( byte32( end ) ); ++i )
+	{
+		TestF32Conversion( f32( byte32(i) ) );
+	}
+}
+
+fn TestRandomF32Conversions()
+{
+	var RandGenerator mut rand;
+
+	// It's way less than the total number of "f32" numbers, but is still pretty high.
+	var u32 num_tested_random_numbers= 1u << 22u;
+
+	for( auto mut i= 0u; i < num_tested_random_numbers; ++i )
+	{
+		var u32 rand_bit_pattern= rand.Next() | ( rand.Next() << 16u );
+
+		TestF32Conversion( f32( byte32( rand_bit_pattern ) ) );
+	}
+}
+
+fn TestF32ConversionsToWideStringTypes()
+{
+	// Test only some selected values.
+	// We don't require testing them all, since underlying implemetation should really not depend on string type.
+
+	halt if( ust::to_string16( 0.0f ) != "0"u16 );
+	halt if( ust::to_string16( -0.0f ) != "-0"u16 );
+	halt if( ust::to_string16( 0.0009765625f ) != "9765625e-10"u16 );
+	halt if( ust::to_string16( 675.125f ) != "675.125"u16 );
+	halt if( ust::to_string16( -266732.0f ) != "-266732"u16 );
+	halt if( ust::to_string16( 36893485948395847680.0f ) != "36893486e12"u16 );
+	halt if( ust::to_string16( ust::plus_inf </f32/>() ) !=  "inf"u16 );
+	halt if( ust::to_string16( ust::minus_inf</f32/>() ) != "-inf"u16 );
+	halt if( ust::to_string16( 0.0f / 0.0f ) != "nan"u16 );
+
+	halt if( ust::to_string32( 0.0f ) != "0"u32 );
+	halt if( ust::to_string32( -0.0f ) != "-0"u32 );
+	halt if( ust::to_string32( 0.0009765625f ) != "9765625e-10"u32 );
+	halt if( ust::to_string32( 675.125f ) != "675.125"u32 );
+	halt if( ust::to_string32( -266732.0f ) != "-266732"u32 );
+	halt if( ust::to_string32( 36893485948395847680.0f ) != "36893486e12"u32 );
+	halt if( ust::to_string32( ust::plus_inf </f32/>() ) !=  "inf"u32 );
+	halt if( ust::to_string32( ust::minus_inf</f32/>() ) != "-inf"u32 );
+	halt if( ust::to_string32( 0.0f / 0.0f ) != "nan"u32 );
+}
+
+fn TestAllF32Conversions()
+{
+	// Test conversions of ALL f32 numbers. We have only 4294967296 such numbers.
+
+	auto mut i= 0u;
+	loop
+	{
+		TestF32Conversion( f32( byte32( i ) ) );
+
+		if( i == 0xFFFFFFFFu )
+		{
+			break;
+		}
+		++i;
+	}
+}
+
+// Test against a parser - a stringified and then parsed number should remain the same.
+fn TestF32Conversion( f32 num )
+{
+	var ust::string8 s= ust::to_string8( num );
+	var f32 num_parsed= ParseF32( s );
+
+	if( ust::is_nan( num ) )
+	{
+		// For "nan" should parse "nan".
+		halt if( ! ust::is_nan( num_parsed ) );
+	}
+	else
+	{
+		// Compare exact result for non-"nan" values.
+		halt if( num_parsed != num );
+	}
+}
+
+class RandGenerator
+{
+public:
+	fn Next( mut this ) : u32
+	{
+		state_= ( 22695477u * state_ + 1u ) & 0x7FFFFFFFu;
+		return state_ >> 16u;
+	}
+
+private:
+	u32 state_= 0u;
+}
+
+fn ParseF32( ust::string_view8 s ) : f32
+{
+	// Use a number parsing function from the C standard library.
+	scoped_array char8 s_nt[ s.size() + 1s ]( s.iter().chain( ust::string_view8( "\0" ).iter() ) );
+	var f64 res= unsafe( atof( s_nt.data() ) );
+	return f32(res);
+}
+
+// C standard library function.
+fn nomangle atof( $(char8) ptr ) unsafe call_conv( "C" ) : f64;
