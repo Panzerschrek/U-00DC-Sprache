@@ -9,6 +9,8 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	TestRepresentableIntegerF32Conversions();
 
+	TestSomeFractionalF32Conversions();
+
 	TestRandomF32Conversions();
 
 	// Running conversion tests for all f32 numbers isn't fast.
@@ -132,6 +134,32 @@ fn TestRepresentableIntegerF32Conversions()
 		}
 		++i;
 
+		var ust::string8 s= ust::to_string8( num );
+		var f32 num_parsed= ParseF32( s );
+
+		if( ust::is_nan( num ) )
+		{
+			// For "nan" should parse "nan".
+			halt if( ! ust::is_nan( num_parsed ) );
+		}
+		else
+		{
+			// Compare exact result for non-"nan" values.
+			halt if( num_parsed != num );
+		}
+	}
+}
+
+fn TestSomeFractionalF32Conversions()
+{
+	// Test all values having the same binary order.
+
+	var f32 begin= 0.5f;
+	var f32 end= 1.0f;
+
+	for( var u32 mut i( byte32( begin ) ); i < u32( byte32( end ) ); ++i )
+	{
+		var f32 num( byte32(i) );
 		var ust::string8 s= ust::to_string8( num );
 		var f32 num_parsed= ParseF32( s );
 
