@@ -7,7 +7,13 @@ fn nomangle main() call_conv( "C" ) : i32
 {
 	TestF32Conversions();
 
-	if( true )
+	TestRandomF32Conversions();
+
+	// Running conversion tests for all f32 numbers isn't fast.
+	// It may take 10 to 30 minutes (singlethreaded).
+	// So, disable it by-default.
+	// Enable it if you want to make changes in code performing "f32" stringification to make sure it's always correct.
+	if( false )
 	{
 		TestAllF32Conversions();
 	}
@@ -109,6 +115,34 @@ fn TestF32Conversions()
 	}
 }
 
+fn TestRandomF32Conversions()
+{
+	var RandGenerator mut rand;
+
+	// It's way less than the total number of "f32" numbers, but is still pretty high.
+	var u32 num_tested_random_numbers= 1u << 22u;
+
+	for( auto mut i= 0u; i < num_tested_random_numbers; ++i )
+	{
+		var u32 rand_bit_pattern= rand.Next() | ( rand.Next() << 16u );
+
+		var f32 num( byte32( rand_bit_pattern ) );
+		var ust::string8 s= ust::to_string8( num );
+		var f32 num_parsed= ParseF32( s );
+
+		if( ust::is_nan( num ) )
+		{
+			// For "nan" should parse "nan".
+			halt if( ! ust::is_nan( num_parsed ) );
+		}
+		else
+		{
+			// Compare exact result for non-"nan" values.
+			halt if( num_parsed != num );
+		}
+	}
+}
+
 fn TestAllF32Conversions()
 {
 	// Test conversions of ALL f32 numbers. We have only 4294967296 such numbers.
@@ -137,6 +171,19 @@ fn TestAllF32Conversions()
 		}
 		++i;
 	}
+}
+
+class RandGenerator
+{
+public:
+	fn Next( mut this ) : u32
+	{
+		state_= ( 22695477u * state_ + 1u ) & 0x7FFFFFFFu;
+		return state_ >> 16u;
+	}
+
+private:
+	u32 state_= 0u;
 }
 
 fn ParseF32( ust::string_view8 s ) : f32
