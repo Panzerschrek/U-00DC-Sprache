@@ -36,7 +36,15 @@ fn to_string32( u64 x ) : string32;
 fn to_string32( ssize_type x ) : string32;
 fn to_string32( size_type x ) : string32;
 
-fn to_string8( f32 x ) : string8;
+// Convert "f32" into a string.
+// The result string doesn't perfectly represent the exact value stored in "f32",
+// but it's close enough so that parsing it will give the same number.
+// The result isn't guaranteed to be the shortest possible nor to look pretty.
+// The result string can contain fractional point (.), it's always point and no other separator.
+// The result string can contain decimal exponent - positive or negative.
+// The result string is "inf" or "-inf" for infinity numbers.
+// The result string is "nan" or "-nan" for NaNs.
+fn to_string8 ( f32 x ) : string8;
 fn to_string16( f32 x ) : string16;
 fn to_string32( f32 x ) : string32;
 
