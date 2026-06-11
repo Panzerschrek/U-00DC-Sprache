@@ -7,6 +7,8 @@ fn nomangle main() call_conv( "C" ) : i32
 {
 	TestF32Conversions();
 
+	TestRepresentableIntegerF32Conversions();
+
 	TestRandomF32Conversions();
 
 	// Running conversion tests for all f32 numbers isn't fast.
@@ -112,6 +114,37 @@ fn TestF32Conversions()
 	{
 		var ust::string8 s= ust::to_string8( pair[0] );
 		halt if( s != pair[1] );
+	}
+}
+
+fn TestRepresentableIntegerF32Conversions()
+{
+	// Test several million or so integers converted to "f32",
+	// but only as long as we have enough precision to represent them exactly.
+
+	auto mut i= 0u;
+	loop
+	{
+		var f32 num(i);
+		if( u32(num) != i )
+		{
+			break;
+		}
+		++i;
+
+		var ust::string8 s= ust::to_string8( num );
+		var f32 num_parsed= ParseF32( s );
+
+		if( ust::is_nan( num ) )
+		{
+			// For "nan" should parse "nan".
+			halt if( ! ust::is_nan( num_parsed ) );
+		}
+		else
+		{
+			// Compare exact result for non-"nan" values.
+			halt if( num_parsed != num );
+		}
 	}
 }
 
