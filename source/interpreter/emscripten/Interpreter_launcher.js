@@ -18,6 +18,7 @@ function InterpreterCompileAndRun( program_text )
 		'/ustlib/src/arena_allocator.u',
 		'/ustlib/src/integer_parsing.u',
 		'/ustlib/src/inet_address.u',
+		'/ustlib/src/string_conversions_floating_point.u',
 		'/ustlib/src/string_conversions_integer.u',
 		// ignore stdin.u
 		'/ustlib/src/utf.u',
