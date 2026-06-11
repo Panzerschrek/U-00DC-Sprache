@@ -92,23 +92,10 @@ fn TestF32Conversions()
 		[ f32( byte32( 0x7fc00001u ) ), "nan" ], // Signaling NaN.
 	];
 
-	// Test against a parser - a stringified and then parsed number should remain the same.
+	// Test conversion itself.
 	foreach( &pair : special_numbers )
 	{
-		var f32 num= pair[0];
-		var ust::string8 s= ust::to_string8( num );
-		var f32 num_parsed= ParseF32( s );
-
-		if( ust::is_nan( num ) )
-		{
-			// For "nan" should parse "nan".
-			halt if( ! ust::is_nan( num_parsed ) );
-		}
-		else
-		{
-			// Compare exact result for non-"nan" values.
-			halt if( num_parsed != num );
-		}
+		TestF32Conversion( pair[0] );
 	}
 
 	// Test exact string output.
@@ -134,19 +121,7 @@ fn TestRepresentableIntegerF32Conversions()
 		}
 		++i;
 
-		var ust::string8 s= ust::to_string8( num );
-		var f32 num_parsed= ParseF32( s );
-
-		if( ust::is_nan( num ) )
-		{
-			// For "nan" should parse "nan".
-			halt if( ! ust::is_nan( num_parsed ) );
-		}
-		else
-		{
-			// Compare exact result for non-"nan" values.
-			halt if( num_parsed != num );
-		}
+		TestF32Conversion( num );
 	}
 }
 
@@ -159,20 +134,7 @@ fn TestSomeFractionalF32Conversions()
 
 	for( var u32 mut i( byte32( begin ) ); i < u32( byte32( end ) ); ++i )
 	{
-		var f32 num( byte32(i) );
-		var ust::string8 s= ust::to_string8( num );
-		var f32 num_parsed= ParseF32( s );
-
-		if( ust::is_nan( num ) )
-		{
-			// For "nan" should parse "nan".
-			halt if( ! ust::is_nan( num_parsed ) );
-		}
-		else
-		{
-			// Compare exact result for non-"nan" values.
-			halt if( num_parsed != num );
-		}
+		TestF32Conversion( f32( byte32(i) ) );
 	}
 }
 
@@ -187,20 +149,7 @@ fn TestRandomF32Conversions()
 	{
 		var u32 rand_bit_pattern= rand.Next() | ( rand.Next() << 16u );
 
-		var f32 num( byte32( rand_bit_pattern ) );
-		var ust::string8 s= ust::to_string8( num );
-		var f32 num_parsed= ParseF32( s );
-
-		if( ust::is_nan( num ) )
-		{
-			// For "nan" should parse "nan".
-			halt if( ! ust::is_nan( num_parsed ) );
-		}
-		else
-		{
-			// Compare exact result for non-"nan" values.
-			halt if( num_parsed != num );
-		}
+		TestF32Conversion( f32( byte32( rand_bit_pattern ) ) );
 	}
 }
 
@@ -211,26 +160,31 @@ fn TestAllF32Conversions()
 	auto mut i= 0u;
 	loop
 	{
-		var f32 num( byte32( i ) );
-		var ust::string8 s= ust::to_string8( num );
-		var f32 num_parsed= ParseF32( s );
-
-		if( ust::is_nan( num ) )
-		{
-			// For "nan" should parse "nan".
-			halt if( ! ust::is_nan( num_parsed ) );
-		}
-		else
-		{
-			// Compare exact result for non-"nan" values.
-			halt if( num_parsed != num );
-		}
+		TestF32Conversion( f32( byte32( i ) ) );
 
 		if( i == 0xFFFFFFFFu )
 		{
 			break;
 		}
 		++i;
+	}
+}
+
+// Test against a parser - a stringified and then parsed number should remain the same.
+fn TestF32Conversion( f32 num )
+{
+	var ust::string8 s= ust::to_string8( num );
+	var f32 num_parsed= ParseF32( s );
+
+	if( ust::is_nan( num ) )
+	{
+		// For "nan" should parse "nan".
+		halt if( ! ust::is_nan( num_parsed ) );
+	}
+	else
+	{
+		// Compare exact result for non-"nan" values.
+		halt if( num_parsed != num );
 	}
 }
 
