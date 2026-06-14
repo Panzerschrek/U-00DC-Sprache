@@ -832,23 +832,29 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		},
 		Lexem::Type::IntegerNumber ->
 		{
-			var IntegerNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc, .num= zero_init };
-
-			ust::single_element_array_view( numeric_constant.num ).to_byte8_range().copy_from( it_.front().text.range().to_byte8_range() );
-
+			var IntegerNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc, .num= it_.front().text };
 			NextLexem();
 
-			return numeric_constant;
+			if( it_.front().lexem_type == Lexem::Type::LiteralSuffix )
+			{
+				numeric_constant.type_suffix= it_.front().text;
+				NextLexem();
+			}
+
+			return ust::make_box( numeric_constant );
 		},
 		Lexem::Type::FloatingPointNumber ->
 		{
-			var FloatingPointNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc, .num= zero_init };
-
-			ust::single_element_array_view( numeric_constant.num ).to_byte8_range().copy_from( it_.front().text.range().to_byte8_range() );
-
+			var FloatingPointNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc, .num= it_.front().text };
 			NextLexem();
 
-			return numeric_constant;
+			if( it_.front().lexem_type == Lexem::Type::LiteralSuffix )
+			{
+				numeric_constant.type_suffix= it_.front().text;
+				NextLexem();
+			}
+
+			return ust::make_box( numeric_constant );
 		},
 		Lexem::Type::String ->
 		{

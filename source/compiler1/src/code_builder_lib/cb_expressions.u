@@ -218,14 +218,8 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IntegerNumericConstant& numeric_constant ) : Value
 {
-	var ust::string_view8 mut type_suffix( numeric_constant.num.type_suffix );
-	while( !type_suffix.empty() && type_suffix.back() == '\0' )
-	{
-		type_suffix.drop_back();
-	}
-
 	auto mut t= U_FundamentalType::InvalidType;
-	if( type_suffix.empty() )
+	if( numeric_constant.type_suffix.empty() )
 	{
 		// Select "i32", if given constant fits inside it. Otherwise use "i64". If it's not enough, use "i128".
 		if( numeric_constant.num.value <= 0x7FFFFFFFu64 )
@@ -241,28 +235,28 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			t= U_FundamentalType::i128_;
 		}
 	}
-	else if( type_suffix == "u" )
+	else if( numeric_constant.type_suffix == "u" )
 	{
 		// Select "u32", if given constant fits inside it. Otherwise use "u64".
 		t= ( numeric_constant.num.value <= 0xFFFFFFFFu64 ? U_FundamentalType::u32_ : U_FundamentalType::u64_ );
 	}
-	else if( type_suffix == "s" )
+	else if( numeric_constant.type_suffix == "s" )
 	{
 		t= U_FundamentalType::size_type_;
 	}
-	else if( type_suffix == "f" )
+	else if( numeric_constant.type_suffix == "f" )
 	{
 		// Don't allow "f" suffix (short form for "f32") to be used for integers.
-		REPORT_ERROR( UnsupportedIntegerConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+		REPORT_ERROR( UnsupportedIntegerConstantType, names_scope, numeric_constant.src_loc, numeric_constant.type_suffix )
 		return ErrorValue();
 	}
 	else
 	{
-		t= GetFundamentalTypeByName( type_suffix );
+		t= GetFundamentalTypeByName( numeric_constant.type_suffix );
 
 		if( t == U_FundamentalType::InvalidType )
 		{
-			REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+			REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, numeric_constant.type_suffix )
 			return ErrorValue();
 		}
 
@@ -271,7 +265,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 		if( !IsInteger( t ) )
 		{
-			REPORT_ERROR( UnsupportedIntegerConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+			REPORT_ERROR( UnsupportedIntegerConstantType, names_scope, numeric_constant.src_loc, numeric_constant.type_suffix )
 			return ErrorValue();
 		}
 	}
@@ -307,7 +301,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	if( overflow )
 	{
-		REPORT_ERROR( IntegerConstantOverflow, names_scope, numeric_constant.src_loc, numeric_constant.num.value, GetFundamentalTypeName( t ) )
+		REPORT_ERROR( IntegerConstantOverflow, names_scope, numeric_constant.src_loc, numeric_constant.num, GetFundamentalTypeName( t ) )
 	}
 
 	var LLVMTypeRef llvm_type= GetFundamentalLLVMType(t);
@@ -317,7 +311,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.t= Type( FundamentalType( t, llvm_type ) ),
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
-		.name= "numeric constant",
+		.name= "numeric constant " + numeric_constant.num,
 	};
 
 	result.constexpr_value= unsafe( LLVMConstInt( llvm_type, numeric_constant.num.value, LLVMBool::False ) );
@@ -332,40 +326,34 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FloatingPointNumericConstant& numeric_constant ) : Value
 {
-	var ust::string_view8 mut type_suffix( numeric_constant.num.type_suffix );
-	while( !type_suffix.empty() && type_suffix.back() == '\0' )
-	{
-		type_suffix.drop_back();
-	}
-
 	auto mut t= U_FundamentalType::InvalidType;
-	if( type_suffix.empty() )
+	if( numeric_constant.type_suffix.empty() )
 	{
 		t= U_FundamentalType::f64_;
 	}
-	else if( type_suffix == "f" )
+	else if( numeric_constant.type_suffix == "f" )
 	{
 		t= U_FundamentalType::f32_;
 	}
-	else if( type_suffix == "u" || type_suffix == "s" )
+	else if( numeric_constant.type_suffix == "u" || numeric_constant.type_suffix == "s" )
 	{
 		// Don't allow "u" suffix (short form for "u32") and "s" suffix (short form for "size_type") to be used for floating point numbers.
-		REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+		REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope, numeric_constant.src_loc, numeric_constant.type_suffix )
 		return ErrorValue();
 	}
 	else
 	{
-		t= GetFundamentalTypeByName( type_suffix );
+		t= GetFundamentalTypeByName( numeric_constant.type_suffix );
 
 		if( t == U_FundamentalType::InvalidType )
 		{
-			REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+			REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, numeric_constant.type_suffix )
 			return ErrorValue();
 		}
 
 		if( !IsFloatingPoint( t ) )
 		{
-			REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+			REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope, numeric_constant.src_loc, numeric_constant.type_suffix )
 			return ErrorValue();
 		}
 	}
@@ -377,7 +365,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.t= Type( FundamentalType( t, llvm_type ) ),
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
-		.name= "numeric constant",
+		.name= "numeric constant " + numeric_constant.num,
 	};
 
 	result.constexpr_value= unsafe( LLVMConstReal( llvm_type, numeric_constant.num.value ) );
