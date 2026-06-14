@@ -1283,30 +1283,34 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::IntegerNumericConstant& numeric_constant )
 {
-	llvm::StringRef num_str= numeric_constant.num;
-
-	uint32_t base= 10u;
-	if( num_str.startswith( "0b" ) )
-	{
-		base= 2u;
-		num_str= num_str.substr( 2 );
-	}
-	else if( num_str.startswith( "0o" ) )
-	{
-		base= 8u;
-		num_str= num_str.substr( 2 );
-	}
-	else if( num_str.startswith( "0x" ) )
-	{
-		base= 16u;
-		num_str= num_str.substr( 2 );
-	}
-
 	llvm::APInt num_parsed;
-	if( num_str.getAsInteger( base, num_parsed ) )
+
 	{
-		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), numeric_constant.src_loc, "broken interer literals" );
-		return ErrorValue();
+		llvm::StringRef num_str= numeric_constant.num;
+
+		uint32_t base= 10u;
+		if( num_str.startswith( "0b" ) )
+		{
+			base= 2u;
+			num_str= num_str.substr( 2 );
+		}
+		else if( num_str.startswith( "0o" ) )
+		{
+			base= 8u;
+			num_str= num_str.substr( 2 );
+		}
+		else if( num_str.startswith( "0x" ) )
+		{
+			base= 16u;
+			num_str= num_str.substr( 2 );
+		}
+
+		if( num_str.getAsInteger( base, num_parsed ) )
+		{
+			// This should actually not happen, since lexical analyzer parses numbers properly.
+			REPORT_ERROR( IntegerConstantOverflow, names_scope.GetErrors(), numeric_constant.src_loc, numeric_constant.num );
+			return ErrorValue();
+		}
 	}
 
 	const uint32_t num_active_bits= num_parsed.getActiveBits();
@@ -1325,6 +1329,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else if( numeric_constant.type_suffix == "u" )
 	{
+		// Select "u32", if given constant fits inside it. Otherwise use "u64". If it's not enough, use "u128".
 		if( num_active_bits <= 32u )
 			type= U_FundamentalType::u32_;
 		else if( num_active_bits <= 64u )
@@ -1394,6 +1399,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	double num_value= 0.0 / 0.0; // nan
 	if( llvm::StringRef( numeric_constant.num ).getAsDouble( num_value, true /* allow inexact */ ) )
 	{
+		// This should actually not happen, since lexical analyzer parses numbers properly.
 		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), numeric_constant.src_loc, "broken floating-point literals" );
 		return ErrorValue();
 	}
@@ -1434,7 +1440,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			FundamentalType( type, llvm_type ),
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			"floating point numeric constant" );
+			"numeric constant " + numeric_constant.num );
 
 	result->llvm_value= result->constexpr_value= llvm::ConstantFP::get( llvm_type, num_value );
 
