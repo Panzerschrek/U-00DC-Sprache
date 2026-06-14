@@ -178,8 +178,8 @@ using TypeName= std::variant<
 using Expression= std::variant<
 	EmptyVariant,
 	// Terminal nodes.
-	IntegerNumericConstant,
-	FloatingPointNumericConstant,
+	std::unique_ptr<const IntegerNumericConstant>, // Terminal, but too heavy, to store by-value.
+	std::unique_ptr<const FloatingPointNumericConstant>, // Terminal, but too heavy, to store by-value.
 	BooleanConstant,
 	MoveOperator,
 	MoveOperatorCompletion,
@@ -415,7 +415,8 @@ struct IntegerNumericConstant
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	IntegerNumberLexemData num;
+	std::string num;
+	std::string type_suffix;
 };
 
 struct FloatingPointNumericConstant
@@ -424,7 +425,8 @@ struct FloatingPointNumericConstant
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	FloatingPointNumberLexemData num;
+	std::string num;
+	std::string type_suffix;
 };
 
 struct BooleanConstant

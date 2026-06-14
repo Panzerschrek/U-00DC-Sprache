@@ -344,16 +344,14 @@ void ElementWrite( const RawPointerToReferenceOperator& raw_pointer_to_reference
 
 void ElementWrite( const IntegerNumericConstant& numeric_constant ) const
 {
-	stream_ << numeric_constant.num.value;
-	stream_ << numeric_constant.num.type_suffix.data();
+	stream_ << numeric_constant.num;
+	stream_ << numeric_constant.type_suffix;
 }
 
 void ElementWrite( const FloatingPointNumericConstant& numeric_constant ) const
 {
-	stream_.precision( std::numeric_limits<double>::digits10 + 1 );
-	stream_.flags( stream_.flags() | std::ios_base::showpoint );
-	stream_ << numeric_constant.num.value;
-	stream_ << numeric_constant.num.type_suffix.data();
+	stream_ << numeric_constant.num;
+	stream_ << numeric_constant.type_suffix;
 }
 
 void ElementWrite( const StringLiteral& string_literal ) const

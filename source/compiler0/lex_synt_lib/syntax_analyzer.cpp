@@ -865,26 +865,34 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 IntegerNumericConstant SyntaxAnalyzer::ParseIntegerNumericConstant()
 {
 	U_ASSERT( it_->type == Lexem::Type::IntegerNumber );
-	U_ASSERT( it_->text.size() == sizeof(IntegerNumberLexemData) );
 	
 	IntegerNumericConstant result( it_->src_loc );
-	
-	std::memcpy( &result.num, it_->text.data(), sizeof(IntegerNumberLexemData) );
-	
+	result.num= it_->text;
 	NextLexem();
+
+	if( it_->type == Lexem::Type::LiteralSuffix )
+	{
+		result.type_suffix= it_->text;
+		NextLexem();
+	}
+	
 	return result;
 }
 
 FloatingPointNumericConstant SyntaxAnalyzer::ParseFloatingPointNumericConstant()
 {
 	U_ASSERT( it_->type == Lexem::Type::FloatingPointNumber );
-	U_ASSERT( it_->text.size() == sizeof(FloatingPointNumberLexemData) );
 
 	FloatingPointNumericConstant result( it_->src_loc );
-
-	std::memcpy( &result.num, it_->text.data(), sizeof(FloatingPointNumberLexemData) );
-
+	result.num= it_->text;
 	NextLexem();
+
+	if( it_->type == Lexem::Type::LiteralSuffix )
+	{
+		result.type_suffix= it_->text;
+		NextLexem();
+	}
+
 	return result;
 }
 
@@ -1086,9 +1094,9 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 	case Lexem::Type::CompletionScope:
 		return ComplexNameToExpression( ParseComplexName() );
 	case Lexem::Type::IntegerNumber:
-		return ParseIntegerNumericConstant();
+		return std::make_unique< IntegerNumericConstant >( ParseIntegerNumericConstant() );
 	case Lexem::Type::FloatingPointNumber:
-		return ParseFloatingPointNumericConstant();
+		return std::make_unique< FloatingPointNumericConstant >( ParseFloatingPointNumericConstant() );
 	case Lexem::Type::String:
 		{
 			auto string_literal= std::make_unique<StringLiteral>( it_->src_loc );

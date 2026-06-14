@@ -8,18 +8,6 @@
 namespace U
 {
 
-struct IntegerNumberLexemData
-{
-	uint64_t value= 0u;
-	std::array<char, 8> type_suffix{0};
-};
-
-struct FloatingPointNumberLexemData
-{
-	double value= 0.0f;
-	std::array<char, 8> type_suffix{0};
-};
-
 struct Lexem
 {
 	enum class Type : uint8_t
@@ -121,9 +109,7 @@ struct Lexem
 		EndOfFile,
 	};
 
-	// Contains text for all lexem types, except numbers.
-	// Contains data of "struct IntegerNumberLexemData" for integer numbers.
-	// Contains data of "struct FloatingPointNumberLexemData" for floating point numbers.
+	// Contains text for all lexem types, even for numbers.
 	std::string text;
 
 	SrcLoc src_loc;
