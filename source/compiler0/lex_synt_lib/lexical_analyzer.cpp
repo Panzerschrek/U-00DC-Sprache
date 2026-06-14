@@ -411,7 +411,7 @@ Lexem ParseMacroIdentifier( Iterator& it, const Iterator it_end )
 
 // Initial prefix should be skipped before this call.
 template<uint32_t base>
-void ParseIntegerNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
+void ExtractIntegerNumberChars( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
 	// Require at least one digit.
 	if( it == it_end || TryParseDigit<base>( *it ) == uint32_t(-1) )
@@ -427,6 +427,11 @@ void ParseIntegerNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, Le
 
 Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
+	// Don't perform actual parsing of numbers here.
+	// Just extract chars belonging to numbers.
+	// Parse them properly later.
+	// It's done in this way, since parsing floating-point numbers and handling integer overflows isn't trival and thus should be handled in later compilation phases.
+
 	const Iterator it_start= it;
 
 	bool parsed_non_decimal_base= false;
@@ -438,17 +443,17 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 		{
 		case 'b':
 			it+= 2;
-			ParseIntegerNumber<2>( it, it_end, src_loc, out_errors );
+			ExtractIntegerNumberChars<2>( it, it_end, src_loc, out_errors );
 			parsed_non_decimal_base= true;
 			break;
 		case 'o':
 			it+= 2;
-			ParseIntegerNumber<8>( it, it_end, src_loc, out_errors );
+			ExtractIntegerNumberChars<8>( it, it_end, src_loc, out_errors );
 			parsed_non_decimal_base= true;
 			break;
 		case 'x':
 			it+= 2;
-			ParseIntegerNumber<16>( it, it_end, src_loc, out_errors );
+			ExtractIntegerNumberChars<16>( it, it_end, src_loc, out_errors );
 			parsed_non_decimal_base= true;
 			break;
 		};
@@ -479,9 +484,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 			is_floating_point= true;
 			++it;
 
-			if( it < it_end && *it == '-' )
-				++it;
-			else if( it < it_end && *it == '+' )
+			if( it < it_end && ( ( *it == '-' ) | ( *it == '+' ) ) )
 				++it;
 
 			while( it < it_end && TryParseDigit<10>( *it ) != uint32_t(-1) )
