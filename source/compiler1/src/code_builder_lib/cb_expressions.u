@@ -3,6 +3,7 @@ import "/helpers.iu"
 import "/scoped_array.iu"
 import "/utf.iu"
 import "/CodeBuilderLib/keywords.iu"
+import "../lex_synt_lib/number_parsing_utils.iu"
 import "error_reporting.iu"
 import "long_stable_hash_wrapper.iu"
 import "code_builder.iu"
@@ -218,15 +219,42 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IntegerNumericConstant& numeric_constant ) : Value
 {
+	var ust::optional</u128/> mut int_parsed_opt;
+
+	if( numeric_constant.num.starts_with( "0b" ) )
+	{
+		int_parsed_opt= DecodeParsedInteger</2u/>( numeric_constant.num.range().subrange_start( 2s ) );
+	}
+	else if( numeric_constant.num.starts_with( "0o" ) )
+	{
+		int_parsed_opt= DecodeParsedInteger</8u/>( numeric_constant.num.range().subrange_start( 2s ) );
+	}
+	else if( numeric_constant.num.starts_with( "0x" ) )
+	{
+		int_parsed_opt= DecodeParsedInteger</16u/>( numeric_constant.num.range().subrange_start( 2s ) );
+	}
+	else
+	{
+		int_parsed_opt= DecodeParsedInteger</10u/>( numeric_constant.num );
+	}
+
+	if( int_parsed_opt.empty() )
+	{
+		REPORT_ERROR( IntegerConstantOverflow, names_scope, numeric_constant.src_loc, numeric_constant.num, GetFundamentalTypeName( U_FundamentalType::u128_ ) )
+		return ErrorValue();
+	}
+
+	var u128 int_parsed= int_parsed_opt.try_deref();
+
 	auto mut t= U_FundamentalType::InvalidType;
 	if( numeric_constant.type_suffix.empty() )
 	{
 		// Select "i32", if given constant fits inside it. Otherwise use "i64". If it's not enough, use "i128".
-		if( numeric_constant.num.value <= 0x7FFFFFFFu64 )
+		if( int_parsed <= 0x7FFFFFFFu128 )
 		{
 			t= U_FundamentalType::i32_;
 		}
-		else if( numeric_constant.num.value <= 0x7FFFFFFFFFFFFFFFu64 )
+		else if( int_parsed <= 0x7FFFFFFFFFFFFFFFu128 )
 		{
 			t= U_FundamentalType::i64_;
 		}
@@ -237,8 +265,19 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	}
 	else if( numeric_constant.type_suffix == "u" )
 	{
-		// Select "u32", if given constant fits inside it. Otherwise use "u64".
-		t= ( numeric_constant.num.value <= 0xFFFFFFFFu64 ? U_FundamentalType::u32_ : U_FundamentalType::u64_ );
+		// Select "u32", if given constant fits inside it. Otherwise use "u64". If it's not enough, use "u128".
+		if( int_parsed <= 0xFFFFFFFFu128 )
+		{
+			t= U_FundamentalType::u32_;
+		}
+		else if( int_parsed <= 0xFFFFFFFFFFFFFFFFu128 )
+		{
+			t= U_FundamentalType::u64_;
+		}
+		else
+		{
+			t= U_FundamentalType::u128_;
+		}
 	}
 	else if( numeric_constant.type_suffix == "s" )
 	{
@@ -275,27 +314,27 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	var bool mut overflow= false;
 	if( type_size == 1u )
 	{
-		overflow= ( is_signed ? ( numeric_constant.num.value > 0x7Fu64 ) : ( numeric_constant.num.value > 0xFFu64 ) );
+		overflow= ( is_signed ? ( int_parsed > 0x7Fu128 ) : ( int_parsed > 0xFFu128 ) );
 	}
 	else if( type_size == 2u )
 	{
-		overflow= ( is_signed ? ( numeric_constant.num.value > 0x7FFFu64 ) : ( numeric_constant.num.value > 0xFFFFu64 ) );
+		overflow= ( is_signed ? ( int_parsed > 0x7FFFu128 ) : ( int_parsed > 0xFFFFu128 ) );
 	}
 	else if( type_size == 4u )
 	{
-		overflow= ( is_signed ? ( numeric_constant.num.value > 0x7FFFFFFFu64 ) : ( numeric_constant.num.value > 0xFFFFFFFFu64 ) );
+		overflow= ( is_signed ? ( int_parsed > 0x7FFFFFFFu128 ) : ( int_parsed > 0xFFFFFFFFu128 ) );
 	}
 	else if( type_size == 8u )
 	{
-		if( is_signed )
-		{
-			overflow= numeric_constant.num.value > 0x7FFFFFFFFFFFFFFFu64;
-		}
-		// Unsigned overflow is impossible here.
+		overflow= ( is_signed ? ( int_parsed > 0x7FFFFFFFFFFFFFFFu128 ) : ( int_parsed > 0xFFFFFFFFFFFFFFFFu128 ) );
 	}
 	else if( type_size == 16u )
 	{
-		// Lexical analyzer gives 64-bit value and thus should check overflow of this value before.
+		if( is_signed )
+		{
+			overflow= int_parsed > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFu128;
+		}
+		// Unsigned overflow is impossible here.
 	}
 	else { halt; }
 
@@ -314,7 +353,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.name= "numeric constant " + numeric_constant.num,
 	};
 
-	result.constexpr_value= unsafe( LLVMConstInt( llvm_type, numeric_constant.num.value, LLVMBool::False ) );
+	result.constexpr_value= unsafe( LLVMConstInt( llvm_type, int_parsed, LLVMBool::False ) );
 	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.
