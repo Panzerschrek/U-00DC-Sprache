@@ -38,6 +38,8 @@ def NumericConstants_DecimalConstants_Test1():
 		static_assert( i64( -9223372036854775808 ) == ( (-1i64)<<63 ) ); // min i64
 		static_assert( 4294967295u == ~0u ); // max u32
 		static_assert( 18446744073709551615u64 == ~0u64 ); // max u64
+		static_assert( 170141183460469231731687303715884105727 == ( 1i128 << 127 ) - 1i128 ); // max i128
+		static_assert( 340282366920938463463374607431768211455u == ~0u128 ); // max u128
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -215,7 +217,8 @@ def NumericConstantsExtendedType_Test1():
 		static_assert( 4294967296u == 1u64 << 32 );
 		static_assert( 1234567891011u == 12345u64 * 100000000u64 + 67891011u64 );
 		static_assert( same_type</ typeof( 1234567891011u ), u64 /> );
-
+		static_assert( 302231454903674473676801u == ( ( 1u128 << 78 ) | ( 1u128 << 34 ) | ( 1u128 << 17 ) | 1u128 ) );
+		static_assert( same_type</ typeof( 302231454903674473676801u ), u128 /> );
 	"""
 	tests_lib.build_program( c_program_text )
 

@@ -1316,17 +1316,21 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( numeric_constant.type_suffix.empty() )
 	{
 		// Select "i32", if given constant fits inside it. Otherwise use "i64". If it's not enough, use "i128".
-		if( num_active_bits < 32u )
+		if( num_active_bits <= 31u )
 			type= U_FundamentalType::i32_;
-		else if( num_active_bits < 64u )
+		else if( num_active_bits <= 63u )
 			type= U_FundamentalType::i64_;
 		else
 			type= U_FundamentalType::i128_;
 	}
 	else if( numeric_constant.type_suffix == "u" )
 	{
-		// Select "u32", if given constant fits inside it. Otherwise use "u64".
-		type = num_active_bits <= 32 ? U_FundamentalType::u32_ : U_FundamentalType::u64_;
+		if( num_active_bits <= 32u )
+			type= U_FundamentalType::u32_;
+		else if( num_active_bits <= 64u )
+			type= U_FundamentalType::u64_;
+		else
+			type= U_FundamentalType::u128_;
 	}
 	// Suffix for size_type
 	else if( numeric_constant.type_suffix == "s" )
