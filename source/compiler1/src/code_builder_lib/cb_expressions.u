@@ -360,19 +360,31 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	var LLVMTypeRef llvm_type= GetFundamentalLLVMType(t);
 
-	var Variable mut result
-	{
-		.t= Type( FundamentalType( t, llvm_type ) ),
-		.location= Variable::Location::LLVMRegister,
-		.value_type= ValueType::Value,
-		.name= "numeric constant " + numeric_constant.num,
-	};
+	var LLVMValueRef num_parsed=
+		unsafe( LLVMConstRealOfStringAndSize(
+			llvm_type,
+			numeric_constant.num.range().data(),
+			u32( numeric_constant.num.size() ) ) );
 
-	result.constexpr_value= unsafe( LLVMConstReal( llvm_type, numeric_constant.num.value ) );
-	result.llvm_value= result.constexpr_value;
+	if( num_parsed == Null::LLVMValueRef )
+	{
+		// This should actually not happen, since lexical analyzer parses numbers properly.
+		REPORT_ERROR( NotImplemented, names_scope, numeric_constant.src_loc, "broken floating-point literals" )
+		return ErrorValue();
+	}
+
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= Type( FundamentalType( t, llvm_type ) ),
+			.location= Variable::Location::LLVMRegister,
+			.value_type= ValueType::Value,
+			.llvm_value= num_parsed,
+			.constexpr_value= num_parsed,
+			.name= "numeric constant " + numeric_constant.num,
+		}.CreatePtr();
 
 	// Register variable for references checking.
-	var VariablePtr result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return result_ptr;

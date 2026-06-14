@@ -459,6 +459,7 @@ fn nomangle LLVMSetCurrentDebugLocation2(LLVMBuilderRef Builder, LLVMMetadataRef
 // Constants
 fn nomangle LLVMConstInt(LLVMTypeRef IntTy, u64 N, LLVMBool SignExtend) unsafe call_conv( "C" ) : LLVMValueRef;
 fn nomangle LLVMConstReal(LLVMTypeRef RealTy, f64 N) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMConstRealOfStringAndSize(LLVMTypeRef RealTy, $(char8) Text, u32 SLen) unsafe call_conv( "C" ): LLVMValueRef;
 fn nomangle LLVMGetUndef(LLVMTypeRef Ty) unsafe call_conv( "C" ) : LLVMValueRef;
 fn nomangle LLVMConstNull(LLVMTypeRef Ty) unsafe call_conv( "C" ) : LLVMValueRef; /* all zeroes */
 fn nomangle LLVMConstArray2(LLVMTypeRef ElementTy, $(LLVMValueRef) ConstantVals, u64 Length)  unsafe call_conv( "C" ) : LLVMValueRef;
