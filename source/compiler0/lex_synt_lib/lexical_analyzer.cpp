@@ -411,45 +411,18 @@ Lexem ParseMacroIdentifier( Iterator& it, const Iterator it_end )
 
 // Initial prefix should be skipped before this call.
 template<uint32_t base>
-void ParseIntegerNumberImpl( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
+void ParseIntegerNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
-	uint64_t value= 0u;
-
 	// Require at least one digit.
-	if( it == it_end )
+	if( it == it_end || TryParseDigit<base>( *it ) == uint32_t(-1) )
+	{
 		out_errors.emplace_back( "Unexpected end of number", src_loc );
-	else
-	{
-		value= TryParseDigit<base>( *it );
-		++it;
-		if( value == uint32_t(-1) )
-			out_errors.emplace_back( "Unexpected end of number", src_loc );
+		return;
 	}
+	++it;
 
-	const uint64_t max_value= std::numeric_limits<uint64_t>::max();
-
-	while( it < it_end )
-	{
-		const uint32_t digit= TryParseDigit<base>( *it );
-		if( digit == uint32_t(-1) )
-			break;
-
+	while( it < it_end && TryParseDigit<base>( *it ) != uint32_t(-1) )
 		++it;
-
-		if( value > max_value / base )
-		{
-			out_errors.emplace_back( "Integer numeric literal overflow", src_loc );
-			break;
-		}
-		value*= base;
-
-		if( value > max_value - digit )
-		{
-			out_errors.emplace_back( "Integer numeric literal overflow", src_loc );
-			break;
-		}
-		value+= digit;
-	}
 }
 
 Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
@@ -465,16 +438,19 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 		{
 		case 'b':
 			it+= 2;
-			ParseIntegerNumberImpl<2>( it, it_end, src_loc, out_errors );
+			ParseIntegerNumber<2>( it, it_end, src_loc, out_errors );
 			parsed_non_decimal_base= true;
+			break;
 		case 'o':
 			it+= 2;
-			ParseIntegerNumberImpl<8>( it, it_end, src_loc, out_errors );
+			ParseIntegerNumber<8>( it, it_end, src_loc, out_errors );
 			parsed_non_decimal_base= true;
+			break;
 		case 'x':
 			it+= 2;
-			ParseIntegerNumberImpl<16>( it, it_end, src_loc, out_errors );
+			ParseIntegerNumber<16>( it, it_end, src_loc, out_errors );
 			parsed_non_decimal_base= true;
+			break;
 		};
 	}
 
