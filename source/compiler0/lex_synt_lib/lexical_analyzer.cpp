@@ -474,7 +474,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 		}
 
 		// Exponent
-		if( it < it_end && ( *it == 'e' | *it == 'E' ) )
+		if( it < it_end && ( ( *it == 'e' ) | ( *it == 'E' ) ) )
 		{
 			is_floating_point= true;
 			++it;
