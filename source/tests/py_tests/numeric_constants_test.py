@@ -8,6 +8,7 @@ def NumericConstants_DecimalConstants_Test0():
 		static_assert( 279 == 200 + 70 + 9 );
 		static_assert( 16.625 == 16.0 + 0.5 + 0.125 );
 		static_assert( 354e5 == 35400000.0 );
+		static_assert( 67.356E2 == 6735.6 );
 		static_assert( 25.42e10 == 254200000000.0 );
 		static_assert( 17.23e3 == 17.23e+3 );
 		static_assert( 256000.0e-3 == 256.0 ); // floating point with negative exponent
