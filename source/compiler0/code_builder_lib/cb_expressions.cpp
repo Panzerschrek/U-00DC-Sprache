@@ -1373,7 +1373,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			Variable::Location::LLVMRegister,
 			"numeric constant " + numeric_constant.num );
 
-	result->constexpr_value= llvm::Constant::getIntegerValue( llvm_type, num_parsed.trunc( llvm_type->getIntegerBitWidth() ) );
+	result->constexpr_value= llvm::Constant::getIntegerValue( llvm_type, num_parsed.zextOrTrunc( llvm_type->getIntegerBitWidth() ) );
 	result->llvm_value= result->constexpr_value;
 
 	function_context.variables_state.AddNode( result );
