@@ -200,7 +200,7 @@ Synt::FloatingPointNumericConstant TranslateNumericConstant( const llvm::APFloat
 	Synt::FloatingPointNumericConstant numeric_constant( g_dummy_src_loc );
 
 	llvm::SmallString<32> s;
-	n.toString( s );
+	n.toString( s, 0 /* FormatPrecision */, 0 /* FormatMaxPadding */, true /* TruncateZero */ );
 	numeric_constant.num= std::string( s );
 
 	return numeric_constant;
