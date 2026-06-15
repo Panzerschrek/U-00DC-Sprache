@@ -353,7 +353,9 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.name= "numeric constant " + numeric_constant.num,
 	};
 
-	result.constexpr_value= unsafe( LLVMConstInt( llvm_type, int_parsed, LLVMBool::False ) );
+	var [ u64, 2 ] mut int_parsed_words[ ( int_parsed >> 64u ), ( int_parsed ) ];
+
+	result.constexpr_value= unsafe( LLVMConstIntOfArbitraryPrecision( llvm_type, 2u, $<( int_parsed_words[0] ) ) );
 	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.
