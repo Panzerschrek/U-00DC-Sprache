@@ -81,8 +81,8 @@ struct TemplateParameterization
 struct IntegerNumericConstant
 {
 	SrcLoc src_loc;
-	ust::string8 num;
-	ust::string8 type_suffix;
+	u128 num;
+	[ char8, 8 ] type_suffix;
 }
 
 struct FloatingPointNumericConstant
@@ -309,7 +309,7 @@ struct BitwiseNot
 // Make exceptions for nodes, where an expression is stored in "shared_ptr_final" for some reasons.
 type Expression= ust::variant</ tup[
 	EmptyVariant,
-	ust::box</IntegerNumericConstant/>,
+	IntegerNumericConstant,
 	ust::box</FloatingPointNumericConstant/>,
 	BooleanConstant,
 	StringLiteral,
