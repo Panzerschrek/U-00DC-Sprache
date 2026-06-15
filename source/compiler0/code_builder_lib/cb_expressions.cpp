@@ -1372,7 +1372,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::FloatingPointNumericConstant& numeric_constant )
 {
-	double num_value= 0.0 / 0.0; // nan
+	double num_value= 0.0;
 	if( llvm::StringRef( numeric_constant.num ).getAsDouble( num_value, true /* allow inexact */ ) )
 	{
 		// This should actually not happen, since lexical analyzer parses numbers properly.
