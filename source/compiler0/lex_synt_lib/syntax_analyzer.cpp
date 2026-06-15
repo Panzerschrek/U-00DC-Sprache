@@ -890,7 +890,7 @@ IntegerNumericConstant SyntaxAnalyzer::ParseIntegerNumericConstant()
 	if( num_parsed == std::nullopt )
 	{
 		error_messages_.push_back( LexSyntError( "Integer numeric literal overflow!", result.src_loc ) );
-		return result;
+		num_parsed= Int128{ 0, 0 };
 	}
 	
 	result.num= *num_parsed;
