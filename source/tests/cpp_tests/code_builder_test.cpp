@@ -320,13 +320,84 @@ U_TEST(NumericConstantsTest2)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z2Piv" );
 	U_TEST_ASSERT( function != nullptr );
 
-
-	llvm::GenericValue result_value=
+	const llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	ASSERT_NEAR( 3.1415926535f, result_value.FloatVal, 0.0001f );
+	U_TEST_ASSERT( result_value.FloatVal == 3.1415926535f ); // Should parse numbers exactly like in C++.
+}
+
+U_TEST(NumericConstantsTest3)
+{
+	// Should parse f64 numbers in Ü exactly - like C++ does.
+
+	static const char c_program_text[]=
+	R"(
+		var [ f64, 13 ] table
+		[
+			0.0,
+			1.0,
+			1.0000000000000002, // Next after 1.
+			0.9999999999999999, // Previous before 1.
+			5e-324, // Min subnormal
+			2.225073858507201e-308, // Max subnormal
+			2.2250738585072014e-308, // Min normal
+			1.7976931348623157e+308, // Max normal
+			6.28318530717958647692528676655900576839433879875021, // An unnecessary precise number.
+			1.0548669602665742e-286, // Some random small number.
+			3.677235700820831e+253, // Some random big number.
+			0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000015305274152362944, // A comically-small number.
+			10302167865625843000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0, // A comically-big number.
+		];
+		fn GetNum( u32 index ) : f64 { return table[ index ]; }
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z6GetNumj" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue args[1];
+
+	args[0].IntVal= llvm::APInt( 32u, 0u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 0.0 );
+
+	args[0].IntVal= llvm::APInt( 32u, 1u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 1.0 );
+
+	args[0].IntVal= llvm::APInt( 32u, 2u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 1.0000000000000002 );
+
+	args[0].IntVal= llvm::APInt( 32u, 3u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 0.9999999999999999 );
+
+	args[0].IntVal= llvm::APInt( 32u, 4u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 5e-324 );
+
+	args[0].IntVal= llvm::APInt( 32u, 5u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 2.225073858507201e-308 );
+
+	args[0].IntVal= llvm::APInt( 32u, 6u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 2.2250738585072014e-308 );
+
+	args[0].IntVal= llvm::APInt( 32u, 7u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 1.7976931348623157e+308 );
+
+	args[0].IntVal= llvm::APInt( 32u, 8u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 6.28318530717958647692528676655900576839433879875021 );
+
+	args[0].IntVal= llvm::APInt( 32u, 9u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 1.0548669602665742e-286 );
+
+	args[0].IntVal= llvm::APInt( 32u, 10u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 3.677235700820831e+253 );
+
+	args[0].IntVal= llvm::APInt( 32u, 11u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000015305274152362944 );
+
+	args[0].IntVal= llvm::APInt( 32u, 12u, false );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 10302167865625843000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0 );
 }
 
 U_TEST(ArraysTest0)

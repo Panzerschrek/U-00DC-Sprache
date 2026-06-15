@@ -4,6 +4,7 @@ import "/shared_ptr.iu"
 import "/string_conversions.iu"
 import "/utf.iu"
 import "/CodeBuilderLib/keywords.iu"
+import "number_parsing_utils.iu"
 import "syntax_analyzer.iu"
 
 namespace U1
@@ -832,21 +833,87 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		},
 		Lexem::Type::IntegerNumber ->
 		{
-			var IntegerNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc, .num= zero_init };
-
-			ust::single_element_array_view( numeric_constant.num ).to_byte8_range().copy_from( it_.front().text.range().to_byte8_range() );
-
+			var ust::string_view8 num_str= it_.front().text;
 			NextLexem();
+
+			var ust::optional</u128/> mut int_parsed_opt;
+
+			if( num_str.starts_with( "0b" ) )
+			{
+				int_parsed_opt= DecodeParsedInteger</2u/>( num_str.subrange_start( 2s ) );
+			}
+			else if( num_str.starts_with( "0o" ) )
+			{
+				int_parsed_opt= DecodeParsedInteger</8u/>( num_str.subrange_start( 2s ) );
+			}
+			else if( num_str.starts_with( "0x" ) )
+			{
+				int_parsed_opt= DecodeParsedInteger</16u/>( num_str.subrange_start( 2s ) );
+			}
+			else
+			{
+				int_parsed_opt= DecodeParsedInteger</10u/>( num_str );
+			}
+
+			if( int_parsed_opt.empty() )
+			{
+				errors_.push_back(
+					LexSyntError(
+						it_.front().src_loc,
+						ust::concat( "Integer literal overflow, ", num_str, " can't fit into 128 bits." ) ) );
+				int_parsed_opt= 0u128;
+			}
+
+			var u128 int_parseed= int_parsed_opt.try_deref();
+
+			var IntegerNumericConstant mut numeric_constant
+			{
+				.src_loc= it_.front().src_loc,
+				.num_lo_hi[ ( int_parseed ), ( int_parseed >> 64 ) ],
+				.type_suffix= zero_init,
+			};
+
+			if( it_.front().lexem_type == Lexem::Type::LiteralSuffix )
+			{
+				var ust::string_view8 type_suffix_str= it_.front().text;
+				NextLexem();
+
+				if( type_suffix_str.size() >= typeinfo</ typeof( numeric_constant.type_suffix ) />.element_count )
+				{
+					errors_.push_back(
+						LexSyntError(
+							it_.front().src_loc, ust::concat( "Integer literal type suffix is too long!" ) ) );
+				}
+
+				ust::array_view_mut</char8/>( numeric_constant.type_suffix ).copy_from( type_suffix_str );
+			}
 
 			return numeric_constant;
 		},
 		Lexem::Type::FloatingPointNumber ->
 		{
-			var FloatingPointNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc, .num= zero_init };
-
-			ust::single_element_array_view( numeric_constant.num ).to_byte8_range().copy_from( it_.front().text.range().to_byte8_range() );
-
+			var FloatingPointNumericConstant mut numeric_constant
+			{
+				.src_loc= it_.front().src_loc,
+				.num= it_.front().text,
+				.type_suffix= zero_init,
+			};
 			NextLexem();
+
+			if( it_.front().lexem_type == Lexem::Type::LiteralSuffix )
+			{
+				var ust::string_view8 type_suffix_str= it_.front().text;
+				NextLexem();
+
+				if( type_suffix_str.size() >= typeinfo</ typeof( numeric_constant.type_suffix ) />.element_count )
+				{
+					errors_.push_back(
+						LexSyntError(
+							it_.front().src_loc, ust::concat( "Floating-point literal type suffix is too long!" ) ) );
+				}
+
+				ust::array_view_mut</char8/>( numeric_constant.type_suffix ).copy_from( type_suffix_str );
+			}
 
 			return numeric_constant;
 		},

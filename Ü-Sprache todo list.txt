@@ -130,9 +130,6 @@ Standart library:
 *) Implement a thread-safe version of arena_allocator
 
 Compiler:
-*) Ensure floating-point numbers parsing always produces correct result
-	(as the floating point numbers standard requires)
-*) Support parsing 128-bit integers (store parse result in a 128-bit unsinged integer)
 *) Fix alignment mismatch for 128-bit types in C++ and in Ü
 *) Prevent infinite or near-infinite templates instantiation, possibly via a hard limit for total number of template
 	instantiations. This may prevent stack overflow in some cases.
@@ -140,7 +137,10 @@ Compiler:
 *) Generate a parsing error if line count/line length limits are reached
 *) Add hard limit for input file size (like 10MB)
 *) Investigate optimization possibility - avoid mangling private functions
-*) Fix possible overflows in SrcLoc and/or try to optimize its size (use only 4 bytes)
+*) Try to optimize SrcLoc size (use only 4 bytes)
+*) Parse floating-point numeric literals in syntax analyzer and avoid storing literal string in AST. In Compiler0 it
+	requires a locale-independent exact parser (std::from_chars?), in Compiler1 it requires implementing such parser in
+	ustlib.
 *) Speed-up references graph code - try using faster hash-map implementation
 *) Avoid recursion in VariantLinkedList destructor - it causes stack overflow for long lists
 *) Find a way to detect recursive mixins in blocks, type names, expressions

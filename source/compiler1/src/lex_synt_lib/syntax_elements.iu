@@ -81,13 +81,24 @@ struct TemplateParameterization
 struct IntegerNumericConstant
 {
 	SrcLoc src_loc;
-	IntegerNumberLexemData num;
+
+	// HACK! Store two halves of u128, since using actual u128 introduces 16-bit alignment on some platforms,
+	// which leads to size increase for structures including using this structure.
+	[ u64, 2 ] num_lo_hi;
+
+	[ char8, 8 ] type_suffix;
 }
 
 struct FloatingPointNumericConstant
 {
 	SrcLoc src_loc;
-	FloatingPointNumberLexemData num;
+
+	// Store source string and parse it later - when building code.
+	// In ustlib and lex/synt lib we have no proper functionality for correct floating-point numbers parsing.
+
+	ust::string8 num;
+
+	[ char8, 8 ] type_suffix;
 }
 
 struct BooleanConstant

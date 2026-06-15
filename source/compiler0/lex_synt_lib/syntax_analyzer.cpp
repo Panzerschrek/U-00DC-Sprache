@@ -865,26 +865,65 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 IntegerNumericConstant SyntaxAnalyzer::ParseIntegerNumericConstant()
 {
 	U_ASSERT( it_->type == Lexem::Type::IntegerNumber );
-	U_ASSERT( it_->text.size() == sizeof(IntegerNumberLexemData) );
-	
+
 	IntegerNumericConstant result( it_->src_loc );
-	
-	std::memcpy( &result.num, it_->text.data(), sizeof(IntegerNumberLexemData) );
-	
+
+	const std::string_view num_str= it_->text;
 	NextLexem();
+
+	std::optional<Int128> num_parsed;
+
+	if( num_str.size() >= 2 && num_str[0] == '0' )
+	{
+		if( num_str[1] == 'b' )
+			num_parsed= DecodeParsedInteger< 2>( num_str.substr(2) );
+		else if( num_str[1] == 'o' )
+			num_parsed= DecodeParsedInteger< 8>( num_str.substr(2) );
+		else if( num_str[1] == 'x' )
+			num_parsed= DecodeParsedInteger<16>( num_str.substr(2) );
+		else
+			num_parsed= DecodeParsedInteger<10>( num_str );
+	}
+	else
+		num_parsed= DecodeParsedInteger<10>( num_str );
+
+	if( num_parsed == std::nullopt )
+	{
+		error_messages_.push_back( LexSyntError( "Integer numeric literal overflow!", result.src_loc ) );
+		num_parsed= Int128{ 0, 0 };
+	}
+	
+	result.num= *num_parsed;
+
+	if( it_->type == Lexem::Type::LiteralSuffix )
+	{
+		const std::string_view suffix_str= it_->text;
+
+		if( suffix_str.size() > result.type_suffix.size() )
+			error_messages_.push_back( LexSyntError( "Type suffix of numeric literal is too long!", it_->src_loc ) );
+		else
+			std::memcpy( result.type_suffix.data(), suffix_str.data(), suffix_str.size() );
+
+		NextLexem();
+	}
+	
 	return result;
 }
 
 FloatingPointNumericConstant SyntaxAnalyzer::ParseFloatingPointNumericConstant()
 {
 	U_ASSERT( it_->type == Lexem::Type::FloatingPointNumber );
-	U_ASSERT( it_->text.size() == sizeof(FloatingPointNumberLexemData) );
 
 	FloatingPointNumericConstant result( it_->src_loc );
-
-	std::memcpy( &result.num, it_->text.data(), sizeof(FloatingPointNumberLexemData) );
-
+	result.num= it_->text;
 	NextLexem();
+
+	if( it_->type == Lexem::Type::LiteralSuffix )
+	{
+		result.type_suffix= it_->text;
+		NextLexem();
+	}
+
 	return result;
 }
 
@@ -1088,7 +1127,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 	case Lexem::Type::IntegerNumber:
 		return ParseIntegerNumericConstant();
 	case Lexem::Type::FloatingPointNumber:
-		return ParseFloatingPointNumericConstant();
+		return std::make_unique< FloatingPointNumericConstant >( ParseFloatingPointNumericConstant() );
 	case Lexem::Type::String:
 		{
 			auto string_literal= std::make_unique<StringLiteral>( it_->src_loc );

@@ -1,0 +1,82 @@
+import "/string.iu"
+
+namespace U1
+{
+
+// Returns u32(-1) if failed to parse.
+template</ u32 base_ />
+fn TryParseDigit( char8 c ) : u32
+{
+	static_if( base_ == 2u )
+	{
+		if( c >= '0' && c <= '1' )
+		{
+			return u32(c) - u32('0');
+		}
+	}
+	else static_if( base_ == 8u )
+	{
+		if( c >= '0' && c <= '7' )
+		{
+			return u32(c) - u32('0');
+		}
+	}
+	else static_if( base_ == 10u )
+	{
+		if( c >= '0' && c <= '9' )
+		{
+			return u32(c) - u32('0');
+		}
+	}
+	else static_if( base_ == 16u )
+	{
+		switch(c)
+		{
+			'0' ... '9' -> { return u32(c) - u32('0'); },
+			'a' ... 'f' -> { return u32(c) - u32('a') + u32(10); },
+			'A' ... 'F' -> { return u32(c) - u32('A') + u32(10); },
+			default -> {},
+		}
+	}
+	else
+	{
+		static_assert( false, "Unsupported base!" );
+	}
+
+	return -1u;
+}
+
+template</ u32 base_ />
+fn DecodeParsedInteger( ust::string_view8 s ) : ust::optional</u128/>
+{
+	var u128 mut res(0);
+
+	foreach( c : s )
+	{
+		var u32 digit= TryParseDigit</ base_ /> (c);
+		if( digit == -1u )
+		{
+			return ust::null_optional;
+		}
+
+		if( res > 34028236692093846346337460743176821145u128 )
+		{
+			// Overflow detected.
+			return ust::null_optional;
+		}
+
+		var u128 mul_base= res * u128( base_ );
+		var u128 add_digit= mul_base + u128( digit );
+		if( add_digit < mul_base )
+		{
+			// Overflow detected.
+			return ust::null_optional;
+		}
+
+		res= add_digit;
+	}
+
+	return res;
+}
+
+} // namespace U1

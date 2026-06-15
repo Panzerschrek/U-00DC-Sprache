@@ -8,6 +8,7 @@ def NumericConstants_DecimalConstants_Test0():
 		static_assert( 279 == 200 + 70 + 9 );
 		static_assert( 16.625 == 16.0 + 0.5 + 0.125 );
 		static_assert( 354e5 == 35400000.0 );
+		static_assert( 67.356E2 == 6735.6 );
 		static_assert( 25.42e10 == 254200000000.0 );
 		static_assert( 17.23e3 == 17.23e+3 );
 		static_assert( 256000.0e-3 == 256.0 ); // floating point with negative exponent
@@ -20,6 +21,8 @@ def NumericConstants_DecimalConstants_Test0():
 		static_assert( 5.0e32 == 5.0 * 1.0e16 * 1.0e16 ); // pow( 10, exponent ) is greater, than u64 limit.
 		static_assert( 0.00000004e18 == 40000000000.0 ); // Small value with large exponent results into large value.
 		static_assert( 0.00000004754248911e18 == 47542489110.0 ); // Small value with large exponent results into large value.
+		static_assert( 3400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e-150 == 34e50 ); // A lot of digits and exponent cancel each other.
+		static_assert( 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000073e150 == 73e-52 );  // A lot of digits and exponent cancel each other.
 		static_assert( 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0 == 1.0 / 0.0 ); // Overflow results to infinity.
 		static_assert( 1e500 == 1.0 / 0.0 ); // Overflow with large exponent results to infinity.
 		static_assert( 1e-500 == 0.0 ); // Small exponent results to zero.
@@ -37,6 +40,8 @@ def NumericConstants_DecimalConstants_Test1():
 		static_assert( i64( -9223372036854775808 ) == ( (-1i64)<<63 ) ); // min i64
 		static_assert( 4294967295u == ~0u ); // max u32
 		static_assert( 18446744073709551615u64 == ~0u64 ); // max u64
+		static_assert( 170141183460469231731687303715884105727 == ( 1i128 << 127 ) - 1i128 ); // max i128
+		static_assert( 340282366920938463463374607431768211455u == ~0u128 ); // max u128
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -214,7 +219,8 @@ def NumericConstantsExtendedType_Test1():
 		static_assert( 4294967296u == 1u64 << 32 );
 		static_assert( 1234567891011u == 12345u64 * 100000000u64 + 67891011u64 );
 		static_assert( same_type</ typeof( 1234567891011u ), u64 /> );
-
+		static_assert( 302231454903674473676801u == ( ( 1u128 << 78 ) | ( 1u128 << 34 ) | ( 1u128 << 17 ) | 1u128 ) );
+		static_assert( same_type</ typeof( 302231454903674473676801u ), u128 /> );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -457,3 +463,16 @@ def IntegerConstantOverflow_Test6():
 	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
 	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
 	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+
+
+def IntegerConstantOverflow_Test7():
+	c_program_text= """
+		auto x= 170141183460469231731687303715884105728i128;
+
+		// For now disable these tests, since an overflow error in this case may be generated before building code - in lexical or syntax analyzer.
+		// auto y= 340282366920938463463374607431768211458u128;
+		// auto z= 75754777457547243463575474457347548532347547458745754;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )

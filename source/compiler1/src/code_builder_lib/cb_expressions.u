@@ -218,21 +218,31 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IntegerNumericConstant& numeric_constant ) : Value
 {
-	var ust::string_view8 mut type_suffix( numeric_constant.num.type_suffix );
+	var ust::string_view8 mut type_suffix( numeric_constant.type_suffix );
 	while( !type_suffix.empty() && type_suffix.back() == '\0' )
 	{
 		type_suffix.drop_back();
 	}
 
+	var u128 num128= u128( numeric_constant.num_lo_hi[0] ) | ( u128( numeric_constant.num_lo_hi[1] ) << 64u );
+
+	var u32 mut num_leading_zero_bits= 0u;
+	for( auto mut mask= 1u128 << 127; mask > 0u128 && ( ( num128 ) & mask ) == 0u128; mask >>= 1 )
+	{
+		++num_leading_zero_bits;
+	}
+
+	var u32 num_active_bits= 128u - num_leading_zero_bits;
+
 	auto mut t= U_FundamentalType::InvalidType;
 	if( type_suffix.empty() )
 	{
 		// Select "i32", if given constant fits inside it. Otherwise use "i64". If it's not enough, use "i128".
-		if( numeric_constant.num.value <= 0x7FFFFFFFu64 )
+		if( num_active_bits <= 31u )
 		{
 			t= U_FundamentalType::i32_;
 		}
-		else if( numeric_constant.num.value <= 0x7FFFFFFFFFFFFFFFu64 )
+		else if( num_active_bits <= 63u )
 		{
 			t= U_FundamentalType::i64_;
 		}
@@ -243,8 +253,19 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	}
 	else if( type_suffix == "u" )
 	{
-		// Select "u32", if given constant fits inside it. Otherwise use "u64".
-		t= ( numeric_constant.num.value <= 0xFFFFFFFFu64 ? U_FundamentalType::u32_ : U_FundamentalType::u64_ );
+		// Select "u32", if given constant fits inside it. Otherwise use "u64". If it's not enough, use "u128".
+		if( num_active_bits <= 32u )
+		{
+			t= U_FundamentalType::u32_;
+		}
+		else if( num_active_bits <= 64u )
+		{
+			t= U_FundamentalType::u64_;
+		}
+		else
+		{
+			t= U_FundamentalType::u128_;
+		}
 	}
 	else if( type_suffix == "s" )
 	{
@@ -277,54 +298,32 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	}
 
 	var u32 type_size= GetFundamentalTypeSize( t );
-	var bool is_signed= IsSignedInteger( t );
-	var bool mut overflow= false;
-	if( type_size == 1u )
-	{
-		overflow= ( is_signed ? ( numeric_constant.num.value > 0x7Fu64 ) : ( numeric_constant.num.value > 0xFFu64 ) );
-	}
-	else if( type_size == 2u )
-	{
-		overflow= ( is_signed ? ( numeric_constant.num.value > 0x7FFFu64 ) : ( numeric_constant.num.value > 0xFFFFu64 ) );
-	}
-	else if( type_size == 4u )
-	{
-		overflow= ( is_signed ? ( numeric_constant.num.value > 0x7FFFFFFFu64 ) : ( numeric_constant.num.value > 0xFFFFFFFFu64 ) );
-	}
-	else if( type_size == 8u )
-	{
-		if( is_signed )
-		{
-			overflow= numeric_constant.num.value > 0x7FFFFFFFFFFFFFFFu64;
-		}
-		// Unsigned overflow is impossible here.
-	}
-	else if( type_size == 16u )
-	{
-		// Lexical analyzer gives 64-bit value and thus should check overflow of this value before.
-	}
-	else { halt; }
+
+	var bool overflow=
+		( IsSignedInteger( t ) ? ( num_active_bits > type_size * 8u - 1u ) : ( num_active_bits > type_size * 8u ) );
 
 	if( overflow )
 	{
-		REPORT_ERROR( IntegerConstantOverflow, names_scope, numeric_constant.src_loc, numeric_constant.num.value, GetFundamentalTypeName( t ) )
+		REPORT_ERROR( IntegerConstantOverflow, names_scope, numeric_constant.src_loc, u64( num128 ) /* TODO - avoid casting here to u64 */, GetFundamentalTypeName( t ) )
 	}
 
 	var LLVMTypeRef llvm_type= GetFundamentalLLVMType(t);
 
-	var Variable mut result
-	{
-		.t= Type( FundamentalType( t, llvm_type ) ),
-		.location= Variable::Location::LLVMRegister,
-		.value_type= ValueType::Value,
-		.name= "numeric constant",
-	};
+	var LLVMValueRef num_value=
+		unsafe( LLVMConstIntOfArbitraryPrecision( llvm_type, 2u, $<( cast_mut( numeric_constant.num_lo_hi )[0] ) ) );
 
-	result.constexpr_value= unsafe( LLVMConstInt( llvm_type, numeric_constant.num.value, LLVMBool::False ) );
-	result.llvm_value= result.constexpr_value;
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= Type( FundamentalType( t, llvm_type ) ),
+			.location= Variable::Location::LLVMRegister,
+			.value_type= ValueType::Value,
+			.llvm_value= num_value,
+			.constexpr_value= num_value,
+			.name= "numeric constant",
+		}.CreatePtr();
 
 	// Register variable for references checking.
-	var VariablePtr result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return result_ptr;
@@ -332,7 +331,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FloatingPointNumericConstant& numeric_constant ) : Value
 {
-	var ust::string_view8 mut type_suffix( numeric_constant.num.type_suffix );
+	var ust::string_view8 mut type_suffix( numeric_constant.type_suffix );
 	while( !type_suffix.empty() && type_suffix.back() == '\0' )
 	{
 		type_suffix.drop_back();
@@ -372,19 +371,29 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	var LLVMTypeRef llvm_type= GetFundamentalLLVMType(t);
 
-	var Variable mut result
-	{
-		.t= Type( FundamentalType( t, llvm_type ) ),
-		.location= Variable::Location::LLVMRegister,
-		.value_type= ValueType::Value,
-		.name= "numeric constant",
-	};
+	var LLVMValueRef num_value=
+		unsafe( LLVMConstRealOfStringAndSize(
+			llvm_type, numeric_constant.num.range().data(), u32( numeric_constant.num.size() ) ) );
 
-	result.constexpr_value= unsafe( LLVMConstReal( llvm_type, numeric_constant.num.value ) );
-	result.llvm_value= result.constexpr_value;
+	if( num_value == Null::LLVMValueRef )
+	{
+		// This should actually not happen, since lexical analyzer parses numbers properly.
+		REPORT_ERROR( NotImplemented, names_scope, numeric_constant.src_loc, "broken floating-point literals" )
+		return ErrorValue();
+	}
+
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= Type( FundamentalType( t, llvm_type ) ),
+			.location= Variable::Location::LLVMRegister,
+			.value_type= ValueType::Value,
+			.llvm_value= num_value,
+			.constexpr_value= num_value,
+			.name= "numeric constant",
+		}.CreatePtr();
 
 	// Register variable for references checking.
-	var VariablePtr result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return result_ptr;

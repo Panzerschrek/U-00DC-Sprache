@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "lexical_analyzer.hpp"
+#include "number_parsing_utils.hpp"
 #include "operators.hpp"
 #include "variant_linked_list.hpp"
 
@@ -179,7 +180,7 @@ using Expression= std::variant<
 	EmptyVariant,
 	// Terminal nodes.
 	IntegerNumericConstant,
-	FloatingPointNumericConstant,
+	std::unique_ptr<const FloatingPointNumericConstant>, // Terminal, but too heavy, to store by-value.
 	BooleanConstant,
 	MoveOperator,
 	MoveOperatorCompletion,
@@ -415,7 +416,8 @@ struct IntegerNumericConstant
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	IntegerNumberLexemData num;
+	Int128 num;
+	std::array<char, 8> type_suffix{0};
 };
 
 struct FloatingPointNumericConstant
@@ -424,7 +426,12 @@ struct FloatingPointNumericConstant
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	FloatingPointNumberLexemData num;
+
+	// Store source string and parse it later - when building code.
+	// In lex/synt lib we have no proper functionality for correct and locale-independent floating-point numbers parsing.
+	std::string num;
+
+	std::string type_suffix;
 };
 
 struct BooleanConstant
