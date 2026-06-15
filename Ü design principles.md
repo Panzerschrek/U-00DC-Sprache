@@ -18,25 +18,26 @@ There principles are codified only in June 2026, earlier they weren't codified, 
 * Ü targets professional programmers or other people, who spend much time doing actual programming, but not beginners and/or hobbyists with little programming experience.
 * Safety, correctness, performance, expressiveness or any other language aspect simplifying writing code should not be sacrificed in order to make it easier to learn Ü. Non-trivial learning costs are considered to be an investment giving long-term benefits.
 * The Ü compiler shouldn't know about specifics of the Ü standard library and use some specific functionality from it, since such a dependency can substantially increase language complexity and prevent usage of Ü without its standard library.
-* Compilation time can be sacrificed to gain more compile-time safety checks.
-* Compilation time can be sacrificed to gain more runtime speed.
-* Compilation time can be sacrificed to reduce memory consumption of the result program.
-* Compilation time can be sacrificed to reduce result binary size.
+* Compilation speed can be sacrificed to gain more compile-time safety checks.
+* Compilation speed can be sacrificed to gain more runtime speed.
+* Compilation speed can be sacrificed to reduce memory consumption of the result program.
+* Compilation speed can be sacrificed to reduce result binary size.
 * Spending time fixing compilation errors and waiting for compilation to finish is better than debugging.
 * Performance of debug builds is mostly irrelevant.
 * End-users of programs written in Ü should not pay for functionality needed for developing and debugging of these programs. Such costs are performance costs, runtime memory costs and result binary size costs.
 * Programmers writing Ü should not be forced to deal with rare conditions caused by broken integrity of the whole execution environment.
 * Memory allocation is generally expected not to fail.
 * Stack overflow is expected not to happen.
-* No further execution of Ü code in a program should happen if a runtime safety check was failed.
+* No further execution of Ü code in a program should happen if a runtime safety check have failed.
 * There should be a way to disable runtime safety checks - for cases, where the last bit of performance can be gained by sacrificing safety.
 * Ü is allowed to choose whatever underlying data representation and layout it wants except it was asked explicitly to use some specific representation and layout.
 * Binary compatibility between different Ü versions isn't important at all and should not be guaranteed.
-* It should be possible to write programs partially written in Ü and partially written in other programming language(s) and thus there should be a way of communication between Ü code and code written in different language(s).
+* It should be possible to write programs partially written in Ü and partially written in other programming language(s) and thus there should be a way of communication between Ü code and code written in these language(s).
 * Binary compatibility with other languages should be guaranteed only where it's needed. In other places it can be sacrificed.
 * *Garbage in/garbage out* approach is allowed for language operators/other constructions and for standard library code (but not for the Ü compiler), as long as output "garbage" is predictable and inputting "garbage" doesn't cause undefined behavior and only if using such approach in a particular place gives performance benefits.
 * Ü should be good enough to be used for wide variety of programs in (almost) any imaginable area. But the main focus should lay on user-space programs running under an operating system, since such programs are the majority of all programs.
 * Code written in Ü should be generally source-level portable across different platforms (architectures, environments, operating systems), but full portability including every nuance of the language or its standard library isn't a goal, since this may introduce performance overhead where it can be avoided.
+* Backward compatibility in 100% cases can't be achieved (Hyrum's Law), unless no development (even bug-fixes) is ever done. So, introducing breaking changes is welcome, but only if it gives substantial benefits and only if there is an easy and straightforward way of fixing existing Ü code broken by such change.
 
 The exact order of the principles listed above isn't important.
 If in some particular case one principle contradicts another, some common ground should be found between them.
