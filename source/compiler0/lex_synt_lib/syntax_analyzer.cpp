@@ -865,14 +865,44 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 IntegerNumericConstant SyntaxAnalyzer::ParseIntegerNumericConstant()
 {
 	U_ASSERT( it_->type == Lexem::Type::IntegerNumber );
-	
+
 	IntegerNumericConstant result( it_->src_loc );
-	result.num= it_->text;
+
+	const std::string_view num_str= it_->text;
 	NextLexem();
+
+	std::optional<Int128> num_parsed;
+
+	if( num_str.size() >= 2 && num_str[0] == '0' )
+	{
+		if( num_str[1] == 'b' )
+			num_parsed= DecodeParsedInteger< 2>( num_str.substr(2) );
+		else if( num_str[1] == 'o' )
+			num_parsed= DecodeParsedInteger< 8>( num_str.substr(2) );
+		else if( num_str[1] == 'x' )
+			num_parsed= DecodeParsedInteger<16>( num_str.substr(2) );
+		else
+			num_parsed= DecodeParsedInteger<10>( num_str );
+	}
+	else
+		num_parsed= DecodeParsedInteger<10>( num_str );
+
+	if( num_parsed == std::nullopt )
+	{
+		error_messages_.push_back( LexSyntError( "Integer numeric literal overflow!", result.src_loc ) );
+		return result;
+	}
+	
+	result.num= *num_parsed;
 
 	if( it_->type == Lexem::Type::LiteralSuffix )
 	{
-		result.type_suffix= it_->text;
+		const std::string_view suffix_str= it_->text;
+
+		if( suffix_str.size() > result.type_suffix.size() )
+			error_messages_.push_back( LexSyntError( "Type suffix of numeric literal is too long!", it_->src_loc ) );
+		else
+			std::memcpy( result.type_suffix.data(), suffix_str.data(), suffix_str.size() );
 		NextLexem();
 	}
 	
@@ -1094,7 +1124,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 	case Lexem::Type::CompletionScope:
 		return ComplexNameToExpression( ParseComplexName() );
 	case Lexem::Type::IntegerNumber:
-		return std::make_unique< IntegerNumericConstant >( ParseIntegerNumericConstant() );
+		return ParseIntegerNumericConstant();
 	case Lexem::Type::FloatingPointNumber:
 		return std::make_unique< FloatingPointNumericConstant >( ParseFloatingPointNumericConstant() );
 	case Lexem::Type::String:

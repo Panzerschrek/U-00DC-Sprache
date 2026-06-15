@@ -1283,41 +1283,17 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::IntegerNumericConstant& numeric_constant )
 {
-	llvm::APInt num_parsed;
+	std::string_view type_suffix( numeric_constant.type_suffix.data(), numeric_constant.type_suffix.size() );
+	while( !type_suffix.empty() && type_suffix.back() == '\0' )
+		type_suffix= type_suffix.substr(0, type_suffix.size() - 1 );
 
-	{
-		llvm::StringRef num_str= numeric_constant.num;
-
-		uint32_t base= 10u;
-		if( num_str.startswith( "0b" ) )
-		{
-			base= 2u;
-			num_str= num_str.substr( 2 );
-		}
-		else if( num_str.startswith( "0o" ) )
-		{
-			base= 8u;
-			num_str= num_str.substr( 2 );
-		}
-		else if( num_str.startswith( "0x" ) )
-		{
-			base= 16u;
-			num_str= num_str.substr( 2 );
-		}
-
-		if( num_str.getAsInteger( base, num_parsed ) )
-		{
-			// This should actually not happen, since lexical analyzer parses numbers properly.
-			REPORT_ERROR( IntegerConstantOverflow, names_scope.GetErrors(), numeric_constant.src_loc, numeric_constant.num );
-			return ErrorValue();
-		}
-	}
+	llvm::APInt num_parsed( 128, llvm::ArrayRef<uint64_t>( &numeric_constant.num.lo, 2 ) );
 
 	const uint32_t num_active_bits= num_parsed.getActiveBits();
 
 	U_FundamentalType type= U_FundamentalType::InvalidType;
 
-	if( numeric_constant.type_suffix.empty() )
+	if( type_suffix.empty() )
 	{
 		// Select "i32", if given constant fits inside it. Otherwise use "i64". If it's not enough, use "i128".
 		if( num_active_bits <= 31u )
@@ -1327,7 +1303,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		else
 			type= U_FundamentalType::i128_;
 	}
-	else if( numeric_constant.type_suffix == "u" )
+	else if( type_suffix == "u" )
 	{
 		// Select "u32", if given constant fits inside it. Otherwise use "u64". If it's not enough, use "u128".
 		if( num_active_bits <= 32u )
@@ -1338,21 +1314,21 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			type= U_FundamentalType::u128_;
 	}
 	// Suffix for size_type
-	else if( numeric_constant.type_suffix == "s" )
+	else if( type_suffix == "s" )
 		type= U_FundamentalType::size_type_;
-	else if( numeric_constant.type_suffix == "f" )
+	else if( type_suffix == "f" )
 	{
 		// Don't allow "f" suffix (short form for "f32") to be used for integers.
-		REPORT_ERROR( UnsupportedIntegerConstantType, names_scope.GetErrors(), numeric_constant.src_loc, numeric_constant.type_suffix );
+		REPORT_ERROR( UnsupportedIntegerConstantType, names_scope.GetErrors(), numeric_constant.src_loc, type_suffix );
 		return ErrorValue();
 	}
 	else
 	{
-		type= GetFundamentalTypeByName( numeric_constant.type_suffix );
+		type= GetFundamentalTypeByName( type_suffix );
 
 		if( type == U_FundamentalType::InvalidType )
 		{
-			REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, numeric_constant.type_suffix );
+			REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, type_suffix );
 			return ErrorValue();
 		}
 
@@ -1361,7 +1337,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		if( !IsInteger( type ) )
 		{
-			REPORT_ERROR( UnsupportedIntegerConstantType, names_scope.GetErrors(), numeric_constant.src_loc, numeric_constant.type_suffix );
+			REPORT_ERROR( UnsupportedIntegerConstantType, names_scope.GetErrors(), numeric_constant.src_loc, type_suffix );
 			return ErrorValue();
 		}
 	}
@@ -1371,7 +1347,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		IsSignedInteger( type ) ? ( num_active_bits > type_size * 8u - 1u ) : ( num_active_bits >  type_size * 8u );
 
 	if( overflow )
-		REPORT_ERROR( IntegerConstantOverflow, names_scope.GetErrors(), numeric_constant.src_loc, numeric_constant.num, GetFundamentalTypeName( type ) );
+		REPORT_ERROR( IntegerConstantOverflow, names_scope.GetErrors(), numeric_constant.src_loc, num_parsed, GetFundamentalTypeName( type ) );
 
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
 
@@ -1380,7 +1356,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			FundamentalType( type, llvm_type ),
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			"numeric constant " + numeric_constant.num );
+			"numeric constant" );
 
 	result->constexpr_value= llvm::Constant::getIntegerValue( llvm_type, num_parsed.zextOrTrunc( llvm_type->getIntegerBitWidth() ) );
 	result->llvm_value= result->constexpr_value;

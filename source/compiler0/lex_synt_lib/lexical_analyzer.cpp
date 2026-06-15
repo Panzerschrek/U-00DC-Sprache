@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "number_parsing_utils.hpp"
 #include "program_string.hpp"
 #include "lexical_analyzer.hpp"
 
@@ -102,38 +103,6 @@ const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 };
 
 using Iterator= const char*;
-
-// Returns uint32_t(-1) if failed to parse.
-template<uint32_t base>
-uint32_t TryParseDigit( const char c )
-{
-	if constexpr( base == 2 )
-	{
-		if( c >= '0' && c <= '1' )
-			return uint32_t(c - '0');
-	}
-	else if constexpr( base == 8 )
-	{
-		if( c >= '0' && c <= '7' )
-			return uint32_t(c - '0');
-	}
-	else if constexpr( base == 10 )
-	{
-		if( c >= '0' && c <= '9' )
-			return uint32_t(c - '0');
-	}
-	else if constexpr( base == 16 )
-	{
-		if( c >= '0' && c <= '9' )
-			return uint32_t(c - '0');
-		else if( c >= 'a' && c <= 'f' )
-			return uint32_t(c - 'a' + 10);
-		else if( c >= 'A' && c <= 'F' )
-			return uint32_t(c - 'A' + 10);
-	}
-
-	return uint32_t(-1);
-}
 
 bool IsWhitespace( const sprache_char c )
 {

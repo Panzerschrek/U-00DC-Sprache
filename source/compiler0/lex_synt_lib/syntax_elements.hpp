@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "lexical_analyzer.hpp"
+#include "number_parsing_utils.hpp"
 #include "operators.hpp"
 #include "variant_linked_list.hpp"
 
@@ -178,7 +179,7 @@ using TypeName= std::variant<
 using Expression= std::variant<
 	EmptyVariant,
 	// Terminal nodes.
-	std::unique_ptr<const IntegerNumericConstant>, // Terminal, but too heavy, to store by-value.
+	IntegerNumericConstant,
 	std::unique_ptr<const FloatingPointNumericConstant>, // Terminal, but too heavy, to store by-value.
 	BooleanConstant,
 	MoveOperator,
@@ -415,8 +416,8 @@ struct IntegerNumericConstant
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	std::string num;
-	std::string type_suffix;
+	Int128 num;
+	std::array<char, 8> type_suffix{0};
 };
 
 struct FloatingPointNumericConstant
