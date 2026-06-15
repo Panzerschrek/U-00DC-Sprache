@@ -345,34 +345,40 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FloatingPointNumericConstant& numeric_constant ) : Value
 {
+	var ust::string_view8 mut type_suffix( numeric_constant.type_suffix );
+	while( !type_suffix.empty() && type_suffix.back() == '\0' )
+	{
+		type_suffix.drop_back();
+	}
+
 	auto mut t= U_FundamentalType::InvalidType;
-	if( numeric_constant.type_suffix.empty() )
+	if( type_suffix.empty() )
 	{
 		t= U_FundamentalType::f64_;
 	}
-	else if( numeric_constant.type_suffix == "f" )
+	else if( type_suffix == "f" )
 	{
 		t= U_FundamentalType::f32_;
 	}
-	else if( numeric_constant.type_suffix == "u" || numeric_constant.type_suffix == "s" )
+	else if( type_suffix == "u" || type_suffix == "s" )
 	{
 		// Don't allow "u" suffix (short form for "u32") and "s" suffix (short form for "size_type") to be used for floating point numbers.
-		REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope, numeric_constant.src_loc, numeric_constant.type_suffix )
+		REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope, numeric_constant.src_loc, type_suffix )
 		return ErrorValue();
 	}
 	else
 	{
-		t= GetFundamentalTypeByName( numeric_constant.type_suffix );
+		t= GetFundamentalTypeByName( type_suffix );
 
 		if( t == U_FundamentalType::InvalidType )
 		{
-			REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, numeric_constant.type_suffix )
+			REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, type_suffix )
 			return ErrorValue();
 		}
 
 		if( !IsFloatingPoint( t ) )
 		{
-			REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope, numeric_constant.src_loc, numeric_constant.type_suffix )
+			REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope, numeric_constant.src_loc, type_suffix )
 			return ErrorValue();
 		}
 	}

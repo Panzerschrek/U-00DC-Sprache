@@ -89,7 +89,7 @@ struct FloatingPointNumericConstant
 {
 	SrcLoc src_loc;
 	ust::string8 num;
-	ust::string8 type_suffix;
+	[ char8, 8 ] type_suffix;
 }
 
 struct BooleanConstant
@@ -310,7 +310,7 @@ struct BitwiseNot
 type Expression= ust::variant</ tup[
 	EmptyVariant,
 	IntegerNumericConstant,
-	ust::box</FloatingPointNumericConstant/>,
+	FloatingPointNumericConstant,
 	BooleanConstant,
 	StringLiteral,
 	CharLiteral,
