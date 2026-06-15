@@ -59,13 +59,21 @@ fn DecodeParsedInteger( ust::string_view8 s ) : ust::optional</u128/>
 			return ust::null_optional;
 		}
 
-		if( res >= 34028236692093846346337460743176821145u128 )
+		if( res > 34028236692093846346337460743176821145u128 )
 		{
+			// Overflow detected.
 			return ust::null_optional;
 		}
 
-		res*= 10u128;
-		res+= u128(digit);
+		var u128 mul_base= res * u128( base_ );
+		var u128 add_digit= mul_base + u128( digit );
+		if( add_digit < mul_base )
+		{
+			// Overflow detected.
+			return ust::null_optional;
+		}
+
+		res= add_digit;
 	}
 
 	return res;
