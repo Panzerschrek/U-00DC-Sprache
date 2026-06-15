@@ -224,15 +224,23 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		type_suffix.drop_back();
 	}
 
+	var u32 mut num_leading_zero_bits= 0u;
+	for( auto mut mask= 1u128 << 127; mask > 0u128 && ( ( numeric_constant.num ) & mask ) == 0u128; mask >>= 1 )
+	{
+		++num_leading_zero_bits;
+	}
+
+	var u32 num_active_bits= 128u - num_leading_zero_bits;
+
 	auto mut t= U_FundamentalType::InvalidType;
 	if( type_suffix.empty() )
 	{
 		// Select "i32", if given constant fits inside it. Otherwise use "i64". If it's not enough, use "i128".
-		if( numeric_constant.num <= 0x7FFFFFFFu128 )
+		if( num_active_bits <= 31u )
 		{
 			t= U_FundamentalType::i32_;
 		}
-		else if( numeric_constant.num <= 0x7FFFFFFFFFFFFFFFu128 )
+		else if( num_active_bits <= 63u )
 		{
 			t= U_FundamentalType::i64_;
 		}
@@ -244,11 +252,11 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	else if( type_suffix == "u" )
 	{
 		// Select "u32", if given constant fits inside it. Otherwise use "u64". If it's not enough, use "u128".
-		if( numeric_constant.num <= 0xFFFFFFFFu128 )
+		if( num_active_bits <= 32u )
 		{
 			t= U_FundamentalType::u32_;
 		}
-		else if( numeric_constant.num <= 0xFFFFFFFFFFFFFFFFu128 )
+		else if( num_active_bits <= 64u )
 		{
 			t= U_FundamentalType::u64_;
 		}
@@ -288,33 +296,9 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	}
 
 	var u32 type_size= GetFundamentalTypeSize( t );
-	var bool is_signed= IsSignedInteger( t );
-	var bool mut overflow= false;
-	if( type_size == 1u )
-	{
-		overflow= ( is_signed ? ( numeric_constant.num > 0x7Fu128 ) : ( numeric_constant.num > 0xFFu128 ) );
-	}
-	else if( type_size == 2u )
-	{
-		overflow= ( is_signed ? ( numeric_constant.num > 0x7FFFu128 ) : ( numeric_constant.num > 0xFFFFu128 ) );
-	}
-	else if( type_size == 4u )
-	{
-		overflow= ( is_signed ? ( numeric_constant.num > 0x7FFFFFFFu128 ) : ( numeric_constant.num > 0xFFFFFFFFu128 ) );
-	}
-	else if( type_size == 8u )
-	{
-		overflow= ( is_signed ? ( numeric_constant.num > 0x7FFFFFFFFFFFFFFFu128 ) : ( numeric_constant.num > 0xFFFFFFFFFFFFFFFFu128 ) );
-	}
-	else if( type_size == 16u )
-	{
-		if( is_signed )
-		{
-			overflow= numeric_constant.num > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFu128;
-		}
-		// Unsigned overflow is impossible here.
-	}
-	else { halt; }
+
+	var bool overflow=
+		( IsSignedInteger( t ) ? ( num_active_bits > type_size * 8u - 1u ) : ( num_active_bits > type_size * 8u ) );
 
 	if( overflow )
 	{
@@ -323,21 +307,21 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	var LLVMTypeRef llvm_type= GetFundamentalLLVMType(t);
 
-	var Variable mut result
-	{
-		.t= Type( FundamentalType( t, llvm_type ) ),
-		.location= Variable::Location::LLVMRegister,
-		.value_type= ValueType::Value,
-		.name= "numeric constant",
-	};
-
 	var [ u64, 2 ] mut num_words[ ( numeric_constant.num ), ( numeric_constant.num >> 64u ) ];
+	var LLVMValueRef num_value= unsafe( LLVMConstIntOfArbitraryPrecision( llvm_type, 2u, $<( num_words[0] ) ) );
 
-	result.constexpr_value= unsafe( LLVMConstIntOfArbitraryPrecision( llvm_type, 2u, $<( num_words[0] ) ) );
-	result.llvm_value= result.constexpr_value;
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= Type( FundamentalType( t, llvm_type ) ),
+			.location= Variable::Location::LLVMRegister,
+			.value_type= ValueType::Value,
+			.llvm_value= num_value,
+			.constexpr_value= num_value,
+			.name= "numeric constant",
+		}.CreatePtr();
 
 	// Register variable for references checking.
-	var VariablePtr result_ptr= move(result).CreatePtr();
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return result_ptr;
