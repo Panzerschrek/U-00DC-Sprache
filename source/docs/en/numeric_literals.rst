@@ -43,11 +43,11 @@ There is also support of non-decimal numeric literals:
 
 Non-decimal numeric literals are always integers, fractional point and exponent can't be specified, overflow is treated as error.
 
-Integer numeric literals with value greater than 18446744073709551615 (2\ :sup:`64` - 1) aren't supported.
+Integer numeric literals with value greater than 340282366920938463463374607431768211455 (2\ :sup:`128` - 1) aren't supported.
 
 Type suffix may be specified for an integer numeric literal.
 Specifying suffix equal to the name of some built-in integer type means, that this numeric literal is of this type.
-There are also additional suffixes ``u`` for ``u32`` type and ``s`` for ``size_type`` type.
+There are also additional suffixes ``u`` for ``u32``, ``u64`` or ``u128`` types (depending on literal size) and ``s`` for ``size_type`` type.
 If no suffix is specified for an integer numeric literal, it's assumed to be of type ``i32`` (if it fits inside it), ``i64`` or ``i128``.
 
 Examples of integer numeric literals:
