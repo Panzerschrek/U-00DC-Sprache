@@ -369,13 +369,11 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	var LLVMTypeRef llvm_type= GetFundamentalLLVMType(t);
 
-	var LLVMValueRef num_parsed=
+	var LLVMValueRef num_value=
 		unsafe( LLVMConstRealOfStringAndSize(
-			llvm_type,
-			numeric_constant.num.range().data(),
-			u32( numeric_constant.num.size() ) ) );
+			llvm_type, numeric_constant.num.range().data(), u32( numeric_constant.num.size() ) ) );
 
-	if( num_parsed == Null::LLVMValueRef )
+	if( num_value == Null::LLVMValueRef )
 	{
 		// This should actually not happen, since lexical analyzer parses numbers properly.
 		REPORT_ERROR( NotImplemented, names_scope, numeric_constant.src_loc, "broken floating-point literals" )
@@ -388,9 +386,9 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			.t= Type( FundamentalType( t, llvm_type ) ),
 			.location= Variable::Location::LLVMRegister,
 			.value_type= ValueType::Value,
-			.llvm_value= num_parsed,
-			.constexpr_value= num_parsed,
-			.name= "numeric constant " + numeric_constant.num,
+			.llvm_value= num_value,
+			.constexpr_value= num_value,
+			.name= "numeric constant",
 		}.CreatePtr();
 
 	// Register variable for references checking.

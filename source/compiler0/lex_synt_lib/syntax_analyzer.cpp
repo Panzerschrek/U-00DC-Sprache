@@ -903,6 +903,7 @@ IntegerNumericConstant SyntaxAnalyzer::ParseIntegerNumericConstant()
 			error_messages_.push_back( LexSyntError( "Type suffix of numeric literal is too long!", it_->src_loc ) );
 		else
 			std::memcpy( result.type_suffix.data(), suffix_str.data(), suffix_str.size() );
+
 		NextLexem();
 	}
 	

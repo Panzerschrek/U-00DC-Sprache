@@ -860,7 +860,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 				errors_.push_back(
 					LexSyntError(
 						it_.front().src_loc,
-						ust::concat( "Integer literal overflow ", num_str, " can't fit into 128 bits." ) ) );
+						ust::concat( "Integer literal overflow, ", num_str, " can't fit into 128 bits." ) ) );
 				return Expression();
 			}
 

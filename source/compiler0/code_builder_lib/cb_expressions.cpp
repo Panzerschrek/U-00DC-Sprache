@@ -1285,11 +1285,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	std::string_view type_suffix( numeric_constant.type_suffix.data(), numeric_constant.type_suffix.size() );
 	while( !type_suffix.empty() && type_suffix.back() == '\0' )
-		type_suffix= type_suffix.substr(0, type_suffix.size() - 1 );
+		type_suffix= type_suffix.substr( 0, type_suffix.size() - 1 );
 
-	llvm::APInt num_parsed( 128, llvm::ArrayRef<uint64_t>( &numeric_constant.num.lo, 2 ) );
+	llvm::APInt num_value( 128, llvm::ArrayRef<uint64_t>( &numeric_constant.num.lo, 2 ) );
 
-	const uint32_t num_active_bits= num_parsed.getActiveBits();
+	const uint32_t num_active_bits= num_value.getActiveBits();
 
 	U_FundamentalType type= U_FundamentalType::InvalidType;
 
@@ -1347,7 +1347,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		IsSignedInteger( type ) ? ( num_active_bits > type_size * 8u - 1u ) : ( num_active_bits >  type_size * 8u );
 
 	if( overflow )
-		REPORT_ERROR( IntegerConstantOverflow, names_scope.GetErrors(), numeric_constant.src_loc, num_parsed, GetFundamentalTypeName( type ) );
+		REPORT_ERROR( IntegerConstantOverflow, names_scope.GetErrors(), numeric_constant.src_loc, num_value, GetFundamentalTypeName( type ) );
 
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
 
@@ -1358,7 +1358,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			Variable::Location::LLVMRegister,
 			"numeric constant" );
 
-	result->constexpr_value= llvm::Constant::getIntegerValue( llvm_type, num_parsed.zextOrTrunc( llvm_type->getIntegerBitWidth() ) );
+	result->constexpr_value= llvm::Constant::getIntegerValue( llvm_type, num_value.zextOrTrunc( llvm_type->getIntegerBitWidth() ) );
 	result->llvm_value= result->constexpr_value;
 
 	function_context.variables_state.AddNode( result );
@@ -1416,7 +1416,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			FundamentalType( type, llvm_type ),
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			"numeric constant " + numeric_constant.num );
+			"numeric constant" );
 
 	result->llvm_value= result->constexpr_value= llvm::ConstantFP::get( llvm_type, num_value );
 

@@ -1,10 +1,9 @@
+#include <array>
 #include <optional>
 #include <string>
-#include <array>
 
 namespace U
 {
-
 
 // Returns uint32_t(-1) if failed to parse.
 template<uint32_t base>

@@ -187,12 +187,8 @@ Synt::TypeName CreateFundamentalTypeName( const std::string_view name )
 Synt::IntegerNumericConstant TranslateNumericConstant( const llvm::APInt& n )
 {
 	Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
-
 	numeric_constant.num.lo= n.getRawData()[0];
-
-	if( n.getBitWidth() > 64 )
-		numeric_constant.num.hi= n.getRawData()[1];
-
+	numeric_constant.num.hi= n.getBitWidth() <= 64 ? 0u : n.getRawData()[1];
 	return numeric_constant;
 }
 

@@ -88,7 +88,12 @@ struct IntegerNumericConstant
 struct FloatingPointNumericConstant
 {
 	SrcLoc src_loc;
+
+	// Store source string and parse it later - when building code.
+	// In ustlib and lex/synt lib we have no proper functionality for correct floating-point numbers parsing.
+
 	ust::string8 num;
+
 	[ char8, 8 ] type_suffix;
 }
 

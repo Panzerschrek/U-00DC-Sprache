@@ -356,7 +356,7 @@ void ElementWrite( const IntegerNumericConstant& numeric_constant ) const
 	{
 		std::string_view type_suffix( numeric_constant.type_suffix.data(), numeric_constant.type_suffix.size() );
 		while( !type_suffix.empty() && type_suffix.back() == '\0' )
-			type_suffix= type_suffix.substr(0, type_suffix.size() - 1 );
+			type_suffix= type_suffix.substr( 0, type_suffix.size() - 1 );
 
 		stream_ << type_suffix;
 	}

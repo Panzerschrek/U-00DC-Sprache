@@ -426,7 +426,11 @@ struct FloatingPointNumericConstant
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
+
+	// Store source string and parse it later - when building code.
+	// In lex/synt lib we have no proper functionality for correct and locale-independent floating-point numbers parsing.
 	std::string num;
+
 	std::string type_suffix;
 };
 
