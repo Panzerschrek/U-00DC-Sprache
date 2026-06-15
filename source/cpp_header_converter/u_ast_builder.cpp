@@ -188,9 +188,10 @@ Synt::IntegerNumericConstant TranslateNumericConstant( const llvm::APInt& n )
 {
 	Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
 
-	llvm::SmallString<32> s;
-	n.toStringUnsigned( s );
-	numeric_constant.num= std::string( s );
+	numeric_constant.num.lo= n.getRawData()[0];
+
+	if( n.getBitWidth() > 64 )
+		numeric_constant.num.hi= n.getRawData()[1];
 
 	return numeric_constant;
 }
@@ -682,8 +683,8 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		array_type->element_type= TranslateType( *complex_type->getElementType().getTypePtr(), type_names_map );
 
 		Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
-		numeric_constant.num= "2";
-		array_type->size= std::make_unique< Synt::IntegerNumericConstant >( std::move(numeric_constant) );
+		numeric_constant.num= Int128{ 2, 0 };
+		array_type->size= std::move(numeric_constant);
 
 		return std::move(array_type);
 	}
@@ -693,9 +694,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		auto array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
 		array_type->element_type= TranslateType( *constant_array_type->getElementType().getTypePtr(), type_names_map );
 
-		array_type->size=
-			std::make_unique< Synt::IntegerNumericConstant >(
-				TranslateNumericConstant( constant_array_type->getSize() ) );
+		array_type->size= TranslateNumericConstant( constant_array_type->getSize() );
 
 		return std::move(array_type);
 	}
@@ -713,8 +712,8 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		out_array_type->element_type= TranslateType( *array_type->getElementType().getTypePtr(), type_names_map );
 
 		Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
-		numeric_constant.num= "0";
-		out_array_type->size= std::make_unique< Synt::IntegerNumericConstant >( std::move(numeric_constant) );
+		numeric_constant.num= Int128{ 0, 0 };
+		out_array_type->size= std::move(numeric_constant);
 
 		return std::move(out_array_type);
 	}
@@ -728,8 +727,8 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		out_array_type->element_type= TranslateType( *vector_type->getElementType().getTypePtr(), type_names_map );
 
 		Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
-		numeric_constant.num= std::to_string( vector_type->getNumElements() );
-		out_array_type->size= std::make_unique< Synt::IntegerNumericConstant >( std::move(numeric_constant) );
+		numeric_constant.num= Int128{ vector_type->getNumElements(), 0 };
+		out_array_type->size= std::move(numeric_constant);
 
 		return std::move(out_array_type);
 	}
@@ -1332,8 +1331,8 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 						array_type->element_type= TranslateType( *field_type.getArrayElementTypeNoTypeQual(), type_names_map );
 
 						Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
-						numeric_constant.num= "0";
-						array_type->size= std::make_unique< Synt::IntegerNumericConstant>( std::move(numeric_constant) );
+						numeric_constant.num= Int128{ 0, 0 };
+						array_type->size= std::move(numeric_constant);
 
 						field.type= std::move( array_type );
 					}
@@ -1478,14 +1477,13 @@ Synt::VariablesDeclaration CppAstConsumer::EmitItemImpl(
 			if( val.isNegative() )
 			{
 				Synt::UnaryMinus unary_minus( g_dummy_src_loc );
-				unary_minus.expression= std::make_unique< Synt::IntegerNumericConstant>( TranslateNumericConstant( -val ) );
+				unary_minus.expression= TranslateNumericConstant( -val );
 
 				constructor_initializer.arguments.push_back(
 					std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
 			}
 			else
-				constructor_initializer.arguments.push_back(
-					std::make_unique< Synt::IntegerNumericConstant>( TranslateNumericConstant( val ) ) );
+				constructor_initializer.arguments.push_back( TranslateNumericConstant( val ) );
 
 			var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
 		}
@@ -1576,8 +1574,8 @@ Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
 	array_type->element_type= CreateFundamentalTypeName( byte_name );
 
 	Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
-	numeric_constant.num= std::to_string( num_elements );
-	array_type->size= std::make_unique< Synt::IntegerNumericConstant>( std::move(numeric_constant) );
+	numeric_constant.num= Int128{ num_elements, 0 };
+	array_type->size= std::move(numeric_constant);
 
 	Synt::ClassField field( g_dummy_src_loc );
 	field.name+= kind_name;
@@ -1603,13 +1601,12 @@ Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::T
 		if( variable_type.isSignedIntegerType() && init_val_int.isNegative() )
 		{
 			Synt::UnaryMinus unary_minus( g_dummy_src_loc );
-			unary_minus.expression= std::make_unique< Synt::IntegerNumericConstant >( TranslateNumericConstant( -init_val_int ) );
+			unary_minus.expression= TranslateNumericConstant( -init_val_int );
 
 			initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
 		}
 		else
-			initializer.arguments.push_back(
-				std::make_unique< Synt::IntegerNumericConstant >( TranslateNumericConstant( init_val_int ) ) );
+			initializer.arguments.push_back( TranslateNumericConstant( init_val_int ) );
 
 		return std::move(initializer);
 	}
@@ -1964,17 +1961,30 @@ Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& to
 
 	if( numeric_literal_parser.isIntegerLiteral() || numeric_literal_parser.getRadix() != 10 )
 	{
-		// Parse and stringify. Don't use source string in order to ignore C++-specific number format.
 		llvm::APInt int_val( 64u, 0u );
 		numeric_literal_parser.GetIntegerValue( int_val );
 		Synt::IntegerNumericConstant numeric_constant= TranslateNumericConstant( int_val );
 
 		if( numeric_literal_parser.isUnsigned )
-			numeric_constant.type_suffix= numeric_literal_parser.isLongLong ? "u64" : "u";
+		{
+			numeric_constant.type_suffix[0]= 'u';
+			if( numeric_literal_parser.isLongLong )
+			{
+				numeric_constant.type_suffix[1]= '6';
+				numeric_constant.type_suffix[2]= '4';
+			}
+		}
 		else
-			numeric_constant.type_suffix= numeric_literal_parser.isLongLong ? "i64" : "" ;
+		{
+			if( numeric_literal_parser.isLongLong )
+			{
+				numeric_constant.type_suffix[0]= 'i';
+				numeric_constant.type_suffix[1]= '6';
+				numeric_constant.type_suffix[2]= '4';
+			}
+		}
 
-		return std::make_unique< Synt::IntegerNumericConstant >( numeric_constant );
+		return numeric_constant;
 	}
 	else
 	{

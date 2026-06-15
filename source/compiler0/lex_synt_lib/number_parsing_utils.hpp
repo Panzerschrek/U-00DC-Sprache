@@ -43,8 +43,8 @@ uint32_t TryParseDigit( const char c )
 // We can't also use llvm::APInt here, since lex/synt code shouldn't depend on LLVM libraries.
 struct Int128
 {
-	uint64_t lo;
-	uint64_t hi;
+	uint64_t lo= 0u;
+	uint64_t hi= 0u;
 };
 
 template<uint32_t base>
