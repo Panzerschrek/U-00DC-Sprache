@@ -864,10 +864,12 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 				int_parsed_opt= 0u128;
 			}
 
+			var u128 int_parseed= int_parsed_opt.try_deref();
+
 			var IntegerNumericConstant mut numeric_constant
 			{
 				.src_loc= it_.front().src_loc,
-				.num= int_parsed_opt.try_deref(),
+				.num_lo_hi[ ( int_parseed ), ( int_parseed >> 64 ) ],
 				.type_suffix= zero_init,
 			};
 

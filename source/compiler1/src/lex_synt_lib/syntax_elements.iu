@@ -81,7 +81,11 @@ struct TemplateParameterization
 struct IntegerNumericConstant
 {
 	SrcLoc src_loc;
-	u128 num;
+
+	// HACK! Store two halves of u128, since using actual u128 introduces 16-bit alignment on some platforms,
+	// which leads to size increase for structures including using this structure.
+	[ u64, 2 ] num_lo_hi;
+
 	[ char8, 8 ] type_suffix;
 }
 
