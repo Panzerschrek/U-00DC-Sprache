@@ -353,7 +353,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.name= "numeric constant " + numeric_constant.num,
 	};
 
-	var [ u64, 2 ] mut int_parsed_words[ ( int_parsed >> 64u ), ( int_parsed ) ];
+	var [ u64, 2 ] mut int_parsed_words[ ( int_parsed ), ( int_parsed >> 64u ) ];
 
 	result.constexpr_value= unsafe( LLVMConstIntOfArbitraryPrecision( llvm_type, 2u, $<( int_parsed_words[0] ) ) );
 	result.llvm_value= result.constexpr_value;

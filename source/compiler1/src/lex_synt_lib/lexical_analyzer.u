@@ -289,7 +289,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 
 	return Lexem
 	{
-		.text= it_start.subrange_end( it.size() - it_start.size() ),
+		.text= it_start.subrange_end( it_start.size() - it.size() ),
 		.lexem_type= ( is_floating_point ? Lexem::Type::FloatingPointNumber : Lexem::Type::IntegerNumber ),
 	};
 }
