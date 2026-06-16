@@ -360,43 +360,43 @@ U_TEST(NumericConstantsTest3)
 
 	llvm::GenericValue args[1];
 
-	args[0].IntVal= llvm::APInt( 32u, 0u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(0), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 0.0 );
 
-	args[0].IntVal= llvm::APInt( 32u, 1u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(1), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 1.0 );
 
-	args[0].IntVal= llvm::APInt( 32u, 2u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(2), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 1.0000000000000002 );
 
-	args[0].IntVal= llvm::APInt( 32u, 3u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(3), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 0.9999999999999999 );
 
-	args[0].IntVal= llvm::APInt( 32u, 4u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(4), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 5e-324 );
 
-	args[0].IntVal= llvm::APInt( 32u, 5u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(5), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 2.225073858507201e-308 );
 
-	args[0].IntVal= llvm::APInt( 32u, 6u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(6), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 2.2250738585072014e-308 );
 
-	args[0].IntVal= llvm::APInt( 32u, 7u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(7), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 1.7976931348623157e+308 );
 
-	args[0].IntVal= llvm::APInt( 32u, 8u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(8), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 6.28318530717958647692528676655900576839433879875021 );
 
-	args[0].IntVal= llvm::APInt( 32u, 9u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(9), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 1.0548669602665742e-286 );
 
-	args[0].IntVal= llvm::APInt( 32u, 10u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(10), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 3.677235700820831e+253 );
 
-	args[0].IntVal= llvm::APInt( 32u, 11u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(11), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000015305274152362944 );
 
-	args[0].IntVal= llvm::APInt( 32u, 12u, false );
+	args[0].IntVal= llvm::APInt( 32u, uint64_t(12), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 10302167865625843000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0 );
 }
 
