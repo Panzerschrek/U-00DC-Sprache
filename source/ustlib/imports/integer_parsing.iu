@@ -167,8 +167,8 @@ fn parse( array_view_imut</C/> &mut range ) : optional</T/>
 }
 
 fn parse_i32( array_view_imut</char8/> &mut range ) : optional</i32/>;
-fn parse_i64( array_view_imut</char8/> &mut range ) : optional</i64/>;
 fn parse_u32( array_view_imut</char8/> &mut range ) : optional</u32/>;
+fn parse_i64( array_view_imut</char8/> &mut range ) : optional</i64/>;
 fn parse_u64( array_view_imut</char8/> &mut range ) : optional</u64/>;
 
 fn parse_i32( array_view_imut</char16/> &mut range ) : optional</i32/>;
@@ -177,8 +177,8 @@ fn parse_i64( array_view_imut</char16/> &mut range ) : optional</i64/>;
 fn parse_u64( array_view_imut</char16/> &mut range ) : optional</u64/>;
 
 fn parse_i32( array_view_imut</char32/> &mut range ) : optional</i32/>;
-fn parse_i64( array_view_imut</char32/> &mut range ) : optional</i64/>;
 fn parse_u32( array_view_imut</char32/> &mut range ) : optional</u32/>;
+fn parse_i64( array_view_imut</char32/> &mut range ) : optional</i64/>;
 fn parse_u64( array_view_imut</char32/> &mut range ) : optional</u64/>;
 
 } // namespace integer_parsing_impl

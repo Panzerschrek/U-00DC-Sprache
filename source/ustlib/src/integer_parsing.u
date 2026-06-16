@@ -11,14 +11,14 @@ fn parse_i32( array_view_imut</char8/> &mut range ) : optional</i32/>
 	return parse_impl_i32( range );
 }
 
-fn parse_i64( array_view_imut</char8/> &mut range ) : optional</i64/>
-{
-	return parse_impl_i64( range );
-}
-
 fn parse_u32( array_view_imut</char8/> &mut range ) : optional</u32/>
 {
 	return parse_impl_u32( range );
+}
+
+fn parse_i64( array_view_imut</char8/> &mut range ) : optional</i64/>
+{
+	return parse_impl_i64( range );
 }
 
 fn parse_u64( array_view_imut</char8/> &mut range ) : optional</u64/>
@@ -31,14 +31,14 @@ fn parse_i32( array_view_imut</char16/> &mut range ) : optional</i32/>
 	return parse_impl_i32( range );
 }
 
-fn parse_i64( array_view_imut</char16/> &mut range ) : optional</i64/>
-{
-	return parse_impl_i64( range );
-}
-
 fn parse_u32( array_view_imut</char16/> &mut range ) : optional</u32/>
 {
 	return parse_impl_u32( range );
+}
+
+fn parse_i64( array_view_imut</char16/> &mut range ) : optional</i64/>
+{
+	return parse_impl_i64( range );
 }
 
 fn parse_u64( array_view_imut</char16/> &mut range ) : optional</u64/>
@@ -51,14 +51,14 @@ fn parse_i32( array_view_imut</char32/> &mut range ) : optional</i32/>
 	return parse_impl_i32( range );
 }
 
-fn parse_i64( array_view_imut</char32/> &mut range ) : optional</i64/>
-{
-	return parse_impl_i64( range );
-}
-
 fn parse_u32( array_view_imut</char32/> &mut range ) : optional</u32/>
 {
 	return parse_impl_u32( range );
+}
+
+fn parse_i64( array_view_imut</char32/> &mut range ) : optional</i64/>
+{
+	return parse_impl_i64( range );
 }
 
 fn parse_u64( array_view_imut</char32/> &mut range ) : optional</u64/>
@@ -93,32 +93,6 @@ fn parse_impl_i32( array_view_imut</C/> &mut range ) : optional</i32/>
 	return null_optional;
 }
 
-template</type C/>
-fn parse_impl_i64( array_view_imut</C/> &mut range ) : optional</i64/>
-{
-	if( !range.empty() && range.front() == C('-') )
-	{
-		range.drop_front();
-		if_var( res : parse_impl_u64(range) )
-		{
-			if( res <= 9223372036854775808u64 )
-			{
-				return i64(-res);
-			}
-		}
-	}
-	else
-	{
-		if_var( res : parse_impl_u64(range) )
-		{
-			if( res <= 9223372036854775807u64 )
-			{
-				return i64(res);
-			}
-		}
-	}
-	return null_optional;
-}
 
 template</type C/>
 fn parse_impl_u32( array_view_imut</C/> &mut range ) : optional</u32/>
@@ -166,6 +140,33 @@ fn parse_impl_u32( array_view_imut</C/> &mut range ) : optional</u32/>
 	}
 
 	return result;
+}
+
+template</type C/>
+fn parse_impl_i64( array_view_imut</C/> &mut range ) : optional</i64/>
+{
+	if( !range.empty() && range.front() == C('-') )
+	{
+		range.drop_front();
+		if_var( res : parse_impl_u64(range) )
+		{
+			if( res <= 9223372036854775808u64 )
+			{
+				return i64(-res);
+			}
+		}
+	}
+	else
+	{
+		if_var( res : parse_impl_u64(range) )
+		{
+			if( res <= 9223372036854775807u64 )
+			{
+				return i64(res);
+			}
+		}
+	}
+	return null_optional;
 }
 
 template</type C/>
