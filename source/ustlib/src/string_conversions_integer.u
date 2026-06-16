@@ -459,6 +459,14 @@ fn to_string_impl( u64 x, string_base</C/>& mut result )
 template</type C/>
 fn to_string_impl( u128 x, string_base</C/>& mut result )
 {
+	// A speculative optimization.
+	// Assume that a lot of 128-bit numbers don't have upper 64 bits set.
+	// If it's the case, use 64-bit number stringification, since it's significantly faster.
+	if( ( x >> 64 ) == 0u128 )
+	{
+		return to_string_impl( u64(x), result );
+	}
+
 	auto constexpr zero_char= C('0');
 
 	if( x == 0u128 )
