@@ -171,7 +171,6 @@ Interpreter:
 *) Support math functions
 
 Compiler1:
-*) Support 128-bit types in switch operator
 *) Create VFS and load source files from Ü code (using ustlib filesystem functionality), instead of using VFS from C++
 
 QtCreator plugin:
