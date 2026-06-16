@@ -1858,51 +1858,41 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 		return BlockElementBuildInfo();
 	}
 
-	// TODO - support 128bit values.
-	var u64 mut type_low(0), mut type_high(0);
+	var u128 mut type_low(0), mut type_high(0);
 	var bool mut is_signed= false;
 	if_var( &enum_type_ptr : switch_type.GetEnumType() )
 	{
-		type_low= u64(0);
-		type_high= u64( enum_type_ptr.lock_imut().deref().elements.size() - 1s );
+		type_low= u128(0);
+		type_high= u128( enum_type_ptr.lock_imut().deref().elements.size() - 1s );
 	}
 	else if_var( &fundamental_type : switch_type.GetFundamentalType() )
 	{
 		var u32 size_in_bits= GetFundamentalTypeSize( fundamental_type.fundamental_type ) * 8u;
-		if( size_in_bits > 64u )
-		{
-			REPORT_ERROR(
-				NotImplemented,
-				names_scope,
-				switch_operator.src_loc,
-				"Types greater, than 64 bits in switch" )
-			return BlockElementBuildInfo();
-		}
 
 		is_signed= IsSignedInteger( fundamental_type.fundamental_type );
 		if( is_signed )
 		{
-			if( size_in_bits == 64u )
+			if( size_in_bits == 128u )
 			{
-				type_low = 0x8000000000000000u64;
-				type_high= 0x7FFFFFFFFFFFFFFFu64;
+				type_low = 0x80000000000000000000000000000000u128;
+				type_high= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFu128;
 			}
 			else
 			{
-				type_low = u64( (-1i64) << (size_in_bits - 1u) );
-				type_high= ( 1u64 << (size_in_bits - 1u) ) - 1u64;
+				type_low = u128( (-1i128) << (size_in_bits - 1u) );
+				type_high= ( 1u128 << (size_in_bits - 1u) ) - 1u128;
 			}
 		}
 		else
 		{
-			type_low= 0u64;
-			if( size_in_bits == 64u )
+			type_low= 0u128;
+			if( size_in_bits == 128u )
 			{
-				type_high= 0xFFFFFFFFFFFFFFFFu64;
+				type_high= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFu128;
 			}
 			else
 			{
-				type_high= ( 1u64 << size_in_bits ) - 1u64;
+				type_high= ( 1u128 << size_in_bits ) - 1u128;
 			}
 		}
 	}
@@ -1948,16 +1938,16 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 						continue;
 					}
 
-					var u64 val= (
+					var u128 val= (
 						is_signed
-							? u64( unsafe( LLVMConstIntGetSExtValue( expression_variable.constexpr_value ) ) )
-							: unsafe( LLVMConstIntGetZExtValue( expression_variable.constexpr_value ) ) );
+							? u128( unsafe( ConstIntGetSExtValue( expression_variable.constexpr_value ) ) )
+							: unsafe( ConstIntGetZExtValue( expression_variable.constexpr_value ) ) );
 
 					case_values.push_back( SwitchCaseRange{ .low= val, .high= val, .src_loc= src_loc } );
 				}
 				else if_var( &range : value.get</ Synt::SwitchOperator::CaseRange />() )
 				{
-					var [ u64, 2 ] mut range_constants[ type_low, type_high ];
+					var [ u128, 2 ] mut range_constants[ type_low, type_high ];
 					for( auto mut i= 0s; i < 2s; ++i )
 					{
 						var Synt::Expression& expression = ( i == 0s ? range.low : range.high );
@@ -1994,21 +1984,38 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 						}
 						range_constants[i]= (
 							is_signed
-								? u64( unsafe( LLVMConstIntGetSExtValue( expression_variable.constexpr_value ) ) )
-								: unsafe( LLVMConstIntGetZExtValue( expression_variable.constexpr_value ) ) );
+								? u128( unsafe( ConstIntGetSExtValue( expression_variable.constexpr_value ) ) )
+								: unsafe( ConstIntGetZExtValue( expression_variable.constexpr_value ) ) );
 					}
 
-					var SrcLoc src_loc= case_.block.src_loc; // TODO - use proper src_loc;
-					if( !( is_signed ? ( i64(range_constants[0]) <= i64(range_constants[1]) ) : ( range_constants[0] <= range_constants[1] ) ) )
+					var SrcLoc src_loc= case_.block.src_loc; // TODO - use proper src_loc.
+					if( is_signed )
 					{
-						REPORT_ERROR(
-							SwitchInvalidRange,
-							names_scope,
-							src_loc,
-							cast_imut(range_constants)[0],
-							cast_imut(range_constants)[1] )
-						all_cases_are_ok= false;
-						continue;
+						if( i128(range_constants[0]) > i128(range_constants[1]) )
+						{
+							REPORT_ERROR(
+								SwitchInvalidRange,
+								names_scope,
+								src_loc,
+								i128( cast_imut(range_constants)[0] ),
+								i128( cast_imut(range_constants)[1] ) )
+							all_cases_are_ok= false;
+							continue;
+						}
+					}
+					else
+					{
+						if( range_constants[0] > range_constants[1] )
+						{
+							REPORT_ERROR(
+								SwitchInvalidRange,
+								names_scope,
+								src_loc,
+								cast_imut(range_constants)[0],
+								cast_imut(range_constants)[1] )
+							all_cases_are_ok= false;
+							continue;
+						}
 					}
 
 					case_values.push_back( SwitchCaseRange{ .low= range_constants[0], .high= range_constants[1], .src_loc= src_loc } );
@@ -2064,11 +2071,11 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 		// Sorting is needed in order to simplify ranges overlapping and gaps searching.
 		if( is_signed )
 		{
-			ust::sort_by_key( all_ranges, lambda( SwitchCaseRange& r ) : i64 { return i64(r.low); } );
+			ust::sort_by_key( all_ranges, lambda( SwitchCaseRange& r ) : i128 { return i128(r.low); } );
 		}
 		else
 		{
-			ust::sort_by_key( all_ranges, lambda( SwitchCaseRange& r ) : u64 { return r.low; } );
+			ust::sort_by_key( all_ranges, lambda( SwitchCaseRange& r ) : u128 { return r.low; } );
 		}
 
 		// Check for overlaps and gaps between ranges.
@@ -2078,25 +2085,25 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 			var SwitchCaseRange& current_range= all_ranges[i];
 			var SwitchCaseRange& next_range= cast_imut(all_ranges)[i + 1s];
 
-			var u64 current_high= current_range.high;
-			var u64 next_low= next_range.low;
+			var u128 current_high= current_range.high;
+			var u128 next_low= next_range.low;
 
-			if( ( is_signed ? (i64(current_high) < i64(next_low)) : (current_high < next_low) ) )
+			if( ( is_signed ? (i128(current_high) < i128(next_low)) : (current_high < next_low) ) )
 			{
 				// Because of condition above diff is always non-negative.
-				var u64 gap_size= next_low - current_high - 1u64;
-				if( gap_size != 0u64 )
+				var u128 gap_size= next_low - current_high - 1u128;
+				if( gap_size != 0u128 )
 				{
 					has_gaps= true;
 					if( !has_default_branch )
 					{
-						if( gap_size == 1u64 )
+						if( gap_size == 1u128 )
 						{
 							REPORT_ERROR(
 								SwitchUndhandledValue,
 								names_scope,
 								ust::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
-								ust::to_string8(current_high + 1u64) )
+								ust::to_string8(current_high + 1u128) )
 						}
 						else
 						{
@@ -2104,8 +2111,8 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 								SwitchUndhandledRange,
 								names_scope,
 								ust::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
-								ust::to_string8(current_high + 1u64),
-								ust::to_string8(next_low - 1u64) )
+								ust::to_string8(current_high + 1u128),
+								ust::to_string8(next_low - 1u128) )
 						}
 					}
 				}
@@ -2126,14 +2133,14 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 		if( !all_ranges.empty() )
 		{
 			// Process begin range.
-			var u64 first_range_low= all_ranges.front().low;
-			var u64 begin_gap_size= first_range_low - type_low;
-			if( begin_gap_size != 0u64 )
+			var u128 first_range_low= all_ranges.front().low;
+			var u128 begin_gap_size= first_range_low - type_low;
+			if( begin_gap_size != 0u128 )
 			{
 				has_gaps= true;
 				if( !has_default_branch )
 				{
-					if( begin_gap_size == 1u64 )
+					if( begin_gap_size == 1u128 )
 					{
 						REPORT_ERROR(
 							SwitchUndhandledValue,
@@ -2148,19 +2155,19 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 							names_scope,
 							all_ranges.front().src_loc,
 							ust::to_string8(type_low),
-							ust::to_string8(first_range_low - 1u64) )
+							ust::to_string8(first_range_low - 1u128) )
 					}
 				}
 			}
 			// Process end range.
-			var u64 last_range_high= all_ranges.back().high;
-			var u64 end_gap_size= type_high - last_range_high;
-			if( end_gap_size != 0u64 )
+			var u128 last_range_high= all_ranges.back().high;
+			var u128 end_gap_size= type_high - last_range_high;
+			if( end_gap_size != 0u128 )
 			{
 				has_gaps= true;
 				if( !has_default_branch )
 				{
-					if( end_gap_size == 1u64 )
+					if( end_gap_size == 1u128 )
 					{
 						REPORT_ERROR(
 							SwitchUndhandledValue,
@@ -2174,7 +2181,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 							SwitchUndhandledRange,
 							names_scope,
 							all_ranges.back().src_loc,
-							ust::to_string8(last_range_high + 1u64),
+							ust::to_string8(last_range_high + 1u128),
 							ust::to_string8(type_high) )
 					}
 				}
@@ -2244,14 +2251,17 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 		{
 			var LLVMValueRef mut current_value_equals= zero_init;
 
-			var LLVMValueRef constant_low= unsafe( LLVMConstInt( switch_llvm_type, case_range.low, ( is_signed ? LLVMBool::True : LLVMBool::False ) ) );
+			var [ u64, 2 ] mut constant_low_words[ ( case_range.low ), ( case_range.low >> 64 ) ];
+			var LLVMValueRef constant_low= unsafe( LLVMConstIntOfArbitraryPrecision( switch_llvm_type, 2u, $<( constant_low_words[0] ) ) );
+
 			if( case_range.low == case_range.high )
 			{
 				current_value_equals= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, switch_value, constant_low, g_null_string ) );
 			}
 			else
 			{
-				var LLVMValueRef constant_high= unsafe( LLVMConstInt( switch_llvm_type, case_range.high, ( is_signed ? LLVMBool::True : LLVMBool::False ) ) );
+				var [ u64, 2 ] mut constant_high_words[ ( case_range.high ), ( case_range.high >> 64 ) ];
+				var LLVMValueRef constant_high= unsafe( LLVMConstIntOfArbitraryPrecision( switch_llvm_type, 2u, $<( constant_high_words[0] ) ) );
 				if( is_signed )
 				{
 					current_value_equals= unsafe(
@@ -4053,9 +4063,8 @@ type SwitchCaseValues= ust::vector</SwitchCaseRange/>;
 
 struct SwitchCaseRange
 {
-	// TODO - support 128-bit types.
-	u64 low;
-	u64 high;
+	u128 low;
+	u128 high;
 	SrcLoc src_loc;
 }
 

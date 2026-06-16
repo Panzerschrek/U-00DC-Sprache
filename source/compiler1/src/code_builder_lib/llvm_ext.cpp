@@ -103,4 +103,40 @@ void U1_ReplaceMetadataNodes( const std::pair< LLVMMetadataRef, LLVMMetadataRef 
 	}
 }
 
+template class std::array<uint64_t, 2>;
+
+std::array<uint64_t, 2> U1_ConstIntGetZExtValue( const LLVMValueRef value )
+{
+	const llvm::APInt n= llvm::dyn_cast<llvm::ConstantInt>( llvm::unwrap(value) )->getValue();
+
+	const uint64_t* const raw_data= n.getRawData();
+
+	std::array<uint64_t, 2> res;
+	res[0]= raw_data[0];
+	res[1]= n.getBitWidth() <= 64 ? 0u : raw_data[1];
+
+	return res;
+}
+
+std::array<uint64_t, 2> U1_ConstIntGetSExtValue( const LLVMValueRef value )
+{
+	const llvm::APInt n= llvm::dyn_cast<llvm::ConstantInt>( llvm::unwrap(value) )->getValue();
+
+	std::array<uint64_t, 2> res;
+
+	if( n.getBitWidth() <= 64 )
+	{
+		res[0]= uint64_t( n.getSExtValue() );
+		res[1]= n.isNegative() ? 0xFFFFFFFFFFFFFFFFull : 0ull;
+	}
+	else
+	{
+		const uint64_t* const raw_data= n.getRawData();
+		res[0]= raw_data[0];
+		res[1]= raw_data[1];
+	}
+
+	return res;
+}
+
 } // extern "C"
