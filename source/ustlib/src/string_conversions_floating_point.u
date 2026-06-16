@@ -72,7 +72,9 @@ fn to_string8( f32 x ) : string8
 	// This scale factor is precalculated in compilation time for all exponents.
 	// Result decimal exponent "m" is precalculated too.
 
-	var ScaleForExponentItem& scale_for_exponent= g_scale_for_exponent_table[ exponent ];
+	var u32 scale_for_exponent= g_scale_for_exponent_table.scales[ exponent ];
+	var i32 mut decimal_exponent=
+		i32( g_scale_for_exponent_table.decimal_exponents[ exponent ] ) - i32( extra_decimal_exponent );
 
 	// Calculate two decimal mantissa values - lower bound and upper bound.
 	// It's needed to be able to shorten the result decimal representation.
@@ -82,7 +84,7 @@ fn to_string8( f32 x ) : string8
 	var u32 constexpr lower_bound_step= ( extra_decimal_scale << extra_mantissa_shift ) *  7u / 32u;
 	var u32 constexpr upper_bound_step= ( extra_decimal_scale << extra_mantissa_shift ) * 15u / 32u;
 
-	var u32 constexpr result_shift= ScaleForExponentItem::c_num_scale_bits + extra_mantissa_shift;
+	var u32 constexpr result_shift= ScaleForExponentTable::c_num_scale_bits + extra_mantissa_shift;
 	static_assert(
 		result_shift == 32u,
 		"Extra mantissa shift should be tuned to use 32-bit result shift, which can be optimized by the compiler backend!" );
@@ -90,11 +92,9 @@ fn to_string8( f32 x ) : string8
 	// Require here only 32-bit by 32-bit multiplication, which is fast even of 32-bit platforms.
 	// Then require 64-bit shift, which isn't that slow even on 32-bit platforms.
 	var u32 decimal_mantissa_lower_bound(
-		( u64( mantissa - lower_bound_step ) * u64( scale_for_exponent.scale ) ) >> result_shift );
+		( u64( mantissa - lower_bound_step ) * u64( scale_for_exponent ) ) >> result_shift );
 	var u32 decimal_mantissa_upper_bound(
-		( u64( mantissa + upper_bound_step ) * u64( scale_for_exponent.scale ) ) >> result_shift );
-
-	var i32 mut decimal_exponent= scale_for_exponent.decimal_exponent - i32(extra_decimal_exponent);
+		( u64( mantissa + upper_bound_step ) * u64( scale_for_exponent ) ) >> result_shift );
 
 	var size_type c_max_decimal_digits= 10s; // Enough digits for any 32-bit integer.
 
@@ -245,19 +245,20 @@ var u32 constexpr c_sign_bit_mask= 0x80000000u;
 var u32 constexpr c_exponent_bias= ( 1u << ( c_num_exponent_bits - 1u ) ) - 1u;
 
 // Use precalculated table with all scales needed.
-// For "f32" it's not that large, only 256 entries, which requires 2 Kb for 8-byte entries.
+// For "f32" it's not that large, only 256 entries, which requires 1024 bytes for scales and 256 bytes for decimal exponents.
 var ScaleForExponentTable g_scale_for_exponent_table= BuildScaleForExponentTable();
 
-type ScaleForExponentTable= [ ScaleForExponentItem, 1 << c_num_exponent_bits ];
-
-struct ScaleForExponentItem
+struct ScaleForExponentTable
 {
 	var u32 constexpr c_num_scale_bits= 28u;
 
-	u32 scale; // Is in fixed point format and is in range 1 to 10.
+	// Use here struct of arrays instead of array of structs in order to avoid wasting space for padding.
 
-	// Actually i8 would be enough, but use i32, since we can't reduce the total size of this struct anywa.
-	i32 decimal_exponent;
+	var u32 constexpr c_table_size= 1u << c_num_exponent_bits;
+
+	[ u32, c_table_size ] scales; // Is in fixed point format and is in range 1 to 10.
+
+	[ i8, c_table_size ] decimal_exponents;
 }
 
 fn constexpr BuildScaleForExponentTable() : ScaleForExponentTable
@@ -272,7 +273,7 @@ fn constexpr BuildScaleForExponentTable() : ScaleForExponentTable
 
 		var i32 mut decimal_exponent= 0;
 
-		var u32 constexpr shift= ScaleForExponentItem::c_num_scale_bits + 32u;
+		var u32 constexpr shift= ScaleForExponentTable::c_num_scale_bits + 32u;
 		var u64 constexpr c_one=  1u64 << shift;
 		var u64 constexpr c_ten= 10u64 << shift;
 
@@ -313,7 +314,8 @@ fn constexpr BuildScaleForExponentTable() : ScaleForExponentTable
 			}
 		}
 
-		table[ raw_exponent ]= ScaleForExponentItem{ .scale( scale >> 32u ), .decimal_exponent= decimal_exponent };
+		table.scales[ raw_exponent ]= u32( scale >> 32u );
+		table.decimal_exponents[ raw_exponent ]= i8( decimal_exponent );
 	}
 
 	return table;
