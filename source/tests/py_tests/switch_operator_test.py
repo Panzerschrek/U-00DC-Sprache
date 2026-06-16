@@ -462,6 +462,65 @@ def SwitchOperatorRange_Test4():
 	assert( tests_lib.run_function( "_Z3Fooi", 301 ) == 1000 )
 
 
+def SwitchOperator_128bit_Test0():
+	c_program_text= """
+		fn Bar( i128 x ) : i32
+		{
+			switch( x )
+			{
+				-65848378458548568658675543554i128 -> { return 1; },
+				-7897678900989865467897256i128 ... -7897678900989865467897000i128 -> { return 2; },
+				-6744784i128 -> { return 3; },
+				-5323i128 -> { return 4; },
+				-37i128 -> { return 5; },
+				-2i128 ... 76i128 -> { return 6; },
+				78657854i128 -> { return 7; },
+				56783567542567435i128 -> { return 8; },
+				78967878560347012473567423673475457i128 -> { return 9; },
+				170141183460469231731687303715884105727i128 -> { return 10; },
+				default -> { return 1000; },
+			}
+		}
+
+		fn Foo()
+		{
+			halt if( Bar( i128( -170141183460469231731687303715884105728u128 ) ) != 1000 );
+			halt if( Bar( -65848378458548568658675543554i128 ) != 1 );
+			halt if( Bar( -7897678900989865467897256i128 ) != 2 );
+			halt if( Bar( -7897678900989865467897255i128 ) != 2 );
+			halt if( Bar( -7897678900989865467897220i128 ) != 2 );
+			halt if( Bar( -7897678900989865467897001i128 ) != 2 );
+			halt if( Bar( -7897678900989865467897000i128 ) != 2 );
+			halt if( Bar( -7897678900989865467896999i128 ) != 1000 );
+			halt if( Bar( -6744784i128 ) != 3 );
+			halt if( Bar( -5323i128 ) != 4 );
+			halt if( Bar( -37i128 ) != 5 );
+			halt if( Bar( -2i128 ) != 6 );
+			halt if( Bar( -1i128 ) != 6 );
+			halt if( Bar( 0i128 ) != 6 );
+			halt if( Bar( 1i128 ) != 6 );
+			halt if( Bar( 2i128 ) != 6 );
+			halt if( Bar( 34i128 ) != 6 );
+			halt if( Bar( 75i128 ) != 6 );
+			halt if( Bar( 76i128 ) != 6 );
+			halt if( Bar( 77i128 ) != 1000 );
+			halt if( Bar( 78657853i128 ) != 1000 );
+			halt if( Bar( 78657854i128 ) != 7 );
+			halt if( Bar( 78657855i128 ) != 1000 );
+			halt if( Bar( 56783567542567434i128 ) != 1000 );
+			halt if( Bar( 56783567542567435i128 ) != 8 );
+			halt if( Bar( 56783567542567436i128 ) != 1000 );
+			halt if( Bar( 78967878560347012473567423673475456i128 ) != 1000 );
+			halt if( Bar( 78967878560347012473567423673475457i128 ) != 9 );
+			halt if( Bar( 78967878560347012473567423673475458i128 ) != 1000 );
+			halt if( Bar( 170141183460469231731687303715884105726i128 ) != 1000 );
+			halt if( Bar( 170141183460469231731687303715884105727i128 ) != 10 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def VariablesStateMerge_ForSwitchOperator_Test0():
 	c_program_text= """
 		fn Foo( i32 x )
@@ -494,7 +553,6 @@ def VariablesStateMerge_ForSwitchOperator_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ConditionalMove", 9 ) )
-
 
 
 def VariablesStateMerge_ForSwitchOperator_Test2():
