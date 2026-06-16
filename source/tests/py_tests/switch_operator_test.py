@@ -464,6 +464,54 @@ def SwitchOperatorRange_Test4():
 
 def SwitchOperator_128bit_Test0():
 	c_program_text= """
+		fn Bar( u128 x ) : i32
+		{
+			switch( x )
+			{
+				0u128 -> { return 1; },
+				5u128 ... 6437u128 -> { return 2; },
+				5674365757547u128 -> { return 3; },
+				786467896764477545553558653u128 ... 786467896764477545553558700u128 -> { return 4; },
+				170141183460469231731759370123194925057u128 -> { return 5; },
+				~0u128 -> { return 6; },
+				default -> { return 1000; },
+			}
+		}
+
+		fn Foo()
+		{
+			halt if( Bar( 0u128 ) != 1 );
+			halt if( Bar( 1u128 ) != 1000 );
+			halt if( Bar( 4u128 ) != 1000 );
+			halt if( Bar( 5u128 ) != 2 );
+			halt if( Bar( 6u128 ) != 2 );
+			halt if( Bar( 6436u128 ) != 2 );
+			halt if( Bar( 6437u128 ) != 2 );
+			halt if( Bar( 6438u128 ) != 1000 );
+			halt if( Bar( 5674365757546u128 ) != 1000 );
+			halt if( Bar( 5674365757547u128 ) != 3 );
+			halt if( Bar( 5674365757548u128 ) != 1000 );
+			halt if( Bar( 786467896764477545553558652u128 ) != 1000 );
+			halt if( Bar( 786467896764477545553558653u128 ) != 4 );
+			halt if( Bar( 786467896764477545553558654u128 ) != 4 );
+			halt if( Bar( 786467896764477545553558655u128 ) != 4 );
+			halt if( Bar( 786467896764477545553558698u128 ) != 4 );
+			halt if( Bar( 786467896764477545553558699u128 ) != 4 );
+			halt if( Bar( 786467896764477545553558700u128 ) != 4 );
+			halt if( Bar( 786467896764477545553558701u128 ) != 1000 );
+			halt if( Bar( 170141183460469231731759370123194925056u128 ) != 1000 );
+			halt if( Bar( 170141183460469231731759370123194925057u128 ) != 5 );
+			halt if( Bar( 170141183460469231731759370123194925058u128 ) != 1000 );
+			halt if( Bar( ~0u128 - 1u128 ) != 1000 );
+			halt if( Bar( ~0u128 ) != 6 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def SwitchOperator_128bit_Test1():
+	c_program_text= """
 		fn Bar( i128 x ) : i32
 		{
 			switch( x )
