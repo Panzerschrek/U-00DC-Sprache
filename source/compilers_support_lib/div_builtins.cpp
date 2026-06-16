@@ -194,6 +194,9 @@ void GenerateDiv128BuiltIns( const llvm::Triple& triple, llvm::Module& module )
 
 void GenerateDivBuiltIns( const llvm::Triple& triple, llvm::Module& module )
 {
+	if( triple.getObjectFormat() == llvm::Triple::MachO )
+		return; // Apple systems don't require these built-ins, and they also don't support comdats.
+
 	GenerateDiv32BuiltIns( module );
 	GenerateDiv64BuiltIns( module );
 	GenerateDiv128BuiltIns( triple, module );
