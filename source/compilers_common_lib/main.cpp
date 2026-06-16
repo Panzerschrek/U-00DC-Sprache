@@ -840,9 +840,7 @@ int Main( int argc, const char* argv[] )
 	{
 		// Generate necessary builtins. Do this after internalizing hidden functions, since these built-ins shouldn't be internalized.
 		if(
-			// We don't require GNU-style division built-ins on Windows.
-			target_triple.getOS() != llvm::Triple::Win32 &&
-			// Apple systems also don't require these built-ins, and they also don't support comdats.
+			// Apple systems don't require these built-ins, and they also don't support comdats.
 			target_triple.getObjectFormat() != llvm::Triple::MachO )
 		{
 			GenerateDivBuiltIns( *result_module );
