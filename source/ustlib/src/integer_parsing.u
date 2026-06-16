@@ -26,6 +26,16 @@ fn parse_u64( array_view_imut</char8/> &mut range ) : optional</u64/>
 	return parse_impl_u64( range );
 }
 
+fn parse_i128( array_view_imut</char8/> &mut range ) : optional</i128/>
+{
+	return parse_impl_i128( range );
+}
+
+fn parse_u128( array_view_imut</char8/> &mut range ) : optional</u128/>
+{
+	return parse_impl_u128( range );
+}
+
 fn parse_i32( array_view_imut</char16/> &mut range ) : optional</i32/>
 {
 	return parse_impl_i32( range );
@@ -46,6 +56,16 @@ fn parse_u64( array_view_imut</char16/> &mut range ) : optional</u64/>
 	return parse_impl_u64( range );
 }
 
+fn parse_i128( array_view_imut</char16/> &mut range ) : optional</i128/>
+{
+	return parse_impl_i128( range );
+}
+
+fn parse_u128( array_view_imut</char16/> &mut range ) : optional</u128/>
+{
+	return parse_impl_u128( range );
+}
+
 fn parse_i32( array_view_imut</char32/> &mut range ) : optional</i32/>
 {
 	return parse_impl_i32( range );
@@ -64,6 +84,16 @@ fn parse_i64( array_view_imut</char32/> &mut range ) : optional</i64/>
 fn parse_u64( array_view_imut</char32/> &mut range ) : optional</u64/>
 {
 	return parse_impl_u64( range );
+}
+
+fn parse_i128( array_view_imut</char32/> &mut range ) : optional</i128/>
+{
+	return parse_impl_i128( range );
+}
+
+fn parse_u128( array_view_imut</char32/> &mut range ) : optional</u128/>
+{
+	return parse_impl_u128( range );
 }
 
 template</type C/>
@@ -200,6 +230,82 @@ fn parse_impl_u64( array_view_imut</C/> &mut range ) : optional</u64/>
 			}
 			var u64 mul10= result * 10u64;
 			var u64 add_digit= mul10 + (u64(c) - u64('0'));
+			if( add_digit < mul10 )
+			{
+				// Overflow detected.
+				return null_optional;
+			}
+			result= add_digit;
+			range.drop_front();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return result;
+}
+
+
+template</type C/>
+fn parse_impl_i128( array_view_imut</C/> &mut range ) : optional</i128/>
+{
+	if( !range.empty() && range.front() == C('-') )
+	{
+		range.drop_front();
+		if_var( res : parse_impl_u128(range) )
+		{
+			if( res <= 170141183460469231731687303715884105728u128 )
+			{
+				return i128(-res);
+			}
+		}
+	}
+	else
+	{
+		if_var( res : parse_impl_u128(range) )
+		{
+			if( res <= 170141183460469231731687303715884105727u128 )
+			{
+				return i128(res);
+			}
+		}
+	}
+	return null_optional;
+}
+
+template</type C/>
+fn parse_impl_u128( array_view_imut</C/> &mut range ) : optional</u128/>
+{
+	if( range.empty() )
+	{
+		return null_optional;
+	}
+
+	var C first_char= range.drop_and_get_front();
+	if( first_char == C('0') )
+	{
+		return u128(0);
+	}
+	if( !( first_char >= C('1') && first_char <= C('9') ) )
+	{
+		return null_optional;
+	}
+
+	var u128 mut result= u128(first_char) - u128('0');
+	while( !range.empty() )
+	{
+		var C c= range.front();
+		if( c >= C('0') && c <= C('9') )
+		{
+			if( result > 34028236692093846346337460743176821145u128 )
+			{
+				// Overflow detected.
+				return null_optional;
+			}
+			var u128 mul10= result * 10u128;
+			var u128 add_digit= mul10 + (u128(c) - u128('0'));
 			if( add_digit < mul10 )
 			{
 				// Overflow detected.
