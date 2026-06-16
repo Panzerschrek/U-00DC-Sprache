@@ -843,7 +843,7 @@ int Main( int argc, const char* argv[] )
 			// Apple systems don't require these built-ins, and they also don't support comdats.
 			target_triple.getObjectFormat() != llvm::Triple::MachO )
 		{
-			GenerateDivBuiltIns( *result_module );
+			GenerateDivBuiltIns( target_triple, *result_module );
 		}
 	}
 

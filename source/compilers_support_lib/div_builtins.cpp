@@ -1,6 +1,7 @@
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/InstrTypes.h>
+#include <llvm/TargetParser/Triple.h>
 #include <llvm/Transforms/Utils/IntegerDivision.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
@@ -125,19 +126,34 @@ void GenerateDiv64BuiltIns( llvm::Module& module )
 	}
 }
 
-void GenerateDiv128BuiltIns( llvm::Module& module )
+void GenerateDiv128BuiltIns( const llvm::Triple& triple, llvm::Module& module )
 {
 	llvm::LLVMContext& context= module.getContext();
 
 	llvm::Type* const i128= llvm::Type::getInt128Ty( context );
-	std::array<llvm::Type*, 2> const i128_args{ i128, i128 };
+
+	// On x86_64 windows 128-bit integers are passed by hidden pointer.
+	// LLVM backend expects it while calling div builtins.
+	// TODO - check whether other targets require this too.
+	const bool pass_i128_by_pointer= triple.getArch() == llvm::Triple::x86_64 && triple.getOS() == llvm::Triple::Win32;
+
+	llvm::Type* const arg_type= pass_i128_by_pointer ? i128->getPointerTo() : i128;
+
+	std::array<llvm::Type*, 2> const i128_args{ arg_type, arg_type };
 	llvm::FunctionType* const function_type= llvm::FunctionType::get( i128, i128_args, false );
+
+	const auto get_arg=
+		[&]( llvm::Function* const function, const uint32_t index ) -> llvm::Value*
+		{
+			llvm::Value* const arg= function->getArg( index );
+			return pass_i128_by_pointer ? new llvm::LoadInst( i128, arg, llvm::Twine(), &*function->begin() ) : arg;
+		};
 
 	if( module.getFunction( "__udivti3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__udivti3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
-		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::UDiv, function->getArg(0), function->getArg(1), "", bb );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::UDiv, get_arg( function, 0 ), get_arg( function, 1 ), "", bb );
 		llvm::ReturnInst::Create( context, div, bb );
 
 		llvm::expandDivision( div );
@@ -147,7 +163,7 @@ void GenerateDiv128BuiltIns( llvm::Module& module )
 	{
 		const auto function= CreateFunction( module, function_type, "__divti3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
-		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SDiv, function->getArg(0), function->getArg(1), "", bb );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SDiv, get_arg( function, 0 ), get_arg( function, 1 ), "", bb );
 		llvm::ReturnInst::Create( context, div, bb );
 
 		llvm::expandDivision( div );
@@ -157,7 +173,7 @@ void GenerateDiv128BuiltIns( llvm::Module& module )
 	{
 		const auto function= CreateFunction( module, function_type, "__umodti3" );
 		const auto bb= llvm::BasicBlock::Create(context, "", function );
-		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::URem, function->getArg(0), function->getArg(1), "", bb );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::URem, get_arg( function, 0 ), get_arg( function, 1 ), "", bb );
 		llvm::ReturnInst::Create( context, rem, bb );
 
 		llvm::expandRemainder( rem );
@@ -167,7 +183,7 @@ void GenerateDiv128BuiltIns( llvm::Module& module )
 	{
 		const auto function= CreateFunction( module, function_type, "__modti3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
-		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SRem, function->getArg(0), function->getArg(1), "", bb );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SRem, get_arg( function, 0 ), get_arg( function, 1 ), "", bb );
 		llvm::ReturnInst::Create( context, rem, bb );
 
 		llvm::expandRemainder( rem );
@@ -176,11 +192,11 @@ void GenerateDiv128BuiltIns( llvm::Module& module )
 
 } // namespace
 
-void GenerateDivBuiltIns( llvm::Module& module )
+void GenerateDivBuiltIns( const llvm::Triple& triple, llvm::Module& module )
 {
 	GenerateDiv32BuiltIns( module );
 	GenerateDiv64BuiltIns( module );
-	GenerateDiv128BuiltIns( module );
+	GenerateDiv128BuiltIns( triple, module );
 }
 
 bool IsDivBuiltInLikeFunctionName( const llvm::StringRef name )
