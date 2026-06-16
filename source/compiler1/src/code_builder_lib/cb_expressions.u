@@ -304,7 +304,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	if( overflow )
 	{
-		REPORT_ERROR( IntegerConstantOverflow, names_scope, numeric_constant.src_loc, u64( num128 ) /* TODO - avoid casting here to u64 */, GetFundamentalTypeName( t ) )
+		REPORT_ERROR( IntegerConstantOverflow, names_scope, numeric_constant.src_loc, num128, GetFundamentalTypeName( t ) )
 	}
 
 	var LLVMTypeRef llvm_type= GetFundamentalLLVMType(t);
