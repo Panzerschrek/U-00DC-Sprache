@@ -24,6 +24,27 @@ fn to_string32( f32 x ) : string32
 	return string32::from_mapped_range( s.range(), lambda( char8 c ) : char32 { return char32(c); } );
 }
 
+fn to_string8( f64 x ) : string8
+{
+	return f64_impl::to_string8( x );
+}
+
+fn to_string16( f64 x ) : string16
+{
+	// For simplicity just stringify to string8 and convert the result into string16.
+	// It adds a little bit overhead, but it's not so problematic, since almost nobody actually uses char16-strings.
+	var string8 s= f64_impl::to_string8( x );
+	return string16::from_mapped_range( s.range(), lambda( char8 c ) : char16 { return char16(c); } );
+}
+
+fn to_string32( f64 x ) : string32
+{
+	// For simplicity just stringify to string8 and convert the result into string32.
+	// It adds a little bit overhead, but it's not so problematic, since almost nobody actually uses char32-strings.
+	var string8 s= f64_impl::to_string8( x );
+	return string32::from_mapped_range( s.range(), lambda( char8 c ) : char32 { return char32(c); } );
+}
+
 namespace f32_impl
 {
 
@@ -269,7 +290,7 @@ fn constexpr BuildScaleForExponentTable() : ScaleForExponentTable
 
 	for( auto mut raw_exponent= 0u; raw_exponent < ( 1u << c_num_exponent_bits ); ++raw_exponent )
 	{
-		var i32 mut binary_exponent= i32(raw_exponent) - i32( c_exponent_bias ) - i32( f32_impl::c_num_mantissa_bits );
+		var i32 mut binary_exponent= i32(raw_exponent) - i32( c_exponent_bias ) - i32( c_num_mantissa_bits );
 
 		var i32 mut decimal_exponent= 0;
 
@@ -322,5 +343,309 @@ fn constexpr BuildScaleForExponentTable() : ScaleForExponentTable
 }
 
 } // namespace f32_impl
+
+
+namespace f64_impl
+{
+
+fn to_string8( f64 x ) : string8
+{
+	// Add extra decimal digit of precision.
+	// It's needed to provide proper precision of the end result.
+	var u32 constexpr extra_decimal_exponent= 1u;
+	var u64 constexpr extra_decimal_scale= 10u64;
+
+	// Shift mantissa by several bits in order to use nice 64-bit shift later.
+	var u32 constexpr extra_mantissa_shift= 4u;
+
+	var byte64 x_bytes(x);
+
+	var bool is_negative= ( u64( x_bytes ) & c_sign_bit_mask ) != 0u64;
+
+	var u64 exponent= ( u64( x_bytes ) & c_exponent_bits_mask ) >> c_num_mantissa_bits;
+
+	var u64 mantissa_bits= ( u64( x_bytes ) & c_mantissa_bits_mask );
+
+	if( exponent == ( ( 1u64 << c_num_exponent_bits ) - 1u64 ) )
+	{
+		return
+			( mantissa_bits == 0u64
+				? ( is_negative ? string_view8( "-inf" ) : string_view8( "inf" ) )
+				: ( is_negative ? string_view8( "-nan" ) : string_view8( "nan" ) ) );
+	}
+
+	var u64 mantissa=
+		( exponent == 0u64
+			// For denormals use mantissa without leading zero and multiplied by two.
+			? mantissa_bits * ( extra_decimal_scale << ( extra_mantissa_shift + 1u ) )
+			// For normals numbers add leading one.
+			: ( ( 1u64 << c_num_mantissa_bits ) | mantissa_bits ) * ( extra_decimal_scale << extra_mantissa_shift ) );
+
+	if( mantissa == 0u64 )
+	{
+		// Handle zero earlier. We need to do this anyway, so, avoid fetching scale and multiplying by it at all.
+		return ( is_negative ? string_view8( "-0" ) : string_view8( "0" ) );
+	}
+
+	// We have a number in form x * 2^n.
+	// We need to convert it into form y * 10^m.
+	// Multiply "x" by some scale factor to obtain "y".
+	// This scale factor is precalculated in compilation time for all exponents.
+	// Result decimal exponent "m" is precalculated too.
+
+	var u64 scale_for_exponent= g_scale_for_exponent_table.scales[ exponent ];
+	var i32 mut decimal_exponent=
+		i32( g_scale_for_exponent_table.decimal_exponents[ exponent ] ) - i32( extra_decimal_exponent );
+
+	// Calculate two decimal mantissa values - lower bound and upper bound.
+	// It's needed to be able to shorten the result decimal representation.
+	// We take two steps to do this -
+	// one is slightly less than 1/4 towards the previous value (not 1/2 in case if we go towards smaller exponent) and
+	// one is slightly less than 1/2 towards the next value.
+	var u64 constexpr lower_bound_step= ( extra_decimal_scale << extra_mantissa_shift ) *  7u64 / 32u64;
+	var u64 constexpr upper_bound_step= ( extra_decimal_scale << extra_mantissa_shift ) * 15u64 / 32u64;
+
+	var u32 constexpr result_shift= ScaleForExponentTable::c_num_scale_bits + extra_mantissa_shift;
+	static_assert(
+		result_shift == 64u,
+		"Extra mantissa shift should be tuned to use 64-bit result shift, which can be optimized by the compiler backend!" );
+
+	// Require here 64-bit by 64-bit multiplication, which is fast on 64-bit platforms, but on 32-bit platforms may be a little bit slow.
+	// Then require 128-bit shift, which isn't that slow even on 64-bit platforms, but is tricky on 32-bit platforms.
+	var u64 decimal_mantissa_lower_bound(
+		( u128( mantissa - lower_bound_step ) * u128( scale_for_exponent ) ) >> result_shift );
+	var u64 decimal_mantissa_upper_bound(
+		( u128( mantissa + upper_bound_step ) * u128( scale_for_exponent ) ) >> result_shift );
+
+	var size_type c_max_decimal_digits= 20s; // Enough digits for any 64-bit integer.
+
+	// Temporary store digit chars in minor to major digits order.
+	var size_type
+		mut num_lower_bound_significant_decimal_digits= 0s,
+		mut num_upper_bound_significant_decimal_digits= 0s;
+	var [ char8, c_max_decimal_digits ]
+		mut lower_bound_decimal_digit_chars[ '0' ... ],
+		mut upper_bound_decimal_digit_chars[ '0' ... ];
+
+	// Calculate digit chars for lower bound value.
+	for( auto mut n= decimal_mantissa_lower_bound; n > 0u64; )
+	{
+		lower_bound_decimal_digit_chars[ num_lower_bound_significant_decimal_digits ]= char8( u64('0') + n % 10u64 );
+		n/= 10u64;
+		++num_lower_bound_significant_decimal_digits;
+	}
+
+	// Calculate digit chars for upper bound value.
+	for( auto mut n= decimal_mantissa_upper_bound; n > 0u64; )
+	{
+		upper_bound_decimal_digit_chars[ num_upper_bound_significant_decimal_digits ]= char8( u64('0') + n % 10u64 );
+		n/= 10u64;
+		++num_upper_bound_significant_decimal_digits;
+	}
+
+	// Try rounding result chars.
+	// Scan digits from major to minor.
+	// At first mismatch select digit from the upper bound representation and set remaining digits to zero.
+	for( auto mut i= 0s; i < c_max_decimal_digits; ++i )
+	{
+		var char8 c0= lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ];
+		var char8 c1= upper_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ];
+
+		if( c0 != c1 )
+		{
+			lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ]= c1;
+			for( auto mut j= i + 1s; j < c_max_decimal_digits; ++j )
+			{
+				lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - j ]= '0';
+			}
+			break;
+		}
+	}
+
+	// The total number of digits in the upper bound representation should always be the largest among two bounds.
+	var size_type mut num_significant_decimal_digits= num_upper_bound_significant_decimal_digits;
+
+	var size_type mut num_decimal_digits_in_fractional_part= 0s, mut first_non_zero_interer_part_digit= 0s;
+
+	if( decimal_exponent < 0 && size_type( -decimal_exponent ) <= num_significant_decimal_digits )
+	{
+		// A little beautification - if we can remove exponent by introducing a fractional point - do this.
+		num_decimal_digits_in_fractional_part= size_type( -decimal_exponent );
+		decimal_exponent= 0;
+	}
+	else
+	{
+		// If no fractional point is present, try removing trailing zeros by making exponent bigger.
+		// This makes 625000000e-10 into 625e-4.
+		while( first_non_zero_interer_part_digit < num_significant_decimal_digits &&
+			lower_bound_decimal_digit_chars[ first_non_zero_interer_part_digit ] == '0' )
+		{
+			++first_non_zero_interer_part_digit;
+			++decimal_exponent;
+		}
+	}
+
+	var size_type num_decimal_digits_in_integer_part=
+		num_significant_decimal_digits - num_decimal_digits_in_fractional_part;
+
+	var string8 mut result;
+
+	if( is_negative )
+	{
+		result.push_back( '-' );
+	}
+
+	// Put digit chars calculated previously into the result string and flip them to use major to minor digit order.
+
+	if( num_decimal_digits_in_integer_part == 0s )
+	{
+		result.push_back( '0' );
+	}
+	else
+	{
+		for( auto mut i= 0s; i < num_decimal_digits_in_integer_part - first_non_zero_interer_part_digit; ++i )
+		{
+			result.push_back( lower_bound_decimal_digit_chars[ num_significant_decimal_digits - 1s - i ] );
+		}
+	}
+
+	if( num_decimal_digits_in_fractional_part > 0s )
+	{
+		// Reject trailing zeros in fractional part.
+		var size_type mut first_non_zero_fractional_digit= 0s;
+		while( first_non_zero_fractional_digit < num_decimal_digits_in_fractional_part &&
+				lower_bound_decimal_digit_chars[ first_non_zero_fractional_digit ] == '0' )
+		{
+			++first_non_zero_fractional_digit;
+		}
+
+		if( first_non_zero_fractional_digit < num_decimal_digits_in_fractional_part )
+		{
+			// Add fractional part only if at least one non-zero fractional digit is present.
+			result.push_back( '.' );
+			for( auto mut i= 0s; i < num_decimal_digits_in_fractional_part - first_non_zero_fractional_digit; ++i )
+			{
+				result.push_back( lower_bound_decimal_digit_chars[ num_decimal_digits_in_fractional_part - 1s - i ] );
+			}
+		}
+	}
+
+	if( decimal_exponent != 0 )
+	{
+		// Exponent has one, two or three digits.
+
+		result.push_back( 'e' );
+
+		var u32 mut e= 0u;
+		if( decimal_exponent > 0 )
+		{
+			e= u32( decimal_exponent );
+		}
+		else
+		{
+			e= u32( -decimal_exponent );
+			result.push_back( '-' );
+		}
+
+		if( e >= 10u )
+		{
+			if( e >= 100u )
+			{
+				result.push_back( char8( e / 100u + u32( '0' ) ) );
+			}
+			result.push_back( char8( e / 10u % 10u + u32( '0' ) ) );
+		}
+		result.push_back( char8( e % 10u + u32( '0' ) ) );
+	}
+
+	return result;
+}
+
+var u32 constexpr c_num_mantissa_bits= 52u;
+var u32 constexpr c_num_exponent_bits= 64u - 1u - c_num_mantissa_bits;
+var u64 constexpr c_mantissa_bits_mask= ( 1u64 << c_num_mantissa_bits ) - 1u64;
+var u64 constexpr c_exponent_bits_mask= ( ( 1u64 << c_num_exponent_bits ) - 1u64 ) << c_num_mantissa_bits;
+var u64 constexpr c_sign_bit_mask= 0x8000000000000000u64;
+
+var u32 constexpr c_exponent_bias= ( 1u << ( c_num_exponent_bits - 1u ) ) - 1u;
+
+// Use precalculated table with all scales needed.
+// For "f64" it's pretty large - 2048 entries, which requires 16384 bytes for scales and 4096 bytes for decimal exponents.
+var ScaleForExponentTable g_scale_for_exponent_table= BuildScaleForExponentTable();
+
+struct ScaleForExponentTable
+{
+	var u32 constexpr c_num_scale_bits= 60u;
+
+	// Use here struct of arrays instead of array of structs in order to avoid wasting space for padding.
+
+	var u32 constexpr c_table_size= 1u << c_num_exponent_bits;
+
+	[ u64, c_table_size ] scales; // Is in fixed point format and is in range 1 to 10.
+
+	[ i16, c_table_size ] decimal_exponents;
+}
+
+fn constexpr BuildScaleForExponentTable() : ScaleForExponentTable
+{
+	// This function may be a little bit slow, but it's fine as long as it's executed only in compile-time.
+
+	var ScaleForExponentTable mut table= zero_init;
+
+	for( auto mut raw_exponent= 0u; raw_exponent < ( 1u << c_num_exponent_bits ); ++raw_exponent )
+	{
+		var i32 mut binary_exponent= i32(raw_exponent) - i32( c_exponent_bias ) - i32( c_num_mantissa_bits );
+
+		var i32 mut decimal_exponent= 0;
+
+		var u32 constexpr shift= ScaleForExponentTable::c_num_scale_bits + 64u;
+		var u128 constexpr c_one=  1u128 << shift;
+		var u128 constexpr c_ten= 10u128 << shift;
+
+		// Calculate scale using 128 bits of precision.
+		// It's enough, since output scale has only 64 bits.
+		var u128 mut scale= c_one;
+
+		if( binary_exponent > 0 )
+		{
+			while( binary_exponent > 0 )
+			{
+				if( scale >= ( c_ten >> 1 ) )
+				{
+					scale /= 5u128;
+					++decimal_exponent;
+				}
+				else
+				{
+					scale <<= 1;
+				}
+				--binary_exponent;
+			}
+		}
+		else
+		{
+			while( binary_exponent < 0 )
+			{
+				if( ( scale >> 1 ) < c_one )
+				{
+					scale *= 5u128;
+					--decimal_exponent;
+				}
+				else
+				{
+					scale >>= 1;
+				}
+				++binary_exponent;
+			}
+		}
+
+		table.scales[ raw_exponent ]= u64( scale >> 64u );
+		table.decimal_exponents[ raw_exponent ]= i16( decimal_exponent );
+	}
+
+	return table;
+}
+
+} // namespace f64_impl
 
 } // namespace ust
