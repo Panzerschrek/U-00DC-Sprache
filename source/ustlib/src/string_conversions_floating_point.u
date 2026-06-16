@@ -45,7 +45,7 @@ fn to_string8( f32 x ) : string8
 
 	var u32 mantissa_bits= ( u32( x_bytes ) & c_mantissa_bits_mask );
 
-	if( exponent == 255u )
+	if( exponent == ( ( 1u << c_num_exponent_bits ) - 1u ) )
 	{
 		return
 			( mantissa_bits == 0u
@@ -267,7 +267,7 @@ fn constexpr BuildScaleForExponentTable() : ScaleForExponentTable
 
 	var ScaleForExponentTable mut table= zero_init;
 
-	for( auto mut raw_exponent= 0u; raw_exponent < 256u; ++raw_exponent )
+	for( auto mut raw_exponent= 0u; raw_exponent < ( 1u << c_num_exponent_bits ); ++raw_exponent )
 	{
 		var i32 mut binary_exponent= i32(raw_exponent) - i32( c_exponent_bias ) - i32( f32_impl::c_num_mantissa_bits );
 
