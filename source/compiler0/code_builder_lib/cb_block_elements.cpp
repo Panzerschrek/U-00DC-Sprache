@@ -2359,8 +2359,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 								SwitchInvalidRange,
 								names_scope.GetErrors(),
 								src_loc,
-								range_constants[0].getLimitedValue(),
-								range_constants[1].getLimitedValue() );
+								range_constants[0],
+								range_constants[1] );
 							all_cases_are_ok= false;
 							continue;
 						}
@@ -2435,14 +2435,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 								SwitchUndhandledValue,
 								names_scope.GetErrors(),
 								std::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
-								(current_high + 1).getLimitedValue() );
+								(current_high + 1) );
 						else
 							REPORT_ERROR(
 								SwitchUndhandledRange,
 								names_scope.GetErrors(),
 								std::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
-								(current_high + 1).getLimitedValue(),
-								(next_low - 1).getLimitedValue() );
+								(current_high + 1),
+								(next_low - 1) );
 					}
 				}
 			}
@@ -2451,10 +2451,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					SwitchRangesOverlapping,
 					names_scope.GetErrors(),
 					std::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
-					current_range.low .getLimitedValue(),
-					current_range.high.getLimitedValue(),
-					next_range.low .getLimitedValue(),
-					next_range.high.getLimitedValue() );
+					current_range.low ,
+					current_range.high,
+					next_range.low ,
+					next_range.high );
 		}
 
 		if( !all_ranges.empty() )
@@ -2472,14 +2472,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 							SwitchUndhandledValue,
 							names_scope.GetErrors(),
 							all_ranges.front().src_loc,
-							type_low.getLimitedValue() );
+							type_low );
 					else
 						REPORT_ERROR(
 							SwitchUndhandledRange,
 							names_scope.GetErrors(),
 							all_ranges.front().src_loc,
-							type_low.getLimitedValue(),
-							(first_range_low - 1).getLimitedValue() );
+							type_low,
+							(first_range_low - 1) );
 				}
 			}
 			// Process end range.
@@ -2495,14 +2495,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 							SwitchUndhandledValue,
 							names_scope.GetErrors(),
 							all_ranges.back().src_loc,
-							type_high.getLimitedValue() );
+							type_high );
 					else
 						REPORT_ERROR(
 							SwitchUndhandledRange,
 							names_scope.GetErrors(),
 							all_ranges.back().src_loc,
-							(last_range_high + 1).getLimitedValue(),
-							type_high.getLimitedValue() );
+							(last_range_high + 1),
+							type_high );
 				}
 			}
 		}
@@ -2517,14 +2517,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						SwitchUndhandledValue,
 						names_scope.GetErrors(),
 						switch_operator.src_loc,
-						type_high.getLimitedValue() );
+						type_high );
 				else
 					REPORT_ERROR(
 						SwitchUndhandledRange,
 						names_scope.GetErrors(),
 						switch_operator.src_loc,
-						type_low.getLimitedValue(),
-						type_high.getLimitedValue() );
+						type_low,
+						type_high );
 			}
 		}
 

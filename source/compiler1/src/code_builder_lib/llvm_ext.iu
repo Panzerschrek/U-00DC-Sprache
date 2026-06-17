@@ -24,3 +24,25 @@ fn nomangle U1_TryToPerformReturnValueAllocationOptimization( LLVMValueRef funct
 // Replace node[0] with node[1] in one call.
 // node[0] is deleted.
 fn nomangle U1_ReplaceMetadataNodes( $( tup[ LLVMMetadataRef, LLVMMetadataRef ] ) nodes_start, size_type num_nodes ) unsafe call_conv( "C" );
+
+// Functions for getting values of 128-bit integers.
+// Return a pair of 64-bit values, since C++ has no portable 128-bit integer type.
+fn nomangle U1_ConstIntGetZExtValue( LLVMValueRef value ) unsafe call_conv( "C" ) : [ u64, 2 ];
+fn nomangle U1_ConstIntGetSExtValue( LLVMValueRef value ) unsafe call_conv( "C" ) : [ u64, 2 ];
+
+namespace U1
+{
+
+fn ConstIntGetZExtValue( LLVMValueRef value ) unsafe : u128
+{
+	var [ u64, 2 ] words= unsafe( U1_ConstIntGetZExtValue( value ) );
+	return u128( words[0] ) | ( u128( words[1] ) << 64 );
+}
+
+fn ConstIntGetSExtValue( LLVMValueRef value ) unsafe : i128
+{
+	var [ u64, 2 ] words= unsafe( U1_ConstIntGetSExtValue( value ) );
+	return i128( u128( words[0] ) | ( u128( words[1] ) << 64 ) );
+}
+
+} // namespace U1
