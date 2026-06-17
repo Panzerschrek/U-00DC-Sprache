@@ -123,7 +123,6 @@ fn parse_impl_i32( array_view_imut</C/> &mut range ) : optional</i32/>
 	return null_optional;
 }
 
-
 template</type C/>
 fn parse_impl_u32( array_view_imut</C/> &mut range ) : optional</u32/>
 {
@@ -246,7 +245,6 @@ fn parse_impl_u64( array_view_imut</C/> &mut range ) : optional</u64/>
 
 	return result;
 }
-
 
 template</type C/>
 fn parse_impl_i128( array_view_imut</C/> &mut range ) : optional</i128/>

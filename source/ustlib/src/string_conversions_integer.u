@@ -475,6 +475,10 @@ fn to_string_impl( u128 x, string_base</C/>& mut result )
 	}
 	else
 	{
+		// This code is painfully-slow,
+		// since it requires 128-bit division,
+		// which isn't supported in hardware (at least on mainstream systems) and is emulated instead via div built-ins.
+
 		var u128 mut div= 100000000000000000000000000000000000000u128;
 		while( div > x )
 		{
