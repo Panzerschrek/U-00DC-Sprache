@@ -26,6 +26,12 @@ fn nomangle main() call_conv( "C" ) : i32
 	TestRandomF64Conversions();
 	TestF64ConversionsToWideStringTypes();
 
+	// If you have some spare time (way longer than the age of the Universe), you can run tests for all f64 numbers too.
+	if( false )
+	{
+		TestAllF64Conversions();
+	}
+
 	return 0;
 }
 
@@ -382,6 +388,23 @@ fn TestF64ConversionsToWideStringTypes()
 	halt if( ust::to_string32( ust::plus_inf </f64/>() ) !=  "inf"u32 );
 	halt if( ust::to_string32( ust::minus_inf</f64/>() ) != "-inf"u32 );
 	halt if( ust::to_string32( 0.0 / 0.0 ) != "nan"u32 );
+}
+
+fn TestAllF64Conversions()
+{
+	// Test conversions of ALL f64 numbers.
+
+	auto mut i= 0u64;
+	loop
+	{
+		TestF64Conversion( f64( byte64( i ) ) );
+
+		if( i == 0xFFFFFFFFFFFFFFFFu64 )
+		{
+			break;
+		}
+		++i;
+	}
 }
 
 class RandGenerator
