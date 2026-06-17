@@ -27,6 +27,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	TestF64Conversions();
 
 	TestF64ConversionsForPowersOfTwoAndNearbyNumbers();
+	TestF64ConversionsForPowersOfTenAndNearbyNumbers();
 
 	return 0;
 }
@@ -302,6 +303,29 @@ fn TestF64ConversionsForPowersOfTwoAndNearbyNumbers()
 		}
 
 		power_of_two*= 2.0;
+	}
+}
+
+fn TestF64ConversionsForPowersOfTenAndNearbyNumbers()
+{
+	var f64 mut power_of_ten= 1.0;
+	for( auto mut i= 0s; i < 310s; ++i )
+	{
+		// Test numbers around given point.
+		for( auto mut delta= -100i64; delta <= 100i64; ++delta )
+		{
+			TestF64Conversion( f64( byte64( i64( byte64( power_of_ten ) ) + delta ) ) );
+		}
+
+		var f64 inv_power_of_ten= 1.0 / power_of_ten;
+
+		// Test numbers around given point.
+		for( auto mut delta= -100i64; delta <= 100i64; ++delta )
+		{
+			TestF64Conversion( f64( byte64( i64( byte64( inv_power_of_ten ) ) + delta ) ) );
+		}
+
+		power_of_ten*= 10.0;
 	}
 }
 
