@@ -6,13 +6,9 @@ import "../imports/string_conversions.iu"
 fn nomangle main() call_conv( "C" ) : i32
 {
 	TestF32Conversions();
-
 	TestRepresentableIntegerF32Conversions();
-
 	TestSomeFractionalF32Conversions();
-
 	TestRandomF32Conversions();
-
 	TestF32ConversionsToWideStringTypes();
 
 	// Running conversion tests for all f32 numbers isn't fast.
@@ -275,11 +271,6 @@ fn TestF64Conversions()
 	foreach( &pair : special_numbers )
 	{
 		var ust::string8 s= ust::to_string8( pair[0] );
-
-		if( s!= pair[1] )
-		{
-			ust::stdout_print( ust::concat( "Conversion mismatch, expected ", pair[1], " got ", s, "\n" ) );
-		}
 		halt if( s != pair[1] );
 	}
 }
@@ -363,10 +354,6 @@ fn TestF64Conversion( f64 num )
 	else
 	{
 		// Compare exact result for non-"nan" values.
-		if( num_parsed != num )
-		{
-			ust::stdout_print( ust::concat( "Conversion mismatch for ", s, "\n" ) );
-		}
 		halt if( num_parsed != num );
 	}
 }
