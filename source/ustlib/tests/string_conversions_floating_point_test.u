@@ -25,9 +25,9 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 
 	TestF64Conversions();
-
 	TestF64ConversionsForPowersOfTwoAndNearbyNumbers();
 	TestF64ConversionsForPowersOfTenAndNearbyNumbers();
+	TestRandomF64Conversions();
 
 	return 0;
 }
@@ -326,6 +326,25 @@ fn TestF64ConversionsForPowersOfTenAndNearbyNumbers()
 		}
 
 		power_of_ten*= 10.0;
+	}
+}
+
+fn TestRandomF64Conversions()
+{
+	var RandGenerator mut rand;
+
+	// It's far way less than the total number of "f64" numbers, but is still pretty high.
+	var u32 num_tested_random_numbers= 1u << 21u;
+
+	for( auto mut i= 0u; i < num_tested_random_numbers; ++i )
+	{
+		var u64 rand_bit_pattern=
+			u64( rand.Next() ) |
+			( u64( rand.Next() ) << 16 ) |
+			( u64( rand.Next() ) << 32 ) |
+			( u64( rand.Next() ) << 48 );
+
+		TestF64Conversion( f64( byte64( rand_bit_pattern ) ) );
 	}
 }
 
