@@ -229,8 +229,42 @@ fn TestF64Conversions()
 	// Test exact string output for each given number.
 	// Doing so we ensure that the result is pretty enough.
 	// But if the implementation changes, we need to correct these test-cases.
-	var [ tup[ f64, ust::string_view8 ], 34 ] special_numbers
+	var [ tup[ f64, ust::string_view8 ], 68 ] special_numbers
 	[
+		[ f64( byte64( 0xFFF8000000000000u64 ) ), "-nan" ], // Signaling NaN.
+		[ f64( byte64( 0xFFF0000000000001u64 ) ), "-nan" ], // Quiet NaN.
+		[ -( 0.0 / 0.0 ), "-nan" ], // NaN.
+		[ -1.0 / 0.0, "-inf" ], // Negative infinity.
+		[ -f64( byte64( 0x7FEFFFFFFFFFFFFFu64 ) ), "-17976931348623158e292" ], // Max finite f64.
+		[ -f64( byte64( 0x7FEFFFFFFFFFFFFEu64 ) ), "-17976931348623156e292" ], // Previous before max finite f64.
+		[ -f64( 77336774484233477448447755e145 ), "-7733677448423348e155" ],
+		[ -f64( 3646344784548473365674724772447772347878233676.0 ), "-36463447845484737e29" ],
+		[ -f64( 4546583568534785864.0 ), "-4546583568534786e3" ],
+		[ -f64( 137844884348904354.0 ), "-13784488434890435e1" ],
+		[ -f64( 44754589900448395.0 ), "-44754589900448395" ],
+		[ -f64( 3578434443348952.0 ), "-3578434443348952" ],
+		[ -f64( 475344556724754.0 ), "-475344556724754" ],
+		[ -f64( 5646744445455.0 ), "-5646744445455" ],
+		[ -f64( 267336.2 ), "-267336.2" ],
+		[ -f64( 99.99 ), "-99.99" ],
+		[ -f64( 34.75 ), "-34.75" ],
+		[ -f64( 7.125 ), "-7.125" ],
+		[ -f64( 7.0 ), "-7" ],
+		[ -f64( byte64( 0x3FF0000000000001u64 ) ), "-1.0000000000000003" ], // Next number after 1.
+		[ -1.0, "-1" ],
+		[ -f64( byte64( 0x3FEFFFFFFFFFFFFFu64 ) ), "-0.9999999999999999" ], // Previous before 1.
+		[ -f64( 0.3 ), "-0.3" ],
+		[ -f64( 0.21875 ), "-0.21875" ],
+		[ -f64( 0.1 ), "-0.10000000000000001" ],
+		[ -f64( 0.046875 ), "-46875e-6" ],
+		[ -f64( 0.00390625 ), "-390625e-8" ],
+		[ -f64( 3473367784434754344454e-260 ), "-34733677844347547e-255" ],
+		[ -f64( byte64( 0x0010000000000001u64 ) ), "-2225073858507202e-323" ], // Next number after min normal.
+		[ -f64( byte64( 0x0010000000000000u64 ) ), "-22250738585072016e-324" ], // Min normal.
+		[ -f64( byte64( 0x0000480840002042u64 ) ), "-391301328884274e-324" ], // Some subnormal.
+		[ -f64( byte64( 0x0000000000000002u64 ) ), "-1e-323" ], // Next number after min subnormal.
+		[ -f64( byte64( 0x0000000000000001u64 ) ), "-6e-324" ], // Min subnormal.
+		[ -0.0, "-0" ],
 		[ 0.0, "0" ],
 		[ f64( byte64( 0x0000000000000001u64 ) ), "6e-324" ], // Min subnormal.
 		[ f64( byte64( 0x0000000000000002u64 ) ), "1e-323" ], // Next number after min subnormal.
