@@ -6,13 +6,9 @@ import "../imports/string_conversions.iu"
 fn nomangle main() call_conv( "C" ) : i32
 {
 	TestF32Conversions();
-
 	TestRepresentableIntegerF32Conversions();
-
 	TestSomeFractionalF32Conversions();
-
 	TestRandomF32Conversions();
-
 	TestF32ConversionsToWideStringTypes();
 
 	// Running conversion tests for all f32 numbers isn't fast.
@@ -22,6 +18,18 @@ fn nomangle main() call_conv( "C" ) : i32
 	if( false )
 	{
 		TestAllF32Conversions();
+	}
+
+	TestF64Conversions();
+	TestF64ConversionsForPowersOfTwoAndNearbyNumbers();
+	TestF64ConversionsForPowersOfTenAndNearbyNumbers();
+	TestRandomF64Conversions();
+	TestF64ConversionsToWideStringTypes();
+
+	// If you have some spare time (way longer than the age of the Universe), you can run tests for all f64 numbers too.
+	if( false )
+	{
+		TestAllF64Conversions();
 	}
 
 	return 0;
@@ -216,6 +224,223 @@ fn TestF32Conversion( f32 num )
 	}
 }
 
+fn TestF64Conversions()
+{
+	// Test exact string output for each given number.
+	// Doing so we ensure that the result is pretty enough.
+	// But if the implementation changes, we need to correct these test-cases.
+	var [ tup[ f64, ust::string_view8 ], 68 ] special_numbers
+	[
+		[ f64( byte64( 0xFFF8000000000000u64 ) ), "-nan" ], // Signaling NaN.
+		[ f64( byte64( 0xFFF0000000000001u64 ) ), "-nan" ], // Quiet NaN.
+		[ -( 0.0 / 0.0 ), "-nan" ], // NaN.
+		[ -1.0 / 0.0, "-inf" ], // Negative infinity.
+		[ -f64( byte64( 0x7FEFFFFFFFFFFFFFu64 ) ), "-17976931348623158e292" ], // Max finite f64.
+		[ -f64( byte64( 0x7FEFFFFFFFFFFFFEu64 ) ), "-17976931348623156e292" ], // Previous before max finite f64.
+		[ -77336774484233477448447755e145, "-7733677448423348e155" ],
+		[ -3646344784548473365674724772447772347878233676.0, "-36463447845484737e29" ],
+		[ -4546583568534785864.0, "-4546583568534786e3" ],
+		[ -137844884348904354.0, "-13784488434890435e1" ],
+		[ -44754589900448395.0, "-44754589900448395" ],
+		[ -3578434443348952.0, "-3578434443348952" ],
+		[ -475344556724754.0, "-475344556724754" ],
+		[ -5646744445455.0, "-5646744445455" ],
+		[ -267336.2, "-267336.2" ],
+		[ -99.99, "-99.99" ],
+		[ -34.75, "-34.75" ],
+		[ -7.125, "-7.125" ],
+		[ -7.0, "-7" ],
+		[ -f64( byte64( 0x3FF0000000000001u64 ) ), "-1.0000000000000003" ], // Next number after 1.
+		[ -1.0, "-1" ],
+		[ -f64( byte64( 0x3FEFFFFFFFFFFFFFu64 ) ), "-0.9999999999999999" ], // Previous before 1.
+		[ -0.3, "-0.3" ],
+		[ -0.21875, "-0.21875" ],
+		[ -0.1, "-0.10000000000000001" ],
+		[ -0.046875, "-46875e-6" ],
+		[ -0.00390625, "-390625e-8" ],
+		[ -3473367784434754344454e-260, "-34733677844347547e-255" ],
+		[ -f64( byte64( 0x0010000000000001u64 ) ), "-2225073858507202e-323" ], // Next number after min normal.
+		[ -f64( byte64( 0x0010000000000000u64 ) ), "-22250738585072016e-324" ], // Min normal.
+		[ -f64( byte64( 0x0000480840002042u64 ) ), "-391301328884274e-324" ], // Some subnormal.
+		[ -f64( byte64( 0x0000000000000002u64 ) ), "-1e-323" ], // Next number after min subnormal.
+		[ -f64( byte64( 0x0000000000000001u64 ) ), "-6e-324" ], // Min subnormal.
+		[ -0.0, "-0" ],
+		[ 0.0, "0" ],
+		[ f64( byte64( 0x0000000000000001u64 ) ), "6e-324" ], // Min subnormal.
+		[ f64( byte64( 0x0000000000000002u64 ) ), "1e-323" ], // Next number after min subnormal.
+		[ f64( byte64( 0x0000480840002042u64 ) ), "391301328884274e-324" ], // Some subnormal.
+		[ f64( byte64( 0x0010000000000000u64 ) ), "22250738585072016e-324" ], // Min normal.
+		[ f64( byte64( 0x0010000000000001u64 ) ), "2225073858507202e-323" ], // Next number after min normal.
+		[ 3473367784434754344454e-260, "34733677844347547e-255" ],
+		[ 0.00390625, "390625e-8" ],
+		[ 0.046875, "46875e-6" ],
+		[ 0.1, "0.10000000000000001" ],
+		[ 0.21875, "0.21875" ],
+		[ 0.3, "0.3" ],
+		[ f64( byte64( 0x3FEFFFFFFFFFFFFFu64 ) ), "0.9999999999999999" ], // Previous before 1.
+		[ 1.0, "1" ],
+		[ f64( byte64( 0x3FF0000000000001u64 ) ), "1.0000000000000003" ], // Next number after 1.
+		[ 7.0, "7" ],
+		[ 7.125, "7.125" ],
+		[ 34.75, "34.75" ],
+		[ 99.99, "99.99" ],
+		[ 267336.2, "267336.2" ],
+		[ 5646744445455.0, "5646744445455" ],
+		[ 475344556724754.0, "475344556724754" ],
+		[ 3578434443348952.0, "3578434443348952" ],
+		[ 44754589900448395.0, "44754589900448395" ],
+		[ 137844884348904354.0, "13784488434890435e1" ],
+		[ 4546583568534785864.0, "4546583568534786e3" ],
+		[ 3646344784548473365674724772447772347878233676.0, "36463447845484737e29" ],
+		[ 77336774484233477448447755e145, "7733677448423348e155" ],
+		[ f64( byte64( 0x7FEFFFFFFFFFFFFEu64 ) ), "17976931348623156e292" ], // Previous before max finite f64.
+		[ f64( byte64( 0x7FEFFFFFFFFFFFFFu64 ) ), "17976931348623158e292" ], // Max finite f64.
+		[ 1.0 / 0.0, "inf" ], // Infinity.
+		[ 0.0 / 0.0, "nan" ], // NaN.
+		[ f64( byte64( 0x7FF0000000000001u64 ) ), "nan" ], // Quiet NaN.
+		[ f64( byte64( 0x7FF8000000000000u64 ) ), "nan" ], // Signaling NaN.
+	];
+
+	// Test conversion itself.
+	foreach( &pair : special_numbers )
+	{
+		TestF64Conversion( pair[0] );
+	}
+
+	// Test exact string output.
+	foreach( &pair : special_numbers )
+	{
+		var ust::string8 s= ust::to_string8( pair[0] );
+		halt if( s != pair[1] );
+	}
+}
+
+fn TestF64ConversionsForPowersOfTwoAndNearbyNumbers()
+{
+	var f64 mut power_of_two= 1.0;
+	for( auto mut i= 0s; i < 1025s; ++i )
+	{
+		// Test numbers around given point.
+		for( auto mut delta= -64i64; delta <= 64i64; ++delta )
+		{
+			TestF64Conversion( f64( byte64( i64( byte64( power_of_two ) ) + delta ) ) );
+		}
+
+		var f64 inv_power_of_two= 1.0 / power_of_two;
+
+		// Test numbers around given point.
+		for( auto mut delta= -64i64; delta <= 64i64; ++delta )
+		{
+			TestF64Conversion( f64( byte64( i64( byte64( inv_power_of_two ) ) + delta ) ) );
+		}
+
+		power_of_two*= 2.0;
+	}
+}
+
+fn TestF64ConversionsForPowersOfTenAndNearbyNumbers()
+{
+	var f64 mut power_of_ten= 1.0;
+	for( auto mut i= 0s; i < 310s; ++i )
+	{
+		// Test numbers around given point.
+		for( auto mut delta= -100i64; delta <= 100i64; ++delta )
+		{
+			TestF64Conversion( f64( byte64( i64( byte64( power_of_ten ) ) + delta ) ) );
+		}
+
+		var f64 inv_power_of_ten= 1.0 / power_of_ten;
+
+		// Test numbers around given point.
+		for( auto mut delta= -100i64; delta <= 100i64; ++delta )
+		{
+			TestF64Conversion( f64( byte64( i64( byte64( inv_power_of_ten ) ) + delta ) ) );
+		}
+
+		power_of_ten*= 10.0;
+	}
+}
+
+fn TestRandomF64Conversions()
+{
+	var RandGenerator mut rand;
+
+	// It's far way less than the total number of "f64" numbers, but is still pretty high.
+	var u32 num_tested_random_numbers= 1u << 21u;
+
+	for( auto mut i= 0u; i < num_tested_random_numbers; ++i )
+	{
+		var u64 rand_bit_pattern=
+			u64( rand.Next() ) |
+			( u64( rand.Next() ) << 16 ) |
+			( u64( rand.Next() ) << 32 ) |
+			( u64( rand.Next() ) << 48 );
+
+		TestF64Conversion( f64( byte64( rand_bit_pattern ) ) );
+	}
+}
+
+fn TestF64ConversionsToWideStringTypes()
+{
+	// Test only some selected values.
+	// We don't require testing them all, since underlying implemetation should really not depend on string type.
+
+	halt if( ust::to_string16( 0.0 ) != "0"u16 );
+	halt if( ust::to_string16( -0.0 ) != "-0"u16 );
+	halt if( ust::to_string16( 0.0009765625 ) != "9765625e-10"u16 );
+	halt if( ust::to_string16( 675.125 ) != "675.125"u16 );
+	halt if( ust::to_string16( -266732.0 ) != "-266732"u16 );
+	halt if( ust::to_string16( 36893485948395847680.0 ) != "36893485948395849e3"u16 );
+	halt if( ust::to_string16( ust::plus_inf </f64/>() ) !=  "inf"u16 );
+	halt if( ust::to_string16( ust::minus_inf</f64/>() ) != "-inf"u16 );
+	halt if( ust::to_string16( 0.0f / 0.0f ) != "nan"u16 );
+
+	halt if( ust::to_string32( 0.0 ) != "0"u32 );
+	halt if( ust::to_string32( -0.0 ) != "-0"u32 );
+	halt if( ust::to_string32( 0.0009765625 ) != "9765625e-10"u32 );
+	halt if( ust::to_string32( 675.125 ) != "675.125"u32 );
+	halt if( ust::to_string32( -266732.0 ) != "-266732"u32 );
+	halt if( ust::to_string32( 36893485948395847680.0 ) != "36893485948395849e3"u32 );
+	halt if( ust::to_string32( ust::plus_inf </f64/>() ) !=  "inf"u32 );
+	halt if( ust::to_string32( ust::minus_inf</f64/>() ) != "-inf"u32 );
+	halt if( ust::to_string32( 0.0 / 0.0 ) != "nan"u32 );
+}
+
+fn TestAllF64Conversions()
+{
+	// Test conversions of ALL f64 numbers.
+
+	auto mut i= 0u64;
+	loop
+	{
+		TestF64Conversion( f64( byte64( i ) ) );
+
+		if( i == 0xFFFFFFFFFFFFFFFFu64 )
+		{
+			break;
+		}
+		++i;
+	}
+}
+
+// Test against a parser - a stringified and then parsed number should remain the same.
+fn TestF64Conversion( f64 num )
+{
+	var ust::string8 s= ust::to_string8( num );
+	var f64 num_parsed= ParseF64( s );
+
+	if( ust::is_nan( num ) )
+	{
+		// For "nan" should parse "nan".
+		halt if( ! ust::is_nan( num_parsed ) );
+	}
+	else
+	{
+		// Compare exact result for non-"nan" values.
+		halt if( num_parsed != num );
+	}
+}
+
 class RandGenerator
 {
 public:
@@ -235,6 +460,13 @@ fn ParseF32( ust::string_view8 s ) : f32
 	scoped_array char8 s_nt[ s.size() + 1s ]( s.iter().chain( ust::string_view8( "\0" ).iter() ) );
 	var f64 res= unsafe( atof( s_nt.data() ) );
 	return f32(res);
+}
+
+fn ParseF64( ust::string_view8 s ) : f64
+{
+	// Use a number parsing function from the C standard library.
+	scoped_array char8 s_nt[ s.size() + 1s ]( s.iter().chain( ust::string_view8( "\0" ).iter() ) );
+	return unsafe( atof( s_nt.data() ) );
 }
 
 // C standard library function.

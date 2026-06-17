@@ -54,4 +54,10 @@ fn to_string8 ( f32 x ) : string8;
 fn to_string16( f32 x ) : string16;
 fn to_string32( f32 x ) : string32;
 
+// Convert "f64" into a string.
+// Works similar to conversions for "f32", see the comment above.
+fn to_string8 ( f64 x ) : string8;
+fn to_string16( f64 x ) : string16;
+fn to_string32( f64 x ) : string32;
+
 } // namespace ust
