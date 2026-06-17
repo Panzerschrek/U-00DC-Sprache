@@ -239,8 +239,7 @@ fn SerializeJsonBool( ust::string8 &mut out, JsonValue::Bool bool_value )
 
 fn SerializeJsonNumber( ust::string8 &mut out, JsonValue::Number number_value )
 {
-	// TODO - perform proper float serialization.
-	out+= ust::to_string8( i64(number_value) );
+	out+= ust::to_string8( number_value );
 }
 
 fn SerializeJsonString( ust::string8 &mut out, JsonValue::String& string_value )
