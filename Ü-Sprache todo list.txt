@@ -85,7 +85,6 @@ Standart library:
 *) Vector drain iterator
 *) Functions for conversion of floating-point numbers into string
 *) Functions for floating-point numbers parsing
-*) Support 128-bit integer types stringification/parsing
 *) Reverse iterators for hash_map and hash_set. They are mostly useless, but should exist for completeness.
 *) Time library - request monotonic time, perform time difference calculations, perform conversions from/to calendar
 	time, perform conversions to human-readable format
