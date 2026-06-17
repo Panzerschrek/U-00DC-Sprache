@@ -89,7 +89,6 @@ Standart library:
 *) Reverse iterators for hash_map and hash_set. They are mostly useless, but should exist for completeness.
 *) Time library - request monotonic time, perform time difference calculations, perform conversions from/to calendar
 	time, perform conversions to human-readable format
-*) Functions for "f64" stringification
 *) String formatting library
 *) Functions for parsing of floating-point numbers
 *) Support casting "shared_ptr_final</A/>" to "shared_ptr_final</B/>" if A and B are polymorph related types
@@ -225,7 +224,6 @@ C++ header converter:
 
 Ü Build system:
 *) Support building "ustlib" into a shared library (dll/so)
-*) Fix JSON floats serialization
 *) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
 *) Add possibility to mark a library build target as "force public" and thus make it public dependency even for build
 	targets which depend on it privately. This should ensure that exactly one version of this library is linked into
