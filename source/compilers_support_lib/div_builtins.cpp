@@ -126,34 +126,19 @@ void GenerateDiv64BuiltIns( llvm::Module& module )
 	}
 }
 
-void GenerateDiv128BuiltIns( const llvm::Triple& triple, llvm::Module& module )
+void GenerateDiv128BuiltIns( llvm::Module& module )
 {
 	llvm::LLVMContext& context= module.getContext();
 
 	llvm::Type* const i128= llvm::Type::getInt128Ty( context );
-
-	// On x86_64 windows 128-bit integers are passed by hidden pointer.
-	// LLVM backend expects it while calling div builtins.
-	// TODO - check whether other targets require this too.
-	const bool pass_i128_by_pointer= triple.getArch() == llvm::Triple::x86_64 && triple.getOS() == llvm::Triple::Win32;
-
-	llvm::Type* const arg_type= pass_i128_by_pointer ? i128->getPointerTo() : i128;
-
-	std::array<llvm::Type*, 2> const i128_args{ arg_type, arg_type };
+	std::array<llvm::Type*, 2> const i128_args{ i128, i128 };
 	llvm::FunctionType* const function_type= llvm::FunctionType::get( i128, i128_args, false );
-
-	const auto get_arg=
-		[&]( llvm::Function* const function, const uint32_t index ) -> llvm::Value*
-		{
-			llvm::Value* const arg= function->getArg( index );
-			return pass_i128_by_pointer ? new llvm::LoadInst( i128, arg, llvm::Twine(), &*function->begin() ) : arg;
-		};
 
 	if( module.getFunction( "__udivti3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__udivti3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
-		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::UDiv, get_arg( function, 0 ), get_arg( function, 1 ), "", bb );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::UDiv, function->getArg(0), function->getArg(1), "", bb );
 		llvm::ReturnInst::Create( context, div, bb );
 
 		llvm::expandDivision( div );
@@ -163,7 +148,7 @@ void GenerateDiv128BuiltIns( const llvm::Triple& triple, llvm::Module& module )
 	{
 		const auto function= CreateFunction( module, function_type, "__divti3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
-		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SDiv, get_arg( function, 0 ), get_arg( function, 1 ), "", bb );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SDiv, function->getArg(0), function->getArg(1), "", bb );
 		llvm::ReturnInst::Create( context, div, bb );
 
 		llvm::expandDivision( div );
@@ -173,7 +158,7 @@ void GenerateDiv128BuiltIns( const llvm::Triple& triple, llvm::Module& module )
 	{
 		const auto function= CreateFunction( module, function_type, "__umodti3" );
 		const auto bb= llvm::BasicBlock::Create(context, "", function );
-		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::URem, get_arg( function, 0 ), get_arg( function, 1 ), "", bb );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::URem, function->getArg(0), function->getArg(1), "", bb );
 		llvm::ReturnInst::Create( context, rem, bb );
 
 		llvm::expandRemainder( rem );
@@ -183,8 +168,81 @@ void GenerateDiv128BuiltIns( const llvm::Triple& triple, llvm::Module& module )
 	{
 		const auto function= CreateFunction( module, function_type, "__modti3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
-		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SRem, get_arg( function, 0 ), get_arg( function, 1 ), "", bb );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SRem, function->getArg(0), function->getArg(1), "", bb );
 		llvm::ReturnInst::Create( context, rem, bb );
+
+		llvm::expandRemainder( rem );
+	}
+}
+
+void GenerateDiv128BuiltInsForX86_64Windows( llvm::Module& module )
+{
+	// On x86_64 windows 128-bit integers are passed by hidden pointer.
+	// 128-bit integers are returned using XMM0 register.
+	// LLVM backend expects such convension while calling div builtins.
+	// TODO - check whether other targets require this too.
+
+	llvm::LLVMContext& context= module.getContext();
+
+	llvm::Type* const i128= llvm::Type::getInt128Ty( context );
+
+	// Use 4xf32 vector type for return value, since this type is passed via XMM0.
+	llvm::Type* const ret_type= llvm::VectorType::get( llvm::Type::getFloatTy( context ), 4u, false );
+
+	std::array<llvm::Type*, 2> const arg_types{ i128->getPointerTo(), i128->getPointerTo() };
+	llvm::FunctionType* const function_type= llvm::FunctionType::get( ret_type, arg_types, false );
+
+	const auto get_arg=
+		[&]( llvm::Function* const function, const uint32_t index ) -> llvm::Value*
+		{
+			// Given basic block takes ownership over created load instruction.
+			return new llvm::LoadInst( i128, function->getArg( index ), llvm::Twine(), &*function->begin() );
+		};
+
+	const auto create_ret=
+		[&]( llvm::BasicBlock* const bb, llvm::Value* const ret_value )
+		{
+			llvm::Value* const ret_value_casted=
+				llvm::BitCastInst::Create( llvm::Instruction::BitCast, ret_value, ret_type, llvm::Twine(), bb );
+			llvm::ReturnInst::Create( context, ret_value_casted, bb );
+		};
+
+	if( module.getFunction( "__udivti3" ) == nullptr )
+	{
+		const auto function= CreateFunction( module, function_type, "__udivti3" );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::UDiv, get_arg( function, 0 ), get_arg( function, 1 ), "", bb );
+		create_ret( bb, div );
+
+		llvm::expandDivision( div );
+	}
+
+	if( module.getFunction( "__divti3" ) == nullptr )
+	{
+		const auto function= CreateFunction( module, function_type, "__divti3" );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SDiv, get_arg( function, 0 ), get_arg( function, 1 ), "", bb );
+		create_ret( bb, div );
+
+		llvm::expandDivision( div );
+	}
+
+	if( module.getFunction( "__umodti3" ) == nullptr )
+	{
+		const auto function= CreateFunction( module, function_type, "__umodti3" );
+		const auto bb= llvm::BasicBlock::Create(context, "", function );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::URem, get_arg( function, 0 ), get_arg( function, 1 ), "", bb );
+		create_ret( bb, rem );
+
+		llvm::expandRemainder( rem );
+	}
+
+	if( module.getFunction( "__modti3" ) == nullptr )
+	{
+		const auto function= CreateFunction( module, function_type, "__modti3" );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SRem, get_arg( function, 0 ), get_arg( function, 1 ), "", bb );
+		create_ret( bb, rem );
 
 		llvm::expandRemainder( rem );
 	}
@@ -199,7 +257,11 @@ void GenerateDivBuiltIns( const llvm::Triple& triple, llvm::Module& module )
 
 	GenerateDiv32BuiltIns( module );
 	GenerateDiv64BuiltIns( module );
-	GenerateDiv128BuiltIns( triple, module );
+
+	if( triple.getArch() == llvm::Triple::x86_64 && triple.getOS() == llvm::Triple::Win32 )
+		GenerateDiv128BuiltInsForX86_64Windows( module );
+	else
+		GenerateDiv128BuiltIns( module );
 }
 
 bool IsDivBuiltInLikeFunctionName( const llvm::StringRef name )
