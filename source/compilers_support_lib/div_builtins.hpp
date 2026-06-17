@@ -6,7 +6,7 @@
 namespace U
 {
 
-void GenerateDivBuiltIns( llvm::Module& module );
+void GenerateDivBuiltIns( const llvm::Triple& triple, llvm::Module& module );
 
 bool IsDivBuiltInLikeFunctionName( llvm::StringRef name );
 
