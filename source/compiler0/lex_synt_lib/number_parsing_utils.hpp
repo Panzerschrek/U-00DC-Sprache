@@ -61,16 +61,16 @@ std::optional<Int128> DecodeParsedInteger( const std::string_view s )
 		if( digit == uint32_t(-1) )
 			return std::nullopt;
 
-		uint32_t remainder= digit;
+		uint32_t carry= digit;
 
 		for( size_t i= 0; i < 4; ++i )
 		{
-			const uint64_t v= uint64_t( words[i] ) * base + remainder;
+			const uint64_t v= uint64_t( words[i] ) * base + carry;
 			words[i]= uint32_t(v);
-			remainder= uint32_t( v >> 32 );
+			carry= uint32_t( v >> 32 );
 		}
 
-		if( remainder != 0u )
+		if( carry != 0u )
 			return std::nullopt; // Overflow detected.
 	}
 
