@@ -380,24 +380,6 @@ fn TestRandomF64Conversions()
 	}
 }
 
-// Test against a parser - a stringified and then parsed number should remain the same.
-fn TestF64Conversion( f64 num )
-{
-	var ust::string8 s= ust::to_string8( num );
-	var f64 num_parsed= ParseF64( s );
-
-	if( ust::is_nan( num ) )
-	{
-		// For "nan" should parse "nan".
-		halt if( ! ust::is_nan( num_parsed ) );
-	}
-	else
-	{
-		// Compare exact result for non-"nan" values.
-		halt if( num_parsed != num );
-	}
-}
-
 fn TestF64ConversionsToWideStringTypes()
 {
 	// Test only some selected values.
@@ -438,6 +420,24 @@ fn TestAllF64Conversions()
 			break;
 		}
 		++i;
+	}
+}
+
+// Test against a parser - a stringified and then parsed number should remain the same.
+fn TestF64Conversion( f64 num )
+{
+	var ust::string8 s= ust::to_string8( num );
+	var f64 num_parsed= ParseF64( s );
+
+	if( ust::is_nan( num ) )
+	{
+		// For "nan" should parse "nan".
+		halt if( ! ust::is_nan( num_parsed ) );
+	}
+	else
+	{
+		// Compare exact result for non-"nan" values.
+		halt if( num_parsed != num );
 	}
 }
 
