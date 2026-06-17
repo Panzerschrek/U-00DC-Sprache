@@ -26,6 +26,8 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	TestF64Conversions();
 
+	TestF64ConversionsForPowersOfTwoAndNearbyNumbers();
+
 	return 0;
 }
 
@@ -271,7 +273,35 @@ fn TestF64Conversions()
 	foreach( &pair : special_numbers )
 	{
 		var ust::string8 s= ust::to_string8( pair[0] );
+
+		if( s!= pair[1] )
+		{
+			ust::stdout_print( ust::concat( "Conversion mismatch, expected ", pair[1], " got ", s, "\n" ) );
+		}
 		halt if( s != pair[1] );
+	}
+}
+
+fn TestF64ConversionsForPowersOfTwoAndNearbyNumbers()
+{
+	var f64 mut power_of_two= 1.0;
+	for( auto mut i= 0s; i < 1025s; ++i )
+	{
+		// Test numbers around given point.
+		for( auto mut delta= -64i64; delta <= 64i64; ++delta )
+		{
+			TestF64Conversion( f64( byte64( i64( byte64( power_of_two ) ) + delta ) ) );
+		}
+
+		var f64 inv_power_of_two= 1.0 / power_of_two;
+
+		// Test numbers around given point.
+		for( auto mut delta= -64i64; delta <= 64i64; ++delta )
+		{
+			TestF64Conversion( f64( byte64( i64( byte64( inv_power_of_two ) ) + delta ) ) );
+		}
+
+		power_of_two*= 2.0;
 	}
 }
 
