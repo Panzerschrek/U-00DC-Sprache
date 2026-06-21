@@ -168,6 +168,14 @@ fn parse( array_view_imut</C/> &mut range ) : optional</T/>
 		}
 		return null_optional;
 	}
+	else static_if( same_type</T, f32/> )
+	{
+		return parse_f32( range );
+	}
+	else static_if( same_type</T, f64/> )
+	{
+		return parse_f64( range );
+	}
 	else
 	{
 		static_assert( false, "Unsupported number type!" );
