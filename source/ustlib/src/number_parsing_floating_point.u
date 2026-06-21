@@ -6,6 +6,50 @@ namespace ust
 namespace number_parsing_impl
 {
 
+fn parse_f32( array_view_imut</char8/> &mut range ) : optional</f32/>
+{
+	return parse_impl_f32( range );
+}
+
+fn parse_f64( array_view_imut</char8/> &mut range ) : optional</f64/>
+{
+	return parse_impl_f64( range );
+}
+
+fn parse_f32( array_view_imut</char16/> &mut range ) : optional</f32/>
+{
+	return parse_impl_f32( range );
+}
+
+fn parse_f64( array_view_imut</char16/> &mut range ) : optional</f64/>
+{
+	return parse_impl_f64( range );
+}
+
+fn parse_f32( array_view_imut</char32/> &mut range ) : optional</f32/>
+{
+	return parse_impl_f32( range );
+}
+
+fn parse_f64( array_view_imut</char32/> &mut range ) : optional</f64/>
+{
+	return parse_impl_f64( range );
+}
+
+template</type C/>
+fn parse_impl_f32( array_view_imut</C/> &mut range ) : optional</f32/>
+{
+	// TODO
+	halt;
+}
+
+template</type C/>
+fn parse_impl_f64( array_view_imut</C/> &mut range ) : optional</f64/>
+{
+	// TODO
+	halt;
+}
+
 } // namespace number_parsing_impl
 
 } // namespace ust

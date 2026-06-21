@@ -180,6 +180,8 @@ fn parse_i64( array_view_imut</char8/> &mut range ) : optional</i64/>;
 fn parse_u64( array_view_imut</char8/> &mut range ) : optional</u64/>;
 fn parse_i128( array_view_imut</char8/> &mut range ) : optional</i128/>;
 fn parse_u128( array_view_imut</char8/> &mut range ) : optional</u128/>;
+fn parse_f32( array_view_imut</char8/> &mut range ) : optional</f32/>;
+fn parse_f64( array_view_imut</char8/> &mut range ) : optional</f64/>;
 
 fn parse_i32( array_view_imut</char16/> &mut range ) : optional</i32/>;
 fn parse_u32( array_view_imut</char16/> &mut range ) : optional</u32/>;
@@ -187,6 +189,8 @@ fn parse_i64( array_view_imut</char16/> &mut range ) : optional</i64/>;
 fn parse_u64( array_view_imut</char16/> &mut range ) : optional</u64/>;
 fn parse_i128( array_view_imut</char16/> &mut range ) : optional</i128/>;
 fn parse_u128( array_view_imut</char16/> &mut range ) : optional</u128/>;
+fn parse_f32( array_view_imut</char16/> &mut range ) : optional</f32/>;
+fn parse_f64( array_view_imut</char16/> &mut range ) : optional</f64/>;
 
 fn parse_i32( array_view_imut</char32/> &mut range ) : optional</i32/>;
 fn parse_u32( array_view_imut</char32/> &mut range ) : optional</u32/>;
@@ -194,6 +198,8 @@ fn parse_i64( array_view_imut</char32/> &mut range ) : optional</i64/>;
 fn parse_u64( array_view_imut</char32/> &mut range ) : optional</u64/>;
 fn parse_i128( array_view_imut</char32/> &mut range ) : optional</i128/>;
 fn parse_u128( array_view_imut</char32/> &mut range ) : optional</u128/>;
+fn parse_f32( array_view_imut</char32/> &mut range ) : optional</f32/>;
+fn parse_f64( array_view_imut</char32/> &mut range ) : optional</f64/>;
 
 } // namespace number_parsing_impl
 
