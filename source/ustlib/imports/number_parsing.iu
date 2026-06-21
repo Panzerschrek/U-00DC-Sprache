@@ -3,13 +3,13 @@ import "random_access_range.iu"
 namespace ust
 {
 
-// Extract integer from given range, dropping characters of this integer from start.
+// Extract a number from given range, dropping characters of this number from start.
 // Returns empty optional if failed to parse or faced an overflow.
 template</type T, type C/>
-fn parse_and_extract_integer( array_view_imut</C/> &mut range ) : optional</T/>
+fn parse_and_extract_number( array_view_imut</C/> &mut range ) : optional</T/>
 {
 	auto mut range_copy= range;
-	auto res= integer_parsing_impl::parse</T/>( range_copy );
+	auto res= number_parsing_impl::parse</T/>( range_copy );
 	if( !res.empty() )
 	{
 		range= range_copy;
@@ -17,27 +17,27 @@ fn parse_and_extract_integer( array_view_imut</C/> &mut range ) : optional</T/>
 	return res;
 }
 
-// Parse integer at start of given range.
+// Parse a number at start of the given range.
 // Returns empty optional if failed to parse or faced an overflow.
 template</type T, type C/>
-fn parse_integer( array_view_imut</C/> mut range ) : optional</T/>
+fn parse_number( array_view_imut</C/> mut range ) : optional</T/>
 {
-	return integer_parsing_impl::parse</T/>( range );
+	return number_parsing_impl::parse</T/>( range );
 }
 
 template</type T, type C, size_type S/>
-fn parse_integer( [ C, S ] arr ) : optional</T/>
+fn parse_number( [ C, S ] arr ) : optional</T/>
 {
-	return parse_integer</T/>( array_view_imut</C/>( arr ) );
+	return parse_number</T/>( array_view_imut</C/>( arr ) );
 }
 
-// Parse the whole range as an integer.
+// Parse the whole range as a number.
 // Returns empty optional if failed to parse or faced an overflow.
 // Alse returns empty optional if has trailing symbols after parsed number.
 template</type T, type C/>
-fn parse_integer_exact( array_view_imut</C/> mut range ) : optional</T/>
+fn parse_number_exact( array_view_imut</C/> mut range ) : optional</T/>
 {
-	auto res= integer_parsing_impl::parse</T/>( range );
+	auto res= number_parsing_impl::parse</T/>( range );
 	if( res.empty() )
 	{
 		return res;
@@ -50,12 +50,12 @@ fn parse_integer_exact( array_view_imut</C/> mut range ) : optional</T/>
 }
 
 template</type T, type C, size_type S/>
-fn parse_integer_exact( [ C, S ] arr ) : optional</T/>
+fn parse_number_exact( [ C, S ] arr ) : optional</T/>
 {
-	return parse_integer_exact</T/>( array_view_imut</C/>( arr ) );
+	return parse_number_exact</T/>( array_view_imut</C/>( arr ) );
 }
 
-namespace integer_parsing_impl
+namespace number_parsing_impl
 {
 
 // Implementation functions, do not use directly!
@@ -170,7 +170,7 @@ fn parse( array_view_imut</C/> &mut range ) : optional</T/>
 	}
 	else
 	{
-		static_assert( false, "Unsupported integer type!" );
+		static_assert( false, "Unsupported number type!" );
 	}
 }
 
@@ -195,6 +195,6 @@ fn parse_u64( array_view_imut</char32/> &mut range ) : optional</u64/>;
 fn parse_i128( array_view_imut</char32/> &mut range ) : optional</i128/>;
 fn parse_u128( array_view_imut</char32/> &mut range ) : optional</u128/>;
 
-} // namespace integer_parsing_impl
+} // namespace number_parsing_impl
 
 } // namespace ust

@@ -82,7 +82,7 @@ fn socket_address_v4::parse( string_view8 mut s ) : optional</socket_address_v4/
 
 		var u16 mut port= zero_init;
 
-		if_var( p : parse_and_extract_integer</u16/>( s ) )
+		if_var( p : parse_and_extract_number</u16/>( s ) )
 		{
 			port= p;
 		}
@@ -122,7 +122,7 @@ fn socket_address_v6::parse( string_view8 mut s ) : optional</socket_address_v6/
 	{
 		s.drop_front();
 
-		if_var( i : parse_and_extract_integer</u32/>( s ) )
+		if_var( i : parse_and_extract_number</u32/>( s ) )
 		{
 			scope_id= i;
 		}
@@ -146,7 +146,7 @@ fn socket_address_v6::parse( string_view8 mut s ) : optional</socket_address_v6/
 
 	var u16 mut port= zero_init;
 
-	if_var( p : parse_and_extract_integer</u16/>( s ) )
+	if_var( p : parse_and_extract_number</u16/>( s ) )
 	{
 		port= p;
 	}
@@ -198,7 +198,7 @@ fn extract_ip_v4_address( string_view8 &mut s ) : optional</ip_address_v4/>
 
 	for( var size_type mut i= 0s; i < 3s; ++i )
 	{
-		if_var( o : parse_and_extract_integer</u8/>( s ) )
+		if_var( o : parse_and_extract_number</u8/>( s ) )
 		{
 			octets[i]= o;
 		}
@@ -214,7 +214,7 @@ fn extract_ip_v4_address( string_view8 &mut s ) : optional</ip_address_v4/>
 		s.drop_front();
 	}
 
-	if_var( o : parse_and_extract_integer</u8/>( s ) )
+	if_var( o : parse_and_extract_number</u8/>( s ) )
 	{
 		octets[3]= o;
 	}

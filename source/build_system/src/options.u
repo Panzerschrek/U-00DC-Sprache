@@ -142,7 +142,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 
 	if( !num_jobs.empty() )
 	{
-		if_var( num : ust::parse_integer_exact</u32/>( ust::string_view8(num_jobs) ) )
+		if_var( num : ust::parse_number_exact</u32/>( ust::string_view8(num_jobs) ) )
 		{
 			res.number_of_jobs= num;
 		}
