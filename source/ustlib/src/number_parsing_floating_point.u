@@ -42,17 +42,17 @@ fn parse_f64( array_view_imut</char32/> &mut range ) : optional</f64/>
 template</type C/>
 fn parse_impl_f32( array_view_imut</C/> &mut range ) : optional</f32/>
 {
-	return ParseFloatImpl</ FloatPropertiesF32 />( range );
+	return parse_float_impl</ FloatPropertiesF32 />( range );
 }
 
 template</type C/>
 fn parse_impl_f64( array_view_imut</C/> &mut range ) : optional</f64/>
 {
-	return ParseFloatImpl</ FloatPropertiesF64 />( range );
+	return parse_float_impl</ FloatPropertiesF64 />( range );
 }
 
 template</type FP, type CharType/>
-fn ParseFloatImpl( array_view_imut</CharType/> &mut s ) : optional</FP::FloatType/>
+fn parse_float_impl( array_view_imut</CharType/> &mut s ) : optional</FP::FloatType/>
 {
 	var FP::IntegerType mut sign_mask(0);
 
@@ -122,11 +122,11 @@ fn ParseFloatImpl( array_view_imut</CharType/> &mut s ) : optional</FP::FloatTyp
 	}
 
 	// We have only numerical chars left, no sign, no special values.
-	return ContinueParsingFiniteFloat</FP/>( sign_mask, s );
+	return continue_parsing_finite_float</FP/>( sign_mask, s );
 }
 
 template</type FP, type CharType, type SignMaskType/>
-fn ContinueParsingFiniteFloat( SignMaskType mut sign_mask, array_view_imut</CharType/> &mut s ) : optional</FP::FloatType/>
+fn continue_parsing_finite_float( SignMaskType mut sign_mask, array_view_imut</CharType/> &mut s ) : optional</FP::FloatType/>
 {
 	if( s.empty() )
 	{
