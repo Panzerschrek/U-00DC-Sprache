@@ -1568,7 +1568,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"arena_allocator.u",
 		"file_helpers.u",
 		"inet_address.u",
-		"number_parsing.u",
+		"number_parsing_integer.u",
 		"stdin.u",
 		"string_conversions_floating_point.u",
 		"string_conversions_integer.u",
