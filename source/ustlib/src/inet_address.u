@@ -1,5 +1,5 @@
 import "../imports/inet_address.iu"
-import "../imports/integer_parsing.iu"
+import "../imports/number_parsing.iu"
 import "../imports/string_conversions.iu"
 
 namespace ust

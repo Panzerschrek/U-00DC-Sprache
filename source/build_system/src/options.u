@@ -1,5 +1,5 @@
 import "/hash_set.iu"
-import "/integer_parsing.iu"
+import "/number_parsing.iu"
 import "/stdout.iu"
 import "/enum_string_conversions.iu"
 import "/vector.iu"

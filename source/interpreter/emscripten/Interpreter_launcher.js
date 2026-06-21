@@ -16,8 +16,8 @@ function InterpreterCompileAndRun( program_text )
 		'/ustlib/src/unix/path_utils.u',
 		// ignore stdout.u
 		'/ustlib/src/arena_allocator.u',
-		'/ustlib/src/integer_parsing.u',
 		'/ustlib/src/inet_address.u',
+		'/ustlib/src/number_parsing.u',
 		'/ustlib/src/string_conversions_floating_point.u',
 		'/ustlib/src/string_conversions_integer.u',
 		// ignore stdin.u
