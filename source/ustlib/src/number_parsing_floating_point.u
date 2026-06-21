@@ -1,4 +1,7 @@
+import "../imports/assert.iu"
+import "../imports/bit_math.iu"
 import "../imports/number_parsing.iu"
+import "../imports/scoped_array.iu"
 
 namespace ust
 {
@@ -39,16 +42,679 @@ fn parse_f64( array_view_imut</char32/> &mut range ) : optional</f64/>
 template</type C/>
 fn parse_impl_f32( array_view_imut</C/> &mut range ) : optional</f32/>
 {
-	// TODO
-	halt;
+	return ParseFloatImpl</ FloatPropertiesF32 />( range );
 }
 
 template</type C/>
 fn parse_impl_f64( array_view_imut</C/> &mut range ) : optional</f64/>
 {
-	// TODO
-	halt;
+	return ParseFloatImpl</ FloatPropertiesF64 />( range );
 }
+
+template</type FP, type CharType/>
+fn ParseFloatImpl( array_view_imut</CharType/> &mut s ) : optional</FP::FloatType/>
+{
+	var FP::IntegerType mut sign_mask(0);
+
+	// Parse optional leading minus sign.
+	// Don't care about leading plus.
+	// JSON, for example don't support it.
+	// Stringification functions in "ustlib" also don't emit it.
+	// Ü langauge grammar also has no unary plus.
+	if( !s.empty() && s.front() == CharType( '-' ) )
+	{
+		sign_mask= FP::IntegerType(1) << ( typeinfo</ FP::IntegerType />.size_of * 8s - 1s );
+		s.drop_front();
+	}
+
+	// Handle NaN and infinity.
+
+	if( s.size() >= 3s )
+	{
+		var CharType c0( u32( s[0s] ) | c_ascii_to_lower_or_mask );
+
+		if( c0 == CharType( 'n' ) )
+		{
+			var CharType c1( u32( s[1s] ) | c_ascii_to_lower_or_mask );
+			var CharType c2( u32( s[2s] ) | c_ascii_to_lower_or_mask );
+
+			if( ( c1 == CharType( 'a' ) ) & ( c2 == CharType( 'n' ) ) )
+			{
+				// "nan"
+				s= s.subrange_start( 3s );
+				return
+					FP::FloatType(
+						FP::ByteType(
+							sign_mask |
+							( FP::c_max_exponent_value << FP::c_num_mantissa_bits )
+							| FP::IntegerType(1) ) );
+			}
+		}
+		else if( c0 == CharType( 'i' ) )
+		{
+			var CharType c1( u32( s[1s] ) | c_ascii_to_lower_or_mask );
+			var CharType c2( u32( s[2s] ) | c_ascii_to_lower_or_mask );
+
+			if( ( c1 == CharType( 'n' ) ) & ( c2 == CharType( 'f' ) ) )
+			{
+				// "inf"
+				s= s.subrange_start( 3s );
+
+				if( s.size() >= 5s )
+				{
+					if(
+						( CharType( u32( s[0s] ) | c_ascii_to_lower_or_mask ) == CharType( 'i' ) ) &
+						( CharType( u32( s[1s] ) | c_ascii_to_lower_or_mask ) == CharType( 'n' ) ) &
+						( CharType( u32( s[2s] ) | c_ascii_to_lower_or_mask ) == CharType( 'i' ) ) &
+						( CharType( u32( s[3s] ) | c_ascii_to_lower_or_mask ) == CharType( 't' ) ) &
+						( CharType( u32( s[4s] ) | c_ascii_to_lower_or_mask ) == CharType( 'y' ) ) )
+					{
+						// "infinity"
+						s= s.subrange_start( 5s );
+					}
+				}
+
+				return
+					FP::FloatType(
+						FP::ByteType( sign_mask | ( FP::c_max_exponent_value << FP::c_num_mantissa_bits ) ) );
+			}
+		}
+	}
+
+	// We have only numerical chars left, no sign, no special values.
+	return ContinueParsingFiniteFloat</FP/>( sign_mask, s );
+}
+
+template</type FP, type CharType, type SignMaskType/>
+fn ContinueParsingFiniteFloat( SignMaskType mut sign_mask, array_view_imut</CharType/> &mut s ) : optional</FP::FloatType/>
+{
+	if( s.empty() )
+	{
+		return null_optional; // Require at least one digit.
+	}
+
+	var size_type mut integer_part_begin= 0s, mut integer_part_end= 0s;
+
+	var CharType first_char= s[ integer_part_end ];
+	if( !( first_char >= CharType( '0' ) && first_char <= CharType( '9' ) ) )
+	{
+		return null_optional;
+	}
+
+	++integer_part_end;
+
+	// Parse integer part.
+	while( integer_part_end < s.size() )
+	{
+		var CharType c= s[ integer_part_end ];
+		if( !( c >= CharType( '0' ) && c <= CharType( '9' ) ) )
+		{
+			break;
+		}
+
+		++integer_part_end;
+	}
+
+	var size_type mut fractional_part_begin= integer_part_end, mut fractional_part_end= fractional_part_begin;
+
+	// Parse fractional part.
+	if( fractional_part_begin < s.size() && s[ fractional_part_begin ] == CharType( '.' ) )
+	{
+		++fractional_part_begin;
+		++fractional_part_end;
+
+		if( fractional_part_end >= s.size() )
+		{
+			return null_optional; // Require at least one fractional digit.
+		}
+
+		while( fractional_part_end < s.size() )
+		{
+			var CharType c= s[ fractional_part_end ];
+			if( !( c >= CharType( '0' ) && c <= CharType( '9' ) ) )
+			{
+				break;
+			}
+
+			++fractional_part_end;
+		}
+	}
+
+	var size_type mut exponent_end= fractional_part_end;
+
+	var i32 mut decimal_exponent= 0;
+
+	if( exponent_end < s.size() && CharType( u32( s[ exponent_end ] ) | c_ascii_to_lower_or_mask ) == CharType( 'e' ) )
+	{
+		++exponent_end;
+
+		var bool mut decimal_exponent_is_negative= false;
+
+		if( exponent_end < s.size() )
+		{
+			var CharType c= s[ exponent_end ];
+			if( c == CharType( '-' ) )
+			{
+				decimal_exponent_is_negative= true;
+				++exponent_end;
+			}
+			else if( c == CharType( '+' ) )
+			{
+				++exponent_end;
+			}
+		}
+
+		if( exponent_end >= s.size() )
+		{
+			return null_optional; // Require at least one exponent digit.
+		}
+
+		while( exponent_end < s.size() )
+		{
+			var CharType c= s[ exponent_end ];
+			if( !( c >= CharType( '0' ) && c <= CharType( '9' ) ) )
+			{
+				break;
+			}
+
+			decimal_exponent *= 10;
+			decimal_exponent += i32( c ) - i32( '0' );
+
+			// Detect too large exponents before facing 32-bit exponent variable overflow and use saturation.
+			min_assign( decimal_exponent, 65536 );
+
+			++exponent_end;
+		}
+
+		if( decimal_exponent_is_negative )
+		{
+			decimal_exponent= -decimal_exponent;
+		}
+	}
+
+	// Trim leading zeros in integer part.
+	while( integer_part_begin < integer_part_end && s[ integer_part_begin ] == CharType( '0' ) )
+	{
+		++integer_part_begin;
+	}
+
+	// Trim leading zeros in fractional part if integer part is zero.
+	var size_type fractional_part_begin_original= fractional_part_begin;
+	if( integer_part_begin == integer_part_end )
+	{
+		while( fractional_part_begin < fractional_part_end && s[ fractional_part_begin ] == CharType( '0' ) )
+		{
+			++fractional_part_begin;
+		}
+	}
+
+	// Trim trailing zeros in fractional part.
+	while( fractional_part_begin < fractional_part_end && s[ fractional_part_end - 1s ] == CharType( '0' ) )
+	{
+		--fractional_part_end;
+	}
+
+	var size_type num_significand_digits=
+		( integer_part_end - integer_part_begin ) + ( fractional_part_end - fractional_part_begin );
+
+	if( num_significand_digits == 0s )
+	{
+		// If no digits are left after trimming zeros, we have actual zero.
+		s= s.subrange_start( exponent_end );
+		return FP::FloatType( FP::ByteType( sign_mask ) );
+	}
+
+	var i32 result_decimal_exponent= decimal_exponent - i32( fractional_part_end - fractional_part_begin_original );
+
+	var i32 result_approximate_decimal_order= result_decimal_exponent + i32( num_significand_digits );
+
+	if( result_approximate_decimal_order > FP::c_max_decimal_order )
+	{
+		// For large positive exponents return infinity.
+		s= s.subrange_start( exponent_end );
+		return FP::FloatType( FP::ByteType( sign_mask | ( FP::c_max_exponent_value << FP::c_num_mantissa_bits ) ) );
+	}
+
+	if( result_approximate_decimal_order < FP::c_min_decimal_order )
+	{
+		// For large negative exponents return zero.
+		s= s.subrange_start( exponent_end );
+		return FP::FloatType( FP::ByteType( sign_mask ) );
+	}
+
+	// Require log(10)/log(2) bits for each decimal digit. Calculate an approximate value and round it up.
+	var size_type mut num_total_bits= ( ( num_significand_digits * size_type( c_log10_div_log2_fixed8 ) ) >> 8s ) + 1s;
+
+	var u32 mut num_left_bit_shifts= 0u;
+
+	if( result_decimal_exponent >= 0 )
+	{
+		// Require log(5)/log(2) bits for each multiplication by 5.
+		num_total_bits+= ( ( size_type( result_decimal_exponent ) * size_type( c_log5_div_log2_fixed8 ) ) >> 8s ) + 1s;
+	}
+	else
+	{
+		// Perform multiplications by two in order to ensure that we have enough bits left after divisions by 5 (including at least one fractional digit).
+		// We need -result_decimal_exponent * log(5) / log(2) bits for each division by 5. Approximate this number.
+		// Also make sure we have a little bit more precision than number of mantissa bits.
+		num_left_bit_shifts=
+			( ( u32( -result_decimal_exponent ) * c_log5_div_log2_fixed8 ) >> 8 ) + u32( FP::c_num_mantissa_bits ) + 3u;
+		num_total_bits+= size_type( num_left_bit_shifts );
+	}
+
+	// Store and process the given number using fixed words.
+	// We can't just use some fixed-size integer type (like u128), since we may require a lot of precision.
+	// Words are stored in minor to major order.
+	type Word= u32;
+	var size_type c_num_word_bits= typeinfo</Word/>.size_of * 8s;
+	scoped_array Word mut words[ ( num_total_bits + ( c_num_word_bits - 1s ) ) / c_num_word_bits ]( Word(0) );
+
+	// Perform actual conversion of significand into long integer.
+	{
+		var [ array_view_imut</CharType/>, 2 ] significand_ranges
+		[
+			s.subrange( integer_part_begin, integer_part_end ),
+			s.subrange( fractional_part_begin, fractional_part_end ),
+		];
+
+		if( num_significand_digits <= 19s )
+		{
+			// An optimization for pretty-common cases with a significand fitting into a 64-bit integer.
+			// Such cases should be common, since 19 digits is more than enough to represent f64 exactly.
+			// A proper f64 stringification function shouldn't emit more digits than that.
+
+			var u64 mut significand64= 0u64;
+
+			foreach( &range : significand_ranges )
+			{
+				foreach( c : range )
+				{
+					significand64 *= 10u64;
+					significand64 += u64( u32( c ) - u32( '0' ) );
+				}
+			}
+
+			words[0s]= Word( significand64 );
+			if( words.size() >= 2s )
+			{
+				words[1s]= Word( significand64 >> 32 );
+			}
+			else
+			{
+				debug_assert( ( significand64 & 0xFFFFFFFF00000000u64 ) == 0u64, "Should have enough words to represent significand!" );
+			}
+		}
+		else
+		{
+			// We have a lot of significand digits.
+			// Use long arithmetic for significand extraction.
+
+			foreach( &range : significand_ranges )
+			{
+				foreach( c : range )
+				{
+					var u32 mut carry= u32( c ) - u32( '0' );
+					foreach( &mut word : words )
+					{
+						var u64 word_scaled= u64( word ) * 10u64 + u64( carry );
+						word= Word( word_scaled );
+						carry= u32( word_scaled >> c_num_word_bits );
+					}
+
+					debug_assert( carry == 0u, "Should have enough words to avoid overflow!" );
+				}
+			}
+		}
+	}
+
+	// After we performed actual extraction of significand digits, we can advance the input string.
+	s= s.subrange_start( exponent_end );
+
+	var i32 mut binary_exponent= i32( FP::c_exponent_bias );
+	binary_exponent+= result_decimal_exponent; // Account for the fact that we multiply and divide by 5 and not by 10.
+
+	var bool mut has_non_zero_div5_remainder= false;
+
+	if( result_decimal_exponent >= 0 )
+	{
+		debug_assert( num_left_bit_shifts == 0u, "Should not use left bit shifts for positive decimal powers!" );
+
+		// Perform as many multiplications by 5 as needed - for each power of ten.
+
+		var u32 mut num_five_multiplications= u32( result_decimal_exponent );
+
+		// First perform multiplications by pow( 5, 13 ).
+		// This is the largest power of 5 which can fit into 32-bit unsinged integer,
+		// so that we can use 32-bit by 32-bit multiplication.
+
+		var u32 num_five_power13_multiplications= num_five_multiplications / 13u;
+		num_five_multiplications %= 13u;
+
+		for( auto mut i= 0u; i < num_five_power13_multiplications; ++i )
+		{
+			var u32 mut carry= 0u;
+			foreach( &mut word : words )
+			{
+				var u64 word_scaled= u64( word ) * 1220703125u64 + u64( carry );
+				word= Word( word_scaled );
+				carry= u32( word_scaled >> c_num_word_bits );
+			}
+
+			debug_assert( carry == 0u, "Should have enough words to avoid overflow!" );
+		}
+
+		// Perform remaining multiplications by 5 if needed.
+		if( num_five_multiplications > 0u )
+		{
+			var u32 mut remaining_five_power= 1u;
+			for( auto mut i= 0u; i < num_five_multiplications; ++i )
+			{
+				remaining_five_power*= 5u;
+			}
+
+			var u32 mut carry= 0u;
+			foreach( &mut word : words )
+			{
+				var u64 word_scaled= u64( word ) * u64( remaining_five_power ) + u64( carry );
+				word= Word( word_scaled );
+				carry= u32( word_scaled >> c_num_word_bits );
+			}
+
+			debug_assert( carry == 0u, "Should have enough words to avoid overflow!" );
+		}
+	}
+	else if( result_decimal_exponent < 0 )
+	{
+		binary_exponent-= i32( num_left_bit_shifts );
+
+		// First perform whole word shifts (as many as necessary).
+		var u32 num_word_shifts= num_left_bit_shifts / u32( c_num_word_bits );
+		num_left_bit_shifts %= u32( c_num_word_bits );
+
+		for( auto mut i= words.size(); i > size_type( num_word_shifts ); --i )
+		{
+			var Word word= words[ i - 1s - size_type( num_word_shifts ) ];
+			words[ i - 1s ]= word;
+		}
+
+		// Zero shifted-out words.
+		foreach( &mut word : words.subrange_end( size_type( num_word_shifts ) ) )
+		{
+			word= Word(0);
+		}
+
+		// Perform remaining shifts.
+		{
+			var u32 mut carry= 0u;
+			foreach( &mut word : words )
+			{
+				var u64 word_shifted= ( u64( word ) << num_left_bit_shifts ) | u64( carry );
+				word= Word( word_shifted );
+				carry= u32( word_shifted >> c_num_word_bits );
+			}
+
+			debug_assert( carry == 0u, "Should have enough words to avoid overflow!" );
+		}
+
+		// Perform as many divisions by 5 as needed - for each power of ten.
+		var u32 mut num_divisions_by5( -result_decimal_exponent );
+
+		// Perform divisions by pow( 5, 6 ) first. It should be faster than 6 consecutive divisions by 5.
+
+		var u32 num_divisions_by_five_power6= num_divisions_by5 / 6u;
+		num_divisions_by5 %= 6u;
+
+		for( auto mut i= 0u; i < num_divisions_by_five_power6; ++i )
+		{
+			var u32 mut remainder= 0u;
+			foreach( &mut word : words.iter_reverse() )
+			{
+				// Use here 32-bit by 32-bit division, which should be fast even on 32-bit systems.
+				// Since we use here a constant divisor, the compiler can replace actual division with multiplication.
+				// Since we need to take carry into account, we need to split a 32-bit word in 16-bit subwords.
+				var u16 mut word_hi( word >> 16 ), mut word_lo( word );
+				{
+					var u32 x= u32( word_hi ) + ( remainder << 16 );
+					var u32 div= x / 15625u;
+					var u32 rem= x % 15625u;
+					word_hi= u16( div );
+					remainder= rem;
+				}
+				{
+					var u32 x= u32( word_lo ) + ( remainder << 16 );
+					var u32 div= x / 15625u;
+					var u32 rem= x % 15625u;
+					word_lo= u16( div );
+					remainder= rem;
+				}
+				word= Word( word_lo ) | ( Word( word_hi ) << 16 );
+			}
+
+			// It's necessary for ties resolution to memorize whether we have a non-zero remainder after division by 5.
+			has_non_zero_div5_remainder |= remainder != 0u;
+		}
+
+		// Perform remaining divisions by 5.
+
+		for( auto mut i= 0u; i < num_divisions_by5; ++i )
+		{
+			var u32 mut remainder= 0u;
+			foreach( &mut word : words.iter_reverse() )
+			{
+				// Use here 32-bit by 32-bit division, which should be fast even on 32-bit systems.
+				// Since we use here a constant divisor, the compiler can replace actual division with multiplication.
+				// Since we need to take carry into account, we need to split a 32-bit word in 16-bit subwords.
+				var u16 mut word_hi( word >> 16 ), mut word_lo( word );
+				{
+					var u32 x= u32( word_hi ) + ( remainder << 16 );
+					var u32 div= x / 5u;
+					var u32 rem= x % 5u;
+					word_hi= u16( div );
+					remainder= rem;
+				}
+				{
+					var u32 x= u32( word_lo ) + ( remainder << 16 );
+					var u32 div= x / 5u;
+					var u32 rem= x % 5u;
+					word_lo= u16( div );
+					remainder= rem;
+				}
+				word= Word( word_lo ) | ( Word( word_hi ) << 16 );
+			}
+
+			// It's necessary for ties resolution to memorize whether we have a non-zero remainder after division by 5.
+			has_non_zero_div5_remainder |= remainder != 0u;
+		}
+	}
+
+	// Find the most major one bit.
+	// There should be at least one non-zero bit, since actual zero is handled earlier and no truncation/overflow should happen for it.
+	var size_type mut last_one_bit_index= 0s;
+	for( auto mut i= words.size(); i > 0s; --i )
+	{
+		var size_type word_index= i - 1s;
+		var Word word= words[ word_index ];
+		if( word != Word(0) )
+		{
+			last_one_bit_index=
+				word_index * c_num_word_bits + ( c_num_word_bits  - 1s ) - size_type( count_leading_zeros( word ) );
+			break;
+		}
+	}
+
+	// Copy bits into the result mantissa.
+	var FP::IntegerType mut binary_mantissa(0);
+	if( last_one_bit_index > 0s )
+	{
+		var size_type integer_type_size_bits= typeinfo</FP::IntegerType/>.size_of * 8s;
+
+		var size_type major_mantissa_bit_index= last_one_bit_index - 1s;
+		var size_type major_mantissa_bit_word_index= major_mantissa_bit_index / c_num_word_bits;
+
+		var size_type shift= 1s + major_mantissa_bit_index % c_num_word_bits;
+
+		binary_mantissa= FP::IntegerType( words[ major_mantissa_bit_word_index ] ) << ( integer_type_size_bits - shift );
+
+		static_if( integer_type_size_bits == 32s )
+		{
+			if( major_mantissa_bit_word_index > 0s && shift < c_num_word_bits )
+			{
+				binary_mantissa |= FP::IntegerType( words[ major_mantissa_bit_word_index - 1s ] ) >> shift;
+			}
+		}
+		else static_if( integer_type_size_bits == 64s )
+		{
+			if( major_mantissa_bit_word_index > 0s )
+			{
+				binary_mantissa |= FP::IntegerType( words[ major_mantissa_bit_word_index - 1s ] ) << ( c_num_word_bits - shift );
+
+				if( major_mantissa_bit_word_index > 1s )
+				{
+					binary_mantissa |= FP::IntegerType( words[ major_mantissa_bit_word_index - 2s ] ) >> shift;
+				}
+			}
+		}
+		else
+		{
+			static_assert( false, "Unsupported integer type for mantissa!" );
+		}
+
+		binary_mantissa >>= integer_type_size_bits - FP::c_num_mantissa_bits;
+	}
+
+	binary_exponent+= i32( last_one_bit_index );
+
+	var size_type mut num_actual_mantissa_bits_plus_one= FP::c_num_mantissa_bits + 1s;
+
+	if( binary_exponent <= 0 )
+	{
+		if( -binary_exponent > i32( FP::c_num_mantissa_bits ) )
+		{
+			return FP::FloatType( FP::ByteType( sign_mask ) ); // Too small exponent - result is zero.
+		}
+
+		// Handle subnormal numbers.
+		binary_mantissa |= FP::IntegerType(1) << FP::c_num_mantissa_bits;
+		var u32 shift( 1 - binary_exponent );
+
+		binary_mantissa >>= shift;
+
+		num_actual_mantissa_bits_plus_one-= size_type( shift );
+
+		binary_exponent= 0;
+	}
+
+	if( last_one_bit_index >= num_actual_mantissa_bits_plus_one )
+	{
+		// We have some fractional bits left.
+		// Perform checks needed for rounding.
+
+		var size_type first_fractional_bit= last_one_bit_index - num_actual_mantissa_bits_plus_one;
+		var size_type first_fractional_bit_word_index= first_fractional_bit / c_num_word_bits;
+		var Word first_fractional_bit_word= words[ first_fractional_bit_word_index ];
+		var Word first_fractional_bit_word_bit_mask = 1u << ( first_fractional_bit % c_num_word_bits );
+		if( ( first_fractional_bit_word & first_fractional_bit_word_bit_mask ) != 0u )
+		{
+			// First fractional bit is "1" - rounding up may be needed.
+			// It's something like x.1abcdefghijkl.
+			// Such rounding is needed if at least one of remaining fractional digits is one.
+			// Also rounding up may be needed if they are all zero (tie resolution).
+
+			var Word mut remaining_words_or= first_fractional_bit_word & ( first_fractional_bit_word_bit_mask - 1u );
+
+			foreach( word : words.subrange_end( first_fractional_bit_word_index ) )
+			{
+				remaining_words_or|= word;
+			}
+
+			var bool mut need_round_up= false;
+
+			if( remaining_words_or == 0u && !has_non_zero_div5_remainder )
+			{
+				// We have a tie.
+				var size_type bit= last_one_bit_index + 1s - num_actual_mantissa_bits_plus_one;
+				if( ( size_type( words[ bit / c_num_word_bits ] ) & ( 1s << ( bit % c_num_word_bits ) ) ) != 0s )
+				{
+					need_round_up= true;
+				}
+			}
+			else
+			{
+				need_round_up= true;
+			}
+
+			if( need_round_up )
+			{
+				++binary_mantissa;
+				if( ( binary_mantissa & ( FP::IntegerType(1) << FP::c_num_mantissa_bits ) ) != FP::IntegerType(0) )
+				{
+					// Rounded up from something like 1.1111 to 10.0000. Increase exponent and set mantissa to zero.
+					// We loose here no information, since in such case the least significant bit is zero.
+					binary_mantissa= FP::IntegerType(0);
+					++binary_exponent;
+				}
+			}
+		}
+	}
+	else
+	{
+		// We have no fractional bits.
+		// No ties resolution is necessary.
+		// Also we should have no fractional bits lost in division, since no division should be performed in such case.
+		debug_assert( !has_non_zero_div5_remainder, "Should not have remainder left if has no fractional digits!" );
+	}
+
+	if( binary_exponent >= i32( FP::c_max_exponent_value ) )
+	{
+		// Too large exponent - result is infinity.
+		// "strtod"/"strtof" return infinty in such case.
+		// Also the largest exponent value together with non-zero mantissa is reserved for NAN.
+		// So, we can't use it and need to replace result with infinity.
+		return FP::FloatType( FP::ByteType( sign_mask | ( FP::c_max_exponent_value << FP::c_num_mantissa_bits ) ) );
+	}
+
+	return FP::FloatType( FP::ByteType( sign_mask | ( FP::IntegerType( binary_exponent ) << FP::c_num_mantissa_bits ) | binary_mantissa ) );
+}
+
+struct FloatPropertiesF32
+{
+	type FloatType= f32;
+	type ByteType= byte32;
+	type IntegerType= u32;
+
+	var size_type constexpr c_num_mantissa_bits= 23s;
+	var size_type constexpr c_num_exponent_bits= 32s - 1s - c_num_mantissa_bits;
+
+	var IntegerType constexpr c_exponent_bias= ( 1u << ( c_num_exponent_bits - 1s ) ) - 1u;
+	var IntegerType constexpr c_max_exponent_value= ( 1u << c_num_exponent_bits ) - 1u;
+
+	var i32 constexpr c_max_decimal_order= 40;
+	var i32 constexpr c_min_decimal_order= -46;
+}
+
+struct FloatPropertiesF64
+{
+	type FloatType= f64;
+	type ByteType= byte64;
+	type IntegerType= u64;
+
+	var size_type constexpr c_num_mantissa_bits= 52s;
+	var size_type constexpr c_num_exponent_bits= 64s - 1s - c_num_mantissa_bits;
+
+	var IntegerType constexpr c_exponent_bias= ( 1u64 << ( c_num_exponent_bits - 1s ) ) - 1u64;
+	var IntegerType constexpr c_max_exponent_value= ( 1u64 << c_num_exponent_bits ) - 1u64;
+
+	var i32 constexpr c_max_decimal_order= 311;
+	var i32 constexpr c_min_decimal_order= -341;
+}
+
+// log(10)/log(2) is roughly 3.321928095, 851 / 256 is exactly 3.32421875.
+var u32 constexpr c_log10_div_log2_fixed8= 851u;
+// log(5) / log(2) is roughly 2.321928095, 595 / 256 is exactly 2.32421875.
+var u32 constexpr c_log5_div_log2_fixed8= 595u;
+
+// Aplying bit-or to a character value using this mask makes result lower-case for alphabetical chars.
+var u32 constexpr c_ascii_to_lower_or_mask= 32u;
 
 } // namespace number_parsing_impl
 
