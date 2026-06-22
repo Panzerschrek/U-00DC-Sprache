@@ -83,13 +83,10 @@ Standart library:
 *) More algorithms
 *) More iterator class methods - like "enumerate" and others
 *) Vector drain iterator
-*) Functions for conversion of floating-point numbers into string
-*) Functions for floating-point numbers parsing
 *) Reverse iterators for hash_map and hash_set. They are mostly useless, but should exist for completeness.
 *) Time library - request monotonic time, perform time difference calculations, perform conversions from/to calendar
 	time, perform conversions to human-readable format
 *) String formatting library
-*) Functions for parsing of floating-point numbers
 *) Support casting "shared_ptr_final</A/>" to "shared_ptr_final</B/>" if A and B are polymorph related types
 *) Formatted console output functions
 *) More type traits
@@ -136,9 +133,8 @@ Compiler:
 *) Add hard limit for input file size (like 10MB)
 *) Investigate optimization possibility - avoid mangling private functions
 *) Try to optimize SrcLoc size (use only 4 bytes)
-*) Parse floating-point numeric literals in syntax analyzer and avoid storing literal string in AST. In Compiler0 it
-	requires a locale-independent exact parser (std::from_chars?), in Compiler1 it requires implementing such parser in
-	ustlib.
+*) In Compiler0 parse floating-point numeric literals in syntax analyzer and avoid storing literal string in AST. It
+	requires a locale-independent exact parser (std::from_chars?).
 *) Speed-up references graph code - try using faster hash-map implementation
 *) Avoid recursion in VariantLinkedList destructor - it causes stack overflow for long lists
 *) Find a way to detect recursive mixins in blocks, type names, expressions
