@@ -15,6 +15,15 @@ fn nomangle main() call_conv( "C" ) : i32
 	TestRandomBitPatternF32Parsing();
 	TestRandomNumberStringF32Parsing();
 
+	// Running parsing tests for all f32 numbers isn't fast.
+	// It may take 10 to 30 minutes (singlethreaded).
+	// So, disable it by-default.
+	// Enable it if you want to make changes in code performing "f32" parsing to make sure it's always correct.
+	if( false )
+	{
+		TestAllF32ValuesParsing();
+	}
+
 	return 0;
 }
 
@@ -346,6 +355,51 @@ fn TestRandomNumberStringF32Parsing()
 		s.push_back( char8( u32( '0' ) + abs_decimal_exponent % 10u ) );
 
 		TestF32NumberParsing( s );
+	}
+}
+
+fn TestAllF32ValuesParsing()
+{
+	// Run parsing tests for all possible bit patters of f32 type.
+
+	var u64 total_numbers= 1u64 << 32;
+
+	for( auto mut i= 0u64; i < total_numbers; ++i )
+	{
+		var f32 num( byte32( u32(i) ) );
+
+		var ust::string8 num_str= ust::to_string8( num );
+
+		var ust::optional</f32/> num_parsed_opt= ust::parse_number</f32/>( num_str.range() );
+		if( num_parsed_opt.empty() )
+		{
+			ust::stderr_print( ust::concat( "Failed to parse ", num_str, "!\n" ) );
+			halt;
+		}
+
+		var f32 num_parsed= num_parsed_opt.try_deref();
+
+		if( ust::is_nan( num_parsed ) && ust::is_nan( num ) )
+		{
+			// Fine - both results are NAN.
+		}
+		else if( num != num_parsed )
+		{
+			ust::stderr_print(
+				ust::concat(
+					"Parsing result for \"",
+					num_str,
+					"\" is wrong! It is ",
+					ust::to_string8( num_parsed ),
+					".\n" ) );
+			halt;
+		}
+
+		var u64 progress_printing_step= 4u64 * 1024u64 * 1024u64;
+		if( i % progress_printing_step == 0u64 )
+		{
+			ust::stdout_print( ust::concat( "All f32 values parsing progress: ", ust::to_string8( i / progress_printing_step ), "\n" ) );
+		}
 	}
 }
 
