@@ -25,6 +25,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 
 	TestF64Parsing();
+	TestF64PowersOfTenParsing();
+	TestF64PowersOfTwoParsing();
 
 	return 0;
 }
@@ -570,6 +572,18 @@ fn TestF64Parsing()
 	{
 		TestF64NumberParsing( num_str );
 	}
+}
+
+fn TestF64PowersOfTenParsing()
+{
+	GeneratePositivePowersOfTenNumberStrings( 320s, TestF64NumberParsing );
+	GenerateNegativePowersOfTenNumberStrings( 360s, TestF64NumberParsing );
+}
+
+fn TestF64PowersOfTwoParsing()
+{
+	GeneratePositivePowersOfTwoNumberStrings( 1100s, TestF32NumberParsing );
+	GenerateNegativePowersOfTwoNumberStrings( 1200s, TestF32NumberParsing );
 }
 
 fn TestF32NumberParsing( ust::string_view8 num_str )
