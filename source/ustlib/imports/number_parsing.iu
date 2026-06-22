@@ -3,6 +3,23 @@ import "random_access_range.iu"
 namespace ust
 {
 
+// This file contains functions for decimal numbers parsing.
+//
+// The input format for integers is pretty simple.
+// They consist only of nuber digits and optional minus sign for signed types.
+// Leading zeros aren't allowed except for the number zero.
+// If overflow occurs, empty optional is returned.
+//
+// For floating-point numbers the input format is more compex.
+// Fractional point is allowed, but at least one digit should follow after it.
+// Only the point character ('.') is accepted as fractional part separator, but not comma or some other characher.
+// Decimal exponent starting with 'e' or 'E' followed by optional plus or minus sign and one or more digits is allowed.
+// "nan" (case-insensitive) with optional leading minus sign is allowed to represent "nan" values.
+// "inf" or "infinity" with optional leading minus sign is allowed to represent infinite values.
+// If overflow happens, infinity (or negative infinity) is returned.
+// If underflow happens, zero is returned.
+// If the given value can't be represented in the given floating-point type, it's rounded to the nearest representable value, ties are resolved towards even numbers.
+
 // Extract a number from given range, dropping characters of this number from start.
 // Returns empty optional if failed to parse or faced an overflow.
 template</type T, type C/>
