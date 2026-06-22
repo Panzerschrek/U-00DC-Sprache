@@ -16,6 +16,9 @@ fn nomangle main() call_conv( "C" ) : i32
 	TestNumbersExtraction</f32/>();
 	TestNumbersExtraction</f64/>();
 
+	TestWideStrings</f32/>();
+	TestWideStrings</f64/>();
+
 	TestF32Parsing();
 	TestF32PowersOfTenParsing();
 	TestF32PowersOfTwoParsing();
@@ -110,6 +113,32 @@ fn TestNumbersExtraction()
 		assert( ust::parse_and_extract_number</T/>( s ) == T( -45.2 ) );
 		assert( s == "-22" );
 	}
+}
+
+template</type T/>
+fn TestWideStrings()
+{
+	assert( ust::parse_number_exact</T/>( "67"u16 ) == T(67) );
+	assert( ust::parse_number_exact</T/>( "24.0"u16 ) == T(24.0) );
+	assert( ust::parse_number_exact</T/>( "-634.734"u16 ) == T(-634.734) );
+	assert( ust::parse_number_exact</T/>( "0.454e13"u16 ) == T(0.454e13) );
+	assert( ust::parse_number_exact</T/>( "12345e19"u16 ) == T(12345e19) );
+	assert( ust::is_nan( ust::parse_number_exact</T/>( "nan"u16 ).try_deref() ) );
+	assert( ust::is_nan( ust::parse_number_exact</T/>( "-NAN"u16 ).try_deref() ) );
+	assert( ust::parse_number_exact</T/>( "-inf"u16 ) == -( T(1.0) / T(0.0) ) );
+	assert( ust::parse_number_exact</T/>( "INF"u16 ) == T(1.0) / T(0.0) );
+	assert( ust::parse_number_exact</T/>( "InFiNiTy"u16 ) == T(1.0) / T(0.0) );
+
+	assert( ust::parse_number_exact</T/>( "67"u32 ) == T(67) );
+	assert( ust::parse_number_exact</T/>( "24.0"u32 ) == T(24.0) );
+	assert( ust::parse_number_exact</T/>( "-634.734"u32 ) == T(-634.734) );
+	assert( ust::parse_number_exact</T/>( "0.454e13"u32 ) == T(0.454e13) );
+	assert( ust::parse_number_exact</T/>( "12345e19"u32 ) == T(12345e19) );
+	assert( ust::is_nan( ust::parse_number_exact</T/>( "nan"u32 ).try_deref() ) );
+	assert( ust::is_nan( ust::parse_number_exact</T/>( "-NAN"u32 ).try_deref() ) );
+	assert( ust::parse_number_exact</T/>( "-inf"u32 ) == -( T(1.0) / T(0.0) ) );
+	assert( ust::parse_number_exact</T/>( "INF"u32 ) == T(1.0) / T(0.0) );
+	assert( ust::parse_number_exact</T/>( "InFiNiTy"u32 ) == T(1.0) / T(0.0) );
 }
 
 fn TestF32Parsing()
