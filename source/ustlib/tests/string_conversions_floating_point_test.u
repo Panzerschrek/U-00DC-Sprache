@@ -457,17 +457,19 @@ private:
 fn ParseF32( ust::string_view8 s ) : f32
 {
 	// Use a number parsing function from the C standard library.
+	// We need it to rule out possible errors in our own number parsing functions.
 	scoped_array char8 s_nt[ s.size() + 1s ]( s.iter().chain( ust::string_view8( "\0" ).iter() ) );
-	var f64 res= unsafe( atof( s_nt.data() ) );
-	return f32(res);
+	return unsafe( strtof( s_nt.data(), ust::nullptr</ $(char8) />() ) );
 }
 
 fn ParseF64( ust::string_view8 s ) : f64
 {
 	// Use a number parsing function from the C standard library.
+	// We need it to rule out possible errors in our own number parsing functions.
 	scoped_array char8 s_nt[ s.size() + 1s ]( s.iter().chain( ust::string_view8( "\0" ).iter() ) );
-	return unsafe( atof( s_nt.data() ) );
+	return unsafe( strtod( s_nt.data(), ust::nullptr</ $(char8) />() ) );
 }
 
-// C standard library function.
-fn nomangle atof( $(char8) ptr ) unsafe call_conv( "C" ) : f64;
+// C standard library functions.
+fn nomangle strtof( $(char8) ptr, $($(char8)) end_ptr ) unsafe call_conv( "C" ) : f32;
+fn nomangle strtod( $(char8) ptr, $($(char8)) end_ptr ) unsafe call_conv( "C" ) : f64;
