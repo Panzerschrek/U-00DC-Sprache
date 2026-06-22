@@ -13,6 +13,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	TestF32PowersOfTenParsing();
 	TestF32PowersOfTwoParsing();
 	TestRandomBitPatternF32Parsing();
+	TestRandomNumberStringF32Parsing();
 
 	return 0;
 }
@@ -299,6 +300,52 @@ fn TestRandomBitPatternF32Parsing()
 					".\n" ) );
 			halt;
 		}
+	}
+}
+
+fn TestRandomNumberStringF32Parsing()
+{
+	var RandGenerator mut rand;
+
+	var ust::string8 mut s;
+
+	var u32 constexpr num_radnom_nums= 1u << 21u;
+
+	for( auto mut i= 0u; i < num_radnom_nums; ++i )
+	{
+		// Generate a random string with some integer and fractional digits and decimal exponent.
+
+		// Have no more than 10 integer and fractional digits, since it's enough for most practical cases.
+		var u32 num_integer_digits= 1u + rand.Next() % 9u;
+		var u32 num_fractional_digits= 1u + rand.Next() % 9u;
+		var i32 decimal_exponent= i32( rand.Next() % 80u ) - 40;
+
+		s.clear();
+
+		for( auto mut d= 0u; d < num_integer_digits; ++d )
+		{
+			s.push_back( char8( u32( '0' ) + rand.Next() % 10u ) );
+		}
+
+		s.push_back( '.' );
+
+		for( auto mut d= 0u; d < num_fractional_digits; ++d )
+		{
+			s.push_back( char8( u32( '0' ) + rand.Next() % 10u ) );
+		}
+
+		s.push_back( 'e' );
+		if( decimal_exponent < 0 )
+		{
+			s.push_back( '-' );
+		}
+
+		var u32 abs_decimal_exponent( ust::abs( decimal_exponent ) );
+
+		s.push_back( char8( u32( '0' ) + abs_decimal_exponent / 10u ) );
+		s.push_back( char8( u32( '0' ) + abs_decimal_exponent % 10u ) );
+
+		TestF32NumberParsing( s );
 	}
 }
 
