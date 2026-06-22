@@ -12,6 +12,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	TestF32Parsing();
 	TestF32PowersOfTenParsing();
 	TestF32PowersOfTwoParsing();
+	TestRandomBitPatternF32Parsing();
 
 	return 0;
 }
@@ -259,6 +260,48 @@ fn TestF32PowersOfTwoParsing()
 	GenerateNegativePowersOfTwoNumberStrings( 160s, TestF32NumberParsing );
 }
 
+fn TestRandomBitPatternF32Parsing()
+{
+	var RandGenerator mut rand;
+
+	// It's far way less than the total number of "f32" numbers, but is still pretty high.
+	var u32 num_tested_random_numbers= 1u << 22u;
+
+	for( auto mut i= 0u; i < num_tested_random_numbers; ++i )
+	{
+		var u32 rand_bit_pattern= rand.Next() | ( rand.Next() << 16 );
+
+		var f32 num( byte32( rand_bit_pattern ) );
+
+		var ust::string8 num_str= ust::to_string8( num );
+
+		var ust::optional</f32/> num_parsed_opt= ust::parse_number_exact</f32/>( num_str.range() );
+		if( num_parsed_opt.empty() )
+		{
+			ust::stderr_print( ust::concat( "Failed to parse ", num_str, "!\n" ) );
+			halt;
+		}
+
+		var f32 num_parsed= num_parsed_opt.try_deref();
+
+		if( ust::is_nan( num_parsed ) && ust::is_nan( num ) )
+		{
+			// Fine - both results are NAN.
+		}
+		else if( num != num_parsed )
+		{
+			ust::stderr_print(
+				ust::concat(
+					"Parsing result for \"",
+					num_str,
+					"\" is wrong! It is ",
+					ust::to_string8( num_parsed ),
+					".\n" ) );
+			halt;
+		}
+	}
+}
+
 fn TestF32NumberParsing( ust::string_view8 num_str )
 {
 	var ust::optional</f32/> num_parsed_opt= ust::parse_number_exact</f32/>( num_str );
@@ -392,6 +435,19 @@ fn GenerateNegativePowersOfTwoNumberStrings( size_type num_powers_of_ten, Func& 
 			num.push_back( u8( carry ) );
 		}
 	}
+}
+
+class RandGenerator
+{
+public:
+	fn Next( mut this ) : u32
+	{
+		state_= ( 22695477u * state_ + 1u ) & 0x7FFFFFFFu;
+		return state_ >> 16u;
+	}
+
+private:
+	u32 state_= 0u;
 }
 
 fn ParseF32External( ust::string_view8 s ) : f32
