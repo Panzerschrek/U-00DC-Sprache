@@ -1,4 +1,5 @@
 //##success_test
+import "../imports/assert.iu"
 import "../imports/math.iu"
 import "../imports/number_parsing.iu"
 import "../imports/scoped_array.iu"
@@ -9,6 +10,9 @@ import "../imports/vector.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
+	TestIncorrectNumbersParsing</f32/>();
+	TestIncorrectNumbersParsing</f64/>();
+
 	TestF32Parsing();
 	TestF32PowersOfTenParsing();
 	TestF32PowersOfTwoParsing();
@@ -31,6 +35,38 @@ fn nomangle main() call_conv( "C" ) : i32
 	TestRandomNumberStringF64Parsing();
 
 	return 0;
+}
+
+template</type T/>
+fn TestIncorrectNumbersParsing()
+{
+	assert( ust::parse_number_exact</T/>( "" ).empty() ); // Empty string isn't a valid number.
+	assert( ust::parse_number_exact</T/>( "  " ).empty() ); // String with whitespaces isn't a valid number.
+	assert( ust::parse_number_exact</T/>( " 42" ).empty() ); // String with leading whitespaces isn't a valid number.
+	assert( ust::parse_number_exact</T/>( "3 " ).empty() ); // String with trailing whitespaces isn't a valid number.
+	assert( ust::parse_number_exact</T/>( "q5" ).empty() ); // String with leading non-number charachers isn't a valid number.
+	assert( ust::parse_number_exact</T/>( "563K" ).empty() ); // String with trailing characters after number charachers isn't a valid number.
+	assert( ust::parse_number_exact</T/>( "+33" ).empty() ); // It's incorrect to use leading plus.
+	assert( ust::parse_number_exact</T/>( "--431" ).empty() ); // It's incorrect to use more than one leading minus.
+	assert( ust::parse_number_exact</T/>( "67e+-5" ).empty() ); // Second sign char isn't allowed for exponent.
+	assert( ust::parse_number_exact</T/>( "46e-+21" ).empty() ); // Second sign char isn't allowed for exponent.
+	assert( ust::parse_number_exact</T/>( ".78" ).empty() ); // At least one integer part digit is required.
+	assert( ust::parse_number_exact</T/>( "5634." ).empty() ); // At least one fractional part digit is required.
+	assert( ust::parse_number_exact</T/>( "7e" ).empty() ); // At least one exponent digit is required.
+	assert( ust::parse_number_exact</T/>( "5245e+" ).empty() ); // At least one exponent digit is required after exponent sign.
+	assert( ust::parse_number_exact</T/>( "2490e-" ).empty() ); // At least one exponent digit is required after exponent sign.
+	assert( ust::parse_number_exact</T/>( "56.3.2" ).empty() ); // Second fractional point isn't allowed.
+	assert( ust::parse_number_exact</T/>( "45e3.5" ).empty() ); // Fractional point for exponent isn't allowed.
+	assert( ust::parse_number_exact</T/>( "2,5" ).empty() ); // Fractional comma isn't allowed.
+	assert( ust::parse_number_exact</T/>( "1'000" ).empty() ); // Separators like "'" aren't supported.
+	assert( ust::parse_number_exact</T/>( "nanaq" ).empty() ); // Trailing char after "nan".
+	assert( ust::parse_number_exact</T/>( "infq" ).empty() ); // Trailing char after "inf".
+	assert( ust::parse_number_exact</T/>( "infini" ).empty() ); // Missing "ty" in "infinity".
+	assert( ust::parse_number_exact</T/>( "infinityq" ).empty() ); // Trailing char after "infinity".
+	assert( ust::parse_number_exact</T/>( "+nan" ).empty() ); // It's incorrect to use leading plus for "nan".
+	assert( ust::parse_number_exact</T/>( "+inf" ).empty() ); // It's incorrect to use leading plus for "inf".
+	assert( ust::parse_number_exact</T/>( "--nan" ).empty() ); // It's incorrect to use more than one leading minus for "nan".
+	assert( ust::parse_number_exact</T/>( "--inf" ).empty() ); // It's incorrect to use more than one leading minus for "inf".
 }
 
 fn TestF32Parsing()
@@ -376,7 +412,7 @@ fn TestAllF32ValuesParsing()
 
 		var ust::string8 num_str= ust::to_string8( num );
 
-		var ust::optional</f32/> num_parsed_opt= ust::parse_number</f32/>( num_str.range() );
+		var ust::optional</f32/> num_parsed_opt= ust::parse_number_exact</f32/>( num_str.range() );
 		if( num_parsed_opt.empty() )
 		{
 			ust::stderr_print( ust::concat( "Failed to parse ", num_str, "!\n" ) );
