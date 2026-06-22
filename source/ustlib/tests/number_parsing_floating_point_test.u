@@ -584,8 +584,8 @@ fn TestF64PowersOfTenParsing()
 
 fn TestF64PowersOfTwoParsing()
 {
-	GeneratePositivePowersOfTwoNumberStrings( 1100s, TestF32NumberParsing );
-	GenerateNegativePowersOfTwoNumberStrings( 1200s, TestF32NumberParsing );
+	GeneratePositivePowersOfTwoNumberStrings( 1100s, TestF64NumberParsing );
+	GenerateNegativePowersOfTwoNumberStrings( 1200s, TestF64NumberParsing );
 }
 
 fn TestRandomBitPatternF64Parsing()
