@@ -1,0 +1,297 @@
+//##success_test
+import "../imports/math.iu"
+import "../imports/number_parsing.iu"
+import "../imports/scoped_array.iu"
+import "../imports/stdout.iu"
+import "../imports/string.iu"
+import "../imports/string_conversions.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	TestF32Parsing();
+
+	return 0;
+}
+
+fn TestF32Parsing()
+{
+var [ ust::string_view8, 215 ] num_strs
+	[
+		"-nan",
+		"-NAN",
+		"-NaN",
+		"-Nan",
+		"-nAN",
+		"-inf",
+		"-INF",
+		"-Inf",
+		"-iNF",
+		"-InF",
+		"-iNf",
+		"-infinity",
+		"-INFINITY",
+		"-InFiNiTy",
+		"-iNfInItY",
+		"-1",
+		"-2.0",
+		"-34.67",
+		"-0.256",
+		"-0.5e-5",
+		"-6.7222e25",
+		"-0",
+		"0",
+		"6e-54", // Underflow - should be zero.
+		"1.863726957552006704328560E-43", // Some subnormal.
+		"9.795917044709066215999424E-41", // Some subnormal.
+		"5.997054361161524454225101E-39", // Some subnormal.
+		"4.224028e-38",
+		"3.1029603e-17",
+		"0.00000019311952",
+		"0.00001792781040421687066555023193359375",
+		"0.0625",
+		"125e-3",
+		"0.01",
+		"0.035",
+		"0.0672",
+		"0.1",
+		"0.2",
+		"0.25",
+		"1",
+		"1.5",
+		"1.9999999999999999", // Should round to 2 with exponent change.
+		"2",
+		"2.0000000000000001", // Should round down to 2.
+		"34",
+		"64.5",
+		"62e5",
+		"78.2e2",
+		"5434e3",
+		"67865",
+		"1423453",
+		"999999999", // Max number of decimal digits fitting into 32-bit unsigned integer.
+		"9999999999999999999", // Max number of decimal digits fitting into 64-bit unsigned integer.
+		"99999999999999999999", // Don't fit into 64-bit integer anymore.
+		"18446744073709551616", // First number not fitting into a 64-bit integer.
+		// Tricky cases for proper rounding (including ties resolution).
+		"40000000",
+		"40000001",
+		"40000002",
+		"40000003",
+		"40000004",
+		"40000005",
+		"40000006",
+		"40000007",
+		"40000008",
+		"40000009",
+		"40000010",
+		"40000011",
+		"40000012",
+		// Tricky cases for proper rounding for fractional values.
+		"8000000.0",
+		"8000000.1",
+		"8000000.2",
+		"8000000.25",
+		"8000000.3",
+		"8000000.4",
+		"8000000.5",
+		"8000000.6",
+		"8000000.7",
+		"8000000.75",
+		"8000000.8",
+		"8000000.9",
+		"8000001.0",
+		"8000001.1",
+		"8000001.2",
+		"8000001.25",
+		"8000001.3",
+		"8000001.4",
+		"8000001.5",
+		"8000001.6",
+		"8000001.7",
+		"8000001.75",
+		"8000001.8",
+		"8000001.9",
+		"8000002.0",
+		"8000002.1",
+		"8000002.2",
+		"8000002.25",
+		"8000002.3",
+		"8000002.4",
+		"8000002.5",
+		"8000002.6",
+		"8000002.7",
+		"8000002.75",
+		"8000002.8",
+		"8000002.9",
+		"8000003.0",
+		"8000003.1",
+		"8000003.2",
+		"8000003.25",
+		"8000003.3",
+		"8000003.4",
+		"8000003.5",
+		"8000003.6",
+		"8000003.7",
+		"8000003.75",
+		"8000003.8",
+		"8000003.9",
+		"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000045.25e1", // A lot of leading zeros.
+		"0.12500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", // A lot of trailing zeros.
+		"67e+4", // Exponent with explicit + sign.
+		"-2363.21e+18", // Exponent with explicit + sign.
+		"1e67", // Overflow - should be infinity. "strtof" returns infinity in such case.
+		"6633e3666433", // Exponent is too large - should return infinity.
+		"0e555664444", // Exponent is too large, but it's exponent for zero, so, zero should be returned.
+		"674.3e-6633323", // Exponent is a large negative number - should return zero.
+		"nan",
+		"NAN",
+		"NaN",
+		"Nan",
+		"nAN",
+		"inf",
+		"INF",
+		"Inf",
+		"iNF",
+		"InF",
+		"iNf",
+		"infinity",
+		"INFINITY",
+		"InFiNiTy",
+		"iNfInItY",
+		// Tests borrowed from https://github.com/fastfloat/fast_float/blob/main/tests/basictest.cpp#L1549.
+		// It uses Apache License 2.0.
+		"1234456789012345678901234567890e9999999999999999999999999999",
+		"2e3000",
+		"3.5028234666e38",
+		"3.40282357e38",
+		"340282356779733661637539395458142568448",
+		"0.7006492e-45",
+		"0.7006493e-45",
+		"0.7006492321624085354e-45",
+		"0.7006492321624085355e-45",
+		"340282346638528859811704183484516925440",
+		"-340282346638528859811704183484516925440",
+		"340282356779733661637539395458142568447",
+		"0.3402823567797336616e39",
+		"0.3402823567797336617e39",
+		"-1e-999",
+		"1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",
+		"1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125e-38",
+		"1.1754942807573642917e-38",
+		"1.1754942807573642918e-38",
+		"-0",
+		"1090544144181609348835077142190",
+		"1.1754943508e-38",
+		"30219.0830078125",
+		"16252921.5",
+		"5322519.25",
+		"3900245.875",
+		"1510988.3125",
+		"782262.28125",
+		"328381.484375",
+		"156782.0703125",
+		"85003.24609375",
+		"17419.6494140625",
+		"15498.36376953125",
+		"6318.580322265625",
+		"2525.2840576171875",
+		"1370.9265747070312",
+		"936.3702087402344",
+		"411.88682556152344",
+		"206.50310516357422",
+		"124.16878890991211",
+		"50.811574935913086",
+		"17.486443519592285",
+		"13.91745138168335",
+		"7.5464513301849365",
+		"2.687217116355896",
+		"1.1877630352973938",
+		"0.7622503340244293",
+		"0.30531780421733856",
+		"0.21791061013936996",
+		"0.09289376810193062",
+		"0.03706067614257336",
+		"0.028068351559340954",
+		"0.012114629615098238",
+		"0.004221370676532388",
+		"0.002153817447833717",
+		"0.0015924838953651488",
+		"0.0008602388261351734",
+		"0.00036393293703440577",
+		"0.00013746770127909258",
+		"16407.9462890625",
+		"1.1754947011469036e-38",
+		"7.0064923216240854e-46",
+		"8388614.5",
+		"0e9999999999999999999999999999",
+		"4.7019774032891500318749461488889827112746622270883500860350068251e-38",
+		"3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679",
+		"2.3509887016445750159374730744444913556373311135441750430175034126e-38",
+		"1",
+		"7.0060e-46",
+		"3.4028234664e38",
+		"3.4028234665e38",
+		"3.4028234666e38",
+		"0.000000000000000000000000000000000000011754943508222875079687365372222456778186655567720875215087517062784172594547271728515625",
+		"0.00000000000000000000000000000000000000000000140129846432481707092372958328991613128026194187651577175706828388979108268586060148663818836212158203125",
+		"0.00000000000000000000000000000000000002350988561514728583455765982071533026645717985517980855365926236850006129930346077117064851336181163787841796875",
+		"0.00000000000000000000000000000000000001175494210692441075487029444849287348827052428745893333857174530571588870475618904265502351336181163787841796875",
+	];
+
+	foreach( &num_str : num_strs )
+	{
+		TestF32NumberParsing( num_str );
+	}
+}
+
+fn TestF32NumberParsing( ust::string_view8 num_str )
+{
+	var ust::optional</f32/> num_parsed_opt= ust::parse_number_exact</f32/>( num_str );
+	if( num_parsed_opt.empty() )
+	{
+		ust::stderr_print( ust::concat( "Failed to parse ", num_str, "!\n" ) );
+		halt;
+	}
+
+	var f32 num_parsed= num_parsed_opt.try_deref();
+	var f32 external_parser_result= ParseF32External( num_str );
+
+	if( ust::is_nan( num_parsed ) && ust::is_nan( external_parser_result ) )
+	{
+		// Fine - both results are NAN.
+	}
+	else if( external_parser_result != num_parsed )
+	{
+		ust::stderr_print(
+			ust::concat(
+				"Parsing result for \"",
+				num_str,
+				"\" is wrong! It should be ",
+				ust::to_string8( external_parser_result ),
+				" but it's ",
+				ust::to_string8( num_parsed ),
+				".\n" ) );
+
+		halt;
+	}
+}
+
+fn ParseF32External( ust::string_view8 s ) : f32
+{
+	// Use a number parsing function from the C standard library.
+	// We need it to rule out possible errors in our own number parsing functions.
+	scoped_array char8 s_nt[ s.size() + 1s ]( s.iter().chain( ust::string_view8( "\0" ).iter() ) );
+	return unsafe( strtof( s_nt.data(), ust::nullptr</ $(char8) />() ) );
+}
+
+fn ParseF64External( ust::string_view8 s ) : f64
+{
+	// Use a number parsing function from the C standard library.
+	// We need it to rule out possible errors in our own number parsing functions.
+	scoped_array char8 s_nt[ s.size() + 1s ]( s.iter().chain( ust::string_view8( "\0" ).iter() ) );
+	return unsafe( strtod( s_nt.data(), ust::nullptr</ $(char8) />() ) );
+}
+
+// C standard library functions.
+fn nomangle strtof( $(char8) ptr, $($(char8)) end_ptr ) unsafe call_conv( "C" ) : f32;
+fn nomangle strtod( $(char8) ptr, $($(char8)) end_ptr ) unsafe call_conv( "C" ) : f64;
