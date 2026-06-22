@@ -371,9 +371,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	var LLVMTypeRef llvm_type= GetFundamentalLLVMType(t);
 
-	var LLVMValueRef num_value=
-		unsafe( LLVMConstRealOfStringAndSize(
-			llvm_type, numeric_constant.num.range().data(), u32( numeric_constant.num.size() ) ) );
+	var LLVMValueRef num_value= unsafe( LLVMConstReal( llvm_type, numeric_constant.num ) );
 
 	if( num_value == Null::LLVMValueRef )
 	{
