@@ -128,6 +128,23 @@ fn parse_float_impl( array_view_imut</CharType/> &mut s ) : optional</FP::FloatT
 template</type FP, type CharType, type SignMaskType/>
 fn continue_parsing_finite_float( SignMaskType mut sign_mask, array_view_imut</CharType/> &mut s ) : optional</FP::FloatType/>
 {
+	// This function implements the core functionality of floating-point numbers parsing.
+	// It ensures that all tricky cases are handled, the result floating-point number is the nearest to the given decimal number and ties are correctly resolved.
+	// It represents the given number as a large integer with unbounded bit-width in order to do this properly.
+	// The given number is first scanned to find where integer and fractional parts and exponent are.
+	// Then integer and fractional part digits are combined into single number named "significand".
+	// This number is then multiplied or divided by powers of five to get a proper representation for the given decimal exponent.
+	// It uses powers of five instead of powers of ten, sine implementing remaining multiplications or divisions by powers of two just means biasing the result binary exponent.
+	// Performing such multiplications and divisions by powers of five is pretty slow and its execution time linearly depends on the given exponent magninute.
+	// Then the result of multiplications/divisions is scanned for the major one bit to find where binary mantissa starts, the result mantissa is formed.
+	// Also rounding with ties resolution is performed.
+	// Lastly the result number is formed from its parts - sign, exponent, mantissa.
+	//
+	// There are of course better ways of parsing floating-point numbers, which are generally much faster.
+	// They may be implemented in future.
+	// But for now it's fine to have only the algorithm implemented below.
+	// And even if a faster algorithm for special cases will be implemented, it probably still requires falling back to this algorithm with usage of unbounded-width integers.
+
 	if( s.empty() )
 	{
 		return null_optional; // Require at least one digit.
