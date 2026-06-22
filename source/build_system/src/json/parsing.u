@@ -1,4 +1,4 @@
-import "/math.iu"
+import "/number_parsing.iu"
 import "/utf.iu"
 import "parsing.iu"
 
@@ -202,121 +202,8 @@ fn SkipWhitespaces( ust::string_view8 &mut text )
 
 fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Number/>
 {
-	var f64 mut sign= 1.0;
-	if( text.front() == '-' )
-	{
-		sign= -1.0;
-		text.drop_front();
-	}
-
-	if( text.empty() )
-	{
-		return ust::null_optional;
-	}
-
-	var f64 mut num(0);
-	while( !text.empty() )
-	{
-		var char8 c= text.front();
-		if( c >= '0' && c <= '9' )
-		{
-			num= ust::fma( num, 10.0, f64( u32(c) - u32( '0' ) ) );
-			text.drop_front();
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	var i32 mut decimal_point_position= 0;
-	if( !text.empty() && text.front() == '.' )
-	{
-		text.drop_front();
-
-		if( text.empty() )
-		{
-			return ust::null_optional;
-		}
-
-		while( !text.empty() )
-		{
-			var char8 c= text.front();
-			if( c >= '0' && c <= '9' )
-			{
-				num= ust::fma( num, 10.0, f64( u32(c) - u32( '0' ) ) );
-				++decimal_point_position;
-				text.drop_front();
-			}
-			else
-			{
-				break;
-			}
-		}
-	}
-
-	if( !text.empty() && ( text.front() == 'e' || text.front() == 'E' ) )
-	{
-		text.drop_front();
-
-		if( text.empty() )
-		{
-			return ust::null_optional;
-		}
-
-		var bool mut exponent_is_negative= false;
-		if( text.front() == '-' )
-		{
-			exponent_is_negative= true;
-			text.drop_front();
-		}
-		else if( text.front() == '+' )
-		{
-			exponent_is_negative= false;
-			text.drop_front();
-		}
-
-		if( text.empty() )
-		{
-			return ust::null_optional;
-		}
-
-		var i32 mut exponent= 0;
-		while( !text.empty() )
-		{
-			var char8 c= text.front();
-			if( c >= '0' && c <= '9' )
-			{
-				exponent= exponent * 10 + ( i32(c) - i32( '0' ) );
-				text.drop_front();
-			}
-			else
-			{
-				break;
-			}
-		}
-
-		if( exponent_is_negative )
-		{
-			exponent = -exponent;
-		}
-		decimal_point_position-= exponent;
-	}
-
-	// For f64 calculate only non-negative powers,
-	// because such powers are always integer and have exact f64 representation (for not too large numbers).
-	// Negative powers have no exact f64 representation (1/10 for example).
-	// Example:
-	// 3 / 10 - right
-	// 3 * (1/10) - wrong
-	if( decimal_point_position >= 0 )
-	{
-		return sign * (num / TenIntegerPower( u32(decimal_point_position) ) );
-	}
-	else
-	{
-		return sign * (num * TenIntegerPower( u32(-decimal_point_position) ) );
-	}
+	// TODO - maybe check exact JSON grammar for numbers here?
+	return ust::parse_and_extract_number</JsonValue::Number/>( text );
 }
 
 fn ParseJsonString( ust::string_view8 &mut text ) : ust::optional</JsonValue::String/>
@@ -397,31 +284,6 @@ fn ParseJsonString( ust::string_view8 &mut text ) : ust::optional</JsonValue::St
 			},
 			// TODO - check for control characters.
 			default -> { res.push_back( c ); },
-		}
-	}
-
-	return res;
-}
-
-fn TenIntegerPower( u32 pow ) : f64
-{
-	return IntegerPower( 10.0, pow );
-}
-
-// Function for fast calculation of large integer powers.
-fn IntegerPower( f64 base_, u32 pow ) : f64
-{
-	var f64 mut res= 1.0, mut p= base_;
-
-	for( var u32 mut i(1); ; i <<= 1, p*= p )
-	{
-		if( (i & pow ) != 0u )
-		{
-			res*= p;
-		}
-		if( i >= pow )
-		{
-			break;
 		}
 	}
 
