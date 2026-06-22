@@ -5,10 +5,13 @@ import "../imports/scoped_array.iu"
 import "../imports/stdout.iu"
 import "../imports/string.iu"
 import "../imports/string_conversions.iu"
+import "../imports/vector.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
 	TestF32Parsing();
+	TestF32PowersOfTenParsing();
+	TestF32PowersOfTwoParsing();
 
 	return 0;
 }
@@ -244,6 +247,18 @@ var [ ust::string_view8, 215 ] num_strs
 	}
 }
 
+fn TestF32PowersOfTenParsing()
+{
+	GeneratePositivePowersOfTenNumberStrings( 44s, TestF32NumberParsing );
+	GenerateNegativePowersOfTenNumberStrings( 60s, TestF32NumberParsing );
+}
+
+fn TestF32PowersOfTwoParsing()
+{
+	GeneratePositivePowersOfTwoNumberStrings( 140s, TestF32NumberParsing );
+	GenerateNegativePowersOfTwoNumberStrings( 160s, TestF32NumberParsing );
+}
+
 fn TestF32NumberParsing( ust::string_view8 num_str )
 {
 	var ust::optional</f32/> num_parsed_opt= ust::parse_number_exact</f32/>( num_str );
@@ -255,6 +270,8 @@ fn TestF32NumberParsing( ust::string_view8 num_str )
 
 	var f32 num_parsed= num_parsed_opt.try_deref();
 	var f32 external_parser_result= ParseF32External( num_str );
+
+	// ust::stdout_print( ust::concat( "Parsed ", num_str, " into ", ust::to_string8( num_parsed ), "\n" ) );
 
 	if( ust::is_nan( num_parsed ) && ust::is_nan( external_parser_result ) )
 	{
@@ -273,6 +290,107 @@ fn TestF32NumberParsing( ust::string_view8 num_str )
 				".\n" ) );
 
 		halt;
+	}
+}
+
+template</ type Func />
+fn GeneratePositivePowersOfTenNumberStrings( size_type num_powers_of_ten, Func& func )
+{
+	var ust::string8 mut s= "1";
+
+	for( auto mut i= 0s; i < num_powers_of_ten; ++i )
+	{
+		func( s );
+		s.push_back( '0' );
+	}
+}
+
+template</ type Func />
+fn GenerateNegativePowersOfTenNumberStrings( size_type num_powers_of_ten, Func& func )
+{
+	var ust::string8 mut s= "0.1";
+
+	for( auto mut i= 0s; i < num_powers_of_ten; ++i )
+	{
+		func( s );
+
+		s.back()= '0';
+		s.push_back( '1' );
+	}
+}
+
+template</ type Func />
+fn GeneratePositivePowersOfTwoNumberStrings( size_type num_powers_of_ten, Func& func )
+{
+	var ust::vector</u8/> mut num;
+	num.push_back( 1u8 );
+
+	var ust::string8 mut s;
+
+	for( auto mut i= 0s; i < num_powers_of_ten; ++i )
+	{
+		s.clear();
+
+		foreach( digit : num.range().iter_reverse() )
+		{
+			s.push_back( char8( u32( '0' ) + u32( digit ) ) );
+		}
+
+		func( s );
+
+		var u32 mut carry= 0u;
+		foreach( &mut digit : num )
+		{
+			var u32 digit_scaled= u32( digit ) * 2u + carry;
+			digit= u8( digit_scaled % 10u );
+			carry= digit_scaled / 10u;
+		}
+
+		if( carry > 0u )
+		{
+			num.push_back( u8( carry ) );
+		}
+	}
+}
+
+template</ type Func />
+fn GenerateNegativePowersOfTwoNumberStrings( size_type num_powers_of_ten, Func& func )
+{
+	var ust::vector</u8/> mut num;
+	num.push_back( 5u8 );
+
+	var ust::string8 mut s;
+
+	for( auto mut i= 0s; i < num_powers_of_ten; ++i )
+	{
+		s.clear();
+
+		s+= "0.";
+
+		for( auto mut j= 0s; j + num.size() < i + 1s; ++j )
+		{
+			s.push_back( '0' );
+		}
+
+		foreach( digit : num.range().iter_reverse() )
+		{
+			s.push_back( char8( u32( '0' ) + u32( digit ) ) );
+		}
+
+		func( s );
+
+		var u32 mut carry= 0u;
+		foreach( &mut digit : num )
+		{
+			var u32 digit_scaled= u32( digit ) * 5u + carry;
+			digit= u8( digit_scaled % 10u );
+			carry= digit_scaled / 10u;
+		}
+
+		if( carry > 0u )
+		{
+			num.push_back( u8( carry ) );
+		}
 	}
 }
 
