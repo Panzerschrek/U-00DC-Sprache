@@ -13,6 +13,9 @@ fn nomangle main() call_conv( "C" ) : i32
 	TestIncorrectNumbersParsing</f32/>();
 	TestIncorrectNumbersParsing</f64/>();
 
+	TestNumbersExtraction</f32/>();
+	TestNumbersExtraction</f64/>();
+
 	TestF32Parsing();
 	TestF32PowersOfTenParsing();
 	TestF32PowersOfTwoParsing();
@@ -67,6 +70,46 @@ fn TestIncorrectNumbersParsing()
 	assert( ust::parse_number_exact</T/>( "+inf" ).empty() ); // It's incorrect to use leading plus for "inf".
 	assert( ust::parse_number_exact</T/>( "--nan" ).empty() ); // It's incorrect to use more than one leading minus for "nan".
 	assert( ust::parse_number_exact</T/>( "--inf" ).empty() ); // It's incorrect to use more than one leading minus for "inf".
+}
+
+template</type T/>
+fn TestNumbersExtraction()
+{
+	{
+		var ust::string_view8 mut s= "78  w";
+		assert( ust::parse_and_extract_number</T/>( s ) == T(78) );
+		assert( s == "  w" );
+	}
+	{
+		var ust::string_view8 mut s= "-44.2f";
+		assert( ust::parse_and_extract_number</T/>( s ) == T(-44.2) );
+		assert( s == "f" );
+	}
+	{
+		var ust::string_view8 mut s= "77.25.3";
+		assert( ust::parse_and_extract_number</T/>( s ) == T(77.25) );
+		assert( s == ".3" );
+	}
+	{
+		var ust::string_view8 mut s= "nanu?";
+		assert( ust::is_nan( ust::parse_and_extract_number</T/>( s ).try_deref() ) );
+		assert( s == "u?" );
+	}
+	{
+		var ust::string_view8 mut s= "32e2.5";
+		assert( ust::parse_and_extract_number</T/>( s ) == T( 32e2 ) );
+		assert( s == ".5" );
+	}
+	{
+		var ust::string_view8 mut s= "72+13";
+		assert( ust::parse_and_extract_number</T/>( s ) == T( 72 ) );
+		assert( s == "+13" );
+	}
+	{
+		var ust::string_view8 mut s= "-45.2-22";
+		assert( ust::parse_and_extract_number</T/>( s ) == T( -45.2 ) );
+		assert( s == "-22" );
+	}
 }
 
 fn TestF32Parsing()
