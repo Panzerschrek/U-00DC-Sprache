@@ -1,9 +1,9 @@
-import "../imports/integer_parsing.iu"
+import "../imports/number_parsing.iu"
 
 namespace ust
 {
 
-namespace integer_parsing_impl
+namespace number_parsing_impl
 {
 
 fn parse_i32( array_view_imut</char8/> &mut range ) : optional</i32/>
@@ -321,6 +321,6 @@ fn parse_impl_u128( array_view_imut</C/> &mut range ) : optional</u128/>
 	return result;
 }
 
-} // namespace integer_parsing_impl
+} // namespace number_parsing_impl
 
 } // namespace ust

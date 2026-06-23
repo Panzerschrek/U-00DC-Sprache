@@ -1,0 +1,986 @@
+//##success_test
+import "../imports/assert.iu"
+import "../imports/math.iu"
+import "../imports/number_parsing.iu"
+import "../imports/scoped_array.iu"
+import "../imports/stdout.iu"
+import "../imports/string.iu"
+import "../imports/string_conversions.iu"
+import "../imports/vector.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	TestIncorrectNumbersParsing</f32/>();
+	TestIncorrectNumbersParsing</f64/>();
+
+	TestNumbersExtraction</f32/>();
+	TestNumbersExtraction</f64/>();
+
+	TestWideStrings</f32/>();
+	TestWideStrings</f64/>();
+
+	TestF32Parsing();
+	TestF32PowersOfTenParsing();
+	TestF32PowersOfTwoParsing();
+	TestRandomBitPatternF32Parsing();
+	TestRandomNumberStringF32Parsing();
+
+	// Running parsing tests for all f32 numbers isn't fast.
+	// It may take 10 to 30 minutes (singlethreaded).
+	// So, disable it by-default.
+	// Enable it if you want to make changes in code performing "f32" parsing to make sure it's always correct.
+	if( false )
+	{
+		TestAllF32ValuesParsing();
+	}
+
+	TestF64Parsing();
+	TestF64PowersOfTenParsing();
+	TestF64PowersOfTwoParsing();
+	TestRandomBitPatternF64Parsing();
+	TestRandomNumberStringF64Parsing();
+
+	return 0;
+}
+
+template</type T/>
+fn TestIncorrectNumbersParsing()
+{
+	assert( ust::parse_number_exact</T/>( "" ).empty() ); // Empty string isn't a valid number.
+	assert( ust::parse_number_exact</T/>( "  " ).empty() ); // String with whitespaces isn't a valid number.
+	assert( ust::parse_number_exact</T/>( " 42" ).empty() ); // String with leading whitespaces isn't a valid number.
+	assert( ust::parse_number_exact</T/>( "3 " ).empty() ); // String with trailing whitespaces isn't a valid number.
+	assert( ust::parse_number_exact</T/>( "q5" ).empty() ); // String with leading non-number charachers isn't a valid number.
+	assert( ust::parse_number_exact</T/>( "563K" ).empty() ); // String with trailing characters after number charachers isn't a valid number.
+	assert( ust::parse_number_exact</T/>( "+33" ).empty() ); // It's incorrect to use leading plus.
+	assert( ust::parse_number_exact</T/>( "--431" ).empty() ); // It's incorrect to use more than one leading minus.
+	assert( ust::parse_number_exact</T/>( "67e+-5" ).empty() ); // Second sign char isn't allowed for exponent.
+	assert( ust::parse_number_exact</T/>( "46e-+21" ).empty() ); // Second sign char isn't allowed for exponent.
+	assert( ust::parse_number_exact</T/>( ".78" ).empty() ); // At least one integer part digit is required.
+	assert( ust::parse_number_exact</T/>( "5634." ).empty() ); // At least one fractional part digit is required.
+	assert( ust::parse_number_exact</T/>( "7e" ).empty() ); // At least one exponent digit is required.
+	assert( ust::parse_number_exact</T/>( "5245e+" ).empty() ); // At least one exponent digit is required after exponent sign.
+	assert( ust::parse_number_exact</T/>( "2490e-" ).empty() ); // At least one exponent digit is required after exponent sign.
+	assert( ust::parse_number_exact</T/>( "56.3.2" ).empty() ); // Second fractional point isn't allowed.
+	assert( ust::parse_number_exact</T/>( "45e3.5" ).empty() ); // Fractional point for exponent isn't allowed.
+	assert( ust::parse_number_exact</T/>( "2,5" ).empty() ); // Fractional comma isn't allowed.
+	assert( ust::parse_number_exact</T/>( "1'000" ).empty() ); // Separators like "'" aren't supported.
+	assert( ust::parse_number_exact</T/>( "nanaq" ).empty() ); // Trailing char after "nan".
+	assert( ust::parse_number_exact</T/>( "infq" ).empty() ); // Trailing char after "inf".
+	assert( ust::parse_number_exact</T/>( "infini" ).empty() ); // Missing "ty" in "infinity".
+	assert( ust::parse_number_exact</T/>( "infinityq" ).empty() ); // Trailing char after "infinity".
+	assert( ust::parse_number_exact</T/>( "+nan" ).empty() ); // It's incorrect to use leading plus for "nan".
+	assert( ust::parse_number_exact</T/>( "+inf" ).empty() ); // It's incorrect to use leading plus for "inf".
+	assert( ust::parse_number_exact</T/>( "--nan" ).empty() ); // It's incorrect to use more than one leading minus for "nan".
+	assert( ust::parse_number_exact</T/>( "--inf" ).empty() ); // It's incorrect to use more than one leading minus for "inf".
+}
+
+template</type T/>
+fn TestNumbersExtraction()
+{
+	{
+		var ust::string_view8 mut s= "78  w";
+		assert( ust::parse_and_extract_number</T/>( s ) == T(78) );
+		assert( s == "  w" );
+	}
+	{
+		var ust::string_view8 mut s= "-44.2f";
+		assert( ust::parse_and_extract_number</T/>( s ) == T(-44.2) );
+		assert( s == "f" );
+	}
+	{
+		var ust::string_view8 mut s= "77.25.3";
+		assert( ust::parse_and_extract_number</T/>( s ) == T(77.25) );
+		assert( s == ".3" );
+	}
+	{
+		var ust::string_view8 mut s= "nanu?";
+		assert( ust::is_nan( ust::parse_and_extract_number</T/>( s ).try_deref() ) );
+		assert( s == "u?" );
+	}
+	{
+		var ust::string_view8 mut s= "32e2.5";
+		assert( ust::parse_and_extract_number</T/>( s ) == T( 32e2 ) );
+		assert( s == ".5" );
+	}
+	{
+		var ust::string_view8 mut s= "72+13";
+		assert( ust::parse_and_extract_number</T/>( s ) == T( 72 ) );
+		assert( s == "+13" );
+	}
+	{
+		var ust::string_view8 mut s= "-45.2-22";
+		assert( ust::parse_and_extract_number</T/>( s ) == T( -45.2 ) );
+		assert( s == "-22" );
+	}
+}
+
+template</type T/>
+fn TestWideStrings()
+{
+	assert( ust::parse_number_exact</T/>( "67"u16 ) == T(67) );
+	assert( ust::parse_number_exact</T/>( "24.0"u16 ) == T(24.0) );
+	assert( ust::parse_number_exact</T/>( "-634.734"u16 ) == T(-634.734) );
+	assert( ust::parse_number_exact</T/>( "0.454e13"u16 ) == T(0.454e13) );
+	assert( ust::parse_number_exact</T/>( "12345e19"u16 ) == T(12345e19) );
+	assert( ust::is_nan( ust::parse_number_exact</T/>( "nan"u16 ).try_deref() ) );
+	assert( ust::is_nan( ust::parse_number_exact</T/>( "-NAN"u16 ).try_deref() ) );
+	assert( ust::parse_number_exact</T/>( "-inf"u16 ) == -( T(1.0) / T(0.0) ) );
+	assert( ust::parse_number_exact</T/>( "INF"u16 ) == T(1.0) / T(0.0) );
+	assert( ust::parse_number_exact</T/>( "InFiNiTy"u16 ) == T(1.0) / T(0.0) );
+
+	assert( ust::parse_number_exact</T/>( "67"u32 ) == T(67) );
+	assert( ust::parse_number_exact</T/>( "24.0"u32 ) == T(24.0) );
+	assert( ust::parse_number_exact</T/>( "-634.734"u32 ) == T(-634.734) );
+	assert( ust::parse_number_exact</T/>( "0.454e13"u32 ) == T(0.454e13) );
+	assert( ust::parse_number_exact</T/>( "12345e19"u32 ) == T(12345e19) );
+	assert( ust::is_nan( ust::parse_number_exact</T/>( "nan"u32 ).try_deref() ) );
+	assert( ust::is_nan( ust::parse_number_exact</T/>( "-NAN"u32 ).try_deref() ) );
+	assert( ust::parse_number_exact</T/>( "-inf"u32 ) == -( T(1.0) / T(0.0) ) );
+	assert( ust::parse_number_exact</T/>( "INF"u32 ) == T(1.0) / T(0.0) );
+	assert( ust::parse_number_exact</T/>( "InFiNiTy"u32 ) == T(1.0) / T(0.0) );
+}
+
+fn TestF32Parsing()
+{
+	var [ ust::string_view8, 215 ] num_strs
+	[
+		"-nan",
+		"-NAN",
+		"-NaN",
+		"-Nan",
+		"-nAN",
+		"-inf",
+		"-INF",
+		"-Inf",
+		"-iNF",
+		"-InF",
+		"-iNf",
+		"-infinity",
+		"-INFINITY",
+		"-InFiNiTy",
+		"-iNfInItY",
+		"-1",
+		"-2.0",
+		"-34.67",
+		"-0.256",
+		"-0.5e-5",
+		"-6.7222e25",
+		"-0",
+		"0",
+		"6e-54", // Underflow - should be zero.
+		"1.863726957552006704328560E-43", // Some subnormal.
+		"9.795917044709066215999424E-41", // Some subnormal.
+		"5.997054361161524454225101E-39", // Some subnormal.
+		"4.224028e-38",
+		"3.1029603e-17",
+		"0.00000019311952",
+		"0.00001792781040421687066555023193359375",
+		"0.0625",
+		"125e-3",
+		"0.01",
+		"0.035",
+		"0.0672",
+		"0.1",
+		"0.2",
+		"0.25",
+		"1",
+		"1.5",
+		"1.9999999999999999", // Should round to 2 with exponent change.
+		"2",
+		"2.0000000000000001", // Should round down to 2.
+		"34",
+		"64.5",
+		"62e5",
+		"78.2e2",
+		"5434e3",
+		"67865",
+		"1423453",
+		"999999999", // Max number of decimal digits fitting into 32-bit unsigned integer.
+		"9999999999999999999", // Max number of decimal digits fitting into 64-bit unsigned integer.
+		"99999999999999999999", // Don't fit into 64-bit integer anymore.
+		"18446744073709551616", // First number not fitting into a 64-bit integer.
+		// Tricky cases for proper rounding (including ties resolution).
+		"40000000",
+		"40000001",
+		"40000002",
+		"40000003",
+		"40000004",
+		"40000005",
+		"40000006",
+		"40000007",
+		"40000008",
+		"40000009",
+		"40000010",
+		"40000011",
+		"40000012",
+		// Tricky cases for proper rounding for fractional values.
+		"8000000.0",
+		"8000000.1",
+		"8000000.2",
+		"8000000.25",
+		"8000000.3",
+		"8000000.4",
+		"8000000.5",
+		"8000000.6",
+		"8000000.7",
+		"8000000.75",
+		"8000000.8",
+		"8000000.9",
+		"8000001.0",
+		"8000001.1",
+		"8000001.2",
+		"8000001.25",
+		"8000001.3",
+		"8000001.4",
+		"8000001.5",
+		"8000001.6",
+		"8000001.7",
+		"8000001.75",
+		"8000001.8",
+		"8000001.9",
+		"8000002.0",
+		"8000002.1",
+		"8000002.2",
+		"8000002.25",
+		"8000002.3",
+		"8000002.4",
+		"8000002.5",
+		"8000002.6",
+		"8000002.7",
+		"8000002.75",
+		"8000002.8",
+		"8000002.9",
+		"8000003.0",
+		"8000003.1",
+		"8000003.2",
+		"8000003.25",
+		"8000003.3",
+		"8000003.4",
+		"8000003.5",
+		"8000003.6",
+		"8000003.7",
+		"8000003.75",
+		"8000003.8",
+		"8000003.9",
+		"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000045.25e1", // A lot of leading zeros.
+		"0.12500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", // A lot of trailing zeros.
+		"67e+4", // Exponent with explicit + sign.
+		"-2363.21e+18", // Exponent with explicit + sign.
+		"1e67", // Overflow - should be infinity. "strtof" returns infinity in such case.
+		"6633e3666433", // Exponent is too large - should return infinity.
+		"0e555664444", // Exponent is too large, but it's exponent for zero, so, zero should be returned.
+		"674.3e-6633323", // Exponent is a large negative number - should return zero.
+		"nan",
+		"NAN",
+		"NaN",
+		"Nan",
+		"nAN",
+		"inf",
+		"INF",
+		"Inf",
+		"iNF",
+		"InF",
+		"iNf",
+		"infinity",
+		"INFINITY",
+		"InFiNiTy",
+		"iNfInItY",
+		// Tests borrowed from https://github.com/fastfloat/fast_float/blob/main/tests/basictest.cpp#L1549.
+		// It uses Apache License 2.0.
+		"1234456789012345678901234567890e9999999999999999999999999999",
+		"2e3000",
+		"3.5028234666e38",
+		"3.40282357e38",
+		"340282356779733661637539395458142568448",
+		"0.7006492e-45",
+		"0.7006493e-45",
+		"0.7006492321624085354e-45",
+		"0.7006492321624085355e-45",
+		"340282346638528859811704183484516925440",
+		"-340282346638528859811704183484516925440",
+		"340282356779733661637539395458142568447",
+		"0.3402823567797336616e39",
+		"0.3402823567797336617e39",
+		"-1e-999",
+		"1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125",
+		"1.1754941406275178592461758986628081843312458647327962400313859427181746759860647699724722770042717456817626953125e-38",
+		"1.1754942807573642917e-38",
+		"1.1754942807573642918e-38",
+		"-0",
+		"1090544144181609348835077142190",
+		"1.1754943508e-38",
+		"30219.0830078125",
+		"16252921.5",
+		"5322519.25",
+		"3900245.875",
+		"1510988.3125",
+		"782262.28125",
+		"328381.484375",
+		"156782.0703125",
+		"85003.24609375",
+		"17419.6494140625",
+		"15498.36376953125",
+		"6318.580322265625",
+		"2525.2840576171875",
+		"1370.9265747070312",
+		"936.3702087402344",
+		"411.88682556152344",
+		"206.50310516357422",
+		"124.16878890991211",
+		"50.811574935913086",
+		"17.486443519592285",
+		"13.91745138168335",
+		"7.5464513301849365",
+		"2.687217116355896",
+		"1.1877630352973938",
+		"0.7622503340244293",
+		"0.30531780421733856",
+		"0.21791061013936996",
+		"0.09289376810193062",
+		"0.03706067614257336",
+		"0.028068351559340954",
+		"0.012114629615098238",
+		"0.004221370676532388",
+		"0.002153817447833717",
+		"0.0015924838953651488",
+		"0.0008602388261351734",
+		"0.00036393293703440577",
+		"0.00013746770127909258",
+		"16407.9462890625",
+		"1.1754947011469036e-38",
+		"7.0064923216240854e-46",
+		"8388614.5",
+		"0e9999999999999999999999999999",
+		"4.7019774032891500318749461488889827112746622270883500860350068251e-38",
+		"3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679",
+		"2.3509887016445750159374730744444913556373311135441750430175034126e-38",
+		"1",
+		"7.0060e-46",
+		"3.4028234664e38",
+		"3.4028234665e38",
+		"3.4028234666e38",
+		"0.000000000000000000000000000000000000011754943508222875079687365372222456778186655567720875215087517062784172594547271728515625",
+		"0.00000000000000000000000000000000000000000000140129846432481707092372958328991613128026194187651577175706828388979108268586060148663818836212158203125",
+		"0.00000000000000000000000000000000000002350988561514728583455765982071533026645717985517980855365926236850006129930346077117064851336181163787841796875",
+		"0.00000000000000000000000000000000000001175494210692441075487029444849287348827052428745893333857174530571588870475618904265502351336181163787841796875",
+	];
+
+	foreach( &num_str : num_strs )
+	{
+		TestF32NumberParsing( num_str );
+	}
+}
+
+fn TestF32PowersOfTenParsing()
+{
+	GeneratePositivePowersOfTenNumberStrings( 44s, TestF32NumberParsing );
+	GenerateNegativePowersOfTenNumberStrings( 60s, TestF32NumberParsing );
+}
+
+fn TestF32PowersOfTwoParsing()
+{
+	GeneratePositivePowersOfTwoNumberStrings( 140s, TestF32NumberParsing );
+	GenerateNegativePowersOfTwoNumberStrings( 160s, TestF32NumberParsing );
+}
+
+fn TestRandomBitPatternF32Parsing()
+{
+	var RandGenerator mut rand;
+
+	// It's far way less than the total number of "f32" numbers, but is still pretty high.
+	var u32 num_tested_random_numbers= 1u << 22u;
+
+	for( auto mut i= 0u; i < num_tested_random_numbers; ++i )
+	{
+		var u32 rand_bit_pattern= rand.Next() | ( rand.Next() << 16 );
+
+		var f32 num( byte32( rand_bit_pattern ) );
+
+		var ust::string8 num_str= ust::to_string8( num );
+
+		var ust::optional</f32/> num_parsed_opt= ust::parse_number_exact</f32/>( num_str.range() );
+		if( num_parsed_opt.empty() )
+		{
+			ust::stderr_print( ust::concat( "Failed to parse ", num_str, "!\n" ) );
+			halt;
+		}
+
+		var f32 num_parsed= num_parsed_opt.try_deref();
+
+		if( ust::is_nan( num_parsed ) && ust::is_nan( num ) )
+		{
+			// Fine - both results are NAN.
+		}
+		else if( num != num_parsed )
+		{
+			ust::stderr_print(
+				ust::concat(
+					"Parsing result for \"",
+					num_str,
+					"\" is wrong! It is ",
+					ust::to_string8( num_parsed ),
+					".\n" ) );
+			halt;
+		}
+	}
+}
+
+fn TestRandomNumberStringF32Parsing()
+{
+	var RandGenerator mut rand;
+
+	var ust::string8 mut s;
+
+	var u32 constexpr num_radnom_nums= 1u << 21u;
+
+	for( auto mut i= 0u; i < num_radnom_nums; ++i )
+	{
+		// Generate a random string with some integer and fractional digits and decimal exponent.
+
+		// Have no more than 10 integer and fractional digits, since it's enough for most practical cases.
+		var u32 num_integer_digits= 1u + rand.Next() % 9u;
+		var u32 num_fractional_digits= 1u + rand.Next() % 9u;
+		var i32 decimal_exponent= i32( rand.Next() % 80u ) - 40;
+
+		s.clear();
+
+		for( auto mut d= 0u; d < num_integer_digits; ++d )
+		{
+			s.push_back( char8( u32( '0' ) + rand.Next() % 10u ) );
+		}
+
+		s.push_back( '.' );
+
+		for( auto mut d= 0u; d < num_fractional_digits; ++d )
+		{
+			s.push_back( char8( u32( '0' ) + rand.Next() % 10u ) );
+		}
+
+		s.push_back( 'e' );
+		if( decimal_exponent < 0 )
+		{
+			s.push_back( '-' );
+		}
+
+		var u32 abs_decimal_exponent( ust::abs( decimal_exponent ) );
+
+		s.push_back( char8( u32( '0' ) + abs_decimal_exponent / 10u ) );
+		s.push_back( char8( u32( '0' ) + abs_decimal_exponent % 10u ) );
+
+		TestF32NumberParsing( s );
+	}
+}
+
+fn TestAllF32ValuesParsing()
+{
+	// Run parsing tests for all possible bit patters of f32 type.
+
+	var u64 total_numbers= 1u64 << 32;
+
+	for( auto mut i= 0u64; i < total_numbers; ++i )
+	{
+		var f32 num( byte32( u32(i) ) );
+
+		var ust::string8 num_str= ust::to_string8( num );
+
+		var ust::optional</f32/> num_parsed_opt= ust::parse_number_exact</f32/>( num_str.range() );
+		if( num_parsed_opt.empty() )
+		{
+			ust::stderr_print( ust::concat( "Failed to parse ", num_str, "!\n" ) );
+			halt;
+		}
+
+		var f32 num_parsed= num_parsed_opt.try_deref();
+
+		if( ust::is_nan( num_parsed ) && ust::is_nan( num ) )
+		{
+			// Fine - both results are NAN.
+		}
+		else if( num != num_parsed )
+		{
+			ust::stderr_print(
+				ust::concat(
+					"Parsing result for \"",
+					num_str,
+					"\" is wrong! It is ",
+					ust::to_string8( num_parsed ),
+					".\n" ) );
+			halt;
+		}
+
+		var u64 progress_printing_step= 4u64 * 1024u64 * 1024u64;
+		if( i % progress_printing_step == 0u64 )
+		{
+			ust::stdout_print( ust::concat( "All f32 values parsing progress: ", ust::to_string8( i / progress_printing_step ), "\n" ) );
+		}
+	}
+}
+
+fn TestF64Parsing()
+{
+	var [ ust::string_view8, 153 ] num_strs
+	[
+		"-nan",
+		"-NAN",
+		"-NaN",
+		"-Nan",
+		"-nAN",
+		"-inf",
+		"-INF",
+		"-Inf",
+		"-iNF",
+		"-InF",
+		"-iNf",
+		"-infinity",
+		"-INFINITY",
+		"-InFiNiTy",
+		"-iNfInItY",
+		"-1",
+		"-2.0",
+		"-34.67",
+		"-0.256",
+		"-0.5e-5",
+		"-6.7222e25",
+		"-0",
+		"0",
+		"4.224028e-38",
+		"3.1029603e-17",
+		"0.00000019311952",
+		"0.00001792781040421687066555023193359375",
+		"0.0625",
+		"125e-3",
+		"0.01",
+		"0.035",
+		"0.0672",
+		"0.1",
+		"0.2",
+		"0.25",
+		"0.123",
+		"1",
+		"1.5",
+		"2",
+		"25",
+		"34",
+		"64.5",
+		"62e5",
+		"78.2e2",
+		"5434e3",
+		"67865",
+		"1423453",
+		"5637555e40",
+		"999999999", // Max number of decimal digits fitting into 32-bit unsigned integer.
+		"9999999999999999999", // Max number of decimal digits fitting into 64-bit unsigned integer.
+		"99999999999999999999", // Don't fit into 64-bit integer anymore.
+		"18446744073709551616", // First number not fitting into a 64-bit integer.
+		"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000045.25e1", // A lot of leading zeros.
+		"0.12500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", // A lot of trailing zeros.
+		"67e+4", // Exponent with explicit + sign.
+		"-2363.21e+18", // Exponent with explicit + sign.
+		"1e670", // Overflow - should be infinity. "strtof" returns infinity in such case.
+		"6633e3666433", // Exponent is too large - should return infinity.
+		"0e555664444", // Exponent is too large, but it's exponent for zero, so, zero should be returned.
+		"674.3e-6633323", // Exponent is a large negative number - should return zero.
+		"nan",
+		"NAN",
+		"NaN",
+		"Nan",
+		"nAN",
+		"inf",
+		"INF",
+		"Inf",
+		"iNF",
+		"InF",
+		"iNf",
+		"infinity",
+		"INFINITY",
+		"InFiNiTy",
+		"iNfInItY",
+		// Tests borrowed from https://github.com/fastfloat/fast_float/blob/main/tests/basictest.cpp#L1156.
+		// It uses Apache License 2.0.
+		"1234456789012345678901234567890e9999999999999999999999999999",
+		"-2139879401095466344511101915470454744.9813888656856943E+272",
+		"1.8e308",
+		"1.832312213213213232132132143451234453123412321321312e308",
+		"2e30000000000000000",
+		"2e3000",
+		"1.9e308",
+		"1.79769313486231581e308",
+		"1.7976931348623159e308",
+		"179769313486231580793728971405303415079934132710037826936173778980444968292764750946649017977587207096330286416692887910946555547851940402630657488671505820681908902000708383676273854845817711531764475730270069855571366959622842914819860834936475292719074168444365510704342711559699508093042880177904174497792",
+		"0.95000000000000000000",
+		"22250738585072012e-324",
+		"-22250738585072012e-324",
+		"-1e-999",
+		"2.4703282292062327e-324",
+		"2.4703282292062328e-324",
+		"0.2470328229206232720e-323",
+		"0.2470328229206232721e-323",
+		"-2.2222222222223e-322",
+		"9007199254740993.0",
+		"860228122.6654514319E+90",
+		"10000000000000000000",
+		"10000000000000000000000000000001000000000000",
+		"10000000000000000000000000000000000000000001",
+		"1.1920928955078125e-07",
+		"935595000000000000000000000000000000000000000000000001844674407370955161600000184467440737095516161844674407370955161407370955161618446744073709551616000184467440737095516166000001844674407370955161618446744073709551614073709551616184467440737095516160001844674407370955161601844674407370955674451616184467440737095516140737095516161844674407370955161600018446744073709551616018446744073709551611616000184467440737095001844674407370955161600184467440737095516160018446744073709551168164467440737095516160001844073709551616018446744073709551616184467440737095516160001844674407536910751601611616000184467440737095001844674407370955161600184467440737095516160018446744073709551616184467440737095516160001844955161618446744073709551616000184467440753691075160018446744073709",
+		"-0",
+		"2.22507385850720212418870147920222032907240528279439037814303133837435107319244194686754406432563881851382188218502438069999947733013005649884107791928741341929297200970481951993067993290969042784064731682041565926728632933630474670123316852983422152744517260835859654566319282835244787787799894310779783833699159288594555213714181128458251145584319223079897504395086859412457230891738946169368372321191373658977977723286698840356390251044443035457396733706583981055420456693824658413747607155981176573877626747665912387199931904006317334709003012790188175203447190250028061277777916798391090578584006464715943810511489154282775041174682194133952466682503431306181587829379004205392375072083366693241580002758391118854188641513168478436313080237596295773983001708984375e-308",
+		"1.0000000000000006661338147750939242541790008544921875",
+		"1090544144181609348835077142190",
+		"2.2250738585072013e-308",
+		"-92666518056446206563E3",
+		"-92666518056446206563E3",
+		"-42823146028335318693e-128",
+		"90054602635948575728E72",
+		"1.00000000000000188558920870223463870174566020691753515394643550663070558368373221972569761144603605635692374830246134201063722058e-309",
+		"0e9999999999999999999999999999",
+		"-2402844368454405395.2",
+		"2402844368454405395.2",
+		"7.0420557077594588669468784357561207962098443483187940792729600000e+59",
+		"7.0420557077594588669468784357561207962098443483187940792729600000e+59",
+		"-1.7339253062092163730578609458683877051596800000000000000000000000e+42",
+		"-2.0972622234386619214559824785284023792871122537545728000000000000e+52",
+		"-1.0001803374372191849407179462120053338028379051879898808320000000e+57",
+		"-1.8607245283054342363818436991534856973992070520151142825984000000e+58",
+		"-1.9189205311132686907264385602245237137907390376574976000000000000e+52",
+		"-2.8184483231688951563253238886553506793085187889855201280000000000e+54",
+		"-1.7664960224650106892054063261344555646357024359107788800000000000e+53",
+		"-2.1470977154320536489471030463761883783915110400000000000000000000e+45",
+		"-4.4900312744003159009338275160799498340862630046359789166919680000e+61",
+		"1",
+		"1.797693134862315700000000000000001e308",
+		"3e-324",
+		"1.00000006e+09",
+		"4.9406564584124653e-324",
+		"4.9406564584124654e-324",
+		"2.2250738585072009e-308",
+		"2.2250738585072014e-308",
+		"0.2225073858507201136e-307",
+		"0.2225073858507201137e-307",
+		"1.7976931348623157e308",
+		"1.7976931348623158e308",
+		"1.7976931348623158079e308",
+		"1.7976931348623158080e308",
+		"4503599627370496.5",
+		"4503599627475352.5",
+		"4503599627475353.5",
+		"2251799813685248.25",
+		"1125899906842624.125",
+		"1125899906842901.875",
+		"2251799813685803.75",
+		"4503599627370497.5",
+		"45035996.273704995",
+		"45035996.273704985",
+		"0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044501477170144022721148195934182639518696390927032912960468522194496444440421538910330590478162701758282983178260792422137401728773891892910553144148156412434867599762821265346585071045737627442980259622449029037796981144446145705102663115100318287949527959668236039986479250965780342141637013812613333119898765515451440315261253813266652951306000184917766328660755595837392240989947807556594098101021612198814605258742579179000071675999344145086087205681577915435923018910334964869420614052182892431445797605163650903606514140377217442262561590244668525767372446430075513332450079650686719491377688478005309963967709758965844137894433796621993967316936280457084866613206797017728916080020698679408551343728867675409720757232455434770912461317493580281734466552734375",
+		"0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022250738585072008890245868760858598876504231122409594654935248025624400092282356951787758888037591552642309780950434312085877387158357291821993020294379224223559819827501242041788969571311791082261043971979604000454897391938079198936081525613113376149842043271751033627391549782731594143828136275113838604094249464942286316695429105080201815926642134996606517803095075913058719846423906068637102005108723282784678843631944515866135041223479014792369585208321597621066375401613736583044193603714778355306682834535634005074073040135602968046375918583163124224521599262546494300836851861719422417646455137135420132217031370496583210154654068035397417906022589503023501937519773030945763173210852507299305089761582519159720757232455434770912461317493580281734466552734375",
+		"1438456663141390273526118207642235581183227845246331231162636653790368152091394196930365828634687637948157940776599182791387527135353034738357134110310609455693900824193549772792016543182680519740580354365467985440183598701312257624545562331397018329928613196125590274187720073914818062530830316533158098624984118889298281371812288789537310599037529113415438738954894752124724983067241108764488346454376699018673078404751121414804937224240805993123816932326223683090770561597570457793932985826162604255884529134126396282202126526253389383421806727954588525596114379801269094096329805054803089299736996870951258573010877404407451953846698609198213926882692078557033228265259305481198526059813164469187586693257335779522020407645498684263339921905227556616698129967412891282231685504660671277927198290009824680186319750978665734576683784255802269708917361719466043175201158849097881370477111850171579869056016061666173029059588433776015644439705050377554277696143928278093453792803846252715966016733222646442382892123940052441346822429721593884378212558701004356924243030059517489346646577724622498919752597382095222500311124181823512251071356181769376577651390028297796156208815375089159128394945710515861334486267101797497111125909272505194792870889617179758703442608016143343262159998149700606597792535574457560429226974273443630323818747730771316763398572110874959981923732463076884528677392654150010269822239401993427482376513231389212353583573566376915572650916866553612366187378959554983566712767093372906030188976220169058025354973622211666504549316958271880975697143546564469806791358707318873075708383345004090151974068325838177531266954177406661392229801349994695941509935655355652985723782153570084089560139142231.738475042362596875449154552392299548947138162081694168675340677843807613129780449323363759027012972466987370921816813162658754726545121090545507240267000456594786540949605260722461937870630634874991729398208026467698131898691830012167897399682179601734569071423681e-733",
+		"-2240084132271013504.131248280843119943687942846658579428179769313486231580793728971405303415079934132710037826936173778980444968292764750946649017977587207096330286416692887910946555547851940402630657488671505820681908902000708383676273854845817711531764475730270069855571366959622842914819860834936475292719074168444365510704342711559699508093042880177904174497791",
+	];
+
+	foreach( &num_str : num_strs )
+	{
+		TestF64NumberParsing( num_str );
+	}
+}
+
+fn TestF64PowersOfTenParsing()
+{
+	GeneratePositivePowersOfTenNumberStrings( 320s, TestF64NumberParsing );
+	GenerateNegativePowersOfTenNumberStrings( 360s, TestF64NumberParsing );
+}
+
+fn TestF64PowersOfTwoParsing()
+{
+	GeneratePositivePowersOfTwoNumberStrings( 1100s, TestF64NumberParsing );
+	GenerateNegativePowersOfTwoNumberStrings( 1200s, TestF64NumberParsing );
+}
+
+fn TestRandomBitPatternF64Parsing()
+{
+	var RandGenerator mut rand;
+
+	// It's far way less than the total number of "f64" numbers, but is still pretty high.
+	var u32 num_tested_random_numbers= 1u << 19u;
+
+	for( auto mut i= 0u; i < num_tested_random_numbers; ++i )
+	{
+		var u64 rand_bit_pattern=
+			u64( rand.Next() ) |
+			u64( rand.Next() << 16 ) |
+			u64( rand.Next() << 32 ) |
+			u64( rand.Next() << 48 );
+
+		var f64 num( byte64( rand_bit_pattern ) );
+
+		var ust::string8 num_str= ust::to_string8( num );
+
+		var ust::optional</f64/> num_parsed_opt= ust::parse_number_exact</f64/>( num_str.range() );
+		if( num_parsed_opt.empty() )
+		{
+			ust::stderr_print( ust::concat( "Failed to parse ", num_str, "!\n" ) );
+			halt;
+		}
+
+		var f64 num_parsed= num_parsed_opt.try_deref();
+
+		if( ust::is_nan( num_parsed ) && ust::is_nan( num ) )
+		{
+			// Fine - both results are NAN.
+		}
+		else if( num != num_parsed )
+		{
+			ust::stderr_print(
+				ust::concat(
+					"Parsing result for \"",
+					num_str,
+					"\" is wrong! It is ",
+					ust::to_string8( num_parsed ),
+					".\n" ) );
+			halt;
+		}
+	}
+}
+
+fn TestRandomNumberStringF64Parsing()
+{
+	var RandGenerator mut rand;
+
+	var ust::string8 mut s;
+
+	var u32 constexpr num_radnom_nums= 1u << 20u;
+
+	for( auto mut i= 0u; i < num_radnom_nums; ++i )
+	{
+		// Generate a random string with some integer and fractional digits and decimal exponent.
+
+		// Have no more than 20 integer and fractional digits, since it's enough for most practical cases.
+		var u32 num_integer_digits= 1u + rand.Next() % 19u;
+		var u32 num_fractional_digits= 1u + rand.Next() % 19u;
+		var i32 decimal_exponent= i32( rand.Next() % 660u ) - 340;
+
+		s.clear();
+
+		for( auto mut d= 0u; d < num_integer_digits; ++d )
+		{
+			s.push_back( char8( u32( '0' ) + rand.Next() % 10u ) );
+		}
+
+		s.push_back( '.' );
+
+		for( auto mut d= 0u; d < num_fractional_digits; ++d )
+		{
+			s.push_back( char8( u32( '0' ) + rand.Next() % 10u ) );
+		}
+
+		s.push_back( 'e' );
+		if( decimal_exponent < 0 )
+		{
+			s.push_back( '-' );
+		}
+
+		var u32 abs_decimal_exponent( ust::abs( decimal_exponent ) );
+
+		s.push_back( char8( u32( '0' ) + abs_decimal_exponent / 100u % 10u ) );
+		s.push_back( char8( u32( '0' ) + abs_decimal_exponent /  10u % 10u ) );
+		s.push_back( char8( u32( '0' ) + abs_decimal_exponent /   1u % 10u ) );
+
+		TestF64NumberParsing( s );
+	}
+}
+
+fn TestF32NumberParsing( ust::string_view8 num_str )
+{
+	TestNumberParsing</f32/>( num_str );
+}
+
+fn TestF64NumberParsing( ust::string_view8 num_str )
+{
+	TestNumberParsing</f64/>( num_str );
+}
+
+template</type T/>
+fn TestNumberParsing( ust::string_view8 num_str )
+{
+	var ust::optional</T/> num_parsed_opt= ust::parse_number_exact</T/>( num_str );
+	if( num_parsed_opt.empty() )
+	{
+		ust::stderr_print( ust::concat( "Failed to parse ", num_str, "!\n" ) );
+		halt;
+	}
+
+	var T num_parsed= num_parsed_opt.try_deref();
+	var T external_parser_result= ParseNumberExternal</T/>( num_str );
+
+	// ust::stdout_print( ust::concat( "Parsed ", num_str, " into ", ust::to_string8( num_parsed ), "\n" ) );
+
+	if( ust::is_nan( num_parsed ) && ust::is_nan( external_parser_result ) )
+	{
+		// Fine - both results are NAN.
+	}
+	else if( external_parser_result != num_parsed )
+	{
+		ust::stderr_print(
+			ust::concat(
+				"Parsing result for \"",
+				num_str,
+				"\" is wrong! It should be ",
+				ust::to_string8( external_parser_result ),
+				" but it's ",
+				ust::to_string8( num_parsed ),
+				".\n" ) );
+
+		halt;
+	}
+}
+
+template</ type Func />
+fn GeneratePositivePowersOfTenNumberStrings( size_type num_powers_of_ten, Func& func )
+{
+	var ust::string8 mut s= "1";
+
+	for( auto mut i= 0s; i < num_powers_of_ten; ++i )
+	{
+		func( s );
+		s.push_back( '0' );
+	}
+}
+
+template</ type Func />
+fn GenerateNegativePowersOfTenNumberStrings( size_type num_powers_of_ten, Func& func )
+{
+	var ust::string8 mut s= "0.1";
+
+	for( auto mut i= 0s; i < num_powers_of_ten; ++i )
+	{
+		func( s );
+
+		s.back()= '0';
+		s.push_back( '1' );
+	}
+}
+
+template</ type Func />
+fn GeneratePositivePowersOfTwoNumberStrings( size_type num_powers_of_ten, Func& func )
+{
+	var ust::vector</u8/> mut num;
+	num.push_back( 1u8 );
+
+	var ust::string8 mut s;
+
+	for( auto mut i= 0s; i < num_powers_of_ten; ++i )
+	{
+		s.clear();
+
+		foreach( digit : num.range().iter_reverse() )
+		{
+			s.push_back( char8( u32( '0' ) + u32( digit ) ) );
+		}
+
+		func( s );
+
+		var u32 mut carry= 0u;
+		foreach( &mut digit : num )
+		{
+			var u32 digit_scaled= u32( digit ) * 2u + carry;
+			digit= u8( digit_scaled % 10u );
+			carry= digit_scaled / 10u;
+		}
+
+		if( carry > 0u )
+		{
+			num.push_back( u8( carry ) );
+		}
+	}
+}
+
+template</ type Func />
+fn GenerateNegativePowersOfTwoNumberStrings( size_type num_powers_of_ten, Func& func )
+{
+	var ust::vector</u8/> mut num;
+	num.push_back( 5u8 );
+
+	var ust::string8 mut s;
+
+	for( auto mut i= 0s; i < num_powers_of_ten; ++i )
+	{
+		s.clear();
+
+		s+= "0.";
+
+		for( auto mut j= 0s; j + num.size() < i + 1s; ++j )
+		{
+			s.push_back( '0' );
+		}
+
+		foreach( digit : num.range().iter_reverse() )
+		{
+			s.push_back( char8( u32( '0' ) + u32( digit ) ) );
+		}
+
+		func( s );
+
+		var u32 mut carry= 0u;
+		foreach( &mut digit : num )
+		{
+			var u32 digit_scaled= u32( digit ) * 5u + carry;
+			digit= u8( digit_scaled % 10u );
+			carry= digit_scaled / 10u;
+		}
+
+		if( carry > 0u )
+		{
+			num.push_back( u8( carry ) );
+		}
+	}
+}
+
+class RandGenerator
+{
+public:
+	fn Next( mut this ) : u32
+	{
+		state_= ( 22695477u * state_ + 1u ) & 0x7FFFFFFFu;
+		return state_ >> 16u;
+	}
+
+private:
+	u32 state_= 0u;
+}
+
+template</type T/>
+fn ParseNumberExternal( ust::string_view8 s ) : T
+{
+	static_if( same_type</ T, f32 /> )
+	{
+		return ParseF32External( s );
+	}
+	else static_if( same_type</ T, f64 /> )
+	{
+		return ParseF64External( s );
+	}
+	else
+	{
+		static_assert( false, "Unsupported type!" );
+	}
+}
+
+fn ParseF32External( ust::string_view8 s ) : f32
+{
+	// Use a number parsing function from the C standard library.
+	// We need it to rule out possible errors in our own number parsing functions.
+	scoped_array char8 s_nt[ s.size() + 1s ]( s.iter().chain( ust::string_view8( "\0" ).iter() ) );
+	return unsafe( strtof( s_nt.data(), ust::nullptr</ $(char8) />() ) );
+}
+
+fn ParseF64External( ust::string_view8 s ) : f64
+{
+	// Use a number parsing function from the C standard library.
+	// We need it to rule out possible errors in our own number parsing functions.
+	scoped_array char8 s_nt[ s.size() + 1s ]( s.iter().chain( ust::string_view8( "\0" ).iter() ) );
+	return unsafe( strtod( s_nt.data(), ust::nullptr</ $(char8) />() ) );
+}
+
+// C standard library functions.
+fn nomangle strtof( $(char8) ptr, $($(char8)) end_ptr ) unsafe call_conv( "C" ) : f32;
+fn nomangle strtod( $(char8) ptr, $($(char8)) end_ptr ) unsafe call_conv( "C" ) : f64;

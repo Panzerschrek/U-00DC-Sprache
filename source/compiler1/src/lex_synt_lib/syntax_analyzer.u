@@ -1,5 +1,6 @@
 import "/assert.iu"
 import "/hash_set.iu"
+import "/number_parsing.iu"
 import "/shared_ptr.iu"
 import "/string_conversions.iu"
 import "/utf.iu"
@@ -892,10 +893,21 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		},
 		Lexem::Type::FloatingPointNumber ->
 		{
+			var ust::string_view8 num_str= it_.front().text;
+
+			var ust::optional</f64/> num_parsed_opt= ust::parse_number_exact</f64/>( num_str );
+
+			if( num_parsed_opt.empty() )
+			{
+				errors_.push_back(
+					LexSyntError(
+						it_.front().src_loc, ust::concat( "Broken floating-point literal ", num_str, "!" ) ) );
+			}
+
 			var FloatingPointNumericConstant mut numeric_constant
 			{
 				.src_loc= it_.front().src_loc,
-				.num= it_.front().text,
+				.num= num_parsed_opt.deref_or( 0.0 ),
 				.type_suffix= zero_init,
 			};
 			NextLexem();
