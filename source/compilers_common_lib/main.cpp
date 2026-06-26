@@ -315,6 +315,26 @@ cl::opt<bool> print_time_stats(
 
 } // namespace Options
 
+void ActiveFloatToAndFromInt128ConversionsExpansionHack()
+{
+	// HACK!
+	// LLVM isn't able to generate code for floating-point to 128-bit integer conversions and back.
+	// It calls runtime functions instead (from the compiler_rt repository).
+	// But we can't use this runtime, since it's written in C and C++.
+	// But LLVM has a pass for replacing such conversions, it's called "ExpandLargeFpConvertLegacyPass".
+	// Normally this pass is executed only if TargetLowering::MaxLargeFPConvertBitWidthSupported is finite.
+	// But it is so only on X86 targets and on these targets it's still 128, which leads to emitting runtime calls.
+	// But there is a hidden option for overriding this value and forcing expanding operations for integers with size above it.
+	llvm::StringMap< llvm::cl::Option* >& map= llvm::cl::SubCommand::getTopLevel().OptionsMap;
+	if( const auto it= map.find( "expand-fp-convert-bits" ); it != map.end() )
+		it->second->addOccurrence( 1000, "expand-fp-convert-bits", "64" );
+	else
+	{
+		// If this fails, something inside LLVM code was changed.
+		std::cerr << "Can't find \"expand-fp-convert-bits\" option!" << std::endl;
+	}
+}
+
 bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 {
 	const llvm::StringRef name= global_value.getName();
@@ -451,6 +471,8 @@ int Main( int argc, const char* argv[] )
 		llvm::cl::cat(Options::options_category) );
 
 	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
+
+	ActiveFloatToAndFromInt128ConversionsExpansionHack();
 
 	// Remove Ü options just after parsing in order to avoid parsing them second time in the linker.
 	// This is needed because COFF linker calls "ParseCommandLineOptions".
