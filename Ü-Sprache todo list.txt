@@ -51,7 +51,9 @@ General:
 	specified and redirects all method calls to corresponding implementation method calls. A reference to an
 	implementation class can be converted to reference to one of its static interfaces.
 *) Consider supporting sequence filler initializer ( ... ) for tuples
-*) Consider forbidding using different parameter names in function declarations/definitions.
+*) Consider adding some syntax sugar allowing expression syntax nodes in type name syntax nodes, so that it's possible
+	to use something like "typeinfo</T/>.src_type"
+*) Consider allowing using {} initializer for structs having explicit non-copy constructors, at least in some cases
 
 References:
 *) Support second order inner references for coroutine types
@@ -159,6 +161,8 @@ Compiler:
 *) Alloca declaration - allow to specify heap fallback size limit -
 	even zero (always use heap) or infinity (always use stack)
 *) Generate debug info for generated methods
+*) Consider using range metadata for values of enum types (arguments, load results, call results)
+*) Consider generating "noalias" metadata, where language rules allow it
 
 Interpreter:
 *) Sdd possibility to provide proper argc/argv (not only stubs for them)
@@ -218,6 +222,7 @@ C++ header converter:
 
 Ü Build system:
 *) Support building "ustlib" into a shared library (dll/so)
+*) Consider adding a builg configuration like "profile" or "release with debug info", so that it's possible to profile
 *) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
 *) Add possibility to mark a library build target as "force public" and thus make it public dependency even for build
 	targets which depend on it privately. This should ensure that exactly one version of this library is linked into
