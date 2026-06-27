@@ -6,10 +6,7 @@ template</type T/>
 fn ignore_unused(T& t)
 {
 	// Force use unused variable in "typeof" context.
-	ignore_unused_impl</ typeof(t) />();
+	static_if( same_type</ typeof(t), T /> ) {}
 }
-
-template</type T/>
-fn constexpr ignore_unused_impl(){}
 
 } // namespace ust
