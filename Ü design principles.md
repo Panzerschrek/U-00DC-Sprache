@@ -13,6 +13,7 @@ There principles have been codified only in June 2026, earlier they weren't codi
 * No single language feature or standard library functionality is allowed to cause performance overhead for usage of some other feature(s) and functionality piece(s), unless it's strictly needed to achieve safety and there is no way of doing so without some performance overhead.
 * Language constructions affecting control flow in such a way that some piece of code may not be executed should be explicit. In other words, if execution of some piece of code can be skipped, this should be visible.
 * Exact syntax of a particular language feature isn't that important, overall syntax consistency isn't important too. Ü syntax should be good enough to be pretty readable and be able to express underlying language concepts.
+* Having a formal description of the language is considered to be unnecessary and having little to no value. But if such a description does exist, actual Ü implementation should have priority over it.
 * Code readability is important, one should be able to roughly reason about some specific code piece without additional tools (using only a plain text editor). Thus Ü should provide means allowing writing such readable code. *Spukhafte Fernwirkung* should be avoided.
 * Ü should not enforce some specific formatting style or naming convention. Programmers using Ü should have freedom using their favorite style.
 * Ü targets professional programmers or other people, who spend much time doing actual programming, but not beginners and/or hobbyists with little programming experience.
@@ -28,7 +29,8 @@ There principles have been codified only in June 2026, earlier they weren't codi
 * Programmers writing Ü should not be forced to deal with rare conditions caused by broken integrity of the whole execution environment.
 * Memory allocation is generally expected not to fail.
 * Stack overflow is expected not to happen.
-* No further execution of Ü code in a program should happen if a runtime safety check have failed.
+* Preventing deadlocks is assumed to be impossible. The only guarantee in case of a deadlock is that no further code execution of deadlocked thread(s) is performed.
+* No further execution of Ü code in a program should happen if a runtime safety check has failed.
 * There should be a way to disable runtime safety checks - for cases, where the last bit of performance can be gained by sacrificing safety.
 * Ü is allowed to choose whatever underlying data representation and layout it wants except it was asked explicitly to use some specific representation and layout.
 * Binary compatibility between different Ü versions isn't important at all and should not be guaranteed.
