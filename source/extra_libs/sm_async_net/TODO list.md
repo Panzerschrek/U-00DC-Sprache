@@ -9,3 +9,4 @@ This list contains features to be implemented and cases to be considered:
 * Add a runner method like `execute_task_blocking` to wait for a task to finish.
 * Consider adding a method for adding a task, which returns some sort of handle/future, which can be awaited to receive execution result.
 * Consider implementing async versions of synchronization primitives like barrier and semaphore, which perform yielding instead of blocking.
+* Consider implementing something like `join_subtasks` function, but for single subtask, which adds a single child task. It may be (or may not be) more effective than just calling an async function using `await`.
