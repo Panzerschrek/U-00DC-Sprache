@@ -5,7 +5,7 @@ Here are they:
 * *I* Safety and performance are both important.
 * *II* Safety and performance are equally important.
 * *III* A program written in Ü and using no unsafe code or only correctly-written unsafe code should not contain memory-related bugs like reading uninitialized memory, use-after-free, double-free and others memory-related errors, race conditions and any other kind of undefined behavior. Ü language design should guarantee that.
-* *IV* If some error, mistake or other behavior widely-considered to be undesirable can be prevented in compile time (via compiler checks), it should be prevented.
+* *IV* If some error, mistake or other behavior widely-considered to be undesirable can be prevented in compile-time (via compiler checks), it should be prevented.
 * *V* Ü should provide means for reduction of repetitive code.
 * *VI* Ü should provide means simplifying usage of widely-used code patterns.
 * *VII* Increasing language complexity is welcome as long as such an increase allows improving safety and correctness, gaining runtime performance, improving expressiveness or simplifying writing code.
