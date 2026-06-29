@@ -76,20 +76,6 @@ fn extract_code_point_or_null_from_string( string_view8 &mut str ) : char32
 		return char32(0);
 	}
 
-	// c_bit_masks[4] - menas save first 4 bits
-	var [ u32, 9 ] constexpr c_bit_masks
-	[
-		-1u + (1u << 0),
-		-1u + (1u << 1),
-		-1u + (1u << 2),
-		-1u + (1u << 3),
-		-1u + (1u << 4),
-		-1u + (1u << 5),
-		-1u + (1u << 6),
-		-1u + (1u << 7),
-		-1u + (1u << 8),
-	];
-
 	var u32 c( str.front() );
 	var char32 mut code(0);
 
@@ -155,6 +141,20 @@ fn extract_code_point_or_null_from_string( string_view8 &mut str ) : char32
 
 	return code;
 }
+
+// c_bit_masks[4] - menas save first 4 bits
+var [ u32, 9 ] constexpr c_bit_masks
+[
+	( (1u << 0) - 1u ),
+	( (1u << 1) - 1u ),
+	( (1u << 2) - 1u ),
+	( (1u << 3) - 1u ),
+	( (1u << 4) - 1u ),
+	( (1u << 5) - 1u ),
+	( (1u << 6) - 1u ),
+	( (1u << 7) - 1u ),
+	( (1u << 8) - 1u ),
+];
 
 fn extract_code_point_or_null_from_string( string_view16 &mut str ) : char32
 {
