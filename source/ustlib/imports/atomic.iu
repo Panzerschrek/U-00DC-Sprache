@@ -388,7 +388,7 @@ fn atomic_or( i32 &mut x, i32 y ) : i32 { return ust_atomic_or_i32_impl( x, y );
 fn atomic_xor( i32 &mut x, i32 y ) : i32 { return ust_atomic_xor_i32_impl( x, y ); }
 
 fn atomic_add( u32 &mut x, u32 y ) : u32 { return ust_atomic_add_u32_impl( x, y ); }
-fn atomic_sub( u32 &mut x, u32 y ) : u32 { return atomic_add( x, -y ); }
+fn atomic_sub( u32 &mut x, u32 y ) : u32 { return atomic_add( x, 0u - y ); }
 fn atomic_inc( u32 &mut x ) : u32 { return atomic_add( x,  1u ); }
 fn atomic_dec( u32 &mut x ) : u32 { return atomic_add( x, ~0u ); }
 fn atomic_and( u32 &mut x, u32 y ) : u32 { return ust_atomic_and_u32_impl( x, y ); }
@@ -404,7 +404,7 @@ fn enable_if( c_enable_64bit_atomics ) atomic_or( i64 &mut x, i64 y ) : i64 { re
 fn enable_if( c_enable_64bit_atomics ) atomic_xor( i64 &mut x, i64 y ) : i64 { return ust_atomic_xor_i64_impl( x, y ); }
 
 fn enable_if( c_enable_64bit_atomics ) atomic_add( u64 &mut x, u64 y ) : u64 { return ust_atomic_add_u64_impl( x, y ); }
-fn enable_if( c_enable_64bit_atomics ) atomic_sub( u64 &mut x, u64 y ) : u64 { return atomic_add( x, -y ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_sub( u64 &mut x, u64 y ) : u64 { return atomic_add( x, 0u64 - y ); }
 fn enable_if( c_enable_64bit_atomics ) atomic_inc( u64 &mut x ) : u64 { return atomic_add( x,  1u64 ); }
 fn enable_if( c_enable_64bit_atomics ) atomic_dec( u64 &mut x ) : u64 { return atomic_add( x, ~0u64 ); }
 fn enable_if( c_enable_64bit_atomics ) atomic_and( u64 &mut x, u64 y ) : u64 { return ust_atomic_and_u64_impl( x, y ); }
@@ -420,7 +420,7 @@ fn atomic_or( ssize_type &mut x, ssize_type y ) : ssize_type { return ust_atomic
 fn atomic_xor( ssize_type &mut x, ssize_type y ) : ssize_type { return ust_atomic_xor_ssize_type_impl( x, y ); }
 
 fn atomic_add( size_type &mut x, size_type y ) : size_type { return ust_atomic_add_size_type_impl( x, y ); }
-fn atomic_sub( size_type &mut x, size_type y ) : size_type { return atomic_add( x, -y ); }
+fn atomic_sub( size_type &mut x, size_type y ) : size_type { return atomic_add( x, 0s - y ); }
 fn atomic_inc( size_type &mut x ) : size_type { return atomic_add( x,  1s ); }
 fn atomic_dec( size_type &mut x ) : size_type { return atomic_add( x, ~0s ); }
 fn atomic_and( size_type &mut x, size_type y ) : size_type { return ust_atomic_and_size_type_impl( x, y ); }
