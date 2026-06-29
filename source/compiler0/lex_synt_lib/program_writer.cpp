@@ -245,8 +245,16 @@ void ElementWrite( const CoroutineType& coroutine_name ) const
 		stream_ << "'";
 		for( size_t i= 0; i < coroutine_name.inner_references.size(); ++i )
 		{
-			ElementWrite( coroutine_name.inner_references[i].kind );
-			// TODO - write second order kind too.
+			const CoroutineType::InnerReference& inner_reference= coroutine_name.inner_references[i];
+			ElementWrite( inner_reference.kind );
+
+			if( inner_reference.second_order_kind != MutabilityModifier::None )
+			{
+				stream_ << "(";
+				ElementWrite( inner_reference.second_order_kind );
+				stream_ << ")";
+			}
+
 			if( i + 1 < coroutine_name.inner_references.size() )
 				stream_ << ", ";
 		}

@@ -524,6 +524,16 @@ def GeneratorTypeName_Test12():
 	tests_lib.build_program( c_program_text )
 
 
+def GeneratorTypeName_Test13():
+	c_program_text= """
+		// Second order inner references.
+		type Gen= generator( imut(imut), imut(mut), mut(imut), mut(mut), mut, imut ) : void;
+		static_assert( typeinfo</Gen/>.reference_tag_count == 6s );
+		static_assert( typeinfo</Gen/>.reference_indirection_depth == 2s );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def GeneratorTypeName_AsTemplateSignatureArgument_Test0():
 	c_program_text= """
 		template</ type T />

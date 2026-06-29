@@ -1868,6 +1868,26 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 					else
 						PushErrorMessage();
 
+					if( it_->type == Lexem::Type::BracketLeft )
+					{
+						NextLexem();
+
+						if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+						{
+							NextLexem();
+							inner_reference.second_order_kind= MutabilityModifier::Mutable;
+						}
+						else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
+						{
+							NextLexem();
+							inner_reference.second_order_kind= MutabilityModifier::Immutable;
+						}
+						else
+							PushErrorMessage();
+
+						ExpectLexem( Lexem::Type::BracketRight );
+					}
+
 					coroutine_type.inner_references.push_back( std::move( inner_reference ) );
 
 					if( it_->type == Lexem::Type::Comma )
