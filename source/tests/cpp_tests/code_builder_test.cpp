@@ -402,7 +402,7 @@ U_TEST(NumericConstantsTest3)
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 10302167865625843000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0 );
 
 	args[0].IntVal= llvm::APInt( 32u, uint64_t(13), false );
-	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == INFINITY );
+	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == std::numeric_limits<double>::infinity() );
 
 	args[0].IntVal= llvm::APInt( 32u, uint64_t(14), false );
 	U_TEST_ASSERT( engine->runFunction( function, args ).DoubleVal == 0.0f );
