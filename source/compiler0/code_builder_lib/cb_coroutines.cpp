@@ -94,25 +94,47 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		}
 		else
 		{
-			// Coroutine is an object, that holds references to reference-args of coroutine function.
-			// It's generally not allowed to create types with references to other types with references inside.
-			// Second order references are possible in some cases, but for now not for coroutines.
-			if( EnsureTypeComplete( param.type ) && param.type.ReferenceTagCount() > 0u )
+			if( EnsureTypeComplete( param.type ) )
 			{
-				std::string field_name= "param ";
-				field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
-				field_name+= " of type ";
-				field_name+= param.type.ToString();
-				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
-			}
+				// Coroutine is an object, that holds references to reference-args of coroutine function.
+				// So, if type of a reference param contains references inside, we need to use second-order inner references.
 
-			coroutine_type_description.inner_references.push_back(
-				InnerReference(
-					param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut
-					/* TODO - provide second-order inner reference here */ ) );
-			coroutine_return_inner_ferences.push_back(
-				FunctionType::ReturnReferences{
-					FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_param_reference_number } } );
+				const size_t num_reference_tag_count= param.type.ReferenceTagCount();
+
+				if( num_reference_tag_count > 0 )
+				{
+					if( num_reference_tag_count > 1 )
+					{
+						std::string field_name= "param ";
+						field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
+						field_name+= " of type ";
+						field_name+= param.type.ToString();
+						REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, names_scope.GetErrors(), src_loc, field_name ); // TODO - use separate error code.
+					}
+
+					if( param.type.GetReferenceIndirectionDepth() > 1 )
+					{
+						std::string field_name= "param ";
+						field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
+						field_name+= " of type ";
+						field_name+= param.type.ToString();
+						REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
+					}
+				}
+
+				coroutine_type_description.inner_references.push_back(
+					InnerReference(
+						param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut,
+						num_reference_tag_count > 0
+							? ( param.type.GetInnerReferenceKind(0) == InnerReferenceKind::Imut
+								? SecondOrderInnerReferenceKind::Imut
+								: SecondOrderInnerReferenceKind::Mut )
+							: SecondOrderInnerReferenceKind::None ) );
+
+				coroutine_return_inner_ferences.push_back(
+					FunctionType::ReturnReferences{
+						FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_param_reference_number } } );
+			}
 		}
 	}
 
