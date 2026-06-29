@@ -1,4 +1,5 @@
 #include <cctype>
+#include <charconv>
 #include <cstring>
 #include <unordered_set>
 
@@ -915,12 +916,24 @@ FloatingPointNumericConstant SyntaxAnalyzer::ParseFloatingPointNumericConstant()
 	U_ASSERT( it_->type == Lexem::Type::FloatingPointNumber );
 
 	FloatingPointNumericConstant result( it_->src_loc );
-	result.num= it_->text;
+
+	const char* const text_end= it_->text.data() + it_->text.size();
+	const auto from_chars_res= std::from_chars( it_->text.data(), text_end, result.num );
+
+	if( from_chars_res.ec == std::errc::invalid_argument || from_chars_res.ptr != text_end )
+		error_messages_.push_back( LexSyntError( "Broken floating-point literal!", result.src_loc ) );
+
 	NextLexem();
 
 	if( it_->type == Lexem::Type::LiteralSuffix )
 	{
-		result.type_suffix= it_->text;
+		const std::string_view suffix_str= it_->text;
+
+		if( suffix_str.size() > result.type_suffix.size() )
+			error_messages_.push_back( LexSyntError( "Type suffix of numeric literal is too long!", it_->src_loc ) );
+		else
+			std::memcpy( result.type_suffix.data(), suffix_str.data(), suffix_str.size() );
+
 		NextLexem();
 	}
 
@@ -1127,7 +1140,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 	case Lexem::Type::IntegerNumber:
 		return ParseIntegerNumericConstant();
 	case Lexem::Type::FloatingPointNumber:
-		return std::make_unique< FloatingPointNumericConstant >( ParseFloatingPointNumericConstant() );
+		return ParseFloatingPointNumericConstant();
 	case Lexem::Type::String:
 		{
 			auto string_literal= std::make_unique<StringLiteral>( it_->src_loc );

@@ -364,8 +364,18 @@ void ElementWrite( const IntegerNumericConstant& numeric_constant ) const
 
 void ElementWrite( const FloatingPointNumericConstant& numeric_constant ) const
 {
+	stream_.precision( std::numeric_limits<double>::digits10 + 1 );
+	stream_.flags( stream_.flags() | std::ios_base::showpoint );
 	stream_ << numeric_constant.num;
-	stream_ << numeric_constant.type_suffix;
+
+	if( numeric_constant.type_suffix[0] != '\0' )
+	{
+		std::string_view type_suffix( numeric_constant.type_suffix.data(), numeric_constant.type_suffix.size() );
+		while( !type_suffix.empty() && type_suffix.back() == '\0' )
+			type_suffix= type_suffix.substr( 0, type_suffix.size() - 1 );
+
+		stream_ << type_suffix;
+	}
 }
 
 void ElementWrite( const StringLiteral& string_literal ) const

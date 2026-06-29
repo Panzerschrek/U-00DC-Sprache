@@ -180,7 +180,7 @@ using Expression= std::variant<
 	EmptyVariant,
 	// Terminal nodes.
 	IntegerNumericConstant,
-	std::unique_ptr<const FloatingPointNumericConstant>, // Terminal, but too heavy, to store by-value.
+	FloatingPointNumericConstant,
 	BooleanConstant,
 	MoveOperator,
 	MoveOperatorCompletion,
@@ -426,12 +426,8 @@ struct FloatingPointNumericConstant
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-
-	// Store source string and parse it later - when building code.
-	// In lex/synt lib we have no proper functionality for correct and locale-independent floating-point numbers parsing.
-	std::string num;
-
-	std::string type_suffix;
+	double num= 0.0;
+	std::array<char, 8> type_suffix{0};
 };
 
 struct BooleanConstant

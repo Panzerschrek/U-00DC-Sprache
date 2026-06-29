@@ -1371,40 +1371,36 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::FloatingPointNumericConstant& numeric_constant )
-{
-	double num_value= 0.0;
-	if( llvm::StringRef( numeric_constant.num ).getAsDouble( num_value, true /* allow inexact */ ) )
-	{
-		// This should actually not happen, since lexical analyzer parses numbers properly.
-		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), numeric_constant.src_loc, "broken floating-point literals" );
-		return ErrorValue();
-	}
+{	
+	std::string_view type_suffix( numeric_constant.type_suffix.data(), numeric_constant.type_suffix.size() );
+	while( !type_suffix.empty() && type_suffix.back() == '\0' )
+		type_suffix= type_suffix.substr( 0, type_suffix.size() - 1 );
 
 	U_FundamentalType type= U_FundamentalType::InvalidType;
 
-	if( numeric_constant.type_suffix.empty() )
+	if( type_suffix.empty() )
 		type = U_FundamentalType::f64_;
-	else if( numeric_constant.type_suffix == "f" )
+	else if( type_suffix == "f" )
 		type= U_FundamentalType::f32_;
-	else if( numeric_constant.type_suffix == "u" || numeric_constant.type_suffix == "s" )
+	else if( type_suffix == "u" || type_suffix == "s" )
 	{
 		// Don't allow "u" suffix (short form for "u32") and "s" suffix (short form for "size_type") to be used for floating point numbers.
-		REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope.GetErrors(), numeric_constant.src_loc, numeric_constant.type_suffix );
+		REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope.GetErrors(), numeric_constant.src_loc, type_suffix );
 		return ErrorValue();
 	}
 	else
 	{
-		type= GetFundamentalTypeByName( numeric_constant.type_suffix );
+		type= GetFundamentalTypeByName( type_suffix );
 
 		if( type == U_FundamentalType::InvalidType )
 		{
-			REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, numeric_constant.type_suffix );
+			REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, type_suffix );
 			return ErrorValue();
 		}
 
 		if( !IsFloatingPoint( type ) )
 		{
-			REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope.GetErrors(), numeric_constant.src_loc, numeric_constant.type_suffix );
+			REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope.GetErrors(), numeric_constant.src_loc, type_suffix );
 			return ErrorValue();
 		}
 	}
@@ -1418,7 +1414,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			Variable::Location::LLVMRegister,
 			"numeric constant" );
 
-	result->llvm_value= result->constexpr_value= llvm::ConstantFP::get( llvm_type, num_value );
+	result->llvm_value= result->constexpr_value= llvm::ConstantFP::get( llvm_type, numeric_constant.num );
 
 	function_context.variables_state.AddNode( result );
 

@@ -195,11 +195,7 @@ Synt::IntegerNumericConstant TranslateNumericConstant( const llvm::APInt& n )
 Synt::FloatingPointNumericConstant TranslateNumericConstant( const llvm::APFloat& n )
 {
 	Synt::FloatingPointNumericConstant numeric_constant( g_dummy_src_loc );
-
-	llvm::SmallString<32> s;
-	n.toString( s, 0 /* FormatPrecision */, 0 /* FormatMaxPadding */, true /* TruncateZero */ );
-	numeric_constant.num= std::string( s );
-
+	numeric_constant.num= n.convertToDouble();
 	return numeric_constant;
 }
 
@@ -1615,14 +1611,12 @@ Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::T
 		if( init_val_float.isNegative() )
 		{
 			Synt::UnaryMinus unary_minus( g_dummy_src_loc );
-			unary_minus.expression=
-				std::make_unique< Synt::FloatingPointNumericConstant >( TranslateNumericConstant( -init_val_float ) );
+			unary_minus.expression= TranslateNumericConstant( -init_val_float );
 
 			initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
 		}
 		else
-			initializer.arguments.push_back(
-				std::make_unique< Synt::FloatingPointNumericConstant >( TranslateNumericConstant( init_val_float ) ) );
+			initializer.arguments.push_back( TranslateNumericConstant( init_val_float ) );
 
 		return std::move(initializer);
 	}
@@ -1995,9 +1989,9 @@ Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& to
 		Synt::FloatingPointNumericConstant numeric_constant= TranslateNumericConstant( float_val );
 
 		if( numeric_literal_parser.isFloat )
-			numeric_constant.type_suffix= "f";
+			numeric_constant.type_suffix[0]= 'f';
 
-		return std::make_unique< Synt::FloatingPointNumericConstant >( numeric_constant );
+		return numeric_constant;
 	}
 }
 
