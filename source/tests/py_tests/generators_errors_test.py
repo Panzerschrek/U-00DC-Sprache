@@ -601,22 +601,24 @@ def ReferencesPollution_ForGenerator_Test0():
 def ReferenceIndirectionDepthExceeded_ForGenerators_Test0():
 	c_program_text= """
 		struct S{ i32 & x; }
-		fn generator Foo( S & s ) : i32; // Can't pass structs with references inside by a reference into a generator.
+		struct T{ S& s; }
+		fn generator Foo( T & t ) : i32; // Can't pass structs with second order references inside by a reference into a generator.
 	"""
 	tests_lib.build_program_with_errors( c_program_text )
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 3 ) )
+	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 4 ) )
 
 
 def ReferenceIndirectionDepthExceeded_ForGenerators_Test1():
 	c_program_text= """
 		struct S{ i32 &mut x; }
-		fn generator Foo( S & s ) : i32; // Can't pass structs with references inside by a reference into a generator.
+		struct T{ S& s; }
+		fn generator Foo( T & t ) : i32; // Can't pass structs with second order references inside by a reference into a generator.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 3 ) )
+	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 4 ) )
 
 
 def ReferenceIndirectionDepthExceeded_ForGenerators_Test2():

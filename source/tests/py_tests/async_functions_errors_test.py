@@ -655,22 +655,24 @@ def DestroyedVariableStillHasReferences_ForAsyncFunction_Test3():
 def ReferenceIndirectionDepthExceeded_ForAsyncFunctions_Test0():
 	c_program_text= """
 		struct S{ i32 & x; }
-		fn async Foo( S & s ) : i32; // Can't pass structs with references inside by a reference into an async function.
+		struct T{ S& s; }
+		fn async Foo( T & t ) : i32; // Can't pass structs with second order references inside by a reference into an async function.
 	"""
 	tests_lib.build_program_with_errors( c_program_text )
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 3 ) )
+	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 4 ) )
 
 
 def ReferenceIndirectionDepthExceeded_ForAsyncFunctions_Test1():
 	c_program_text= """
 		struct S{ i32 &mut x; }
-		fn async Foo( S & s ) : i32; // Can't pass structs with references inside by a reference into an async function.
+		struct T{ S& s; }
+		fn async Foo( T & t ) : i32; // Can't pass structs with second order references inside by a reference into an async function.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 3 ) )
+	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 4 ) )
 
 
 def ReferenceIndirectionDepthExceeded_ForForAsyncFunctions_Test2():
