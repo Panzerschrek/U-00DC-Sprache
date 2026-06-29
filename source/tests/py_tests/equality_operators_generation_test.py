@@ -56,7 +56,7 @@ def EqualityOperatorGeneration_Test1():
 	var S w{ .a= 42, .b= 66.1f, .c= 789u, .d[ 76, -33 ] };
 	var S e{ .a= 24, .b= 66.1f, .c= 789u, .d[ 76, -33 ] };
 	var S r{ .a= 42, .b= 66.1f, .c= 789u, .d[  0, -33 ] };
-	var S t{ .a= 42, .b= 66.1f, .c= -89u, .d[ 76, -33 ] };
+	var S t{ .a= 42, .b= 66.1f, .c=0u - 89u, .d[ 76, -33 ] };
 	var S y{ .a= 42, .b= 66.1f, .c= 789u, .d[ 76,  33 ] };
 
 	static_assert( q == q );
