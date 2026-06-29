@@ -75,6 +75,17 @@ def ReturningUnallowedReference_ForAsyncReturn_Test4():
 	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 8 ) )
 
 
+def ReturningUnallowedReference_ForAsyncReturn_Test5():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn async Some( S& s ) : i32& @( return_references ); // Can't return an inner reference of a reference param, since it actually means returning second-order inner reference, which for now isn't supported.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 4 ) )
+
+
 def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test0():
 	c_program_text= """
 		fn async Foo() : i32

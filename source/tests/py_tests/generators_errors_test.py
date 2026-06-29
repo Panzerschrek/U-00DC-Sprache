@@ -1049,6 +1049,17 @@ def ReturningUnallowedReference_ForGeneratorYield_Test11():
 	tests_lib.build_program( c_program_text )
 
 
+def ReturningUnallowedReference_ForGeneratorYield_Test12():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn generator Some( S& s ) : i32& @( return_references ); // Can't return an inner reference of a reference param, since it actually means returning second-order inner reference, which for now isn't supported.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 4 ) )
+
+
 def UnallowedReferencePollution_ForGenerator_Test0():
 	c_program_text= """
 		struct S{ i32& x; }

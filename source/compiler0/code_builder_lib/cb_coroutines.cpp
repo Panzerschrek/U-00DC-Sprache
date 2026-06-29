@@ -149,7 +149,15 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		if( param_reference.second == FunctionType::c_param_reference_number )
 			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
 		else
-			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + param_reference.second );
+		{
+			if( coroutine_function_type.params[ param_reference.first ].value_type == ValueType::Value )
+				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + param_reference.second );
+			else
+			{
+				// TODO - use separate error code here?
+				REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc, "inner reference of param" + std::to_string( param_reference.first ) );
+			}
+		}
 
 		coroutine_type_description.return_references.push_back( out_reference );
 	}
@@ -169,7 +177,15 @@ void CodeBuilder::TransformCoroutineFunctionType(
 			if( param_reference.second == FunctionType::c_param_reference_number )
 				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
 			else
-				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + out_reference.second );
+			{
+				if( coroutine_function_type.params[ param_reference.first ].value_type == ValueType::Value )
+					out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + out_reference.second );
+				else
+				{
+					// TODO - use separate error code here?
+					REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc, "inner reference of param" + std::to_string( param_reference.first ) );
+				}
+			}
 
 			coroutine_type_description.return_inner_references[i].push_back( out_reference );
 		}
