@@ -574,6 +574,12 @@ public:
 		AsyncFunc,
 	};
 
+	struct InnerReference
+	{
+		MutabilityModifier kind= MutabilityModifier::None;
+		MutabilityModifier second_order_kind= MutabilityModifier::None;
+	};
+
 public:
 	explicit CoroutineType( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
@@ -583,7 +589,7 @@ public:
 	std::optional<MutabilityModifier> inner_reference_mutability_modifier;
 	NonSyncTag non_sync_tag;
 	TypeName return_type;
-	std::vector<MutabilityModifier> inner_references;
+	std::vector<InnerReference> inner_references;
 	std::unique_ptr<const Expression> return_value_reference_expression; // May be nullptr.
 	std::unique_ptr<const Expression> return_value_inner_references_expression; // May be nullptr.
 	Kind kind= Kind::Generator;

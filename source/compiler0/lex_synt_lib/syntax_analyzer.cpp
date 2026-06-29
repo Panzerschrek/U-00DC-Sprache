@@ -1853,18 +1853,22 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 			{
 				while( NotEndOfFile() )
 				{
+					CoroutineType::InnerReference inner_reference;
+
 					if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
 					{
 						NextLexem();
-						coroutine_type.inner_references.push_back( MutabilityModifier::Mutable );
+						inner_reference.kind= MutabilityModifier::Mutable;
 					}
 					else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
 					{
 						NextLexem();
-						coroutine_type.inner_references.push_back( MutabilityModifier::Immutable );
+						inner_reference.kind= MutabilityModifier::Immutable;
 					}
 					else
 						PushErrorMessage();
+
+					coroutine_type.inner_references.push_back( std::move( inner_reference ) );
 
 					if( it_->type == Lexem::Type::Comma )
 						NextLexem();
