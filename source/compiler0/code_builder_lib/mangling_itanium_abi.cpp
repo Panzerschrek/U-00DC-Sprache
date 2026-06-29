@@ -605,11 +605,12 @@ void EncodeCoroutineType( ManglerState& mangler_state, const ClassPtr class_type
 	}
 
 	// Encode inner references as variable template parameters.
-	for( const InnerReferenceKind inner_reference : coroutine_type_description->inner_references )
+	for( const InnerReference& inner_reference : coroutine_type_description->inner_references )
 	{
 		mangler_state.Push( 'L' );
 		mangler_state.Push( EncodeFundamentalType( U_FundamentalType::u32_ ) );
-		mangler_state.Push( std::to_string( size_t( inner_reference ) ) );
+		mangler_state.Push( std::to_string( size_t( inner_reference.kind ) ) );
+		// TODO - encode second order inner reference kind here.
 		mangler_state.Push( 'E' );
 	}
 

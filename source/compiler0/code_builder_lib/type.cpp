@@ -44,6 +44,11 @@ llvm::Type* GetLLVMTypeImpl( const EnumPtr enum_ )
 
 } // namespace
 
+bool operator==( const InnerReference& l, const InnerReference& r )
+{
+	return l.kind == r.kind && l.second_order_kind == r.second_order_kind;
+}
+
 //
 // Fundamental type
 //

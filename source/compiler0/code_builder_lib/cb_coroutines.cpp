@@ -81,7 +81,11 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				const auto reference_tag_count= param.type.ReferenceTagCount();
 				for( size_t i= 0; i < reference_tag_count; ++i )
 				{
-					coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceKind(i) );
+					coroutine_type_description.inner_references.push_back(
+						InnerReference(
+							param.type.GetInnerReferenceKind(i),
+							param.type.GetSecondOrderInnerReferenceKind(i) ) );
+
 					coroutine_return_inner_ferences.push_back(
 						FunctionType::ReturnReferences{
 							FunctionType::ParamReference{ uint8_t(param_index), uint8_t(i) } } );
@@ -102,7 +106,10 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
 			}
 
-			coroutine_type_description.inner_references.push_back( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+			coroutine_type_description.inner_references.push_back(
+				InnerReference(
+					param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut
+					/* TODO - provide second-order inner reference here */ ) );
 			coroutine_return_inner_ferences.push_back(
 				FunctionType::ReturnReferences{
 					FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_param_reference_number } } );
@@ -178,10 +185,9 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 
 	coroutine_class->generated_class_data= coroutine_type_description;
 
-	// TODO - store InnerReference for coroutines?
 	coroutine_class->inner_references.reserve( coroutine_type_description.inner_references.size() );
-	for( const InnerReferenceKind k : coroutine_type_description.inner_references )
-		coroutine_class->inner_references.push_back( InnerReference( k ) );
+	for( const InnerReference& inner_refernce : coroutine_type_description.inner_references )
+		coroutine_class->inner_references.push_back( inner_refernce );
 
 	coroutine_class->members->SetClass( coroutine_class.get() );
 	coroutine_class->kind= Class::Kind::NonPolymorph; // Mark coroutine type as non-struct, to avoid usages it as struct ({} initializer, decompose).

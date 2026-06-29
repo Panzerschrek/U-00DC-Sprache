@@ -56,6 +56,9 @@ struct InnerReference
 	{}
 };
 
+bool operator==( const InnerReference& l, const InnerReference& r );
+inline bool operator!=( const InnerReference& l, const InnerReference& r ) { return !( l == r ); }
+
 // Observer pointer to class.
 // Class itself stored in class table.
 using ClassPtr= Class*;
