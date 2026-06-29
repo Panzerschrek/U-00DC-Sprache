@@ -73,68 +73,64 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	{
 		const size_t param_index= size_t(&param - coroutine_function_type.params.data());
 		param_to_first_inner_reference_tag.push_back( coroutine_type_description.inner_references.size() );
+
+		// Require type completeness for params in order to know inner references.
+		if( !EnsureTypeComplete( param.type ) )
+			continue;
+
+		const auto reference_tag_count= param.type.ReferenceTagCount();
+
 		if( param.value_type == ValueType::Value )
 		{
-			// Require type completeness for value params in order to know inner references.
-			if( EnsureTypeComplete( param.type ) )
+			for( size_t i= 0; i < reference_tag_count; ++i )
 			{
-				const auto reference_tag_count= param.type.ReferenceTagCount();
-				for( size_t i= 0; i < reference_tag_count; ++i )
-				{
-					coroutine_type_description.inner_references.push_back(
-						InnerReference(
-							param.type.GetInnerReferenceKind(i),
-							param.type.GetSecondOrderInnerReferenceKind(i) ) );
+				coroutine_type_description.inner_references.push_back(
+					InnerReference(
+						param.type.GetInnerReferenceKind(i), param.type.GetSecondOrderInnerReferenceKind(i) ) );
 
-					coroutine_return_inner_references.push_back(
-						FunctionType::ReturnReferences{
-							FunctionType::ParamReference{ uint8_t(param_index), uint8_t(i) } } );
-				}
+				coroutine_return_inner_references.push_back(
+					FunctionType::ReturnReferences{
+						FunctionType::ParamReference{ uint8_t(param_index), uint8_t(i) } } );
 			}
 		}
 		else
 		{
-			if( EnsureTypeComplete( param.type ) )
+			// Coroutine is an object, that holds references to reference-args of coroutine function.
+			// So, if type of a reference param contains references inside, we need to use second-order inner references.
+
+			if( reference_tag_count > 0 )
 			{
-				// Coroutine is an object, that holds references to reference-args of coroutine function.
-				// So, if type of a reference param contains references inside, we need to use second-order inner references.
-
-				const size_t num_reference_tag_count= param.type.ReferenceTagCount();
-
-				if( num_reference_tag_count > 0 )
+				if( reference_tag_count > 1 )
 				{
-					if( num_reference_tag_count > 1 )
-					{
-						std::string field_name= "param ";
-						field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
-						field_name+= " of type ";
-						field_name+= param.type.ToString();
-						REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, names_scope.GetErrors(), src_loc, field_name ); // TODO - use separate error code.
-					}
-
-					if( param.type.GetReferenceIndirectionDepth() > 1 )
-					{
-						std::string field_name= "param ";
-						field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
-						field_name+= " of type ";
-						field_name+= param.type.ToString();
-						REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
-					}
+					std::string field_name= "param ";
+					field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
+					field_name+= " of type ";
+					field_name+= param.type.ToString();
+					REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, names_scope.GetErrors(), src_loc, field_name ); // TODO - use separate error code.
 				}
 
-				coroutine_type_description.inner_references.push_back(
-					InnerReference(
-						param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut,
-						num_reference_tag_count > 0
-							? ( param.type.GetInnerReferenceKind(0) == InnerReferenceKind::Imut
-								? SecondOrderInnerReferenceKind::Imut
-								: SecondOrderInnerReferenceKind::Mut )
-							: SecondOrderInnerReferenceKind::None ) );
-
-				coroutine_return_inner_references.push_back(
-					FunctionType::ReturnReferences{
-						FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_param_reference_number } } );
+				if( param.type.GetReferenceIndirectionDepth() > 1 )
+				{
+					std::string field_name= "param ";
+					field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
+					field_name+= " of type ";
+					field_name+= param.type.ToString();
+					REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
+				}
 			}
+
+			coroutine_type_description.inner_references.push_back(
+				InnerReference(
+					param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut,
+					reference_tag_count > 0
+						? ( param.type.GetInnerReferenceKind(0) == InnerReferenceKind::Imut
+							? SecondOrderInnerReferenceKind::Imut
+							: SecondOrderInnerReferenceKind::Mut )
+						: SecondOrderInnerReferenceKind::None ) );
+
+			coroutine_return_inner_references.push_back(
+				FunctionType::ReturnReferences{
+					FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_param_reference_number } } );
 		}
 	}
 
