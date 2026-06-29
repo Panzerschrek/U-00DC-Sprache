@@ -106,7 +106,7 @@ fn parse_impl_i32( array_view_imut</C/> &mut range ) : optional</i32/>
 		{
 			if( res <= 2147483648u )
 			{
-				return i32(-res);
+				return -i32(res);
 			}
 		}
 	}
@@ -181,7 +181,7 @@ fn parse_impl_i64( array_view_imut</C/> &mut range ) : optional</i64/>
 		{
 			if( res <= 9223372036854775808u64 )
 			{
-				return i64(-res);
+				return -i64(res);
 			}
 		}
 	}
@@ -256,7 +256,7 @@ fn parse_impl_i128( array_view_imut</C/> &mut range ) : optional</i128/>
 		{
 			if( res <= 170141183460469231731687303715884105728u128 )
 			{
-				return i128(-res);
+				return -i128(res);
 			}
 		}
 	}
