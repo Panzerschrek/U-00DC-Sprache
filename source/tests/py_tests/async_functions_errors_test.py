@@ -675,12 +675,41 @@ def ReferenceIndirectionDepthExceeded_ForAsyncFunctions_Test1():
 	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 4 ) )
 
 
-def ReferenceIndirectionDepthExceeded_ForForAsyncFunctions_Test2():
+def ReferenceIndirectionDepthExceeded_ForAsyncFunctions_Test2():
 	c_program_text= """
 		struct S{ i32 & x; }
 		fn async Foo( S s ) : i32 { return 0; } // Ok - pass struct with reference inside by value.
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ReferenceIndirectionDepthExceeded_ForAsyncFunctions_Test3():
+	c_program_text= """
+		struct S{ i32 & x; }
+		fn async Foo( S& s ) : i32 { return 0; } // Ok - pass struct with reference inside but no second order references by reference.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoreThanOneInnerReferenceTagForSecondOrderReferenceField_ForAsyncFunctions_Test0():
+	c_program_text= """
+		struct S{ i32 & @('a') x; f32 &mut @('b') y; }
+		fn async Foo( S &mut s ) : i32 { return 0; } // Can't pass by reference a struct with more than one reference tag inside, since it would require creating multiple second-order inner references.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MoreThanOneInnerReferenceTagForSecondOrderReferenceField", 3 ) )
+
+
+def MoreThanOneInnerReferenceTagForSecondOrderReferenceField_ForAsyncFunctions_Test0():
+	c_program_text= """
+		struct S{ i32 & @('a') x; f32 &mut @('b') y; }
+		struct T{ S s; }
+		fn async Foo( T& t ) : i32 { return 0; } // Can't pass by reference a struct with more than one reference tag inside, since it would require creating multiple second-order inner references.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MoreThanOneInnerReferenceTagForSecondOrderReferenceField", 4 ) )
 
 
 def NonSyncTypesInsideSyncAsyncFunction_Test0():

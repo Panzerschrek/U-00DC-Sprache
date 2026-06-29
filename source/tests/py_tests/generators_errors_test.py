@@ -629,6 +629,35 @@ def ReferenceIndirectionDepthExceeded_ForGenerators_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def ReferenceIndirectionDepthExceeded_ForGenerators_Test3():
+	c_program_text= """
+		struct S{ i32 & x; }
+		fn generator Foo( S& s ) : i32 {} // Ok - pass struct with reference inside but no second order references by reference.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoreThanOneInnerReferenceTagForSecondOrderReferenceField_ForGenerators_Test0():
+	c_program_text= """
+		struct S{ i32 & @('a') x; f32 &mut @('b') y; }
+		fn generator Foo( S &mut s ) : i32 {} // Can't pass by reference a struct with more than one reference tag inside, since it would require creating multiple second-order inner references.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MoreThanOneInnerReferenceTagForSecondOrderReferenceField", 3 ) )
+
+
+def MoreThanOneInnerReferenceTagForSecondOrderReferenceField_ForGenerators_Test1():
+	c_program_text= """
+		struct S{ i32 & @('a') x; f32 &mut @('b') y; }
+		struct T{ S s; }
+		fn generator Foo( T& t ) : i32 {} // Can't pass by reference a struct with more than one reference tag inside, since it would require creating multiple second-order inner references.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "MoreThanOneInnerReferenceTagForSecondOrderReferenceField", 4 ) )
+
+
 def AccessingVariable_LinkedToGeneratorArgument_Test0():
 	c_program_text= """
 		fn generator SomeGen(i32& x) : i32;
