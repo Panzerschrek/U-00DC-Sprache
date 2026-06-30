@@ -217,9 +217,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 
 	coroutine_class->generated_class_data= coroutine_type_description;
 
-	coroutine_class->inner_references.reserve( coroutine_type_description.inner_references.size() );
-	for( const InnerReference& inner_refernce : coroutine_type_description.inner_references )
-		coroutine_class->inner_references.push_back( inner_refernce );
+	coroutine_class->inner_references= coroutine_type_description.inner_references;
 
 	coroutine_class->members->SetClass( coroutine_class.get() );
 	coroutine_class->kind= Class::Kind::NonPolymorph; // Mark coroutine type as non-struct, to avoid usages it as struct ({} initializer, decompose).
