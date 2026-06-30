@@ -1,6 +1,9 @@
 name: CI
 
-on: [push]
+on:
+  push:
+    branches: [ master ] # It takes a lot of time to perform the build. So, perform it automatically only on pushes into "master" branch.
+  workflow_dispatch:
 
 jobs:
   gnu_linux_x86_64_release_llvm_bin:
