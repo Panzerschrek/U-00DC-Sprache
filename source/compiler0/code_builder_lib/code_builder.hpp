@@ -327,6 +327,8 @@ private:
 
 	llvm::CallingConv::ID GetLLVMCallingConvention( CallingConvention calling_convention );
 
+	static llvm::SmallVector<InnerReference, 4> CreateCoroutineInnerReferences( llvm::ArrayRef<Synt::CoroutineType::InnerReference> in_inner_references );
+
 	// Virtual stuff
 
 	void PrepareClassVirtualTable( Class& the_class );

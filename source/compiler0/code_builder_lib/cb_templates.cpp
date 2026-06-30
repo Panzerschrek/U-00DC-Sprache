@@ -475,16 +475,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	else
 		coroutine_param.return_value_type= ValueType::Value;
 
-	coroutine_param.inner_references.reserve( coroutine_type_name.inner_references.size() );
-	for( const Synt::CoroutineType::InnerReference& inner_reference : coroutine_type_name.inner_references )
-		coroutine_param.inner_references.push_back(
-			InnerReference(
-				inner_reference.kind == MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut,
-				inner_reference.second_order_kind == MutabilityModifier::None
-					? SecondOrderInnerReferenceKind::None
-					: inner_reference.second_order_kind == MutabilityModifier::Mutable
-						? SecondOrderInnerReferenceKind::Mut
-						: SecondOrderInnerReferenceKind::Imut ) );
+	coroutine_param.inner_references= CreateCoroutineInnerReferences( coroutine_type_name.inner_references );
 
 	coroutine_param.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type_name.non_sync_tag );
 

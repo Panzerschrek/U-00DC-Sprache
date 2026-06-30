@@ -181,16 +181,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	else
 		coroutine_type_description.return_value_type= ValueType::Value;
 
-	coroutine_type_description.inner_references.reserve( coroutine_type_name.inner_references.size() );
-	for( const Synt::CoroutineType::InnerReference& inner_reference : coroutine_type_name.inner_references )
-		coroutine_type_description.inner_references.push_back(
-			InnerReference(
-				inner_reference.kind == MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut,
-				inner_reference.second_order_kind == MutabilityModifier::None
-					? SecondOrderInnerReferenceKind::None
-					: inner_reference.second_order_kind == MutabilityModifier::Mutable
-						? SecondOrderInnerReferenceKind::Mut
-						: SecondOrderInnerReferenceKind::Imut ) );
+	coroutine_type_description.inner_references= CreateCoroutineInnerReferences( coroutine_type_name.inner_references );
 
 	coroutine_type_description.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type_name.non_sync_tag );
 
@@ -441,6 +432,26 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention( const CallingConven
 
 	U_ASSERT(false);
 	return llvm::CallingConv::C;
+}
+
+llvm::SmallVector<InnerReference, 4> CodeBuilder::CreateCoroutineInnerReferences(
+	const llvm::ArrayRef<Synt::CoroutineType::InnerReference> in_inner_references )
+{
+	llvm::SmallVector<InnerReference, 4> result;
+
+	result.reserve( in_inner_references.size() );
+
+	for( const Synt::CoroutineType::InnerReference& inner_reference : in_inner_references )
+		result.push_back(
+			InnerReference(
+				inner_reference.kind == MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut,
+				inner_reference.second_order_kind == MutabilityModifier::None
+					? SecondOrderInnerReferenceKind::None
+					: ( inner_reference.second_order_kind == MutabilityModifier::Mutable
+						? SecondOrderInnerReferenceKind::Mut
+						: SecondOrderInnerReferenceKind::Imut ) ) );
+
+	return result;
 }
 
 } // namespace U
