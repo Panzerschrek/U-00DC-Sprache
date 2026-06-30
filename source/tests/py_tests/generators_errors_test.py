@@ -1103,6 +1103,23 @@ def ReturningUnallowedReference_ForGeneratorYield_Test15():
 	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
 
 
+def ReturningUnallowedReference_ForGeneratorYield_Test16():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		var tup[ [ [ char8, 2 ], 0 ] ] return_inner_references[ [] ];
+		fn generator Foo( S& s ) : S @(return_inner_references) & @( return_references )
+		{
+			// We return here a reference to a reference param.
+			// Since only single inner reference tag is allowed for reference params of coroutines,
+			// it's not necessary to specify inner tags of this return reference.
+			// So, it's not an error if the list of return inner references is empty.
+			yield s;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ReturningReferenceParamInnerReferenceFromCoroutine_ForGenerator_Test0():
 	c_program_text= """
 		struct S{ i32& x; }
