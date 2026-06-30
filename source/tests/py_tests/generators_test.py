@@ -1381,6 +1381,22 @@ def Generator_InnerReferenceTagDeduction_Test3():
 	tests_lib.build_program( c_program_text )
 
 
+def Generator_InnerReferenceTagDeduction_Test4():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn generator Gen(S& s) : i32 {}
+		fn Foo()
+		{
+			var i32 x= 0;
+			var S s{ .x= x };
+			auto gen= Gen(s);
+			static_assert( typeinfo</typeof(gen)/>.reference_tag_count == 1s ); // Has references for generator with reference-params, containing refrerences inside.
+			static_assert( typeinfo</typeof(gen)/>.reference_indirection_depth == 2s ); // Has reference indirection depth 2, since reference param contains references inside.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def GeneratorNonSyncTag_Test0():
 	c_program_text= """
 		fn generator Gen( i32 x, f32 y, [ bool, 2 ] z );

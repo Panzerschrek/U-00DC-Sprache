@@ -629,6 +629,22 @@ def Typeinfo_ForAsyncFunctions_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def Typeinfo_ForAsyncFunctions_Test3():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn async Foo( S& s );
+		fn Bar()
+		{
+			var i32 x= 0;
+			var S s{ .x= x };
+			auto func= Foo(s);
+			static_assert( typeinfo</typeof(func)/>.reference_tag_count == 1s ); // Has references for async function with reference-params, containing refrerences inside.
+			static_assert( typeinfo</typeof(func)/>.reference_indirection_depth == 2s ); // Has reference indirection depth 2, since reference param contains references inside.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def AsyncFunctionNonSyncTag_Test0():
 	c_program_text= """
 		fn async Func( i32 x, f32 y, [ bool, 2 ] z );
