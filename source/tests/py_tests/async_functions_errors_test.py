@@ -1,5 +1,44 @@
 from py_tests_common import *
 
+def AccessingVariableLinkedToAsyncFunctionArgument_Test0():
+	c_program_text= """
+		struct S{ i32& mut x; }
+		fn async Bar( S& s ) : i32 { return s.x; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			auto mut bar= Bar( s );  // Holds a reference to "s".
+			auto &mut x_ref= s.x;
+			if_coro_advance( val : bar ) // Error here - resuming an async function requires locking second order references to which it points, but one of them - inner reference of "s" has an alive derived reference "x_ref".
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def AccessingVariableLinkedToAsyncFunctionArgument_Test1():
+	c_program_text= """
+		struct S{ i32& mut x; }
+		struct T{ S& s; }
+		fn async Bar( T t ) : i32 { return s.x; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			auto mut bar= Bar( T{ .s= s } );  // Holds a reference to "s".
+			auto &mut x_ref= s.x;
+			if_coro_advance( val : bar ) // Error here - resuming an async function requires locking second order references to which it points, but one of them - inner reference of "s" has an alive derived reference "x_ref".
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
 def ReturningUnallowedReference_ForAsyncReturn_Test0():
 	c_program_text= """
 		// Doesn't allow to return a reference to any param.

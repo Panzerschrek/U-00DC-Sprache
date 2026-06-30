@@ -842,6 +842,45 @@ def AccessingVariable_LinkedToGeneratorArgument_Test9():
 	tests_lib.build_program( c_program_text )
 
 
+def AccessingVariable_LinkedToGeneratorArgument_Test10():
+	c_program_text= """
+		struct S{ i32& mut x; }
+		fn generator Gen( S& s ) : i32 { return s.x; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			auto mut gen= Gen( s ); // Holds a reference to "s".
+			auto &mut x_ref= s.x;
+			if_coro_advance( val : gen ) // Error here - resuming a generator requires locking second order references to which it points, but one of them - inner reference of "s" has an alive derived reference "x_ref".
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test11():
+	c_program_text= """
+		struct S{ i32& mut x; }
+		struct T{ S& s; }
+		fn generator Gen( T t ) : i32 { return t.s.x; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			auto mut gen= Gen( T{ .s= s } ); // Holds a reference to "s".
+			auto &mut x_ref= s.x;
+			if_coro_advance( val : gen ) // Error here - resuming a generator requires locking second order references to which it points, but one of them - inner reference of "s" has an alive derived reference "x_ref".
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
 def AccessingGenerator_InsideIfCoroAdvance_Test0():
 	c_program_text= """
 		fn generator SomeGen() : i32;
