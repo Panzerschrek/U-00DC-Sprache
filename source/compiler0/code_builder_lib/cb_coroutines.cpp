@@ -150,8 +150,13 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + param_reference.second );
 			else
 			{
-				// TODO - use separate error code here?
-				REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc, "inner reference of param" + std::to_string( param_reference.first ) );
+				// Returning inner reference of a reference param in a coroutine means returning a second order inner reference, which is for now not supported.
+				REPORT_ERROR(
+					ReturningReferenceParamInnerReferenceFromCoroutine,
+					names_scope.GetErrors(),
+					src_loc,
+					uint32_t(param_reference.first),
+					uint32_t(param_reference.second) );
 			}
 		}
 
@@ -178,8 +183,13 @@ void CodeBuilder::TransformCoroutineFunctionType(
 					out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + out_reference.second );
 				else
 				{
-					// TODO - use separate error code here?
-					REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc, "inner reference of param" + std::to_string( param_reference.first ) );
+					// Returning inner reference of a reference param in a coroutine means returning a second order inner reference, which is for now not supported.
+					REPORT_ERROR(
+						ReturningReferenceParamInnerReferenceFromCoroutine,
+						names_scope.GetErrors(),
+						src_loc,
+						uint32_t(param_reference.first),
+						uint32_t(param_reference.second) );
 				}
 			}
 

@@ -171,6 +171,7 @@ PROCESS_ERROR( MixingMutableAndImmutableReferencesInSameReferenceTag, "Reference
 PROCESS_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, "Second order reference of tag \"{0}\" points both to mutable and immutable references." )
 PROCESS_ERROR( ChangingReferenceTagCountInInheritance, "Changing inner reference tag count in inheritance, parent class has {0} tags, child has {1} tags." )
 PROCESS_ERROR( ReferenceNotationViolatesImmutability, "Reference notation violates immutability (immutable references are linked with mutable)." )
+PROCESS_ERROR( ReturningReferenceParamInnerReferenceFromCoroutine, "Returning an inner reference {1} of a reference param {0} from coroutine, which isn't supported." )
 
 // Operators overloading
 PROCESS_ERROR( OperatorDeclarationOutsideClass, "Operator declaration outside class. Operators can be declared only inside classes." )

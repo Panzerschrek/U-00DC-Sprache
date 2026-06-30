@@ -75,7 +75,7 @@ def ReturningUnallowedReference_ForAsyncReturn_Test4():
 	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 8 ) )
 
 
-def ReturningUnallowedReference_ForAsyncReturn_Test5():
+def ReturningReferenceParamInnerReferenceFromCoroutine_ForAsyncFunction_Test0():
 	c_program_text= """
 		struct S{ i32& x; }
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
@@ -83,7 +83,7 @@ def ReturningUnallowedReference_ForAsyncReturn_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ReturningUnallowedReference", 4 ) )
+	assert( HasError( errors_list, "ReturningReferenceParamInnerReferenceFromCoroutine", 4 ) )
 
 
 def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test0():

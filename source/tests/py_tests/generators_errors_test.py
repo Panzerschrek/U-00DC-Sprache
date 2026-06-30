@@ -1049,7 +1049,7 @@ def ReturningUnallowedReference_ForGeneratorYield_Test11():
 	tests_lib.build_program( c_program_text )
 
 
-def ReturningUnallowedReference_ForGeneratorYield_Test12():
+def ReturningReferenceParamInnerReferenceFromCoroutine_ForGenerator_Test0():
 	c_program_text= """
 		struct S{ i32& x; }
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
@@ -1057,7 +1057,7 @@ def ReturningUnallowedReference_ForGeneratorYield_Test12():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ReturningUnallowedReference", 4 ) )
+	assert( HasError( errors_list, "ReturningReferenceParamInnerReferenceFromCoroutine", 4 ) )
 
 
 def UnallowedReferencePollution_ForGenerator_Test0():
