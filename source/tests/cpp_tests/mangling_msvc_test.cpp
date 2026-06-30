@@ -1125,6 +1125,9 @@ U_TEST( CoroutinesMangling_Test0 )
 
 		type NonSyncGen = generator non_sync : u16;
 		fn Kek( NonSyncGen gen ) {}
+
+		type GenWithSecondOrderReferences = generator(mut, imut, mut(mut), mut(imut), imut(mut), imut(imut)) : i32;
+		fn Wtf( GenWithSecondOrderReferences gen ) {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
@@ -1135,12 +1138,14 @@ U_TEST( CoroutinesMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Baz@@YAXU?$generator@NI$0A@@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Lol@@YAXU?$generator@AEADI$00I$0A@@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Kek@@YAXU?$generator@G_N$00@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Wtf@@YAXU?$generator@HI$00I$0A@I$0CB@I$0BB@I$0CA@I$0BA@@@@Z" ) != nullptr );
 
 	// Generated coroutine type destructors.
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$async@H@@YAXAEAU1@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@NI$0A@@@YAXAEAU1@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@AEADI$00I$0A@@@YAXAEAU1@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@G_N$00@@YAXAEAU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@HI$00I$0A@I$0CB@I$0BB@I$0CA@I$0BA@@@YAXAEAU1@@Z" ) != nullptr );
 }
 
 U_TEST( CoroutinesMangling_Test1 )

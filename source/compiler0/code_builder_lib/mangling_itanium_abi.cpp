@@ -607,10 +607,12 @@ void EncodeCoroutineType( ManglerState& mangler_state, const ClassPtr class_type
 	// Encode inner references as variable template parameters.
 	for( const InnerReference& inner_reference : coroutine_type_description->inner_references )
 	{
+		// Pack two enum values into an integer.
+		const size_t num= size_t( inner_reference.kind ) | ( size_t( inner_reference.second_order_kind ) << 4 );
+
 		mangler_state.Push( 'L' );
 		mangler_state.Push( EncodeFundamentalType( U_FundamentalType::u32_ ) );
-		mangler_state.Push( std::to_string( size_t( inner_reference.kind ) ) );
-		// TODO - encode second order inner reference kind here.
+		mangler_state.Push( std::to_string( num ) );
 		mangler_state.Push( 'E' );
 	}
 

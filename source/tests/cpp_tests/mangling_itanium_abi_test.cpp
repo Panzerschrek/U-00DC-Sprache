@@ -1038,6 +1038,9 @@ U_TEST( CoroutinesMangling_Test0 )
 
 		type NonSyncGen = generator non_sync : [i32, 4];
 		fn Kek( NonSyncGen gen ) {}
+
+		type GenWithSecondOrderReferences = generator(mut, imut, mut(mut), mut(imut), imut(mut), imut(imut)) : i32;
+		fn Wtf( GenWithSecondOrderReferences gen ) {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
@@ -1048,12 +1051,14 @@ U_TEST( CoroutinesMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Baz9generatorIdLj0EE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol5asyncIRcLj1ELj0EE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Kek9generatorIA4_iLb1EE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Wtf9generatorIiLj1ELj0ELj33ELj17ELj32ELj16EE" ) != nullptr );
 
 	// Generated coroutine type destructors.
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIiE10destructorERS0_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIdLj0EE10destructorERS0_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN5asyncIRcLj1ELj0EE10destructorERS1_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIA4_iLb1EE10destructorERS1_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIiLj1ELj0ELj33ELj17ELj32ELj16EE10destructorERS0_" ) != nullptr );
 }
 
 U_TEST( VirtualTableMangling_Test0 )
