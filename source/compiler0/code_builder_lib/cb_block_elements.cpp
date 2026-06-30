@@ -2073,22 +2073,26 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.AddLink( variable, variable_reference );
 
 				function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names_scope.GetErrors(), if_coro_advance.src_loc );
-				for( size_t i= 0; i < std::min( variable->inner_reference_nodes.size(), coroutine_type_description->return_inner_references.size() ); ++i )
+
+				for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_references )
 				{
-					for( const FunctionType::ParamReference& param_reference : coroutine_type_description->return_inner_references[i] )
+					U_ASSERT( param_reference.first == 0u );
+					U_ASSERT( param_reference.second != FunctionType::c_param_reference_number );
+					if( param_reference.second < coro_expr_lock->inner_reference_nodes.size() )
 					{
-						U_ASSERT( param_reference.first == 0u );
-						U_ASSERT( param_reference.second != FunctionType::c_param_reference_number );
-						if( param_reference.second < coro_expr_lock->inner_reference_nodes.size() )
-							function_context.variables_state.TryAddLink(
-								coro_expr_lock->inner_reference_nodes[param_reference.second],
-								variable->inner_reference_nodes[i],
-								names_scope.GetErrors(),
-								if_coro_advance.src_loc );
+						// Setup also second order references.
+						// Do this specially since we have for now no special notation to specify returning of second order references.
+						for( const VariablePtr& accessible_non_inner_node :
+							function_context.variables_state.GetAllAccessibleNonInnerNodes(
+								coro_expr_lock->inner_reference_nodes[ param_reference.second ] ) )
+						{
+							for( const VariablePtr& from_node : accessible_non_inner_node->inner_reference_nodes )
+								for( const VariablePtr& to_node : variable->inner_reference_nodes )
+									function_context.variables_state.TryAddLink(
+										from_node, to_node, names_scope.GetErrors(), if_coro_advance.src_loc );
+						}
 					}
 				}
-
-				// No need to setup references here, because we can't return from a coroutine reference to type with references inside.
 			}
 			else
 			{
