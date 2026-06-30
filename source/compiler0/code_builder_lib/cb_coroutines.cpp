@@ -135,67 +135,55 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	}
 
 	// Fill references of return value.
-	for( const FunctionType::ParamReference& param_reference : coroutine_function_type.return_references )
-	{
-		if( param_reference.first >= coroutine_function_type.params.size() )
-			continue;
 
-		FunctionType::ParamReference out_reference;
-		out_reference.first= 0; // Always use param0 - coroutine itself.
-		if( param_reference.second == FunctionType::c_param_reference_number )
-			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
-		else
+	const auto create_return_references_list=
+		[&]( const FunctionType::ReturnReferences& return_references )
 		{
-			if( coroutine_function_type.params[ param_reference.first ].value_type == ValueType::Value )
-				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + param_reference.second );
-			else
+			FunctionType::ReturnReferences out_references_list;
+
+			for( const FunctionType::ParamReference& param_reference : return_references )
 			{
-				// Returning inner reference of a reference param in a coroutine means returning a second order inner reference, which is for now not supported.
-				REPORT_ERROR(
-					ReturningReferenceParamInnerReferenceFromCoroutine,
-					names_scope.GetErrors(),
-					src_loc,
-					uint32_t(param_reference.first),
-					uint32_t(param_reference.second) );
+				if( param_reference.first >= coroutine_function_type.params.size() )
+					continue;
+
+				FunctionType::ParamReference out_reference;
+				out_reference.first= 0; // Always use param0 - coroutine itself.
+
+				if( param_reference.second == FunctionType::c_param_reference_number )
+				{
+					// TODO - what if it's a value param? Should we allow returning a reference to it?
+					out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
+				}
+				else
+				{
+					if( coroutine_function_type.params[ param_reference.first ].value_type == ValueType::Value )
+						out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + param_reference.second );
+					else
+					{
+						// Returning inner reference of a reference param in a coroutine means returning a second order inner reference, which is for now not supported.
+						REPORT_ERROR(
+							ReturningReferenceParamInnerReferenceFromCoroutine,
+							names_scope.GetErrors(),
+							src_loc,
+							uint32_t(param_reference.first),
+							uint32_t(param_reference.second) );
+					}
+				}
+
+				out_references_list.push_back( out_reference );
 			}
-		}
 
-		coroutine_type_description.return_references.push_back( out_reference );
-	}
+			NormalizeParamReferencesList( out_references_list );
+			return out_references_list;
+		};
 
-	NormalizeParamReferencesList( coroutine_type_description.return_references );
+	coroutine_type_description.return_references= create_return_references_list( coroutine_function_type.return_references );
 
 	coroutine_type_description.return_inner_references.resize( coroutine_function_type.return_inner_references.size() );
 	for( size_t i= 0u; i < coroutine_function_type.return_inner_references.size(); ++i )
 	{
-		for( const FunctionType::ParamReference& param_reference : coroutine_function_type.return_inner_references[i] )
-		{
-			if( param_reference.first >= coroutine_function_type.params.size() )
-				continue;
-
-			FunctionType::ParamReference out_reference;
-			out_reference.first= 0; // Always use param0 - coroutine itself.
-			if( param_reference.second == FunctionType::c_param_reference_number )
-				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
-			else
-			{
-				if( coroutine_function_type.params[ param_reference.first ].value_type == ValueType::Value )
-					out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + out_reference.second );
-				else
-				{
-					// Returning inner reference of a reference param in a coroutine means returning a second order inner reference, which is for now not supported.
-					REPORT_ERROR(
-						ReturningReferenceParamInnerReferenceFromCoroutine,
-						names_scope.GetErrors(),
-						src_loc,
-						uint32_t(param_reference.first),
-						uint32_t(param_reference.second) );
-				}
-			}
-
-			coroutine_type_description.return_inner_references[i].push_back( out_reference );
-		}
-		NormalizeParamReferencesList( coroutine_type_description.return_inner_references[i] );
+		coroutine_type_description.return_inner_references[i]=
+			create_return_references_list( coroutine_function_type.return_inner_references[i] );
 	}
 
 	// Coroutine function returns value of coroutine type.
