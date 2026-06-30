@@ -1049,6 +1049,60 @@ def ReturningUnallowedReference_ForGeneratorYield_Test11():
 	tests_lib.build_program( c_program_text )
 
 
+def ReturningUnallowedReference_ForGeneratorYield_Test12():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn generator Foo( S& s ) : i32&
+		{
+			yield s.x; // yielding an inner reference of a reference argument. This is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 5 ) )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test13():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn generator Foo( S& s ) : i32& @(return_references)
+		{
+			yield s.x; // yielding an inner reference of a reference argument. This is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test14():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn generator Foo( S& s ) : S
+		{
+			yield s; // yielding a value having its inner reference pointint to an inner reference of a reference argument. This is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 5 ) )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test15():
+	c_program_text= """
+		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn generator Foo( S& s ) : S @( return_inner_references )
+		{
+			yield s; // yielding a value having its inner reference pointint to an inner reference of a reference argument. This is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
 def ReturningReferenceParamInnerReferenceFromCoroutine_ForGenerator_Test0():
 	c_program_text= """
 		struct S{ i32& x; }

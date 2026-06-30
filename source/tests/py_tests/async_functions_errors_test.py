@@ -75,6 +75,60 @@ def ReturningUnallowedReference_ForAsyncReturn_Test4():
 	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 8 ) )
 
 
+def ReturningUnallowedReference_ForAsyncReturn_Test5():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn async Foo( S& s ) : i32&
+		{
+			return s.x; // Returning an inner reference of a reference argument. This is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 5 ) )
+
+
+def ReturningUnallowedReference_ForAsyncReturn_Test6():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn async Foo( S& s ) : i32& @(return_references)
+		{
+			return s.x; // Returning an inner reference of a reference argument. This is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
+def ReturningUnallowedReference_ForAsyncReturn_Test7():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn async Foo( S& s ) : S
+		{
+			return s; // Returning a value having its inner reference pointint to an inner reference of a reference argument. This is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 5 ) )
+
+
+def ReturningUnallowedReference_ForAsyncReturn_Test8():
+	c_program_text= """
+		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn async Foo( S& s ) : S @( return_inner_references )
+		{
+			return s; // Returning a value having its inner reference pointint to an inner reference of a reference argument. This is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
 def ReturningReferenceParamInnerReferenceFromCoroutine_ForAsyncFunction_Test0():
 	c_program_text= """
 		struct S{ i32& x; }
