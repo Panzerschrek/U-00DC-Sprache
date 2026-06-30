@@ -202,7 +202,7 @@ template</ u32 base_ />
 fn ExtractIntegerNumberChars( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc )
 {
 	// Require at least one digit.
-	if( it.empty() || TryParseDigit</base_/>( it.front() ) == -1u32 )
+	if( it.empty() || TryParseDigit</base_/>( it.front() ) == ~0u )
 	{
 		out_errors.push_back( LexSyntError( src_loc, "Unexpected end of number" ) );
 		return;
@@ -210,7 +210,7 @@ fn ExtractIntegerNumberChars( Iterator &mut it, LexSyntErrors &mut out_errors, S
 
 	it.drop_front();
 
-	while( !it.empty() && TryParseDigit</base_/>( it.front() ) != -1u )
+	while( !it.empty() && TryParseDigit</base_/>( it.front() ) != ~0u )
 	{
 		it.drop_front();
 	}
@@ -250,7 +250,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 	if( !parsed_non_decimal_base )
 	{
 		// Integer part.
-		while( !it.empty() && TryParseDigit</10u/>( it.front() ) != -1u )
+		while( !it.empty() && TryParseDigit</10u/>( it.front() ) != ~0u )
 		{
 			it.drop_front();
 		}
@@ -262,7 +262,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 
 			it.drop_front();
 
-			while( !it.empty() && TryParseDigit</10u/>( it.front() ) != -1u )
+			while( !it.empty() && TryParseDigit</10u/>( it.front() ) != ~0u )
 			{
 				it.drop_front();
 			}
@@ -280,7 +280,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 				it.drop_front();
 			}
 
-			while( !it.empty() && TryParseDigit</10u/>( it.front() ) != -1u )
+			while( !it.empty() && TryParseDigit</10u/>( it.front() ) != ~0u )
 			{
 				it.drop_front();
 			}
@@ -335,7 +335,7 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 						for( auto mut i= 0u; i < 4u; ++i )
 						{
 							auto digit= TryParseDigit</16u/>( it.front() );
-							if( digit == -1u )
+							if( digit == ~0u )
 							{
 								out_errors.push_back( LexSyntError( src_loc, "expected hex number" ) );
 								return result_lexem;
@@ -412,7 +412,7 @@ fn ParseCharLiteral( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& sr
 				for( auto mut i= 0u; i < 4u; ++i )
 				{
 					auto digit= TryParseDigit</16u/>( it.front() );
-					if( digit == -1u )
+					if( digit == ~0u )
 					{
 						out_errors.push_back( LexSyntError( src_loc, "expected hex number" ) );
 						return result_lexem;

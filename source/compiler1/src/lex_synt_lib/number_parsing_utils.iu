@@ -3,7 +3,7 @@ import "/string.iu"
 namespace U1
 {
 
-// Returns u32(-1) if failed to parse.
+// Returns ~0u if failed to parse.
 template</ u32 base_ />
 fn TryParseDigit( char8 c ) : u32
 {
@@ -43,7 +43,7 @@ fn TryParseDigit( char8 c ) : u32
 		static_assert( false, "Unsupported base!" );
 	}
 
-	return -1u;
+	return ~0u;
 }
 
 template</ u32 base_ />
@@ -54,7 +54,7 @@ fn DecodeParsedInteger( ust::string_view8 s ) : ust::optional</u128/>
 	foreach( c : s )
 	{
 		var u32 digit= TryParseDigit</ base_ /> (c);
-		if( digit == -1u )
+		if( digit == ~0u )
 		{
 			return ust::null_optional;
 		}
