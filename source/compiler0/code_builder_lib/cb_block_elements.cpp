@@ -2104,7 +2104,23 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					U_ASSERT( param_reference.first == 0u );
 					U_ASSERT( param_reference.second != FunctionType::c_param_reference_number );
 					if( param_reference.second < coro_expr_lock->inner_reference_nodes.size() )
-						function_context.variables_state.TryAddLink( coro_expr_lock->inner_reference_nodes[param_reference.second], variable_reference, names_scope.GetErrors(), if_coro_advance.src_loc );
+					{
+						const VariablePtr& inner_reference_node= coro_expr_lock->inner_reference_nodes[ param_reference.second ];
+
+						function_context.variables_state.TryAddLink(
+							inner_reference_node, variable_reference, names_scope.GetErrors(), if_coro_advance.src_loc );
+
+						// Setup also second order references.
+						// Do this specially since we have for now no special notation to specify returning of second order references.
+						for( const VariablePtr& accessible_non_inner_node :
+							function_context.variables_state.GetAllAccessibleNonInnerNodes( inner_reference_node ) )
+						{
+							for( const VariablePtr& from_node : accessible_non_inner_node->inner_reference_nodes )
+								for( const VariablePtr& to_node : variable_reference->inner_reference_nodes )
+									function_context.variables_state.TryAddLink(
+										from_node, to_node, names_scope.GetErrors(), if_coro_advance.src_loc );
+						}
+					}
 				}
 			}
 		}
