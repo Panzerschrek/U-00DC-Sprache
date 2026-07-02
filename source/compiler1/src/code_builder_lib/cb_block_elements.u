@@ -1705,7 +1705,27 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 					function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, if_coro_advance_operator.src_loc );
 
-					//No need to setup references here, because we can't return from generator reference to type with references inside.
+					foreach( &param_reference : coroutine_type_description.return_references )
+					{
+						debug_assert( param_reference.param_index == 0u8 );
+						debug_assert( param_reference.reference_index != FunctionType::c_param_reference_number );
+
+						if( size_type(param_reference.reference_index) < second_order_inner_reference_nodes.size() )
+						{
+							// Setup also second order references.
+							// Do this specially since we have for now no special notation to specify returning of second order references.
+							var VariableNullablePtr from_node_nullable= second_order_inner_reference_nodes[ size_type(param_reference.reference_index) ];
+							if( !from_node_nullable.empty() )
+							{
+								var VariablePtr from_node= from_node_nullable.try_to_non_nullable();
+								foreach( &to_node : variable_ptr.lock_imut().deref().inner_reference_nodes )
+								{
+									function_context.references_graph.TryAddLink(
+										from_node, to_node, names_scope, if_coro_advance_operator.src_loc );
+								}
+							}
+						}
+					}
 				}
 				else
 				{
@@ -1734,6 +1754,19 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 									variable_reference,
 									names_scope,
 									if_coro_advance_operator.src_loc );
+
+								// Setup also second order references.
+								// Do this specially since we have for now no special notation to specify returning of second order references.
+								var VariableNullablePtr from_node_nullable= second_order_inner_reference_nodes[ size_type(param_reference.reference_index) ];
+								if( !from_node_nullable.empty() )
+								{
+									var VariablePtr from_node= from_node_nullable.try_to_non_nullable();
+									foreach( &to_node : variable_reference.lock_imut().deref().inner_reference_nodes )
+									{
+										function_context.references_graph.TryAddLink(
+											from_node, to_node, names_scope, if_coro_advance_operator.src_loc );
+									}
+								}
 							}
 						}
 					}
