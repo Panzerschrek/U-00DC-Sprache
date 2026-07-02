@@ -132,20 +132,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 				: ValueType::ReferenceImut )
 			: ValueType::Value ),
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type.non_sync_tag ),
-		.inner_references=
-			ust::make_vector_from_mapped_range(
-				coroutine_type.inner_reference_tags,
-				lambda( Synt::CoroutineType::InnerReference& inner_reference ) : InnerReference
-				{
-					return
-						InnerReference
-						{
-							.kind=
-								( inner_reference.kind == Synt::MutabilityModifier::Mutable
-									? InnerReferenceKind::Mut
-									: InnerReferenceKind::Imut )
-						};
-				} ),
+		.inner_references= CreateCoroutineInnerReferences( coroutine_type.inner_reference_tags ),
 	};
 
 	if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, coroutine_type.src_loc  ) )
@@ -431,6 +418,31 @@ fn CodeBuilder::GetLLVMCallingConvention( this, CallingConvention calling_conven
 			return LLVMCallConv::C;
 		},
 	}
+}
+
+fn CodeBuilder::CreateCoroutineInnerReferences(
+	ust::array_view_imut</Synt::CoroutineType::InnerReference/> in_inner_references ) : ust::vector</ InnerReference />
+{
+	return
+		ust::make_vector_from_mapped_range(
+			in_inner_references,
+			lambda( Synt::CoroutineType::InnerReference& inner_reference ) : InnerReference
+			{
+				return
+					InnerReference
+					{
+						.kind=
+							( inner_reference.kind == Synt::MutabilityModifier::Mutable
+								? InnerReferenceKind::Mut
+								: InnerReferenceKind::Imut ),
+						.second_order_kind=
+							( inner_reference.second_order_kind == Synt::MutabilityModifier::None
+								? SecondOrderInnerReferenceKind::None
+								: ( inner_reference.second_order_kind == Synt::MutabilityModifier::Mutable
+									? SecondOrderInnerReferenceKind::Mut
+									: SecondOrderInnerReferenceKind::Imut ) ),
+					};
+			} );
 }
 
 } // namespace U1

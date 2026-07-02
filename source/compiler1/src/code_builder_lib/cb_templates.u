@@ -753,20 +753,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				: ValueType::ReferenceImut )
 			: ValueType::Value ),
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, signature_param.non_sync_tag ),
-		.inner_references=
-			ust::make_vector_from_mapped_range(
-				signature_param.inner_reference_tags,
-				lambda( Synt::CoroutineType::InnerReference& inner_reference ) : InnerReference
-				{
-					return
-						InnerReference
-						{
-							.kind=
-								( inner_reference.kind == Synt::MutabilityModifier::Mutable
-									? InnerReferenceKind::Mut
-									: InnerReferenceKind::Imut )
-						};
-				} )
+		.inner_references= CreateCoroutineInnerReferences( signature_param.inner_reference_tags ),
 	};
 
 	auto num_params= 1s;

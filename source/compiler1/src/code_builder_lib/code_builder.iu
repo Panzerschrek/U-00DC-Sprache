@@ -334,6 +334,8 @@ private:
 
 	fn GetLLVMCallingConvention( this, CallingConvention calling_convention ) : LLVMCallConvID;
 
+	fn CreateCoroutineInnerReferences( ust::array_view_imut</Synt::CoroutineType::InnerReference/> in_inner_references ) : ust::vector</ InnerReference />;
+
 	// Returns constant value if initializer is constant
 	fn ApplyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Initializer& initializer ) : LLVMValueRef;
 
