@@ -86,18 +86,29 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 	{
 		var FunctionType::Param& param= coroutine_function_type.params[param_index];
 		param_to_first_inner_reference_tag[param_index]= coroutine_type_description.inner_references.size();
+
+		// Require type completeness for value params in order to know inner references.
+		if( !EnsureTypeComplete( param.t ) )
+		{
+			continue;
+		}
+
+		auto reference_tag_count= param.t.ReferenceTagCount();
+
 		if( param.value_type == ValueType::Value )
 		{
-			// Require type completeness for value params in order to know inner references.
-			if( EnsureTypeComplete( param.t ) )
+			for( auto mut i= 0u; i < reference_tag_count; ++i )
 			{
-				auto reference_tag_count= param.t.ReferenceTagCount();
-				for( auto mut i= 0u; i < reference_tag_count; ++i )
-				{
-					coroutine_type_description.inner_references.push_back(
-						InnerReference{ .kind= param.t.GetInnerReferenceKind( size_type(i) ) } );
-					coroutine_return_inner_ferences.push_back( ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
-				}
+				coroutine_type_description.inner_references.push_back(
+					InnerReference
+					{
+						.kind= param.t.GetInnerReferenceKind( size_type(i) ),
+						.second_order_kind= param.t.GetSecondOrderInnerReferenceKind( size_type(i) ),
+					} );
+
+				coroutine_return_inner_ferences.push_back(
+					ust::make_array(
+						FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
 			}
 		}
 		else
@@ -105,64 +116,116 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			// Coroutine is an object, that holds references to reference-args of coroutine function.
 			// It's generally not allowed to create types with references to other types with references inside.
 			// Second order references are possible in some cases, but for now not for coroutines.
-			if( EnsureTypeComplete( param.t ) && param.t.ReferenceTagCount() > 0u )
+			if( reference_tag_count > 0u )
 			{
-				var ust::string8 field_name= ust::concat( "param of type ", param.t.ToString() );
-				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
+				if( reference_tag_count > 1u )
+				{
+					var ust::string8 mut field_name= "param ";
+					field_name+= ust::to_string8( param_index );
+					field_name+= " of type ";
+					field_name+= param.t.ToString();
+					REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, names_scope, src_loc, field_name ) // TODO - use separate error code.
+				}
+
+				if( param.t.GetReferenceIndirectionDepth() > 1s )
+				{
+					var ust::string8 mut field_name= "param ";
+					field_name+= ust::to_string8( param_index );
+					field_name+= " of type ";
+					field_name+= param.t.ToString();
+					REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
+				}
 			}
 
 			// Assume this is a reference to type with no references inside.
 			// This is checked later - when building function code.
 			// Do this later in order to avoid full type building for reference params.
 			coroutine_type_description.inner_references.push_back(
-				InnerReference{ .kind= ( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) } );
+				InnerReference
+				{
+					.kind= ( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ),
+					.second_order_kind=
+						( reference_tag_count > 0u
+							? ( param.t.GetInnerReferenceKind(0s) == InnerReferenceKind::Imut
+								? SecondOrderInnerReferenceKind::Imut
+								: SecondOrderInnerReferenceKind::Mut )
+							: SecondOrderInnerReferenceKind::None ),
+				} );
 
-			coroutine_return_inner_ferences.push_back( ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } ) );
+			coroutine_return_inner_ferences.push_back(
+				ust::make_array(
+					FunctionType::ParamReference
+					{
+						.param_index= u8(param_index),
+						.reference_index= FunctionType::c_param_reference_number
+					} ) );
 		}
 	}
 
 	// Fill references of return value.
-	foreach( &param_reference : coroutine_function_type.return_references )
-	{
-		if( size_type( param_reference.param_index) >= coroutine_function_type.params.size() )
-		{
-			continue;
-		}
 
-		coroutine_type_description.return_references.push_back(
-			FunctionType::ParamReference
-			{
-				.param_index(0),
-				.reference_index= (
-					param_reference.reference_index == FunctionType::c_param_reference_number
-						? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
-						: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
-			} );
-	}
-	NormalizeParamReferencesList( coroutine_type_description.return_references );
+	auto& coroutine_function_type_params= coroutine_function_type.params;
 
-	coroutine_type_description.return_inner_references.resize( coroutine_function_type.return_inner_references.size() );
-	for( auto mut i= 0s; i < coroutine_function_type.return_inner_references.size(); ++i )
-	{
-		var FunctionType::ParamReferences &mut out_list= coroutine_type_description.return_inner_references[i];
-		foreach( &param_reference : coroutine_function_type.return_inner_references[i] )
+	auto create_return_references_list=
+		lambda[&]( FunctionType::ParamReferences& return_references ) : FunctionType::ParamReferences
 		{
-			if( size_type( param_reference.param_index) >= coroutine_function_type.params.size() )
+			var FunctionType::ParamReferences mut out_references_list;
+
+			foreach( &param_reference : return_references )
 			{
-				continue;
+				if( size_type( param_reference.param_index) >= coroutine_function_type_params.size() )
+				{
+					continue;
+				}
+
+				if( param_reference.reference_index == FunctionType::c_param_reference_number )
+				{
+					// TODO - what if it's a value param? Should we allow returning a reference to it?
+					out_references_list.push_back(
+						FunctionType::ParamReference
+						{
+							.param_index(0),
+							.reference_index( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] ),
+						} );
+				}
+				else
+				{
+					if( coroutine_function_type_params[ size_type( param_reference.param_index ) ].value_type == ValueType::Value )
+					{
+						out_references_list.push_back(
+							FunctionType::ParamReference
+							{
+								.param_index(0),
+								.reference_index(
+									param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] +
+									size_type(param_reference.reference_index) )
+							} );
+						}
+					else
+					{
+						// Returning inner reference of a reference param in a coroutine means returning a second order inner reference, which is for now not supported.
+						REPORT_ERROR(
+							ReturningReferenceParamInnerReferenceFromCoroutine,
+							names_scope,
+							src_loc,
+							param_reference.param_index,
+							param_reference.reference_index )
+					}
+				}
 			}
 
-			out_list.push_back(
-				FunctionType::ParamReference
-				{
-					.param_index(0),
-					.reference_index= (
-						param_reference.reference_index == FunctionType::c_param_reference_number
-							? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
-							: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
-				} );
-		}
-		NormalizeParamReferencesList( out_list );
+			NormalizeParamReferencesList( out_references_list );
+
+			return out_references_list;
+		};
+
+	coroutine_type_description.return_references=
+		create_return_references_list( coroutine_function_type.return_references );
+
+	coroutine_type_description.return_inner_references.resize( coroutine_function_type.return_inner_references.size() );
+	foreach( pair : coroutine_type_description.return_inner_references.iter().zip( coroutine_function_type.return_inner_references.iter() ) )
+	{
+		pair.second= create_return_references_list( pair.first );
 	}
 
 	// Coroutine function returns value of coroutine type.
