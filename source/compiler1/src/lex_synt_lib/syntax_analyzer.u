@@ -1454,16 +1454,50 @@ fn SyntaxAnalyzer::ParseCoroutineType( mut this ) : CoroutineType
 		{
 			while( NotEndOfFile() )
 			{
+				var CoroutineType::InnerReference mut inner_reference
+				{
+					.kind= MutabilityModifier::None,
+					.second_order_kind= MutabilityModifier::None,
+				};
+
 				if( IsKeyword( it_.front(), Keyword::mut_ ) )
 				{
 					NextLexem();
-					coroutine_type.inner_reference_tags.push_back( MutabilityModifier::Mutable );
+					inner_reference.kind= MutabilityModifier::Mutable;
 				}
 				else if( IsKeyword( it_.front(), Keyword::imut_ ) )
 				{
 					NextLexem();
-					coroutine_type.inner_reference_tags.push_back( MutabilityModifier::Immutable );
+					inner_reference.kind= MutabilityModifier::Immutable;
 				}
+				else
+				{
+					PushErrorMessage();
+				}
+
+				if( it_.front().lexem_type == Lexem::Type::BracketLeft )
+				{
+					NextLexem();
+
+					if( IsKeyword( it_.front(), Keyword::mut_ ) )
+					{
+						NextLexem();
+						inner_reference.second_order_kind= MutabilityModifier::Mutable;
+					}
+					else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+					{
+						NextLexem();
+						inner_reference.second_order_kind= MutabilityModifier::Immutable;
+					}
+					else
+					{
+						PushErrorMessage();
+					}
+
+					ExpectLexem( Lexem::Type::BracketRight );
+				}
+
+				coroutine_type.inner_reference_tags.push_back( move( inner_reference ) );
 
 				if( it_.front().lexem_type == Lexem::Type::Comma )
 				{
