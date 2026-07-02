@@ -225,7 +225,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 	coroutine_type_description.return_inner_references.resize( coroutine_function_type.return_inner_references.size() );
 	foreach( pair : coroutine_type_description.return_inner_references.iter().zip( coroutine_function_type.return_inner_references.iter() ) )
 	{
-		pair.second= create_return_references_list( pair.first );
+		pair.first= create_return_references_list( pair.second );
 	}
 
 	// Coroutine function returns value of coroutine type.
