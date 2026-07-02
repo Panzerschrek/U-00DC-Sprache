@@ -2163,6 +2163,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			}
 		}
 
+		// Move second order inner reference locks not needed anymore.
+		// Do this after calling "resume" but before building the block associated with "if_coro_advance".
+		for( const VariablePtr& node : second_order_inner_reference_nodes )
+			if( node != nullptr )
+				function_context.variables_state.MoveNode( node );
+
 		if( IsKeyword( if_coro_advance.variable_name ) )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), if_coro_advance.src_loc );
 
@@ -2182,12 +2188,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		CheckForUnusedLocalNames( variable_names_scope );
-
-		for( const VariablePtr& node : second_order_inner_reference_nodes )
-			if( node != nullptr )
-				function_context.variables_state.MoveNode( node );
-
-		second_order_inner_reference_nodes.clear();
 	}
 
 	llvm::SmallVector<ReferencesGraph, 2> branches_variable_states;
@@ -2202,6 +2202,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			branches_variable_states.push_back( function_context.variables_state );
 		}
 		branches_variable_states.push_back( std::move( variables_state_before_branching ) );
+
+		// Move second order inner reference locks not needed anymore.
+		for( const VariablePtr& node : second_order_inner_reference_nodes )
+			if( node != nullptr )
+				branches_variable_states.back().MoveNode( node );
 
 		block_build_info.has_terminal_instruction_inside= false;
 
@@ -2233,6 +2238,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 
 		function_context.variables_state= std::move( variables_state_before_branching );
+
+		// Move second order inner reference locks not needed anymore.
+		for( const VariablePtr& node : second_order_inner_reference_nodes )
+			if( node != nullptr )
+				function_context.variables_state.MoveNode( node );
 
 		// Trigger destruction of temporaries of the coroutine expression earlier,
 		// so that variables locked by these temporaries or even the coroutine itslef may me modified or even moved.
