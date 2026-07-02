@@ -1476,6 +1476,44 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 	RegisterTopFrameVariable( function_context, coro_expr_lock );
 
+	scoped_array VariableNullablePtr mut second_order_reference_nodes[ coroutine_type_description.inner_references.size() ];
+
+	for( auto mut i= 0s; i < second_order_reference_nodes.size(); ++i )
+	{
+		var SecondOrderInnerReferenceKind second_order_inner_reference_kind=
+			coroutine_type_description.inner_references[i].second_order_kind;
+
+		if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+		{
+			var VariablePtr second_order_reference_node=
+				Variable
+				{
+					.t= void_type_,
+					.value_type=
+						( second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut
+							? ValueType::ReferenceImut
+							: ValueType::ReferenceMut ),
+					.location= Variable::Location::Pointer,
+					.preserve_temporary= true,
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( second_order_reference_node );
+			RegisterTopFrameVariable( function_context, second_order_reference_node );
+
+			foreach( &accessible_non_inner_node :
+				function_context.references_graph.GetAllAccessibleNonInnerNodes( coro_expr_lock.lock_imut().deref().inner_reference_nodes[i] ) )
+			{
+				foreach( & from_node : accessible_non_inner_node.lock_imut().deref().inner_reference_nodes )
+				{
+					function_context.references_graph.TryAddLink(
+						from_node, second_order_reference_node, names_scope, if_coro_advance_operator.src_loc );
+				}
+			}
+
+			second_order_reference_nodes[i]= second_order_reference_node;
+		}
+	}
+
 	var ReferencesGraph mut references_graph_before_branching= function_context.references_graph;
 
 	var LLVMTypeRef pointer_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
@@ -1723,6 +1761,14 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 			}
 
 			self.CheckForUnusedLocalNames( variable_names_scope );
+
+			foreach( &node : second_order_reference_nodes )
+			{
+				if( !node.empty() )
+				{
+					function_context.references_graph.MoveNode( node.try_to_non_nullable() );
+				}
+			}
 		} );
 
 	var ust::vector</ReferencesGraph/> mut references_graphs;
