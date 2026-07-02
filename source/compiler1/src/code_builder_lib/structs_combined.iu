@@ -682,7 +682,7 @@ struct CoroutineTypeDescription
 	Type return_type;
 	ValueType return_value_type;
 
-	ust::vector</InnerReferenceKind/> inner_references;
+	ust::vector</InnerReference/> inner_references;
 	bool non_sync_;
 
 	FunctionType::ParamReferences return_references;
@@ -889,7 +889,7 @@ public:
 		TemplateSignatureParam return_type;
 		ValueType return_value_type;
 
-		ust::vector</InnerReferenceKind/> inner_references;
+		ust::vector</InnerReference/> inner_references;
 		bool non_sync_;
 
 		FunctionType::ParamReferences return_references;
