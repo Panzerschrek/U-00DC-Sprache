@@ -2122,10 +2122,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						{
 							for( const VariablePtr& to_node : variable->inner_reference_nodes )
 								function_context.variables_state.TryAddLink(
-									from_node,
-									to_node,
-									names_scope.GetErrors(),
-									if_coro_advance.src_loc );
+									from_node, to_node, names_scope.GetErrors(), if_coro_advance.src_loc );
 						}
 					}
 				}
@@ -2158,10 +2155,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						{
 							for( const VariablePtr& to_node : variable_reference->inner_reference_nodes )
 								function_context.variables_state.TryAddLink(
-									from_node,
-									to_node,
-									names_scope.GetErrors(),
-									if_coro_advance.src_loc );
+									from_node, to_node, names_scope.GetErrors(), if_coro_advance.src_loc );
 						}
 					}
 				}
