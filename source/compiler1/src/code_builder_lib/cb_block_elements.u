@@ -1476,9 +1476,9 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 	RegisterTopFrameVariable( function_context, coro_expr_lock );
 
-	scoped_array VariableNullablePtr mut second_order_reference_nodes[ coroutine_type_description.inner_references.size() ];
+	scoped_array VariableNullablePtr mut second_order_inner_reference_nodes[ coroutine_type_description.inner_references.size() ];
 
-	for( auto mut i= 0s; i < second_order_reference_nodes.size(); ++i )
+	for( auto mut i= 0s; i < second_order_inner_reference_nodes.size(); ++i )
 	{
 		var SecondOrderInnerReferenceKind second_order_inner_reference_kind=
 			coroutine_type_description.inner_references[i].second_order_kind;
@@ -1510,7 +1510,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 				}
 			}
 
-			second_order_reference_nodes[i]= second_order_reference_node;
+			second_order_inner_reference_nodes[i]= second_order_reference_node;
 		}
 	}
 
@@ -1742,7 +1742,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 			// Move second order inner reference locks not needed anymore.
 			// Do this after calling "resume" but before building the block associated with "if_coro_advance".
-			foreach( &node : second_order_reference_nodes )
+			foreach( &node : second_order_inner_reference_nodes )
 			{
 				if( !node.empty() )
 				{
@@ -1797,7 +1797,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 		function_context.references_graph= move(references_graph_before_branching);
 
 		// Move second order inner reference locks not needed anymore.
-		foreach( &node : second_order_reference_nodes )
+		foreach( &node : second_order_inner_reference_nodes )
 		{
 			if( !node.empty() )
 			{
@@ -1850,7 +1850,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 		references_graphs.push_back( move(references_graph_before_branching) );
 
 		// Move second order inner reference locks not needed anymore.
-		foreach( &node : second_order_reference_nodes )
+		foreach( &node : second_order_inner_reference_nodes )
 		{
 			if( !node.empty() )
 			{
