@@ -694,10 +694,12 @@ fn ManglerMSVC::EncodeCoroutineClassName( this, ManglerState &mut mangler_state,
 	// Inner reference kind.
 	foreach( &inner_reference : coroutine_type_description.inner_references )
 	{
+		// Pack two enum values into an integer.
+		var u64 num= u64( inner_reference.kind ) | ( u64( inner_reference.second_order_kind ) << 4 );
+
 		template_mangler_state.PushElement( EncodeFundamentalTypeName( U_FundamentalType::u32_ ) );
 		template_mangler_state.PushElement( g_numeric_template_arg_prefix );
-		EncodeNumber( template_mangler_state, u64(inner_reference.kind) );
-		// TODO - encode second order inner references.
+		EncodeNumber( template_mangler_state, num );
 	}
 
 	if( !coroutine_type_description.return_references.empty() )
