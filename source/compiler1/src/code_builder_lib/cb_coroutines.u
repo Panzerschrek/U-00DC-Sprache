@@ -113,33 +113,27 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 		}
 		else
 		{
-			// Coroutine is an object, that holds references to reference-args of coroutine function.
-			// It's generally not allowed to create types with references to other types with references inside.
-			// Second order references are possible in some cases, but for now not for coroutines.
 			if( reference_tag_count > 0u )
 			{
+				// Coroutine is an object, that holds references to reference-args of coroutine function.
+				// So, if type of a reference param contains references inside, we need to use second-order inner references.
+				// Check here if it's possible.
+
 				if( reference_tag_count > 1u )
 				{
-					var ust::string8 mut field_name= "param ";
-					field_name+= ust::to_string8( param_index );
-					field_name+= " of type ";
-					field_name+= param.t.ToString();
+					var ust::string8 field_name=
+						ust::concat( "param ", ust::to_string8( param_index ), " of type ", param.t.ToString() );
 					REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, names_scope, src_loc, field_name ) // TODO - use separate error code.
 				}
 
 				if( param.t.GetReferenceIndirectionDepth() > 1s )
 				{
-					var ust::string8 mut field_name= "param ";
-					field_name+= ust::to_string8( param_index );
-					field_name+= " of type ";
-					field_name+= param.t.ToString();
+					var ust::string8 field_name=
+						ust::concat( "param ", ust::to_string8( param_index ), " of type ", param.t.ToString() );
 					REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
 				}
 			}
 
-			// Assume this is a reference to type with no references inside.
-			// This is checked later - when building function code.
-			// Do this later in order to avoid full type building for reference params.
 			coroutine_type_description.inner_references.push_back(
 				InnerReference
 				{
@@ -178,15 +172,13 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 					continue;
 				}
 
+				var size_type first_inner_reference_tag= param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ];
+
 				if( param_reference.reference_index == FunctionType::c_param_reference_number )
 				{
 					// TODO - what if it's a value param? Should we allow returning a reference to it?
 					out_references_list.push_back(
-						FunctionType::ParamReference
-						{
-							.param_index(0),
-							.reference_index( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] ),
-						} );
+						FunctionType::ParamReference{ .param_index(0), .reference_index( first_inner_reference_tag ) } );
 				}
 				else
 				{
@@ -196,9 +188,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 							FunctionType::ParamReference
 							{
 								.param_index(0),
-								.reference_index(
-									param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] +
-									size_type(param_reference.reference_index) )
+								.reference_index( first_inner_reference_tag + size_type(param_reference.reference_index) )
 							} );
 						}
 					else

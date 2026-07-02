@@ -1476,6 +1476,8 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 	RegisterTopFrameVariable( function_context, coro_expr_lock );
 
+	// Create locks for second order inner references.
+	// It's necessary in order to detect potential shared mutable access to variables accessible via second order inner references.
 	scoped_array VariableNullablePtr mut second_order_inner_reference_nodes[ coroutine_type_description.inner_references.size() ];
 
 	for( auto mut i= 0s; i < second_order_inner_reference_nodes.size(); ++i )
@@ -1712,7 +1714,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 						if( size_type(param_reference.reference_index) < second_order_inner_reference_nodes.size() )
 						{
-							// Setup also second order references.
+							// Setup second order references.
 							// Do this specially since we have for now no special notation to specify returning of second order references.
 							var VariableNullablePtr from_node_nullable= second_order_inner_reference_nodes[ size_type(param_reference.reference_index) ];
 							if( !from_node_nullable.empty() )

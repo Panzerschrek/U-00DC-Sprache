@@ -95,11 +95,12 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		}
 		else
 		{
-			// Coroutine is an object, that holds references to reference-args of coroutine function.
-			// So, if type of a reference param contains references inside, we need to use second-order inner references.
-
 			if( reference_tag_count > 0 )
 			{
+				// Coroutine is an object, that holds references to reference-args of coroutine function.
+				// So, if type of a reference param contains references inside, we need to use second-order inner references.
+				// Check here if it's possible.
+
 				if( reference_tag_count > 1 )
 				{
 					std::string field_name= "param ";
@@ -146,18 +147,20 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				if( param_reference.first >= coroutine_function_type.params.size() )
 					continue;
 
+				const size_t first_inner_reference_tag= param_to_first_inner_reference_tag[ param_reference.first ];
+
 				FunctionType::ParamReference out_reference;
 				out_reference.first= 0; // Always use param0 - coroutine itself.
 
 				if( param_reference.second == FunctionType::c_param_reference_number )
 				{
 					// TODO - what if it's a value param? Should we allow returning a reference to it?
-					out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
+					out_reference.second= uint8_t( first_inner_reference_tag);
 				}
 				else
 				{
 					if( coroutine_function_type.params[ param_reference.first ].value_type == ValueType::Value )
-						out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + param_reference.second );
+						out_reference.second= uint8_t( first_inner_reference_tag + param_reference.second );
 					else
 					{
 						// Returning inner reference of a reference param in a coroutine means returning a second order inner reference, which is for now not supported.

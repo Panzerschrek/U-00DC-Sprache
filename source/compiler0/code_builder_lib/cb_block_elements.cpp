@@ -2114,9 +2114,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				{
 					U_ASSERT( param_reference.first == 0u );
 					U_ASSERT( param_reference.second != FunctionType::c_param_reference_number );
-					if( param_reference.second < coro_expr_lock->inner_reference_nodes.size() )
+					if( param_reference.second < second_order_inner_reference_nodes.size() )
 					{
-						// Setup also second order references.
+						// Setup second order references.
 						// Do this specially since we have for now no special notation to specify returning of second order references.
 						const VariablePtr& from_node= second_order_inner_reference_nodes[ param_reference.second ];
 						if( from_node != nullptr )
