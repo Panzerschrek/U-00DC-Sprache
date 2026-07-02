@@ -1891,6 +1891,41 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	variables_storage.RegisterVariable( coro_expr_lock );
 
+	// Create locks for second order inner references.
+	// It's necessary in order to detect potential shared mutable access to variables accessible via second order inner references.
+	llvm::SmallVector< VariablePtr, 8 > second_order_inner_reference_nodes;
+	second_order_inner_reference_nodes.resize( coroutine_type_description->inner_references.size() );
+
+	for( size_t i= 0; i < coroutine_type_description->inner_references.size(); ++i )
+	{
+		const SecondOrderInnerReferenceKind second_order_inner_reference_kind=
+			coroutine_type_description->inner_references[i].second_order_kind;
+
+		if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+		{
+			const VariableMutPtr second_order_reference_node=
+				Variable::Create(
+				void_type_,
+				second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut ? ValueType::ReferenceImut : ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				"second order inner reference " + std::to_string(i) + " of " + coro_expr->name );
+			second_order_reference_node->preserve_temporary= true;
+
+			variables_storage.RegisterVariable( second_order_reference_node );
+
+			for( const VariablePtr& accessible_non_inner_node :
+					function_context.variables_state.GetAllAccessibleNonInnerNodes(
+						coro_expr_lock->inner_reference_nodes[i] ) )
+			{
+				for( const VariablePtr& from_node : accessible_non_inner_node->inner_reference_nodes )
+					function_context.variables_state.TryAddLink(
+						from_node, second_order_reference_node, names_scope.GetErrors(), if_coro_advance.src_loc );
+			}
+
+			second_order_inner_reference_nodes[i]= second_order_reference_node;
+		}
+	}
+
 	ReferencesGraph variables_state_before_branching= function_context.variables_state;
 
 	llvm::Value* const coro_handle=
@@ -2082,14 +2117,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					{
 						// Setup also second order references.
 						// Do this specially since we have for now no special notation to specify returning of second order references.
-						for( const VariablePtr& accessible_non_inner_node :
-							function_context.variables_state.GetAllAccessibleNonInnerNodes(
-								coro_expr_lock->inner_reference_nodes[ param_reference.second ] ) )
+						const VariablePtr& from_node= second_order_inner_reference_nodes[ param_reference.second ];
+						if( from_node != nullptr )
 						{
-							for( const VariablePtr& from_node : accessible_non_inner_node->inner_reference_nodes )
-								for( const VariablePtr& to_node : variable->inner_reference_nodes )
-									function_context.variables_state.TryAddLink(
-										from_node, to_node, names_scope.GetErrors(), if_coro_advance.src_loc );
+							for( const VariablePtr& to_node : variable->inner_reference_nodes )
+								function_context.variables_state.TryAddLink(
+									from_node,
+									to_node,
+									names_scope.GetErrors(),
+									if_coro_advance.src_loc );
 						}
 					}
 				}
@@ -2109,20 +2145,23 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					U_ASSERT( param_reference.second != FunctionType::c_param_reference_number );
 					if( param_reference.second < coro_expr_lock->inner_reference_nodes.size() )
 					{
-						const VariablePtr& inner_reference_node= coro_expr_lock->inner_reference_nodes[ param_reference.second ];
-
 						function_context.variables_state.TryAddLink(
-							inner_reference_node, variable_reference, names_scope.GetErrors(), if_coro_advance.src_loc );
+							coro_expr_lock->inner_reference_nodes[ param_reference.second ],
+							variable_reference,
+							names_scope.GetErrors(),
+							if_coro_advance.src_loc );
 
 						// Setup also second order references.
 						// Do this specially since we have for now no special notation to specify returning of second order references.
-						for( const VariablePtr& accessible_non_inner_node :
-							function_context.variables_state.GetAllAccessibleNonInnerNodes( inner_reference_node ) )
+						const VariablePtr& from_node= second_order_inner_reference_nodes[ param_reference.second ];
+						if( from_node != nullptr )
 						{
-							for( const VariablePtr& from_node : accessible_non_inner_node->inner_reference_nodes )
-								for( const VariablePtr& to_node : variable_reference->inner_reference_nodes )
-									function_context.variables_state.TryAddLink(
-										from_node, to_node, names_scope.GetErrors(), if_coro_advance.src_loc );
+							for( const VariablePtr& to_node : variable_reference->inner_reference_nodes )
+								function_context.variables_state.TryAddLink(
+									from_node,
+									to_node,
+									names_scope.GetErrors(),
+									if_coro_advance.src_loc );
 						}
 					}
 				}
@@ -2148,6 +2187,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		CheckForUnusedLocalNames( variable_names_scope );
+
+		for( const VariablePtr& node : second_order_inner_reference_nodes )
+			if( node != nullptr )
+				function_context.variables_state.MoveNode( node );
+
+		second_order_inner_reference_nodes.clear();
 	}
 
 	llvm::SmallVector<ReferencesGraph, 2> branches_variable_states;
