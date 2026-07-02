@@ -1911,6 +1911,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				"second order inner reference " + std::to_string(i) + " of " + coro_expr->name );
 			second_order_reference_node->preserve_temporary= true;
 
+			function_context.variables_state.AddNode( second_order_reference_node );
 			variables_storage.RegisterVariable( second_order_reference_node );
 
 			for( const VariablePtr& accessible_non_inner_node :
