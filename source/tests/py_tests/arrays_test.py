@@ -408,3 +408,80 @@ def ReferenceProtectionError_ForArrayCopying_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].src_loc.line == 7 )
+
+
+def ReferenceProtectionError_ForArrayCopying_Test2():
+	c_program_text= """
+	struct S
+		{
+			i32 &mut x;
+			op=( S &mut l, S& r );
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var [ S, 1 ] mut x_arr[ { .x= x } ], mut y_arr[ { .x= y } ];
+			auto &mut x_ref= x_arr[0].x;
+			x_arr= y_arr; // Call here copy constructor for array, which requires calling copy constructor, which may access "x_arr[0].x" when a mutable reference to it exists.
+		}
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForArrayCompare_Test0():
+	c_program_text= """
+		struct S
+		{
+			op==( S& l, S& r ) : bool;
+		}
+		fn Foo()
+		{
+			var [ S, 1 ] mut x_arr, mut y_arr;
+			auto &mut x_ref= x_arr;
+			var bool eq = x_arr == y_arr; // Calling "==" when a mutable reference to "x_arr" exists.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def ReferenceProtectionError_ForArrayCompare_Test1():
+	c_program_text= """
+		struct S
+		{
+			op==( S& l, S& r ) : bool;
+		}
+		fn Foo()
+		{
+			var [ S, 1 ] mut x_arr, mut y_arr;
+			auto &mut y_ref= y_arr;
+			var bool eq = x_arr == y_arr; // Calling "==" when a mutable reference to "y_arr" exists.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def ReferenceProtectionError_ForArrayCompare_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut x;
+			op==( S& l, S& r ) : bool;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var [ S, 1 ] mut x_arr[ { .x= x } ], mut y_arr[ { .x= y } ];
+			auto &mut y_ref= y_arr[0].x;
+			var bool eq= x_arr == y_arr; // Call here "==" for array, which requires calling overloaded "==" operator, which may access "x_arr[0].x" when a mutable reference to it exists.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
