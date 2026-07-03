@@ -1826,7 +1826,7 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test21():
 			var S s{ .x= x };
 			var T t{ .s= s };
 			var i32 &mut x_ref= s.x;
-			return t; // Call cere U::conversion_constructor, which requires accessing "s.x", which already has a derived mutable reference.
+			return t; // Call here U::conversion_constructor, which requires accessing "s.x", which already has a derived mutable reference.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -1855,7 +1855,7 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test22():
 			var S s{ .x= x };
 			var T t{ .s= s };
 			var i32 &mut x_ref= s.x;
-			Bar( t ); // Call cere U::conversion_constructor, which requires accessing "s.x", which already has a derived mutable reference.
+			Bar( t ); // Call here U::conversion_constructor, which requires accessing "s.x", which already has a derived mutable reference.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -1864,6 +1864,56 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test22():
 	assert( not HasError( errors_list, "ReferenceProtectionError", 16 ) )
 	assert( not HasError( errors_list, "ReferenceProtectionError", 17 ) )
 	assert( HasError( errors_list, "ReferenceProtectionError", 18 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test23():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T
+		{
+			S& s;
+			op+=( T &mut l, T &imut r );
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			var T mut t0{ .s= s };
+			var T mut t1{ .s= s };
+			t0 += t1; // Call here to overloaded "+=" operator. It may require accessing "s.x" via two ways, which isn't allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 13 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 14 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test24():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T
+		{
+			S& s;
+			op++( mut this );
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			var T mut t{ .s= s };
+			var i32 &mut x_ref= s.x;
+			++t; // Call here overloaded "++" operator, which requires accessing "s.x", which already has a derived mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 13 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 14 ) )
 
 
 def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test0():
