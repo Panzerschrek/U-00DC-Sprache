@@ -286,6 +286,15 @@ def ReturningReferenceParamInnerReferenceFromCoroutine_ForAsyncFunction_Test0():
 	assert( HasError( errors_list, "ReturningReferenceParamInnerReferenceFromCoroutine", 4 ) )
 
 
+def ReturningReferenceParamInnerReferenceFromCoroutine_ForAsyncFunction_Test1():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn async Some( S s ) : i32& @( return_references ); // Ok - return an inner reference of a value param.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test0():
 	c_program_text= """
 		fn async Foo() : i32

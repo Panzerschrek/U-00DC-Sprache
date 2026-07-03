@@ -227,6 +227,37 @@ def SimpleGenerator_Test6():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def SimpleGenerator_Test7():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut x;
+		}
+		fn generator Gen( S& s ) : i32 // This generator has a reference param of type with references inside.
+		{
+			loop
+			{
+				auto res= s.x;
+				++s.x;
+				yield res;
+			}
+		}
+		fn Foo()
+		{
+			var i32 mut x= 100;
+			var S s{ .x= x };
+			auto mut gen= Gen( s );
+			if_coro_advance( x : gen ) { halt if( x != 100 ); } else { halt; }
+			if_coro_advance( x : gen ) { halt if( x != 101 ); } else { halt; }
+			if_coro_advance( x : gen ) { halt if( x != 102 ); } else { halt; }
+			if_coro_advance( x : gen ) { halt if( x != 103 ); } else { halt; }
+			halt if( s.x != 104 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def GeneratorReturn_Test0():
 	c_program_text= """
 		fn generator SimpleGen( bool cond ) : i32

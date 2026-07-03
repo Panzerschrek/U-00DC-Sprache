@@ -57,6 +57,39 @@ def SimpleAsyncFunction_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def SimpleAsyncFunction_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut x;
+		}
+		fn async Func( S& s ) : i32 // This async function has a reference param of type with references inside.
+		{
+			while( s.x < 5 )
+			{
+				++s.x;
+				yield;
+			}
+			return s.x * 100;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			auto mut func= Func( s );
+			if_coro_advance( x : func ) { halt; } else { halt if( s.x != 1 ); }
+			if_coro_advance( x : func ) { halt; } else { halt if( s.x != 2 ); }
+			if_coro_advance( x : func ) { halt; } else { halt if( s.x != 3 ); }
+			if_coro_advance( x : func ) { halt; } else { halt if( s.x != 4 ); }
+			if_coro_advance( x : func ) { halt; } else { halt if( s.x != 5 ); }
+			if_coro_advance( x : func ) { halt if( x != 500 ); } else { halt; }
+			if_coro_advance( x : func ) { halt; }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def ReturnForAsyncFunction_Test0():
 	c_program_text= """
 		fn async SimpleFunc( i32 x ) : i32
