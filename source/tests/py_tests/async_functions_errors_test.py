@@ -1270,3 +1270,30 @@ def SecondOrderInnerReferenceForCoroutineReferenceProtectionViolation_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def SecondOrderInnerReferenceForCoroutineReferenceProtectionViolation_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32& x;
+		}
+		fn async Func( S& s ) : i32
+		{
+			auto x_before= s.x;
+			yield;
+			halt if( s.x != x_before ); // In normal code a value pointed by a reference can't be changed by someone else.
+			return s.x;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			auto mut func= Func( s );
+			if_coro_advance( x : func ) {}
+			// If we can mutate "x" or "s.x" here, we can cause violation of reference protection.
+			if_coro_advance( x : func ) {}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
