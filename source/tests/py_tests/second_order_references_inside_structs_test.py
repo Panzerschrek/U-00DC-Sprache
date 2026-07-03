@@ -1916,7 +1916,7 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test24():
 	assert( HasError( errors_list, "ReferenceProtectionError", 14 ) )
 
 
-def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test0():
+def DestroyedVariableStillHasReferences_ForSecondOrderInnerReference_Test0():
 	c_program_text= """
 		struct A{ i32 &imut x; }
 		struct DoubleA{ A @("a") first; A @("b") second; }
@@ -1955,7 +1955,7 @@ def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test0():
 	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 31 ) )
 
 
-def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test1():
+def DestroyedVariableStillHasReferences_ForSecondOrderInnerReference_Test1():
 	c_program_text= """
 		struct A{ i32 &imut x; }
 		struct B{ A& a; }
@@ -1982,7 +1982,7 @@ def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test1():
 	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 19 ) )
 
 
-def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test2():
+def DestroyedVariableStillHasReferences_ForSecondOrderInnerReference_Test2():
 	c_program_text= """
 		struct A{ i32 &imut x; }
 		struct B{ A& a; }
@@ -2013,7 +2013,7 @@ def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test2():
 	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 23 ) )
 
 
-def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test3():
+def DestroyedVariableStillHasReferences_ForSecondOrderInnerReference_Test3():
 	c_program_text= """
 		struct A{ i32 &imut x; }
 		struct B{ A& a; }
