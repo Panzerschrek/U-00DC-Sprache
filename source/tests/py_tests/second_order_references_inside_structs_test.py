@@ -1690,6 +1690,182 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test15():
 	assert( HasError( errors_list, "ReferenceProtectionError", 20 ) )
 
 
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test16():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T
+		{
+			S& s;
+			op==( T& l, T& r ) : bool;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			var T t{ .s= s };
+			var bool eq= t == t; // Call here to overloaded "==" operator. It may require accessing "s.x" via two ways, which isn't allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 13 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test17():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T
+		{
+			S& s;
+			op==( T& l, T& r ) : bool;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			var T t0{ .s= s };
+			var T t1{ .s= s };
+			var bool eq= t0 == t1; // Call here to overloaded "==" operator. It may require accessing "s.x" via two ways, which isn't allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 13 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 14 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test18():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T
+		{
+			S& s;
+			op==( T& l, T& r ) : bool;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			var tup[ f32, T, bool ] t0[ 76.2f, { .s= s }, false ], t1[ -522.0f, { .s= s }, true ];
+			var bool eq= t0 == t1; // Call here to overloaded "==" operator. It may require accessing "s.x" via two ways, which isn't allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 13 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test19():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T
+		{
+			S& s;
+			op=( T &mut l, T &imut r );
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			var T mut t0{ .s= s };
+			var T mut t1{ .s= s };
+			t0 = t1; // Call here to overloaded "=" operator. It may require accessing "s.x" via two ways, which isn't allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 13 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 14 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test20():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T
+		{
+			S& s;
+			op=( T &mut l, T &imut r );
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			var tup[ f32, T, bool ] mut t0[ 76.2f, { .s= s }, false ], mut t1[ -522.0f, { .s= s }, true ];
+			t0 = t1; // Call here to overloaded "=" operator. It may require accessing "s.x" via two ways, which isn't allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 11 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 12 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 13 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test21():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T
+		{
+			S& s;
+		}
+		struct U
+		{
+			fn conversion_constructor( T t );
+		}
+		fn Foo() : U
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			var T t{ .s= s };
+			var i32 &mut x_ref= s.x;
+			return t; // Call cere U::conversion_constructor, which requires accessing "s.x", which already has a derived mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 14 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 15 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 16 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 17 ) )
+
+
+def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test22():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		struct T
+		{
+			S& s;
+		}
+		struct U
+		{
+			fn conversion_constructor( T t );
+		}
+		fn Bar( U u );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			var T t{ .s= s };
+			var i32 &mut x_ref= s.x;
+			Bar( t ); // Call cere U::conversion_constructor, which requires accessing "s.x", which already has a derived mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 15 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 16 ) )
+	assert( not HasError( errors_list, "ReferenceProtectionError", 17 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 18 ) )
+
+
 def DestroyedVariableStillHasReferences_ForSecondOrderInner_Test0():
 	c_program_text= """
 		struct A{ i32 &imut x; }
