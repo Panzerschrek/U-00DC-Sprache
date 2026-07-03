@@ -1104,7 +1104,7 @@ def ReturningUnallowedReference_ForGeneratorYield_Test12():
 def ReturningUnallowedReference_ForGeneratorYield_Test13():
 	c_program_text= """
 		struct S{ i32& x; }
-		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
 		fn generator Foo( S& s ) : i32& @(return_references)
 		{
 			yield s.x; // yielding an inner reference of a reference argument. This is not allowed.
@@ -1120,7 +1120,7 @@ def ReturningUnallowedReference_ForGeneratorYield_Test14():
 		struct S{ i32& x; }
 		fn generator Foo( S& s ) : S
 		{
-			yield s; // yielding a value having its inner reference pointint to an inner reference of a reference argument. This is not allowed.
+			yield s; // yielding a value having its inner reference pointing to an inner reference of a reference argument. This is not allowed.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -1131,10 +1131,10 @@ def ReturningUnallowedReference_ForGeneratorYield_Test14():
 def ReturningUnallowedReference_ForGeneratorYield_Test15():
 	c_program_text= """
 		struct S{ i32& x; }
-		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
 		fn generator Foo( S& s ) : S @( return_inner_references )
 		{
-			yield s; // yielding a value having its inner reference pointint to an inner reference of a reference argument. This is not allowed.
+			yield s; // yielding a value having its inner reference pointing to an inner reference of a reference argument. This is not allowed.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

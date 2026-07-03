@@ -23,7 +23,7 @@ def AccessingVariableLinkedToAsyncFunctionArgument_Test1():
 	c_program_text= """
 		struct S{ i32& mut x; }
 		struct T{ S& s; }
-		fn async Bar( T t ) : i32 { return s.x; }
+		fn async Bar( T t ) : i32 { return t.s.x; }
 		fn Foo()
 		{
 			var i32 mut x= 0;
@@ -130,7 +130,7 @@ def ReturningUnallowedReference_ForAsyncReturn_Test5():
 def ReturningUnallowedReference_ForAsyncReturn_Test6():
 	c_program_text= """
 		struct S{ i32& x; }
-		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
 		fn async Foo( S& s ) : i32& @(return_references)
 		{
 			return s.x; // Returning an inner reference of a reference argument. This is not allowed.
@@ -146,7 +146,7 @@ def ReturningUnallowedReference_ForAsyncReturn_Test7():
 		struct S{ i32& x; }
 		fn async Foo( S& s ) : S
 		{
-			return s; // Returning a value having its inner reference pointint to an inner reference of a reference argument. This is not allowed.
+			return s; // Returning a value having its inner reference pointing to an inner reference of a reference argument. This is not allowed.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -157,10 +157,10 @@ def ReturningUnallowedReference_ForAsyncReturn_Test7():
 def ReturningUnallowedReference_ForAsyncReturn_Test8():
 	c_program_text= """
 		struct S{ i32& x; }
-		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
 		fn async Foo( S& s ) : S @( return_inner_references )
 		{
-			return s; // Returning a value having its inner reference pointint to an inner reference of a reference argument. This is not allowed.
+			return s; // Returning a value having its inner reference pointing to an inner reference of a reference argument. This is not allowed.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
