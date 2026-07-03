@@ -485,3 +485,22 @@ def ReferenceProtectionError_ForArrayCompare_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 12 ) )
+
+
+def ReferenceProtectionError_ForArrayCompare_Test3():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut x;
+			op==( S& l, S& r ) : bool;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var [ S, 1 ] mut x_arr[ { .x= x } ];
+			var bool eq = x_arr == x_arr; // Calling "==" causes passing mutable inner reference to "x" into the overloaded "==" operator twice.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 11 ) )
