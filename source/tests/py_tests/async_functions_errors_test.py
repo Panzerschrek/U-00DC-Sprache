@@ -1204,3 +1204,34 @@ def NonSyncTypesInsideSyncAsyncFunction_Test16():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def SecondOrderInnerReferenceForCoroutineReferenceProtectionViolation_Test0():
+	# This test demonstrates violation of reference protection caused by second order inner references.
+	c_program_text= """
+		struct S
+		{
+			i32 &mut x;
+		}
+		fn async Func( S& s ) : i32
+		{
+			auto &mut x= s.x; // Hold a mutable reference to "s.x" across "yield" points. According to langauge rules noone can change underlying value while this reference exists.
+			auto x_before= x;
+			yield;
+			halt if( x != x_before ); // In normal code a value pointed by a mutable reference can't be changed by someone else. But "yield" and second order inner references for coroutines allow this.
+			++x;
+			yield;
+			return x * 100;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			auto mut func= Func( s );
+			if_coro_advance( x : func ) {}
+			++s.x; // Access "s.x" while a mutable reference to it still exists inside "Func".
+			if_coro_advance( x : func ) {}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
