@@ -2691,75 +2691,149 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		const VariableMutPtr r_var_lock=
 			Variable::Create(
-				r_var->type,
-				ValueType::ReferenceImut,
-				r_var->location,
-				r_var->name + " lock",
-				r_var->llvm_value );
+				r_var->type, ValueType::ReferenceImut, r_var->location, r_var->name + " lock", r_var->llvm_value );
+		r_var_lock->preserve_temporary= true;
 		function_context.variables_state.AddNode( r_var_lock );
 		function_context.variables_state.TryAddLink( r_var, r_var_lock, names_scope.GetErrors(), src_loc );
 		function_context.variables_state.TryAddInnerLinks( r_var, r_var_lock, names_scope.GetErrors(), src_loc );
-
-		r_var_lock->preserve_temporary= true;
 		RegisterTemporaryVariable( function_context, r_var_lock );
 
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( left_expr, names_scope, function_context );
 
-		if( function_context.variables_state.HasOutgoingLinks( l_var ) )
-			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, l_var->name );
+		const VariableMutPtr l_var_lock=
+			Variable::Create(
+				l_var->type, ValueType::ReferenceMut, l_var->location, l_var->name + " lock", l_var->llvm_value );
+		l_var_lock->preserve_temporary= true;
+		function_context.variables_state.AddNode( l_var_lock );
+		function_context.variables_state.TryAddLink( l_var, l_var_lock, names_scope.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( l_var, l_var_lock, names_scope.GetErrors(), src_loc );
+		RegisterTemporaryVariable( function_context, l_var_lock );
+
+		// Create second order inner reference lock nodes if necessary.
+		// We can do this after left and right parts evaluation, but we should do this before calling actual "=" operator.
+		llvm::SmallVector<VariablePtr, 6> second_order_reference_nodes;
+		const VariablePtr lock_nodes[2]{ l_var_lock, r_var_lock };
+		for( const VariablePtr& lock_node : lock_nodes )
+		{
+			const size_t reference_tag_count= lock_node->type.ReferenceTagCount();
+			for(size_t i= 0; i < reference_tag_count; ++i )
+			{
+				const SecondOrderInnerReferenceKind second_order_inner_reference_kind= lock_node->type.GetSecondOrderInnerReferenceKind(i);
+				if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+				{
+					const VariableMutPtr second_order_reference_node=
+						Variable::Create(
+						void_type_,
+						second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut ? ValueType::ReferenceImut : ValueType::ReferenceMut,
+						Variable::Location::Pointer,
+						"second order inner reference " + std::to_string(i) + " of " + lock_node->name );
+					second_order_reference_node->preserve_temporary= true;
+
+					function_context.variables_state.AddNode( second_order_reference_node );
+
+					for( const VariablePtr& accessible_non_inner_node :
+						function_context.variables_state.GetAllAccessibleNonInnerNodes( lock_node->inner_reference_nodes[i] ) )
+					{
+						for( const VariablePtr& node : accessible_non_inner_node->inner_reference_nodes )
+							function_context.variables_state.TryAddLink(
+								node, second_order_reference_node, names_scope.GetErrors(), src_loc );
+					}
+
+					RegisterTemporaryVariable( function_context, second_order_reference_node );
+
+					second_order_reference_nodes.push_back( second_order_reference_node );
+				}
+			}
+		}
+
+		if( l_var->type != invalid_type_ )
+		{
+			U_ASSERT( l_var->type == r_var->type ); // Checked before.
+
+			if( l_var->type.IsCopyAssignable() )
+			{
+				if( l_var->value_type == ValueType::ReferenceMut )
+					BuildCopyAssignmentOperatorPart( l_var->llvm_value, r_var->llvm_value, l_var->type, function_context );
+				else
+					REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
+			}
+			else
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, l_var->type );
+		}
+
+		SetupReferencesInCopyOrMove( function_context, l_var_lock, r_var_lock, names_scope.GetErrors(), src_loc );
 
 		function_context.variables_state.MoveNode( r_var_lock );
-
-		if( l_var->type == invalid_type_ )
-			return ErrorValue();
-		U_ASSERT( l_var->type == r_var->type ); // Checked before.
-
-		if( !l_var->type.IsCopyAssignable() )
-		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, l_var->type );
-			return ErrorValue();
-		}
-
-		if( l_var->value_type != ValueType::ReferenceMut )
-		{
-			REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
-			return ErrorValue();
-		}
-
-		SetupReferencesInCopyOrMove( function_context, l_var, r_var, names_scope.GetErrors(), src_loc );
-
-		BuildCopyAssignmentOperatorPart(
-			l_var->llvm_value, r_var->llvm_value,
-			l_var->type,
-			function_context );
+		function_context.variables_state.MoveNode( l_var_lock );
+		for( const VariablePtr& second_order_reference_node : second_order_reference_nodes )
+			function_context.variables_state.MoveNode( second_order_reference_node );
 
 		return Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 	}
 	else if( op == OverloadedOperator::CompareEqual )
 	{
-		const VariablePtr l_var= BuildExpressionCodeEnsureVariable(  left_expr, names_scope, function_context );
+		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( left_expr, names_scope, function_context );
 		if( l_var->type == invalid_type_ )
 			return ErrorValue();
 
 		const VariableMutPtr l_var_lock=
 			Variable::Create(
-				l_var->type,
-				ValueType::ReferenceImut,
-				l_var->location,
-				l_var->name + " lock",
-				l_var->llvm_value );
+				l_var->type, ValueType::ReferenceImut, l_var->location, l_var->name + " lock", l_var->llvm_value );
+		l_var_lock->preserve_temporary= true;
 		function_context.variables_state.AddNode( l_var_lock );
 		function_context.variables_state.TryAddLink( l_var, l_var_lock, names_scope.GetErrors(), src_loc );
 		function_context.variables_state.TryAddInnerLinks( l_var, l_var_lock, names_scope.GetErrors(), src_loc );
-
-		l_var_lock->preserve_temporary= true;
 		RegisterTemporaryVariable( function_context, l_var_lock );
 
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names_scope, function_context );
-		if( function_context.variables_state.HasOutgoingMutableNodes( r_var ) )
-			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, r_var->name );
+		if( r_var->type == invalid_type_ )
+			return ErrorValue();
 
-		function_context.variables_state.MoveNode( l_var_lock );
+		const VariableMutPtr r_var_lock=
+			Variable::Create(
+				r_var->type, ValueType::ReferenceImut, r_var->location, r_var->name + " lock", r_var->llvm_value );
+		r_var_lock->preserve_temporary= true;
+		function_context.variables_state.AddNode( r_var_lock );
+		function_context.variables_state.TryAddLink( r_var, r_var_lock, names_scope.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( r_var, r_var_lock, names_scope.GetErrors(), src_loc );
+		RegisterTemporaryVariable( function_context, r_var_lock );
+
+		// Create second order inner reference lock nodes if necessary.
+		// We can do this after left and right parts evaluation, but we should do this before calling actual "==" operator.
+		llvm::SmallVector<VariablePtr, 6> second_order_reference_nodes;
+		const VariablePtr lock_nodes[2]{ l_var_lock, r_var_lock };
+		for( const VariablePtr& lock_node : lock_nodes )
+		{
+			const size_t reference_tag_count= lock_node->type.ReferenceTagCount();
+			for(size_t i= 0; i < reference_tag_count; ++i )
+			{
+				const SecondOrderInnerReferenceKind second_order_inner_reference_kind= lock_node->type.GetSecondOrderInnerReferenceKind(i);
+				if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+				{
+					const VariableMutPtr second_order_reference_node=
+						Variable::Create(
+						void_type_,
+						second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut ? ValueType::ReferenceImut : ValueType::ReferenceMut,
+						Variable::Location::Pointer,
+						"second order inner reference " + std::to_string(i) + " of " + lock_node->name );
+					second_order_reference_node->preserve_temporary= true;
+
+					function_context.variables_state.AddNode( second_order_reference_node );
+
+					for( const VariablePtr& accessible_non_inner_node :
+						function_context.variables_state.GetAllAccessibleNonInnerNodes( lock_node->inner_reference_nodes[i] ) )
+					{
+						for( const VariablePtr& node : accessible_non_inner_node->inner_reference_nodes )
+							function_context.variables_state.TryAddLink(
+								node, second_order_reference_node, names_scope.GetErrors(), src_loc );
+					}
+
+					RegisterTemporaryVariable( function_context, second_order_reference_node );
+
+					second_order_reference_nodes.push_back( second_order_reference_node );
+				}
+			}
+		}
 
 		if( r_var->type == invalid_type_ )
 			return ErrorValue();
@@ -2782,18 +2856,15 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				std::string( OverloadedOperatorToString(op) ) );
 
 		if( l_var->constexpr_value != nullptr && r_var->constexpr_value != nullptr )
-			result->llvm_value= result->constexpr_value= ConstexprCompareEqual( l_var->constexpr_value, r_var->constexpr_value, l_var->type, names_scope, src_loc );
+			result->llvm_value= result->constexpr_value=
+				ConstexprCompareEqual( l_var->constexpr_value, r_var->constexpr_value, l_var->type, names_scope, src_loc );
 		else
 		{
 			const auto false_basic_block= llvm::BasicBlock::Create( llvm_context_ );
 			const auto end_basic_block= llvm::BasicBlock::Create( llvm_context_ );
 
 			BuildEqualityCompareOperatorPart(
-				l_var->llvm_value,
-				r_var->llvm_value,
-				l_var->type,
-				false_basic_block,
-				function_context );
+				l_var->llvm_value, r_var->llvm_value, l_var->type, false_basic_block, function_context );
 
 			if( false_basic_block->hasNPredecessorsOrMore(1) )
 			{
@@ -2824,6 +2895,11 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				result->llvm_value= llvm::ConstantInt::getTrue( llvm_context_ );
 			}
 		}
+
+		function_context.variables_state.MoveNode( l_var_lock );
+		function_context.variables_state.MoveNode( r_var_lock );
+		for( const VariablePtr& second_order_reference_node : second_order_reference_nodes )
+			function_context.variables_state.MoveNode( second_order_reference_node );
 
 		function_context.variables_state.AddNode( result );
 
