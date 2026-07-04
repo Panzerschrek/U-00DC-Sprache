@@ -2709,6 +2709,43 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.variables_state.TryAddInnerLinks( l_var, l_var_lock, names_scope.GetErrors(), src_loc );
 		RegisterTemporaryVariable( function_context, l_var_lock );
 
+		// Create second order reference lock nodes if necessary.
+		// We can do this after left and right parts evaluation, but we should do this before calling actual "=" operator.
+		llvm::SmallVector<VariablePtr, 6> second_order_reference_nodes;
+		const VariablePtr lock_nodes[2]{ l_var_lock, r_var_lock };
+		for( const VariablePtr& lock_node : lock_nodes )
+		{
+			const size_t reference_tag_count= lock_node->type.ReferenceTagCount();
+			for(size_t i= 0; i < reference_tag_count; ++i )
+			{
+				const SecondOrderInnerReferenceKind second_order_inner_reference_kind= lock_node->type.GetSecondOrderInnerReferenceKind(i);
+				if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+				{
+					const VariableMutPtr second_order_reference_node=
+						Variable::Create(
+						void_type_,
+						second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut ? ValueType::ReferenceImut : ValueType::ReferenceMut,
+						Variable::Location::Pointer,
+						"second order inner reference " + std::to_string(i) + " of " + lock_node->name );
+					second_order_reference_node->preserve_temporary= true;
+
+					function_context.variables_state.AddNode( second_order_reference_node );
+
+					for( const VariablePtr& accessible_non_inner_node :
+						function_context.variables_state.GetAllAccessibleNonInnerNodes( lock_node->inner_reference_nodes[i] ) )
+					{
+						for( const VariablePtr& node : accessible_non_inner_node->inner_reference_nodes )
+							function_context.variables_state.TryAddLink(
+								node, second_order_reference_node, names_scope.GetErrors(), src_loc );
+					}
+
+					RegisterTemporaryVariable( function_context, second_order_reference_node );
+
+					second_order_reference_nodes.push_back( second_order_reference_node );
+				}
+			}
+		}
+
 		if( l_var->type != invalid_type_ )
 		{
 			U_ASSERT( l_var->type == r_var->type ); // Checked before.
@@ -2728,6 +2765,8 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		function_context.variables_state.MoveNode( r_var_lock );
 		function_context.variables_state.MoveNode( l_var_lock );
+		for( const VariablePtr& second_order_reference_node : second_order_reference_nodes )
+			function_context.variables_state.MoveNode( second_order_reference_node );
 
 		return Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 	}
