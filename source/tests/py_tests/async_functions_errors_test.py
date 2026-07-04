@@ -1,5 +1,6 @@
 from py_tests_common import *
 
+
 def ReturningUnallowedReference_ForAsyncReturn_Test0():
 	c_program_text= """
 		// Doesn't allow to return a reference to any param.
@@ -73,6 +74,50 @@ def ReturningUnallowedReference_ForAsyncReturn_Test4():
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReturningUnallowedReference", 8 ) )
 	assert( HasError( errors_list, "DestroyedVariableStillHasReferences", 8 ) )
+
+
+def ReturningUnallowedReference_ForReferencePassedThroughAsyncFunction_Test0():
+	c_program_text= """
+		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		fn async Foo( S s ) : S @(return_inner_references);
+		fn Bar( i32& x ) : i32& @( bar_return_references )
+		{
+			var S s{ .x= x };
+			auto mut gen= Foo( s );
+			if_coro_advance( s : gen )
+			{
+				return s.x; // This returned reference is linked to "s.x", which is linked to reference param "x". Returning a reference to it isn't allowed.
+			}
+			halt;
+		}
+		var [ [ char8, 2 ], 0 ] bar_return_references[ ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 11 ) )
+
+
+def ReturningUnallowedReference_ForReferencePassedThroughAsyncFunction_Test1():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn async Foo( S s ) : i32& @(return_references);
+		fn Bar( i32& x ) : i32& @( bar_return_references )
+		{
+			var S s{ .x= x };
+			auto mut gen= Foo( s );
+			if_coro_advance( &x_ref : gen )
+			{
+				return x_ref; // This returned reference is linked to "s.x", which is linked to reference param "x". Returning a reference to it isn't allowed.
+			}
+			halt;
+		}
+		var [ [ char8, 2 ], 0 ] bar_return_references[ ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 11 ) )
 
 
 def NoReturnInFunctionReturningNonVoid_ForAsyncFunction_Test0():
@@ -673,7 +718,7 @@ def ReferenceIndirectionDepthExceeded_ForAsyncFunctions_Test1():
 	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 3 ) )
 
 
-def ReferenceIndirectionDepthExceeded_ForForAsyncFunctions_Test2():
+def ReferenceIndirectionDepthExceeded_ForAsyncFunctions_Test2():
 	c_program_text= """
 		struct S{ i32 & x; }
 		fn async Foo( S s ) : i32 { return 0; } // Ok - pass struct with reference inside by value.

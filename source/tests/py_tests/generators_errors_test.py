@@ -1018,6 +1018,50 @@ def ReturningUnallowedReference_ForGeneratorYield_Test11():
 	tests_lib.build_program( c_program_text )
 
 
+def ReturningUnallowedReference_ForReferencePassedThroughGenerator_Test0():
+	c_program_text= """
+		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		fn generator Foo( S s ) : S @(return_inner_references);
+		fn Bar( i32& x ) : i32& @( bar_return_references )
+		{
+			var S s{ .x= x };
+			auto mut gen= Foo( s );
+			if_coro_advance( s : gen )
+			{
+				return s.x; // This returned reference is linked to "s.x", which is linked to reference param "x". Returning a reference to it isn't allowed.
+			}
+			halt;
+		}
+		var [ [ char8, 2 ], 0 ] bar_return_references[ ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 11 ) )
+
+
+def ReturningUnallowedReference_ForReferencePassedThroughGenerator_Test1():
+	c_program_text= """
+		struct S{ i32& x; }
+		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
+		fn generator Foo( S s ) : i32& @(return_references);
+		fn Bar( i32& x ) : i32& @( bar_return_references )
+		{
+			var S s{ .x= x };
+			auto mut gen= Foo( s );
+			if_coro_advance( &x_ref : gen )
+			{
+				return x_ref; // This returned reference is linked to "s.x", which is linked to reference param "x". Returning a reference to it isn't allowed.
+			}
+			halt;
+		}
+		var [ [ char8, 2 ], 0 ] bar_return_references[ ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 11 ) )
+
+
 def UnallowedReferencePollution_ForGenerator_Test0():
 	c_program_text= """
 		struct S{ i32& x; }

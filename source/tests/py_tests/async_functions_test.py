@@ -524,7 +524,7 @@ def AsyncFunctionTypeName_AsTemplateSignatureArgument_Test2():
 		{
 			type AsyncRet= T;
 		}
-		type Some= S</ async : i32 />; // Deduction failed - expected generator, returning reference, given generator, returning value.
+		type Some= S</ async : i32 />; // Deduction failed - expected async function, returning reference, given async function, returning value.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -538,7 +538,7 @@ def AsyncFunctionTypeName_AsTemplateSignatureArgument_Test3():
 		{
 			type AsyncRet= T;
 		}
-		type Some= S</ async : i32 />; // Deduction failed - expected "non_sync" generator.
+		type Some= S</ async : i32 />; // Deduction failed - expected "non_sync" async function.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
