@@ -3955,6 +3955,49 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.references_graph.TryAddInnerLinks( l_var_ptr, l_var_lock_node, names_scope, src_loc );
 		RegisterTemporaryVariable( function_context, l_var_lock_node );
 
+		// Create second order reference lock nodes if necessary.
+		// We can do this after left and right parts evaluation, but we should do this before calling actual "=" operator.
+		var ust::vector</ VariablePtr /> mut second_order_reference_nodes;
+		var [ VariablePtr, 2 ] lock_nodes[ r_var_lock_node, l_var_lock_node ];
+		foreach( &lock_node : lock_nodes )
+		{
+			var Type t= lock_node.lock_imut().deref().t;
+			auto reference_tag_count= size_type( t.ReferenceTagCount() );
+			for( auto mut i= 0s; i < reference_tag_count; ++i )
+			{
+				var SecondOrderInnerReferenceKind second_order_inner_reference_kind= t.GetSecondOrderInnerReferenceKind(i);
+				if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+				{
+					var VariablePtr second_order_reference_node=
+						Variable
+						{
+							.t= void_type_,
+							.value_type=
+								( second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut
+									? ValueType::ReferenceImut
+									: ValueType::ReferenceMut ),
+							.location= Variable::Location::Pointer,
+							.preserve_temporary= true,
+						}.CreatePtr();
+
+					function_context.references_graph.AddNode( second_order_reference_node );
+					RegisterTemporaryVariable( function_context, second_order_reference_node );
+
+					foreach( &accessible_non_inner_node :
+						function_context.references_graph.GetAllAccessibleNonInnerNodes( lock_node.lock_imut().deref().inner_reference_nodes[i] ) )
+					{
+						foreach( & src_node : accessible_non_inner_node.lock_imut().deref().inner_reference_nodes )
+						{
+							function_context.references_graph.TryAddLink(
+								src_node, second_order_reference_node, names_scope, src_loc );
+						}
+					}
+
+					second_order_reference_nodes.push_back( second_order_reference_node );
+				}
+			}
+		}
+
 		if( l_var.t != invalid_type_ )
 		{
 			debug_assert( r_var.t == l_var.t ); // Checked before
@@ -3980,6 +4023,10 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		function_context.references_graph.MoveNode( r_var_lock_node );
 		function_context.references_graph.MoveNode( l_var_lock_node );
+		foreach( &node : second_order_reference_nodes )
+		{
+			function_context.references_graph.MoveNode( node );
+		}
 
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 
@@ -4027,6 +4074,49 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node, names_scope, src_loc );
 		function_context.references_graph.TryAddInnerLinks( r_var_ptr, r_var_lock_node, names_scope, src_loc );
 		RegisterTemporaryVariable( function_context, r_var_lock_node );
+
+		// Create second order reference lock nodes if necessary.
+		// We can do this after left and right parts evaluation, but we should do this before calling actual "==" operator.
+		var ust::vector</ VariablePtr /> mut second_order_reference_nodes;
+		var [ VariablePtr, 2 ] lock_nodes[ r_var_lock_node, l_var_lock_node ];
+		foreach( &lock_node : lock_nodes )
+		{
+			var Type t= lock_node.lock_imut().deref().t;
+			auto reference_tag_count= size_type( t.ReferenceTagCount() );
+			for( auto mut i= 0s; i < reference_tag_count; ++i )
+			{
+				var SecondOrderInnerReferenceKind second_order_inner_reference_kind= t.GetSecondOrderInnerReferenceKind(i);
+				if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+				{
+					var VariablePtr second_order_reference_node=
+						Variable
+						{
+							.t= void_type_,
+							.value_type=
+								( second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut
+									? ValueType::ReferenceImut
+									: ValueType::ReferenceMut ),
+							.location= Variable::Location::Pointer,
+							.preserve_temporary= true,
+						}.CreatePtr();
+
+					function_context.references_graph.AddNode( second_order_reference_node );
+					RegisterTemporaryVariable( function_context, second_order_reference_node );
+
+					foreach( &accessible_non_inner_node :
+						function_context.references_graph.GetAllAccessibleNonInnerNodes( lock_node.lock_imut().deref().inner_reference_nodes[i] ) )
+					{
+						foreach( & src_node : accessible_non_inner_node.lock_imut().deref().inner_reference_nodes )
+						{
+							function_context.references_graph.TryAddLink(
+								src_node, second_order_reference_node, names_scope, src_loc );
+						}
+					}
+
+					second_order_reference_nodes.push_back( second_order_reference_node );
+				}
+			}
+		}
 
 		if( r_var.t == invalid_type_ )
 		{
@@ -4112,6 +4202,10 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		function_context.references_graph.MoveNode( l_var_lock_node );
 		function_context.references_graph.MoveNode( r_var_lock_node );
+		foreach( &node : second_order_reference_nodes )
+		{
+			function_context.references_graph.MoveNode( node );
+		}
 
 		var VariablePtr result_ptr= move(result).CreatePtr();
 		function_context.references_graph.AddNode( result_ptr );
