@@ -3922,7 +3922,6 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			return ErrorValue();
 		}
 
-		// Prevent modification of r_var during l_val calculation.
 		var VariablePtr r_var_lock_node=
 			Variable
 			{
@@ -3941,30 +3940,46 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 		var VariableLite l_var= l_var_ptr;
 
-		function_context.references_graph.EnsureHasNoOutgoingLinks( l_var_ptr, names_scope, src_loc );
+		var VariablePtr l_var_lock_node=
+			Variable
+			{
+				.t= l_var.t,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.name= l_var_ptr.lock_imut().deref().name + " lock",
+				.preserve_temporary= true,
+			}.CreatePtr();
 
-		function_context.references_graph.MoveNode( r_var_lock_node );
+		function_context.references_graph.AddNode( l_var_lock_node );
+		function_context.references_graph.TryAddLink( l_var_ptr, l_var_lock_node, names_scope, src_loc );
+		function_context.references_graph.TryAddInnerLinks( l_var_ptr, l_var_lock_node, names_scope, src_loc );
+		RegisterTemporaryVariable( function_context, l_var_lock_node );
 
-		if( l_var.t == invalid_type_ )
+		if( l_var.t != invalid_type_ )
 		{
-			return ErrorValue();
-		}
-		debug_assert( r_var.t == l_var.t ); // Checked before
+			debug_assert( r_var.t == l_var.t ); // Checked before
 
-		if( !l_var.t.IsCopyAssignable() )
-		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_var.t )
-			return ErrorValue();
-		}
-		if( l_var.value_type != ValueType::ReferenceMut )
-		{
-			REPORT_ERROR( ExpectedMutableReference, names_scope, src_loc )
-			return ErrorValue();
+			if( l_var.t.IsCopyAssignable() )
+			{
+				if( l_var.value_type == ValueType::ReferenceMut )
+				{
+					BuildCopyAssignmentOperatorPart( names_scope, function_context, l_var.llvm_value, r_var.llvm_value, l_var.t, src_loc );
+				}
+				else
+				{
+					REPORT_ERROR( ExpectedMutableReference, names_scope, src_loc )
+				}
+			}
+			else
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_var.t )
+			}
 		}
 
 		SetupReferencesInCopyOrMove( names_scope, function_context, l_var_ptr, r_var_ptr, src_loc );
 
-		BuildCopyAssignmentOperatorPart( names_scope, function_context, l_var.llvm_value, r_var.llvm_value, l_var.t, src_loc );
+		function_context.references_graph.MoveNode( r_var_lock_node );
+		function_context.references_graph.MoveNode( l_var_lock_node );
 
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 
@@ -3998,9 +4013,20 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
 		var VariableLite r_var= r_var_ptr;
 
-		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( r_var_ptr, names_scope, src_loc );
+		var VariablePtr r_var_lock_node=
+			Variable
+			{
+				.t= r_var.t,
+				.value_type= ValueType::ReferenceImut,
+				.location= Variable::Location::Pointer,
+				.name= r_var_ptr.lock_imut().deref().name + " lock",
+				.preserve_temporary= true,
+			}.CreatePtr();
 
-		function_context.references_graph.MoveNode( l_var_lock_node );
+		function_context.references_graph.AddNode( r_var_lock_node );
+		function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node, names_scope, src_loc );
+		function_context.references_graph.TryAddInnerLinks( r_var_ptr, r_var_lock_node, names_scope, src_loc );
+		RegisterTemporaryVariable( function_context, r_var_lock_node );
 
 		if( r_var.t == invalid_type_ )
 		{
@@ -4083,6 +4109,9 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				}
 			}
 		}
+
+		function_context.references_graph.MoveNode( l_var_lock_node );
+		function_context.references_graph.MoveNode( r_var_lock_node );
 
 		var VariablePtr result_ptr= move(result).CreatePtr();
 		function_context.references_graph.AddNode( result_ptr );
