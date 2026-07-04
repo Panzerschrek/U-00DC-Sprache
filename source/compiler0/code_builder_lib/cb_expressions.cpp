@@ -2733,29 +2733,31 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	}
 	else if( op == OverloadedOperator::CompareEqual )
 	{
-		const VariablePtr l_var= BuildExpressionCodeEnsureVariable(  left_expr, names_scope, function_context );
+		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( left_expr, names_scope, function_context );
 		if( l_var->type == invalid_type_ )
 			return ErrorValue();
 
 		const VariableMutPtr l_var_lock=
 			Variable::Create(
-				l_var->type,
-				ValueType::ReferenceImut,
-				l_var->location,
-				l_var->name + " lock",
-				l_var->llvm_value );
+				l_var->type, ValueType::ReferenceImut, l_var->location, l_var->name + " lock", l_var->llvm_value );
+		l_var_lock->preserve_temporary= true;
 		function_context.variables_state.AddNode( l_var_lock );
 		function_context.variables_state.TryAddLink( l_var, l_var_lock, names_scope.GetErrors(), src_loc );
 		function_context.variables_state.TryAddInnerLinks( l_var, l_var_lock, names_scope.GetErrors(), src_loc );
-
-		l_var_lock->preserve_temporary= true;
 		RegisterTemporaryVariable( function_context, l_var_lock );
 
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names_scope, function_context );
-		if( function_context.variables_state.HasOutgoingMutableNodes( r_var ) )
-			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, r_var->name );
+		if( r_var->type == invalid_type_ )
+			return ErrorValue();
 
-		function_context.variables_state.MoveNode( l_var_lock );
+		const VariableMutPtr r_var_lock=
+			Variable::Create(
+				r_var->type, ValueType::ReferenceImut, r_var->location, r_var->name + " lock", r_var->llvm_value );
+		r_var_lock->preserve_temporary= true;
+		function_context.variables_state.AddNode( r_var_lock );
+		function_context.variables_state.TryAddLink( r_var, r_var_lock, names_scope.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( r_var, r_var_lock, names_scope.GetErrors(), src_loc );
+		RegisterTemporaryVariable( function_context, r_var_lock );
 
 		if( r_var->type == invalid_type_ )
 			return ErrorValue();
@@ -2778,18 +2780,15 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				std::string( OverloadedOperatorToString(op) ) );
 
 		if( l_var->constexpr_value != nullptr && r_var->constexpr_value != nullptr )
-			result->llvm_value= result->constexpr_value= ConstexprCompareEqual( l_var->constexpr_value, r_var->constexpr_value, l_var->type, names_scope, src_loc );
+			result->llvm_value= result->constexpr_value=
+				ConstexprCompareEqual( l_var->constexpr_value, r_var->constexpr_value, l_var->type, names_scope, src_loc );
 		else
 		{
 			const auto false_basic_block= llvm::BasicBlock::Create( llvm_context_ );
 			const auto end_basic_block= llvm::BasicBlock::Create( llvm_context_ );
 
 			BuildEqualityCompareOperatorPart(
-				l_var->llvm_value,
-				r_var->llvm_value,
-				l_var->type,
-				false_basic_block,
-				function_context );
+				l_var->llvm_value, r_var->llvm_value, l_var->type, false_basic_block, function_context );
 
 			if( false_basic_block->hasNPredecessorsOrMore(1) )
 			{
@@ -2820,6 +2819,9 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				result->llvm_value= llvm::ConstantInt::getTrue( llvm_context_ );
 			}
 		}
+
+		function_context.variables_state.MoveNode( l_var_lock );
+		function_context.variables_state.MoveNode( r_var_lock );
 
 		function_context.variables_state.AddNode( result );
 
