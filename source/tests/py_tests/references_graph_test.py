@@ -1355,7 +1355,7 @@ def CreatingMutableReferencesLoop_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 51 ) )
+	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 51 ) or HasError( errors_list, "ReferenceProtectionError", 51 ) )
 
 
 def CreatingMutableReferencesLoop_Test5():

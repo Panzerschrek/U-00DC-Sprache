@@ -2799,7 +2799,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		RegisterTemporaryVariable( function_context, r_var_lock );
 
 		// Create second order reference lock nodes if necessary.
-		// We can do this after left and right parts evaluation, but we should do this before calling actual "=" operator.
+		// We can do this after left and right parts evaluation, but we should do this before calling actual "==" operator.
 		llvm::SmallVector<VariablePtr, 6> second_order_reference_nodes;
 		const VariablePtr lock_nodes[2]{ l_var_lock, r_var_lock };
 		for( const VariablePtr& lock_node : lock_nodes )
