@@ -2709,7 +2709,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.variables_state.TryAddInnerLinks( l_var, l_var_lock, names_scope.GetErrors(), src_loc );
 		RegisterTemporaryVariable( function_context, l_var_lock );
 
-		// Create second order reference lock nodes if necessary.
+		// Create second order inner reference lock nodes if necessary.
 		// We can do this after left and right parts evaluation, but we should do this before calling actual "=" operator.
 		llvm::SmallVector<VariablePtr, 6> second_order_reference_nodes;
 		const VariablePtr lock_nodes[2]{ l_var_lock, r_var_lock };
@@ -2798,7 +2798,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.variables_state.TryAddInnerLinks( r_var, r_var_lock, names_scope.GetErrors(), src_loc );
 		RegisterTemporaryVariable( function_context, r_var_lock );
 
-		// Create second order reference lock nodes if necessary.
+		// Create second order inner reference lock nodes if necessary.
 		// We can do this after left and right parts evaluation, but we should do this before calling actual "==" operator.
 		llvm::SmallVector<VariablePtr, 6> second_order_reference_nodes;
 		const VariablePtr lock_nodes[2]{ l_var_lock, r_var_lock };

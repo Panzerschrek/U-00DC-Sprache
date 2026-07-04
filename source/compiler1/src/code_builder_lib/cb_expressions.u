@@ -3955,7 +3955,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.references_graph.TryAddInnerLinks( l_var_ptr, l_var_lock_node, names_scope, src_loc );
 		RegisterTemporaryVariable( function_context, l_var_lock_node );
 
-		// Create second order reference lock nodes if necessary.
+		// Create second order inner reference lock nodes if necessary.
 		// We can do this after left and right parts evaluation, but we should do this before calling actual "=" operator.
 		var ust::vector</ VariablePtr /> mut second_order_reference_nodes;
 		var [ VariablePtr, 2 ] lock_nodes[ r_var_lock_node, l_var_lock_node ];
@@ -4075,7 +4075,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.references_graph.TryAddInnerLinks( r_var_ptr, r_var_lock_node, names_scope, src_loc );
 		RegisterTemporaryVariable( function_context, r_var_lock_node );
 
-		// Create second order reference lock nodes if necessary.
+		// Create second order inner reference lock nodes if necessary.
 		// We can do this after left and right parts evaluation, but we should do this before calling actual "==" operator.
 		var ust::vector</ VariablePtr /> mut second_order_reference_nodes;
 		var [ VariablePtr, 2 ] lock_nodes[ r_var_lock_node, l_var_lock_node ];
