@@ -2691,47 +2691,43 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		const VariableMutPtr r_var_lock=
 			Variable::Create(
-				r_var->type,
-				ValueType::ReferenceImut,
-				r_var->location,
-				r_var->name + " lock",
-				r_var->llvm_value );
+				r_var->type, ValueType::ReferenceImut, r_var->location, r_var->name + " lock", r_var->llvm_value );
+		r_var_lock->preserve_temporary= true;
 		function_context.variables_state.AddNode( r_var_lock );
 		function_context.variables_state.TryAddLink( r_var, r_var_lock, names_scope.GetErrors(), src_loc );
 		function_context.variables_state.TryAddInnerLinks( r_var, r_var_lock, names_scope.GetErrors(), src_loc );
-
-		r_var_lock->preserve_temporary= true;
 		RegisterTemporaryVariable( function_context, r_var_lock );
 
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( left_expr, names_scope, function_context );
 
-		if( function_context.variables_state.HasOutgoingLinks( l_var ) )
-			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, l_var->name );
+		const VariableMutPtr l_var_lock=
+			Variable::Create(
+				l_var->type, ValueType::ReferenceMut, l_var->location, l_var->name + " lock", l_var->llvm_value );
+		l_var_lock->preserve_temporary= true;
+		function_context.variables_state.AddNode( l_var_lock );
+		function_context.variables_state.TryAddLink( l_var, l_var_lock, names_scope.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( l_var, l_var_lock, names_scope.GetErrors(), src_loc );
+		RegisterTemporaryVariable( function_context, l_var_lock );
+
+		if( l_var->type != invalid_type_ )
+		{
+			U_ASSERT( l_var->type == r_var->type ); // Checked before.
+
+			if( l_var->type.IsCopyAssignable() )
+			{
+				if( l_var->value_type == ValueType::ReferenceMut )
+					BuildCopyAssignmentOperatorPart( l_var->llvm_value, r_var->llvm_value, l_var->type, function_context );
+				else
+					REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
+			}
+			else
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, l_var->type );
+		}
+
+		SetupReferencesInCopyOrMove( function_context, l_var_lock, r_var_lock, names_scope.GetErrors(), src_loc );
 
 		function_context.variables_state.MoveNode( r_var_lock );
-
-		if( l_var->type == invalid_type_ )
-			return ErrorValue();
-		U_ASSERT( l_var->type == r_var->type ); // Checked before.
-
-		if( !l_var->type.IsCopyAssignable() )
-		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, l_var->type );
-			return ErrorValue();
-		}
-
-		if( l_var->value_type != ValueType::ReferenceMut )
-		{
-			REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
-			return ErrorValue();
-		}
-
-		SetupReferencesInCopyOrMove( function_context, l_var, r_var, names_scope.GetErrors(), src_loc );
-
-		BuildCopyAssignmentOperatorPart(
-			l_var->llvm_value, r_var->llvm_value,
-			l_var->type,
-			function_context );
+		function_context.variables_state.MoveNode( l_var_lock );
 
 		return Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 	}
