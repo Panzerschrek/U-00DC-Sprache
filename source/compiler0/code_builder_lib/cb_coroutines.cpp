@@ -62,38 +62,34 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	// Calculate inner references.
 	// Each reference param adds new inner reference.
 	// Each value param creates number of references equal to number of inner references of its type.
-	// For now reference params of types with references inside are not supported.
 
 	// If this changed, "GetCoroutineInnerReferenceForParamNode" function must be changed too!
 
 	llvm::SmallVector< size_t, 16 > param_to_first_inner_reference_tag;
-	FunctionType::ReturnInnerReferences coroutine_return_inner_ferences;
+	FunctionType::ReturnInnerReferences coroutine_return_inner_references;
 
 	for( const FunctionType::Param& param : coroutine_function_type.params )
 	{
 		const size_t param_index= size_t(&param - coroutine_function_type.params.data());
 		param_to_first_inner_reference_tag.push_back( coroutine_type_description.inner_references.size() );
+
+		// Require type completeness for both value and reference params in order to know inner references.
+		if( !EnsureTypeComplete( param.type ) )
+			continue;
+
+		// We allow coroutine types to be types with references inside.
+		// But we don't allow second order inner references for them.
+		// It's because a coroutine can read a second order inner reference, save it to a local reference (on stack) and then yield,
+		// which basically makes second order inner references to first order inner references.
+		// This can create some loopholes in reference checking, which are impossible to fix properly.
+		// So, allow only first order inner references for coroutines. It's enough for almost all cases.
+
+		const auto reference_tag_count= param.type.ReferenceTagCount();
+
 		if( param.value_type == ValueType::Value )
 		{
-			// Require type completeness for value params in order to know inner references.
-			if( EnsureTypeComplete( param.type ) )
-			{
-				const auto reference_tag_count= param.type.ReferenceTagCount();
-				for( size_t i= 0; i < reference_tag_count; ++i )
-				{
-					coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceKind(i) );
-					coroutine_return_inner_ferences.push_back(
-						FunctionType::ReturnReferences{
-							FunctionType::ParamReference{ uint8_t(param_index), uint8_t(i) } } );
-				}
-			}
-		}
-		else
-		{
-			// Coroutine is an object, that holds references to reference-args of coroutine function.
-			// It's generally not allowed to create types with references to other types with references inside.
-			// Second order references are possible in some cases, but for now not for coroutines.
-			if( EnsureTypeComplete( param.type ) && param.type.ReferenceTagCount() > 0u )
+			// We support value params with references inside, but no second order inner references.
+			if( param.type.GetReferenceIndirectionDepth() > 1u )
 			{
 				std::string field_name= "param ";
 				field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
@@ -102,8 +98,30 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
 			}
 
-			coroutine_type_description.inner_references.push_back( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
-			coroutine_return_inner_ferences.push_back(
+			for( size_t i= 0; i < reference_tag_count; ++i )
+			{
+				coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceKind(i) );
+				coroutine_return_inner_references.push_back(
+					FunctionType::ReturnReferences{
+						FunctionType::ParamReference{ uint8_t(param_index), uint8_t(i) } } );
+			}
+		}
+		else
+		{
+			// We support reference params, but with no references inside,
+			// since it would create second order inner references, which aren't allowed for coroutines.
+			if( reference_tag_count > 0u )
+			{
+				std::string field_name= "param ";
+				field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
+				field_name+= " of type ";
+				field_name+= param.type.ToString();
+				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
+			}
+
+			coroutine_type_description.inner_references.push_back(
+				param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+			coroutine_return_inner_references.push_back(
 				FunctionType::ReturnReferences{
 					FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_param_reference_number } } );
 		}
@@ -113,7 +131,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	for( const FunctionType::ParamReference& param_reference : coroutine_function_type.return_references )
 	{
 		if( param_reference.first >= coroutine_function_type.params.size() )
-			continue;
+			continue; // Out of range errors should be reported earlier.
 
 		FunctionType::ParamReference out_reference;
 		out_reference.first= 0; // Always use param0 - coroutine itself.
@@ -133,7 +151,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		for( const FunctionType::ParamReference& param_reference : coroutine_function_type.return_inner_references[i] )
 		{
 			if( param_reference.first >= coroutine_function_type.params.size() )
-				continue;
+				continue; // Out of range errors should be reported earlier.
 
 			FunctionType::ParamReference out_reference;
 			out_reference.first= 0; // Always use param0 - coroutine itself.
@@ -152,7 +170,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	coroutine_function_type.return_value_type= ValueType::Value;
 
 	// Params references and references inside param types are mapped to coroutine type inner references.
-	coroutine_function_type.return_inner_references= std::move(coroutine_return_inner_ferences);
+	coroutine_function_type.return_inner_references= std::move(coroutine_return_inner_references);
 	coroutine_function_type.return_references.clear();
 }
 
