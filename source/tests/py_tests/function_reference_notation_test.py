@@ -335,6 +335,28 @@ def ReferencingValueParam_Test1():
 	assert( HasError( errors_list, "ReferencingValueParam", 4 ) )
 
 
+def ReferencingValueParam_Test2():
+	c_program_text= """
+		struct S{ i32& r; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S a, i32& x ) @( reference_pollution ) { halt; } // Pollution destination is value param.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferencingValueParam", 4 ) )
+
+
+def ReferencingValueParam_Test3():
+	c_program_text= """
+		struct S{ i32& r; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S& a, i32 x ) @( reference_pollution ) { halt; } // Pollution source is value param.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferencingValueParam", 4 ) )
+
+
 def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test0():
 	c_program_text= """
 		struct R{ i32& x; }

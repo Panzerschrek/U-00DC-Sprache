@@ -91,6 +91,17 @@ void CodeBuilder::CheckFunctionReferencesNotationValueParamsReferencing( const F
 	{
 		check_param_reference(pollution.dst);
 		check_param_reference(pollution.src);
+
+		// For reference pollution disallow specifying inner reference tags of value params as destination.
+		if( pollution.dst.first < function_type.params.size() )
+		{
+			const FunctionType::Param& param= function_type.params[ pollution.dst.first ];
+			if( pollution.dst.second != FunctionType::c_param_reference_number )
+			{
+				if( param.value_type == ValueType::Value )
+					REPORT_ERROR( ReferencingValueParam, errors_container, src_loc, size_t( pollution.dst.first ) );
+			}
+		}
 	}
 
 	for( const FunctionType::ParamReference& param_reference : function_type.return_references )
