@@ -314,6 +314,27 @@ def ReferenceTagOutOfRange_Test4():
 	assert( HasError( errors_list, "ReferenceTagOutOfRange", 5 ) )
 
 
+def ReferencingValueParam_Test0():
+	c_program_text= """
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn Foo( i32 x ) : i32& @( return_references ) { halt; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferencingValueParam", 3 ) )
+
+
+def ReferencingValueParam_Test1():
+	c_program_text= """
+		struct S{ i32& r; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn Foo( i32 x ) : S @( return_inner_references ) { halt; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferencingValueParam", 4 ) )
+
+
 def InnerReferenceTagCountMismatch_ForFunctionReferenceNotation_Test0():
 	c_program_text= """
 		struct R{ i32& x; }
