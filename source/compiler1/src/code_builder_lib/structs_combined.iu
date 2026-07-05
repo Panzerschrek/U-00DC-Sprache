@@ -682,7 +682,10 @@ struct CoroutineTypeDescription
 	Type return_type;
 	ValueType return_value_type;
 
+	// Inner references of coroutine type itself.
+	// Second order inner references are not supported for coroutines.
 	ust::vector</InnerReferenceKind/> inner_references;
+
 	bool non_sync_;
 
 	FunctionType::ParamReferences return_references;

@@ -26,6 +26,7 @@ public:
 	FunctionType::ReturnInnerReferences return_inner_references;
 
 	// Inner references of coroutine type itself.
+	// Second order inner references are not supported for coroutines.
 	llvm::SmallVector<InnerReferenceKind, 4> inner_references;
 
 	bool non_sync= false;
