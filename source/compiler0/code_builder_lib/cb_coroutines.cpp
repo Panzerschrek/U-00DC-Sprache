@@ -73,19 +73,30 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	{
 		const size_t param_index= size_t(&param - coroutine_function_type.params.data());
 		param_to_first_inner_reference_tag.push_back( coroutine_type_description.inner_references.size() );
+
+		// Require type completeness for both value and reference params in order to know inner references.
+		if( !EnsureTypeComplete( param.type ) )
+			continue;
+
+		const auto reference_tag_count= param.type.ReferenceTagCount();
+
 		if( param.value_type == ValueType::Value )
 		{
-			// Require type completeness for value params in order to know inner references.
-			if( EnsureTypeComplete( param.type ) )
+			if( param.type.GetReferenceIndirectionDepth() > 1u )
 			{
-				const auto reference_tag_count= param.type.ReferenceTagCount();
-				for( size_t i= 0; i < reference_tag_count; ++i )
-				{
-					coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceKind(i) );
-					coroutine_return_inner_ferences.push_back(
-						FunctionType::ReturnReferences{
-							FunctionType::ParamReference{ uint8_t(param_index), uint8_t(i) } } );
-				}
+				std::string field_name= "param ";
+				field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
+				field_name+= " of type ";
+				field_name+= param.type.ToString();
+				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
+			}
+
+			for( size_t i= 0; i < reference_tag_count; ++i )
+			{
+				coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceKind(i) );
+				coroutine_return_inner_ferences.push_back(
+					FunctionType::ReturnReferences{
+						FunctionType::ParamReference{ uint8_t(param_index), uint8_t(i) } } );
 			}
 		}
 		else
@@ -93,7 +104,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 			// Coroutine is an object, that holds references to reference-args of coroutine function.
 			// It's generally not allowed to create types with references to other types with references inside.
 			// Second order references are possible in some cases, but for now not for coroutines.
-			if( EnsureTypeComplete( param.type ) && param.type.ReferenceTagCount() > 0u )
+			if( reference_tag_count > 0u )
 			{
 				std::string field_name= "param ";
 				field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
