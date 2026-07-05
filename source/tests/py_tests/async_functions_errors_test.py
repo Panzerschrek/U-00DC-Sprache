@@ -1,6 +1,5 @@
 from py_tests_common import *
 
-
 def ReturningUnallowedReference_ForAsyncReturn_Test0():
 	c_program_text= """
 		// Doesn't allow to return a reference to any param.
@@ -84,8 +83,8 @@ def ReturningUnallowedReference_ForReferencePassedThroughAsyncFunction_Test0():
 		fn Bar( i32& x ) : i32& @( bar_return_references )
 		{
 			var S s{ .x= x };
-			auto mut gen= Foo( s );
-			if_coro_advance( s : gen )
+			auto mut func= Foo( s );
+			if_coro_advance( s : func )
 			{
 				return s.x; // This returned reference is linked to "s.x", which is linked to reference param "x". Returning a reference to it isn't allowed.
 			}
@@ -106,8 +105,8 @@ def ReturningUnallowedReference_ForReferencePassedThroughAsyncFunction_Test1():
 		fn Bar( i32& x ) : i32& @( bar_return_references )
 		{
 			var S s{ .x= x };
-			auto mut gen= Foo( s );
-			if_coro_advance( &x_ref : gen )
+			auto mut func= Foo( s );
+			if_coro_advance( &x_ref : func )
 			{
 				return x_ref; // This returned reference is linked to "s.x", which is linked to reference param "x". Returning a reference to it isn't allowed.
 			}
