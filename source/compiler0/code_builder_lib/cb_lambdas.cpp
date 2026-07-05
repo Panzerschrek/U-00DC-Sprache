@@ -579,7 +579,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 			}
 			else
 			{
-				// Captured by value variable points to lambda this param ptself.
+				// Captured by value variable points to lambda this param itself.
 				captured_variable_to_lambda_inner_reference_tag.emplace( captured_variable.data.variable_node, FunctionType::c_param_reference_number );
 
 				// Each reference tag of each captured variable get its own reference tag in result lambda class.
