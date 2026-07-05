@@ -79,7 +79,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 
 	scoped_array size_type mut param_to_first_inner_reference_tag[ coroutine_function_type.params.size() ]( 0s );
 
-	var FunctionType::ReturnInnerReferences mut coroutine_return_inner_ferences;
+	var FunctionType::ReturnInnerReferences mut coroutine_return_inner_references;
 
 	for( auto mut param_index= 0s; param_index < coroutine_function_type.params.size(); ++param_index )
 	{
@@ -113,7 +113,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			for( auto mut i= 0u; i < reference_tag_count; ++i )
 			{
 				coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
-				coroutine_return_inner_ferences.push_back(
+				coroutine_return_inner_references.push_back(
 					ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
 			}
 		}
@@ -129,7 +129,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 
 			coroutine_type_description.inner_references.push_back(
 				( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
-			coroutine_return_inner_ferences.push_back(
+			coroutine_return_inner_references.push_back(
 				ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } ) );
 		}
 	}
@@ -183,7 +183,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 	coroutine_function_type.return_value_type= ValueType::Value;
 
 	// Params references and references inside param types are mapped to coroutine type inner references.
-	coroutine_function_type.return_inner_references= move(coroutine_return_inner_ferences);
+	coroutine_function_type.return_inner_references= move(coroutine_return_inner_references);
 	coroutine_function_type.return_references.clear();
 }
 
