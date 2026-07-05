@@ -119,7 +119,8 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
 			}
 
-			coroutine_type_description.inner_references.push_back( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+			coroutine_type_description.inner_references.push_back(
+				param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 			coroutine_return_inner_ferences.push_back(
 				FunctionType::ReturnReferences{
 					FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_param_reference_number } } );
@@ -130,7 +131,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	for( const FunctionType::ParamReference& param_reference : coroutine_function_type.return_references )
 	{
 		if( param_reference.first >= coroutine_function_type.params.size() )
-			continue;
+			continue; // Out of range errors should be reported earlier.
 
 		FunctionType::ParamReference out_reference;
 		out_reference.first= 0; // Always use param0 - coroutine itself.
@@ -150,7 +151,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		for( const FunctionType::ParamReference& param_reference : coroutine_function_type.return_inner_references[i] )
 		{
 			if( param_reference.first >= coroutine_function_type.params.size() )
-				continue;
+				continue; // Out of range errors should be reported earlier.
 
 			FunctionType::ParamReference out_reference;
 			out_reference.first= 0; // Always use param0 - coroutine itself.

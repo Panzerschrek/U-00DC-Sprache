@@ -242,6 +242,25 @@ def ParamNumberOutOfRange_Test2():
 	assert( HasError( errors_list, "ParamNumberOutOfRange", 4 ) )
 
 
+def ParamNumberOutOfRange_Test3():
+	c_program_text= """
+		var [ [ char8, 2 ], 1 ] return_references[ "2_" ];
+		fn generator Foo( i32 & x ) : i32 & @( return_references ); // Param number is 3, but generator function contains only 1 param.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "ParamNumberOutOfRange", 3 ) )
+
+
+def ParamNumberOutOfRange_Test4():
+	c_program_text= """
+		struct S{ i32& x; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "7_" ] ];
+		fn async Foo( i32& x, f32& y ) : S @( return_inner_references ); // Param number is 4, but async function contains only 2 params.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "ParamNumberOutOfRange", 4 ) )
+
+
 def ReferenceTagOutOfRange_Test0():
 	c_program_text= """
 		struct R{ i32 &imut r; }

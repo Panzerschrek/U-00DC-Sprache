@@ -113,7 +113,8 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			for( auto mut i= 0u; i < reference_tag_count; ++i )
 			{
 				coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
-				coroutine_return_inner_ferences.push_back( ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
+				coroutine_return_inner_ferences.push_back(
+					ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
 			}
 		}
 		else
@@ -126,8 +127,10 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
 			}
 
-			coroutine_type_description.inner_references.push_back( ( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
-			coroutine_return_inner_ferences.push_back( ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } ) );
+			coroutine_type_description.inner_references.push_back(
+				( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
+			coroutine_return_inner_ferences.push_back(
+				ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } ) );
 		}
 	}
 
@@ -136,7 +139,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 	{
 		if( size_type( param_reference.param_index) >= coroutine_function_type.params.size() )
 		{
-			continue;
+			continue; // Out of range errors should be reported earlier.
 		}
 
 		coroutine_type_description.return_references.push_back(
@@ -159,7 +162,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 		{
 			if( size_type( param_reference.param_index) >= coroutine_function_type.params.size() )
 			{
-				continue;
+				continue; // Out of range errors should be reported earlier.
 			}
 
 			out_list.push_back(
