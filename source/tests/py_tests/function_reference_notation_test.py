@@ -337,6 +337,27 @@ def ReferencingValueParam_Test1():
 
 def ReferencingValueParam_Test2():
 	c_program_text= """
+		var [ [ char8, 2 ], 1 ] return_references[ "0_" ];
+		fn generator Foo( i32 x ) : i32& @( return_references ) { halt; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferencingValueParam", 3 ) )
+
+
+def ReferencingValueParam_Test3():
+	c_program_text= """
+		struct S{ i32& r; }
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+		fn async Foo( i32 x ) : S @( return_inner_references ) { halt; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferencingValueParam", 4 ) )
+
+
+def ReferencingValueParam_Test4():
+	c_program_text= """
 		struct S{ i32& r; }
 		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
 		fn Foo( S a, i32& x ) @( reference_pollution ) { halt; } // Pollution destination is value param.
@@ -346,7 +367,7 @@ def ReferencingValueParam_Test2():
 	assert( HasError( errors_list, "ReferencingValueParam", 4 ) )
 
 
-def ReferencingValueParam_Test3():
+def ReferencingValueParam_Test5():
 	c_program_text= """
 		struct S{ i32& r; }
 		var [ [ [ char8, 2 ], 2 ], 1 ] reference_pollution[ [ "0a", "1_" ] ];
