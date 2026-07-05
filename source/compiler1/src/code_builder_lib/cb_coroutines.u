@@ -86,17 +86,27 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 	{
 		var FunctionType::Param& param= coroutine_function_type.params[param_index];
 		param_to_first_inner_reference_tag[param_index]= coroutine_type_description.inner_references.size();
+
+		// Require type completeness for both value and reference params in order to know inner references.
+		if( !EnsureTypeComplete( param.t ) )
+		{
+			continue;
+		}
+
+		auto reference_tag_count= param.t.ReferenceTagCount();
+
 		if( param.value_type == ValueType::Value )
 		{
-			// Require type completeness for value params in order to know inner references.
-			if( EnsureTypeComplete( param.t ) )
+			if( param.t.GetReferenceIndirectionDepth() > 1s )
 			{
-				auto reference_tag_count= param.t.ReferenceTagCount();
-				for( auto mut i= 0u; i < reference_tag_count; ++i )
-				{
-					coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
-					coroutine_return_inner_ferences.push_back( ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
-				}
+				var ust::string8 field_name= ust::concat( "param ", ust::to_string8( param_index ), " of type ", param.t.ToString() );
+				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
+			}
+
+			for( auto mut i= 0u; i < reference_tag_count; ++i )
+			{
+				coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
+				coroutine_return_inner_ferences.push_back( ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
 			}
 		}
 		else
@@ -104,15 +114,12 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			// Coroutine is an object, that holds references to reference-args of coroutine function.
 			// It's generally not allowed to create types with references to other types with references inside.
 			// Second order references are possible in some cases, but for now not for coroutines.
-			if( EnsureTypeComplete( param.t ) && param.t.ReferenceTagCount() > 0u )
+			if( reference_tag_count > 0u )
 			{
-				var ust::string8 field_name= ust::concat( "param of type ", param.t.ToString() );
+				var ust::string8 field_name= ust::concat( "param ", ust::to_string8( param_index ), " of type ", param.t.ToString() );
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
 			}
 
-			// Assume this is a reference to type with no references inside.
-			// This is checked later - when building function code.
-			// Do this later in order to avoid full type building for reference params.
 			coroutine_type_description.inner_references.push_back( ( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 
 			coroutine_return_inner_ferences.push_back( ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } ) );
