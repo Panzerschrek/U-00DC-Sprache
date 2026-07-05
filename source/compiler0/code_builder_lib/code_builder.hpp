@@ -1241,6 +1241,7 @@ private:
 	// Call this only when types of params and return value are complete.
 	void CheckCompleteFunctionReferenceNotation( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
+	void CheckFunctionReferencesNotationValueParamsReferencing( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 	void CheckFunctionReferencesNotationInnerReferences( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	void CheckFunctionReferencesNotationMutabilityCorrectness( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );

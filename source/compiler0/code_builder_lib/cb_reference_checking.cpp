@@ -66,8 +66,39 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 
 void CodeBuilder::CheckCompleteFunctionReferenceNotation( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
+	CheckFunctionReferencesNotationValueParamsReferencing( function_type, errors_container, src_loc );
 	CheckFunctionReferencesNotationInnerReferences( function_type, errors_container, src_loc );
 	CheckFunctionReferencesNotationMutabilityCorrectness( function_type, errors_container, src_loc );
+}
+
+void CodeBuilder::CheckFunctionReferencesNotationValueParamsReferencing( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+{
+	const auto check_param_reference=
+	[&]( const FunctionType::ParamReference& param_reference )
+	{
+		if( param_reference.first < function_type.params.size() )
+		{
+			const FunctionType::Param& param= function_type.params[ param_reference.first ];
+			if( param_reference.second == FunctionType::c_param_reference_number )
+			{
+				if( param.value_type == ValueType::Value )
+					REPORT_ERROR( ReferencingValueParam, errors_container, src_loc, size_t( param_reference.first ) );
+			}
+		}
+	};
+
+	for( const auto& pollution : function_type.references_pollution )
+	{
+		check_param_reference(pollution.dst);
+		check_param_reference(pollution.src);
+	}
+
+	for( const FunctionType::ParamReference& param_reference : function_type.return_references )
+		check_param_reference(param_reference);
+
+	for( const auto& param_references : function_type.return_inner_references )
+		for( const FunctionType::ParamReference& param_reference : param_references )
+			check_param_reference(param_reference);
 }
 
 void CodeBuilder::CheckFunctionReferencesNotationInnerReferences( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
