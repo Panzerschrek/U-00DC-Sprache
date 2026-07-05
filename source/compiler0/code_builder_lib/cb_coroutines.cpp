@@ -62,7 +62,6 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	// Calculate inner references.
 	// Each reference param adds new inner reference.
 	// Each value param creates number of references equal to number of inner references of its type.
-	// For now reference params of types with references inside are not supported.
 
 	// If this changed, "GetCoroutineInnerReferenceForParamNode" function must be changed too!
 
@@ -78,10 +77,18 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		if( !EnsureTypeComplete( param.type ) )
 			continue;
 
+		// We allow coroutine types to be types with references inside.
+		// But we don't allow second order inner references for them.
+		// It's because a coroutine can read a second order inner reference, save it to a local reference (on stack) and then yield,
+		// which basically makes second order inner references to first order inner references.
+		// This can create some loopholes in reference checking, which are impossible to fix properly.
+		// So, allow only first order inner references for coroutines. It's enough for almost all cases.
+
 		const auto reference_tag_count= param.type.ReferenceTagCount();
 
 		if( param.value_type == ValueType::Value )
 		{
+			// We support value params with references inside, but no second order inner references.
 			if( param.type.GetReferenceIndirectionDepth() > 1u )
 			{
 				std::string field_name= "param ";
@@ -101,9 +108,8 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		}
 		else
 		{
-			// Coroutine is an object, that holds references to reference-args of coroutine function.
-			// It's generally not allowed to create types with references to other types with references inside.
-			// Second order references are possible in some cases, but for now not for coroutines.
+			// We support reference params, but with no references inside,
+			// since it would create second order inner references, which aren't allowed for coroutines.
 			if( reference_tag_count > 0u )
 			{
 				std::string field_name= "param ";
