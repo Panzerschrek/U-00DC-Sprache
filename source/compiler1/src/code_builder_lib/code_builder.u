@@ -2886,7 +2886,9 @@ fn CodeBuilder::CreateTypedReferenceLoad( mut this, FunctionContext& function_co
 		return Null::LLVMValueRef;
 	}
 
-	auto result= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, LLVMPointerType( t.GetLLVMType(), 0u ), address, g_null_string ) );
+	var LLVMTypeRef llvm_type= t.GetLLVMType();
+
+	auto result= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, LLVMPointerType( llvm_type, 0u ), address, g_null_string ) );
 
 	if( generate_tbaa_metadata_ )
 	{
@@ -2896,6 +2898,28 @@ fn CodeBuilder::CreateTypedReferenceLoad( mut this, FunctionContext& function_co
 
 	// References are never null, so, mark result of reference load with "nonnull" metadata.
 	MarkLoadInstructionWithNonNullMetadata( result );
+
+	// Set "dereferenceable" metadata to tell LLVM passes that we can read bytes of the underlying object.
+	unsafe
+	{
+		if( LLVMTypeIsSized( llvm_type ) == LLVMBool::True )
+		{
+			var LLVMMetadataRef mut operand=
+				LLVMValueAsMetadata(
+					LLVMConstInt(
+						fundamental_llvm_types_.i64_,
+						LLVMABISizeOfType( data_layout_, llvm_type ),
+						LLVMBool::False ) );
+
+			var ust::string_view8 metadata_name= "dereferenceable";
+			LLVMSetMetadata(
+				result,
+				LLVMGetMDKindIDInContext( llvm_context_, metadata_name.data(), u32( metadata_name.size() ) ),
+				LLVMMetadataAsValue(
+					llvm_context_,
+					LLVMMDNodeInContext2( llvm_context_, $<( operand ), 1s ) ) );
+		}
+	}
 
 	return result;
 }
