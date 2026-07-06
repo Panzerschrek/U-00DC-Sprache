@@ -240,6 +240,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( same_type</enum_::LargeValuesEnum, u64/> );
 	static_assert( LV_Large == 987654321u64 );
 	static_assert( LV_EvenLarger == 123456789101112u64 );
+	static_assert( LV_Negative0 == 0u64 - 78u64 );
+	static_assert( LV_Negative1 == 0u64 - 64344547444332777u64 );
 
 	static_assert( Anon_Large == 88888888888u64 );
 	static_assert( Anon_EvenLarger == 7654321098765u64 );

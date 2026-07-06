@@ -250,6 +250,8 @@ enum LargeValuesEnum : unsigned long long int
 {
 	LV_Large= 987654321uLL,
 	LV_EvenLarger= 123456789101112uLL,
+	LV_Negative0= -78uLL,
+	LV_Negative1= -64344547444332777uLL,
 };
 
 enum : unsigned long long int
