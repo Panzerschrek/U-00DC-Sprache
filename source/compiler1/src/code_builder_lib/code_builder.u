@@ -2907,7 +2907,7 @@ fn CodeBuilder::CreateTypedReferenceLoad( mut this, FunctionContext& function_co
 			var LLVMMetadataRef mut operand=
 				LLVMValueAsMetadata(
 					LLVMConstInt(
-						fundamental_llvm_types_.i64_,
+						fundamental_llvm_types_.i64_, // LLVM requires i64 as type for "dereferenceable" metadata size.
 						LLVMABISizeOfType( data_layout_, llvm_type ),
 						LLVMBool::False ) );
 
