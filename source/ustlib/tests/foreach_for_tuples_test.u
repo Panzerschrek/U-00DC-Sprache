@@ -18,7 +18,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			++iterations;
 		}
 		halt if( iterations != 3s );
-		halt if( t[0u] != -108u );
+		halt if( t[0u] != 0u -108u );
 		halt if( t[1u] != 130.0f );
 		halt if( t[2u] != -1790 );
 	}
