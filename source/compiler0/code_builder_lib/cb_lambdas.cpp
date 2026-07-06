@@ -645,9 +645,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 				if( is_byval_this_lambda )
 				{
 					// Ignore reference pollution for destination being a captured variable in "byval this" lambdas.
-					// For variables captured by value this basically means pollution for value argument, which isn't allowed.
-					// For variables captured by reference this means pollition of second order inner reference,
-					// which is also not allowed and shold be checked prior to this place.
+					// For variables captured by value this basically means pollution for value argument, which means no pollution in lambda signature.
+					// For variables captured by reference this means pollution of a second order inner reference,
+					// which is not allowed and shold be checked prior to this place.
 					continue;
 				}
 
