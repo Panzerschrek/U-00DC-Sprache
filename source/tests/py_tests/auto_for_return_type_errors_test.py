@@ -15,7 +15,6 @@ def GlobalsLoop_ForFunctionWithAutoReturnType_Test0():
 	assert( errors_list[0].src_loc.line == 2 )
 
 
-
 def GlobalsLoop_ForFunctionWithAutoReturnType_Test1():
 	c_program_text= """
 		fn Foo( i32 x ) : i32 { return x; }

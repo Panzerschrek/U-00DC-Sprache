@@ -509,3 +509,19 @@ def AutoReferenceNotation_Test9():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoReferenceNotation_Test10():
+	c_program_text= """
+		struct S{ i32& r; }
+		var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		fn MakePollution( S &mut s, i32& x ) @(pollution) {}
+		fn Bar( S mut s, i32& x ) : auto
+		{
+			// Reference pollution is performed for value argument. This means no actual pollution.
+			MakePollution( s, x );
+		}
+		var [ [ [ char8, 2 ], 2 ], 0 ] expected_references_pollution[ /* empty */ ];
+		static_assert( typeinfo</ typeof(Bar) />.references_pollution == expected_references_pollution );
+	"""
+	tests_lib.build_program( c_program_text )

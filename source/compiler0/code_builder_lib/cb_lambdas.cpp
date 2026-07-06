@@ -579,7 +579,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 			}
 			else
 			{
-				// Captured by value variable points to lambda this param ptself.
+				// Captured by value variable points to lambda this param itself.
 				captured_variable_to_lambda_inner_reference_tag.emplace( captured_variable.data.variable_node, FunctionType::c_param_reference_number );
 
 				// Each reference tag of each captured variable get its own reference tag in result lambda class.
@@ -641,6 +641,16 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 				result_pollution.dst= *dst_param_reference;
 			else if( const auto dst_variable_ptr= std::get_if<VariablePtr>( &pollution.dst ) )
 			{
+				const bool is_byval_this_lambda= lambda.function.type.params.front().reference_modifier == Synt::ReferenceModifier::None;
+				if( is_byval_this_lambda )
+				{
+					// Ignore reference pollution for destination being a captured variable in "byval this" lambdas.
+					// For variables captured by value this basically means pollution for value argument, which means no pollution in lambda signature.
+					// For variables captured by reference this means pollution of a second order inner reference,
+					// which is not allowed and shold be checked prior to this place.
+					continue;
+				}
+
 				if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( *dst_variable_ptr ); it != captured_variable_to_lambda_inner_reference_tag.end() )
 					result_pollution.dst= std::make_pair( this_param_index, it->second );
 				else

@@ -137,9 +137,15 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 	// Fill references of return value.
 	foreach( &param_reference : coroutine_function_type.return_references )
 	{
-		if( size_type( param_reference.param_index) >= coroutine_function_type.params.size() )
+		if( size_type( param_reference.param_index ) >= coroutine_function_type.params.size() )
 		{
 			continue; // Out of range errors should be reported earlier.
+		}
+
+		if( param_reference.reference_index == FunctionType::c_param_reference_number &&
+			coroutine_function_type.params[ size_type( param_reference.param_index ) ].value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ReferencingValueParam, names_scope, src_loc, param_reference.param_index )
 		}
 
 		coroutine_type_description.return_references.push_back(
@@ -160,9 +166,15 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 		var FunctionType::ParamReferences &mut out_list= coroutine_type_description.return_inner_references[i];
 		foreach( &param_reference : coroutine_function_type.return_inner_references[i] )
 		{
-			if( size_type( param_reference.param_index) >= coroutine_function_type.params.size() )
+			if( size_type( param_reference.param_index ) >= coroutine_function_type.params.size() )
 			{
 				continue; // Out of range errors should be reported earlier.
+			}
+
+			if( param_reference.reference_index == FunctionType::c_param_reference_number &&
+				coroutine_function_type.params[ size_type( param_reference.param_index ) ].value_type == ValueType::Value )
+			{
+				REPORT_ERROR( ReferencingValueParam, names_scope, src_loc, param_reference.param_index )
 			}
 
 			out_list.push_back(

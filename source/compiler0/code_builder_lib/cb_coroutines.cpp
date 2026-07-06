@@ -136,7 +136,12 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		FunctionType::ParamReference out_reference;
 		out_reference.first= 0; // Always use param0 - coroutine itself.
 		if( param_reference.second == FunctionType::c_param_reference_number )
-			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
+		{
+			if( coroutine_function_type.params[ param_reference.first ].value_type == ValueType::Value )
+				REPORT_ERROR( ReferencingValueParam, names_scope.GetErrors(), src_loc, size_t( param_reference.first ) );
+			else
+				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
+		}
 		else
 			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + param_reference.second );
 
@@ -156,7 +161,12 @@ void CodeBuilder::TransformCoroutineFunctionType(
 			FunctionType::ParamReference out_reference;
 			out_reference.first= 0; // Always use param0 - coroutine itself.
 			if( param_reference.second == FunctionType::c_param_reference_number )
-				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
+			{
+				if( coroutine_function_type.params[ param_reference.first ].value_type == ValueType::Value )
+					REPORT_ERROR( ReferencingValueParam, names_scope.GetErrors(), src_loc, size_t( param_reference.first ) );
+				else
+					out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] );
+			}
 			else
 				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + out_reference.second );
 
