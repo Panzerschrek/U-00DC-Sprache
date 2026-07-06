@@ -2279,6 +2279,24 @@ llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function
 	// References are never null, so, mark result of reference load with "nonnull" metadata.
 	result->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, {} ) );
 
+	// Set "dereferenceable" metadata to tell LLVM passes that we can read bytes of the underlying object.
+	if( const auto llvm_type= type.GetLLVMType() )
+	{
+		if( llvm_type->isSized() )
+		{
+			result->setMetadata(
+				llvm::LLVMContext::MD_dereferenceable,
+				llvm::MDNode::get(
+					llvm_context_,
+					{
+						llvm::ValueAsMetadata::get(
+							llvm::ConstantInt::get(
+								fundamental_llvm_types_.i64_,
+								data_layout_.getTypeAllocSize( llvm_type ) ) )
+					} ) );
+		}
+	}
+
 	return result;
 }
 
