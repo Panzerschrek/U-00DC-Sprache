@@ -76,15 +76,10 @@ void CodeBuilder::CheckFunctionReferencesNotationValueParamsReferencing( const F
 	const auto check_param_reference=
 	[&]( const FunctionType::ParamReference& param_reference )
 	{
-		if( param_reference.first < function_type.params.size() )
-		{
-			const FunctionType::Param& param= function_type.params[ param_reference.first ];
-			if( param_reference.second == FunctionType::c_param_reference_number )
-			{
-				if( param.value_type == ValueType::Value )
-					REPORT_ERROR( ReferencingValueParam, errors_container, src_loc, size_t( param_reference.first ) );
-			}
-		}
+		if( param_reference.second == FunctionType::c_param_reference_number &&
+			param_reference.first < function_type.params.size() &&
+			function_type.params[ param_reference.first ].value_type == ValueType::Value )
+			REPORT_ERROR( ReferencingValueParam, errors_container, src_loc, size_t( param_reference.first ) );
 	};
 
 	for( const auto& pollution : function_type.references_pollution )
@@ -93,15 +88,10 @@ void CodeBuilder::CheckFunctionReferencesNotationValueParamsReferencing( const F
 		check_param_reference(pollution.src);
 
 		// For reference pollution disallow specifying inner reference tags of value params as destination.
-		if( pollution.dst.first < function_type.params.size() )
-		{
-			const FunctionType::Param& param= function_type.params[ pollution.dst.first ];
-			if( pollution.dst.second != FunctionType::c_param_reference_number )
-			{
-				if( param.value_type == ValueType::Value )
-					REPORT_ERROR( ReferencingValueParam, errors_container, src_loc, size_t( pollution.dst.first ) );
-			}
-		}
+		if( pollution.dst.second != FunctionType::c_param_reference_number &&
+			pollution.dst.first < function_type.params.size() &&
+			function_type.params[ pollution.dst.first ].value_type == ValueType::Value )
+			REPORT_ERROR( ReferencingValueParam, errors_container, src_loc, size_t( pollution.dst.first ) );
 	}
 
 	for( const FunctionType::ParamReference& param_reference : function_type.return_references )
