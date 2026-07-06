@@ -6,8 +6,49 @@ namespace U1
 
 fn CodeBuilder::CheckCompleteFunctionReferenceNotation( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
+	CheckFunctionReferencesNotationValueParamsReferencing( function_type, names_scope, src_loc );
 	CheckFunctionReferencesNotationInnerReferences( function_type, names_scope, src_loc );
 	CheckFunctionReferencesNotationMutabilityCorrectness( function_type, names_scope, src_loc );
+}
+
+fn CodeBuilder::CheckFunctionReferencesNotationValueParamsReferencing( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	auto check_param_reference=
+		lambda[&](  FunctionType::ParamReference& param_reference )
+		{
+			if( param_reference.reference_index == FunctionType::c_param_reference_number &&
+				size_type( param_reference.param_index ) < function_type.params.size() &&
+				function_type.params[ size_type( param_reference.param_index ) ].value_type == ValueType::Value )
+			{
+				REPORT_ERROR( ReferencingValueParam, names_scope, src_loc, param_reference.param_index )
+			}
+		};
+
+	foreach( &pollution : function_type.references_pollution )
+	{
+		check_param_reference( pollution.dst );
+		check_param_reference( pollution.src );
+
+		// For reference pollution disallow specifying inner reference tags of value params as destination.
+		if( pollution.dst.reference_index != FunctionType::c_param_reference_number &&
+			size_type( pollution.dst.param_index ) < function_type.params.size() &&
+			function_type.params[ size_type( pollution.dst.param_index ) ].value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ReferencingValueParam, names_scope, src_loc, pollution.dst.param_index )
+		}
+	}
+
+	foreach( &param_reference : function_type.return_references )
+	{
+		check_param_reference( param_reference );
+	}
+	foreach( &param_references : function_type.return_inner_references )
+	{
+		foreach( &param_reference : param_references )
+		{
+			check_param_reference( param_reference );
+		}
+	}
 }
 
 fn CodeBuilder::CheckFunctionReferencesNotationInnerReferences( FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc )

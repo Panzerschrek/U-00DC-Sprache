@@ -769,6 +769,16 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			}
 			else if_var( &dst_variable : pollution.dst.get</ VariablePtr />() )
 			{
+				var bool is_byval_this_lambda= lambda_.function.deref().function_type.params.front().reference_modifier == Synt::ReferenceModifier::None;
+				if( is_byval_this_lambda )
+				{
+					// Ignore reference pollution for destination being a captured variable in "byval this" lambdas.
+					// For variables captured by value this basically means pollution for value argument, which means no pollution in lambda signature.
+					// For variables captured by reference this means pollution of a second order inner reference,
+					// which is not allowed and shold be checked prior to this place.
+					continue;
+				}
+
 				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(dst_variable) )
 				{
 					result_pollution.dst= FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag };
