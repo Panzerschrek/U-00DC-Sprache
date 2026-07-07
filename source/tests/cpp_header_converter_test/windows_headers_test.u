@@ -47,7 +47,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	bitmap_info.bmiHeader.biSize = u32( typeinfo</BITMAPINFOHEADER/>.size_of );
 	bitmap_info.bmiHeader.biWidth = i32(width);
 	bitmap_info.bmiHeader.biHeight = -i32(height);
-	bitmap_info.bmiHeader.biSizeImage = -(height * width);
+	bitmap_info.bmiHeader.biSizeImage = 0u - (height * width);
 	bitmap_info.bmiHeader.biPlanes = 1u16;
 	bitmap_info.bmiHeader.biBitCount = 32u16;
 	bitmap_info.bmiHeader.biCompression = u32(BI_RGB);
