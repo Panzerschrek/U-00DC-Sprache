@@ -56,7 +56,8 @@ General:
 *) Consider allowing using {} initializer for structs having explicit non-copy constructors, at least in some cases
 
 References:
-*) Support second order inner references for coroutine types
+*) Consider adding some sort of explicit reference notation for structs/classes. This can allow specifying reference
+	tags where there is no other way to do so, like in interfaces.
 *) Separate reference checking for array elements while accessing via constexpr index
 *) Consider supporting reference pollution involving second order inner references
 *) Find a way to allow reference pollution for outer loop variables in places where it's safe, like when pushing
@@ -163,9 +164,11 @@ Compiler:
 *) Generate debug info for generated methods
 *) Consider using range metadata for values of enum types (arguments, load results, call results)
 *) Consider generating "noalias" metadata, where language rules allow it
+*) Consider generating "lifetime.end" calls for value args passed by hidden pointer
+*) Support profile-guided optimization
 
 Interpreter:
-*) Sdd possibility to provide proper argc/argv (not only stubs for them)
+*) Add possibility to provide proper argc/argv (not only stubs for them)
 *) Add possibility to optimize code
 *) Support math functions
 
