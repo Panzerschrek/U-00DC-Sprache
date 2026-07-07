@@ -127,6 +127,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 	llvm::Value* const this_llvm_value= llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 
+	debug_info_builder_->SetCurrentLocation( constructor_variable->prototype_src_loc, function_context );
+
 	if( the_class.base_class != nullptr )
 	{
 		const VariablePtr base_variable=
@@ -316,6 +318,8 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 		llvm_context_,
 		llvm_function );
 
+	debug_info_builder_->SetCurrentLocation( constructor_variable->prototype_src_loc, function_context );
+
 	llvm::Value* const this_llvm_value= &*llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 	llvm::Value* const src_llvm_value= &*std::next(llvm_function->args().begin());
@@ -412,6 +416,8 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVar
 		llvm_context_,
 		llvm_function );
 	function_context.this_= this_;
+
+	debug_info_builder_->SetCurrentLocation( destructor_function.prototype_src_loc, function_context );
 
 	function_context.variables_state.AddNode( this_ );
 
@@ -583,6 +589,8 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 		llvm_context_,
 		llvm_function );
 
+	debug_info_builder_->SetCurrentLocation( operator_variable->prototype_src_loc, function_context );
+
 	llvm::Value* const this_llvm_value= &*llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 	llvm::Value* const src_llvm_value= &*std::next(llvm_function->args().begin());
@@ -739,6 +747,8 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 		operator_variable->type,
 		llvm_context_,
 		llvm_function );
+
+	debug_info_builder_->SetCurrentLocation( operator_variable->prototype_src_loc, function_context );
 
 	llvm::Value* const l_address= &*llvm_function->args().begin();
 	l_address->setName( "l" );
