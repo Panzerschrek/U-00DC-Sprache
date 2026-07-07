@@ -79,6 +79,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		constructor_type.params.back().value_type= ValueType::ReferenceMut;
 
 		FunctionVariable new_constructor_variable;
+		new_constructor_variable.body_src_loc= new_constructor_variable.prototype_src_loc= the_class.src_loc;
 		new_constructor_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ) );
 		new_constructor_variable.type= std::move( constructor_type );
 
@@ -115,6 +116,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 	}
 
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *constructor_variable );
+
+	debug_info_builder_->CreateFunctionInfo( *constructor_variable, Keyword( Keywords::constructor_ ) );
 
 	FunctionContext function_context(
 		constructor_variable->type,
@@ -269,6 +272,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 
 		// Add generated constructor
 		FunctionVariable new_constructor_variable;
+		new_constructor_variable.body_src_loc= new_constructor_variable.prototype_src_loc= the_class.src_loc;
 		new_constructor_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ) );
 		new_constructor_variable.type= std::move( constructor_type );
 
@@ -304,6 +308,8 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 	}
 
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *constructor_variable );
+
+	debug_info_builder_->CreateFunctionInfo( *constructor_variable, Keyword( Keywords::constructor_ ) );
 
 	FunctionContext function_context(
 		constructor_variable->type,
@@ -388,6 +394,8 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVar
 
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( destructor_function );
 
+	debug_info_builder_->CreateFunctionInfo( destructor_function, Keyword( Keywords::destructor_ ) );
+
 	llvm::Value* const this_llvm_value= &*llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 
@@ -437,6 +445,8 @@ void CodeBuilder::TryGenerateDestructor( const ClassPtr class_type )
 	// Generate destructor.
 
 	FunctionVariable destructor_variable= GenerateDestructorPrototype( class_type );
+	destructor_variable.body_src_loc= destructor_variable.prototype_src_loc= the_class.src_loc;
+
 	GenerateDestructorBody( class_type, destructor_variable );
 
 	// TODO - destructor has no overloads. Maybe store it as FunctionVariable, not as FunctionsSet?
@@ -530,6 +540,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 
 		// Add generated assignment operator
 		FunctionVariable new_op_variable;
+		new_op_variable.body_src_loc= new_op_variable.prototype_src_loc= the_class.src_loc;
 		new_op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, op_name, op_type ) );
 		new_op_variable.type= std::move( op_type );
 
@@ -564,6 +575,8 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 	}
 
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *operator_variable );
+
+	debug_info_builder_->CreateFunctionInfo( *operator_variable, op_name );
 
 	FunctionContext function_context(
 		operator_variable->type,
@@ -684,6 +697,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 
 		// Add generated "==" operator.
 		FunctionVariable new_op_variable;
+		new_op_variable.body_src_loc= new_op_variable.prototype_src_loc= the_class.src_loc;
 		new_op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, op_name, op_type ) );
 		new_op_variable.type= std::move( op_type );
 
@@ -718,6 +732,8 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 	}
 
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *operator_variable );
+
+	debug_info_builder_->CreateFunctionInfo( *operator_variable, op_name );
 
 	FunctionContext function_context(
 		operator_variable->type,
