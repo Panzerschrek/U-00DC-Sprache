@@ -374,6 +374,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr class_
 	destructor_type.params[0].value_type= ValueType::ReferenceMut;
 
 	FunctionVariable destructor_function;
+	destructor_function.body_src_loc= destructor_function.prototype_src_loc= class_type->src_loc;
 	destructor_function.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, Keyword( Keywords::destructor_ ), destructor_type ) );
 	destructor_function.type= destructor_type;
 	destructor_function.is_generated= true;
