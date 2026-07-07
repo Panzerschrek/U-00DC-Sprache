@@ -118,6 +118,12 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
 
+	var SrcLoc src_loc=
+		( function_variable.prototype_syntax_element.empty()
+		? GetClassSrcLoc( class_type ) : function_variable.prototype_syntax_element.try_deref().src_loc );
+
+	debug_info_builder_.try_deref().CreateFunctionInfo( function_variable, src_loc, KeywordToString( Keyword::constructor_ ) );
+
 	// Build code itself.
 
 	var FunctionContext mut function_context(
@@ -125,9 +131,9 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		llvm_function,
 		function_variable.t );
 
-	auto this_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
+	debug_info_builder_.try_deref().SetCurrentLocation( function_context, src_loc );
 
-	var SrcLoc src_loc= GetClassSrcLoc( class_type );
+	auto this_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 
 	if( !base_class.empty() )
 	{
@@ -339,6 +345,12 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 
 	var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
 
+	var SrcLoc src_loc=
+		( function_variable.prototype_syntax_element.empty()
+		? GetClassSrcLoc( class_type ) : function_variable.prototype_syntax_element.try_deref().src_loc );
+
+	debug_info_builder_.try_deref().CreateFunctionInfo( function_variable, src_loc, KeywordToString( Keyword::constructor_ ) );
+
 	// Build code itself.
 
 	var FunctionContext mut function_context(
@@ -346,10 +358,10 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		llvm_function,
 		function_variable.t );
 
+	debug_info_builder_.try_deref().SetCurrentLocation( function_context, src_loc );
+
 	var LLVMValueRef dst_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 	var LLVMValueRef src_llvm_value= unsafe( LLVMGetParam( llvm_function, 1u ) );
-
-	var SrcLoc src_loc= GetClassSrcLoc( class_type );
 
 	if( !base_class.empty() )
 	{
@@ -514,6 +526,13 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 
 	var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
 
+	var SrcLoc src_loc=
+		( function_variable.prototype_syntax_element.empty()
+		? GetClassSrcLoc( class_type ) : function_variable.prototype_syntax_element.try_deref().src_loc );
+
+	debug_info_builder_.try_deref().CreateFunctionInfo(
+		function_variable, src_loc, OverloadedOperatorToString( OverloadedOperator::Assign ) );
+
 	// Build code itself.
 
 	var FunctionContext mut function_context(
@@ -521,10 +540,10 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		llvm_function,
 		function_variable.t );
 
+	debug_info_builder_.try_deref().SetCurrentLocation( function_context, src_loc );
+
 	var LLVMValueRef dst_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 	var LLVMValueRef src_llvm_value= unsafe( LLVMGetParam( llvm_function, 1u ) );
-
-	var SrcLoc src_loc= GetClassSrcLoc( class_type );
 
 	if( !base_class.empty() )
 	{		
@@ -703,12 +722,18 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 
 	var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
 
+	var SrcLoc src_loc=
+		( function_variable.prototype_syntax_element.empty()
+		? GetClassSrcLoc( class_type ) : function_variable.prototype_syntax_element.try_deref().src_loc );
+
+	debug_info_builder_.try_deref().CreateFunctionInfo( function_variable, src_loc, op_name );
+
 	var FunctionContext mut function_context(
 		llvm_context_,
 		llvm_function,
 		function_variable.t );
 
-	auto src_loc= GetClassSrcLoc(class_type);
+	debug_info_builder_.try_deref().SetCurrentLocation( function_context, src_loc );
 
 	unsafe
 	{
@@ -824,10 +849,18 @@ fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )
 	// Build code itself.
 	var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
 
+	var SrcLoc src_loc=
+		( function_variable.prototype_syntax_element.empty()
+		? GetClassSrcLoc( class_type ) : function_variable.prototype_syntax_element.try_deref().src_loc );
+
+	debug_info_builder_.try_deref().CreateFunctionInfo( function_variable, src_loc, KeywordToString( Keyword::destructor_ ) );
+
 	var FunctionContext mut function_context(
 		llvm_context_,
 		llvm_function,
 		function_variable.t );
+
+	debug_info_builder_.try_deref().SetCurrentLocation( function_context, src_loc );
 
 	auto this_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
 
