@@ -2474,7 +2474,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.name= "-",
 	};
 
-	if( IsInteger( t ) )
+	if( IsSignedInteger( t ) )
 	{
 		if( value_in_register != Null::LLVMValueRef )
 		{

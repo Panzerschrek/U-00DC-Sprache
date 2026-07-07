@@ -41,6 +41,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( LARGE_INTEGER_CONSTANT_TRUNCATED == 9876543210 );
 	static_assert( NEGATIVE_INTEGER_CONSTANT == -733456 );
 	static_assert( NEGATIVE_DOUBLE_CONSTANT == - 897.25f );
+	static_assert( NEGATIVE_UNSIGNED_INTEGER_CONSTANT == 0u - 73u );
+	static_assert( NEGATIVE_UNSIGNED_INTEGER_LONG_CONSTANT == 0u64 - 543743475445633u64 );
 	static_assert( CONSTANT_WRAPPED == 683 );
 	static_assert( CONSTANT_DEEPLY_WRAPPED == -56772 );
 	static_assert( string_equals( STRING_CONSTANT_ASCII, "WTF?009a\u0000" ) );
@@ -238,6 +240,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( same_type</enum_::LargeValuesEnum, u64/> );
 	static_assert( LV_Large == 987654321u64 );
 	static_assert( LV_EvenLarger == 123456789101112u64 );
+	static_assert( LV_Negative0 == 0u64 - 78u64 );
+	static_assert( LV_Negative1 == 0u64 - 64344547444332777u64 );
 
 	static_assert( Anon_Large == 88888888888u64 );
 	static_assert( Anon_EvenLarger == 7654321098765u64 );

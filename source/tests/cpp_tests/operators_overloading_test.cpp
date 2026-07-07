@@ -20,7 +20,7 @@ U_TEST( OperatorsOverloadingTest0_NonThisCallOperators )
 			}
 			op-( Box &imut b ) : Box
 			{
-				var Box r{ .x= -b.x };
+				var Box r{ .x= 0u - b.x };
 				return r;
 			}
 
@@ -151,7 +151,7 @@ U_TEST( OperatorsOverloadingTest_ThisCallOperators )
 			}
 			op-( this ) : Box
 			{
-				var Box r{ .x= -x };
+				var Box r{ .x= 0u - x };
 				return r;
 			}
 
@@ -279,7 +279,7 @@ U_TEST( OperatorsOverloadingTest_ValueArgumentsOperators )
 			}
 			op-( Box b ) : Box
 			{
-				var Box r{ .x= -b.x };
+				var Box r{ .x= 0u - b.x };
 				return r;
 			}
 

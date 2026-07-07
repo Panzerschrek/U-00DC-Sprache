@@ -750,6 +750,20 @@ U_TEST(UnaryMinusTest1)
 	U_TEST_ASSERT( uint64_t( - - arg_value ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(UnaryMinusTest2)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u32 x ) : u32
+		{
+			return -x; // There is no unary minus for unsinged integer types. It's bug-prone.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 4 ) );
+}
 
 U_TEST(LogicalNotTest)
 {

@@ -2271,13 +2271,30 @@ llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function
 	if( address == nullptr || function_context.is_functionless_context )
 		return nullptr;
 
-	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( type.GetLLVMType()->getPointerTo(), address );
+	llvm::Type* const llvm_type= type.GetLLVMType();
+
+	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( llvm_type->getPointerTo(), address );
 
 	if( generate_tbaa_metadata_ )
 		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateReferenceAccessTag( type ) );
 
 	// References are never null, so, mark result of reference load with "nonnull" metadata.
 	result->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, {} ) );
+
+	// Set "dereferenceable" metadata to tell LLVM passes that we can read bytes of the underlying object.
+	if( llvm_type->isSized() )
+	{
+		result->setMetadata(
+			llvm::LLVMContext::MD_dereferenceable,
+			llvm::MDNode::get(
+				llvm_context_,
+				{
+					llvm::ValueAsMetadata::get(
+						llvm::ConstantInt::get(
+							fundamental_llvm_types_.i64_, // LLVM requires i64 as type for "dereferenceable" metadata size.
+							data_layout_.getTypeAllocSize( llvm_type ) ) )
+				} ) );
+	}
 
 	return result;
 }

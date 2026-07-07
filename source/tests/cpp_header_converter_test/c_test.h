@@ -14,6 +14,8 @@
 #define LARGE_INTEGER_CONSTANT_TRUNCATED 9876543210
 #define NEGATIVE_INTEGER_CONSTANT -733456
 #define NEGATIVE_DOUBLE_CONSTANT - 897.25f
+#define NEGATIVE_UNSIGNED_INTEGER_CONSTANT -73u
+#define NEGATIVE_UNSIGNED_INTEGER_LONG_CONSTANT -543743475445633ull
 #define CONSTANT_WRAPPED ( 683 )
 #define CONSTANT_DEEPLY_WRAPPED ( ( ( ( ( -56772 ) ) ) ) )
 #define STRING_CONSTANT_ASCII "WTF?009a"
@@ -248,6 +250,16 @@ enum LargeValuesEnum : unsigned long long int
 {
 	LV_Large= 987654321uLL,
 	LV_EvenLarger= 123456789101112uLL,
+
+#ifdef _MSC_VER
+	#pragma warning( push )
+	#pragma warning( disable : 4146 )
+#endif
+	LV_Negative0= -78uLL,
+	LV_Negative1= -64344547444332777uLL,
+#ifdef _MSC_VER
+	#pragma warning( pop )
+#endif
 };
 
 enum : unsigned long long int

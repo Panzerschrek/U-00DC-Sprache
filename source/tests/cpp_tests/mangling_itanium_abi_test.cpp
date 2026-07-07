@@ -256,7 +256,7 @@ U_TEST( OperatorsManglingTest )
 			}
 			op-( Box &imut b ) : Box
 			{
-				var Box r{ .x= -b.x };
+				var Box r{ .x= 0u - b.x };
 				return r;
 			}
 

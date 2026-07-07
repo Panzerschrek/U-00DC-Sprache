@@ -33,7 +33,22 @@ template</type T/>
 fn constexpr enable_if( math_impl::is_numeric</T/>() )
 abs( T x ) : T
 {
-	return ( x >= T(0) ? x : -x );
+	static_if( typeinfo</T/>.is_fundamental )
+	{
+		static_if( typeinfo</T/>.is_unsigned_integer )
+		{
+			return x; // For unsigned integers "abs" just returns given value.
+		}
+		else
+		{
+			return ( x >= T(0) ? x : -x );
+		}
+	}
+	else
+	{
+		// Assume that we have an overloaded "-" operator for given type.
+		return ( x >= T(0) ? x : -x );
+	}
 }
 
 fn sqrt( f32 x ) : f32 { return ust_sqrt_f32_impl( x ); }

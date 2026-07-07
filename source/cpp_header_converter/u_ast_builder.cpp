@@ -414,7 +414,7 @@ private:
 
 	void EmitDefinitionsForMacros( Synt::ProgramElementsList::Builder& out_items );
 
-	Synt::Expression TranslateNumericLiteral( const clang::Token& token );
+	Synt::Expression TranslateNumericLiteral( const clang::Token& token, bool has_minus_sign );
 
 private:
 	Synt::ProgramElementsList& out_program_elements_;
@@ -1777,7 +1777,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 				Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
 				auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 				auto_variable_declaration.name= macro_translated_name;
-				auto_variable_declaration.initializer_expression= TranslateNumericLiteral( token );
+				auto_variable_declaration.initializer_expression= TranslateNumericLiteral( token, false );
 
 				append_item_if_should( std::move( auto_variable_declaration ) );
 				translated_variable_names.insert( macro_translated_name );
@@ -1932,10 +1932,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 				Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
 				auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 				auto_variable_declaration.name= macro_translated_name;
-
-				auto minus= std::make_unique<Synt::UnaryMinus>( g_dummy_src_loc );
-				minus->expression= TranslateNumericLiteral( token1 );
-				auto_variable_declaration.initializer_expression= std::move( minus );
+				auto_variable_declaration.initializer_expression= TranslateNumericLiteral( token1, true );
 
 				append_item_if_should( std::move( auto_variable_declaration ) );
 				translated_variable_names.insert( macro_translated_name );
@@ -1944,7 +1941,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 	} // for defines
 }
 
-Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& token )
+Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& token, const bool has_minus_sign )
 {
 	const std::string numeric_literal_str( token.getLiteralData(), token.getLength() );
 	clang::NumericLiteralParser numeric_literal_parser(
@@ -1980,7 +1977,39 @@ Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& to
 			}
 		}
 
-		return numeric_constant;
+		Synt::Expression expression= std::move( numeric_constant );
+
+		if( has_minus_sign )
+		{
+			if( numeric_literal_parser.isUnsigned )
+			{
+				// Create "0 - x" instead of "-x" for negative unsinged constants, since Ü has no unary minus for unsigned integer types.
+				auto binary_operator= std::make_unique<Synt::BinaryOperator>( g_dummy_src_loc );
+				binary_operator->operator_type= BinaryOperatorType::Sub;
+				{
+					Synt::IntegerNumericConstant zero( g_dummy_src_loc );
+					zero.num= Int128{ 0, 0 };
+					zero.type_suffix[0]= 'u';
+					if( numeric_literal_parser.isLongLong )
+					{
+						zero.type_suffix[1]= '6';
+						zero.type_suffix[2]= '4';
+					}
+
+					binary_operator->left= std::move( zero );
+				}
+				binary_operator->right= std::move( expression );
+				expression= std::move( binary_operator );
+			}
+			else
+			{
+				auto minus= std::make_unique<Synt::UnaryMinus>( g_dummy_src_loc );
+				minus->expression= std::move( expression );
+				expression= std::move( minus );
+			}
+		}
+
+		return expression;
 	}
 	else
 	{
@@ -1997,7 +2026,16 @@ Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& to
 		if( numeric_literal_parser.isFloat )
 			numeric_constant.type_suffix= "f";
 
-		return std::make_unique< Synt::FloatingPointNumericConstant >( numeric_constant );
+		Synt::Expression expression= std::make_unique< Synt::FloatingPointNumericConstant >( std::move( numeric_constant ) );
+
+		if( has_minus_sign )
+		{
+			auto minus= std::make_unique<Synt::UnaryMinus>( g_dummy_src_loc );
+			minus->expression= std::move( expression );
+			expression= std::move( minus );
+		}
+
+		return expression;
 	}
 }
 

@@ -735,11 +735,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	const bool is_float= IsFloatingPoint( fundamental_type->fundamental_type );
-	if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
+	if( !( IsSignedInteger( fundamental_type->fundamental_type ) || is_float ) )
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), unary_minus.src_loc, variable->type );
 		return ErrorValue();
 	}
+
 	// Support unary minus for 8-bit and 16-bit types primary in order to allow negative constants of such types (like -35i8 ).
 
 	const VariableMutPtr result=
