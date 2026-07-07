@@ -481,11 +481,34 @@ struct TypeWithImplicitSpecialMethods
 	TypeWithExplicitSpecialMethods contents;
 }
 
+struct TypeWithRequestedSpecialMethodsGeneration
+{
+	TypeWithExplicitSpecialMethods contents;
+
+	fn constructor()= default;
+	fn constructor( mut this, TypeWithRequestedSpecialMethodsGeneration& other )= default;
+	op=( mut this, TypeWithRequestedSpecialMethodsGeneration& other )= default;
+	op == ( TypeWithRequestedSpecialMethodsGeneration& l, TypeWithRequestedSpecialMethodsGeneration& r ) : bool = default;
+}
+
 fn GeneratedMethodsDebugInfoTest()
 {
 	var TypeWithImplicitSpecialMethods mut a; // Call generated default constructor.
 	a.contents.x_= 123u64;
 	var TypeWithImplicitSpecialMethods b( a ); // Call generated copy construcotr.
+
+	a.contents.x_= 888888u64;
+
+	a= b; // Call generated copy assignment operator.
+
+	var bool eq= a == b; // Call generated equality compare operator.
+}
+
+fn ExplicitlyGeneratedMethodsDebugInfoTest()
+{
+	var TypeWithRequestedSpecialMethodsGeneration mut a; // Call generated default constructor.
+	a.contents.x_= 123u64;
+	var TypeWithRequestedSpecialMethodsGeneration b( a ); // Call generated copy construcotr.
 
 	a.contents.x_= 888888u64;
 
@@ -526,5 +549,6 @@ fn nomangle main() call_conv( "C" ) : i32
 	CallingConventionsTest();
 	GlobalVariablesTest();
 	GeneratedMethodsDebugInfoTest();
+	ExplicitlyGeneratedMethodsDebugInfoTest();
 	return 0;
 }
