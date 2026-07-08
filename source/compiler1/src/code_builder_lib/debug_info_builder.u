@@ -94,16 +94,13 @@ fn DebugInfoBuilder::destructor()
 	}
 }
 
-fn DebugInfoBuilder::CreateFunctionInfo( mut this, FunctionVariable& func_variable )
+fn DebugInfoBuilder::CreateFunctionInfo(
+	mut this, FunctionVariable& func_variable, SrcLoc& src_loc, ust::string_view8 name )
 {
 	if( builder_ == Null::LLVMDIBuilderRef )
 	{
 		return;
 	}
-
-	var Synt::Function& syntax_element= func_variable.body_syntax_element.try_deref();
-	var SrcLoc& src_loc= syntax_element.src_loc;
-	var ust::string_view8 name= syntax_element.name.back();
 
 	with( &lazy_function : func_variable.llvm_function.lock_imut().deref() )
 	{

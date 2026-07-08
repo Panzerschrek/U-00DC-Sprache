@@ -465,6 +465,58 @@ fn GlobalVariablesTest()
 	}
 }
 
+struct TypeWithExplicitSpecialMethods
+{
+	fn constructor( mut this ) ( x_(0) ) {}
+	fn constructor( mut this, TypeWithExplicitSpecialMethods& other ) ( x_= other.x_ ) {}
+	fn destructor(){ x_= ~0u64; }
+	op=( mut this, TypeWithExplicitSpecialMethods& other ) { this.x_= other.x_; }
+	op == ( TypeWithExplicitSpecialMethods& l, TypeWithExplicitSpecialMethods& r ) : bool { return l.x_ == r.x_; }
+
+	u64 mut x_;
+}
+
+struct TypeWithImplicitSpecialMethods
+{
+	TypeWithExplicitSpecialMethods contents;
+}
+
+struct TypeWithRequestedSpecialMethodsGeneration
+{
+	TypeWithExplicitSpecialMethods contents;
+
+	fn constructor()= default;
+	fn constructor( mut this, TypeWithRequestedSpecialMethodsGeneration& other )= default;
+	op=( mut this, TypeWithRequestedSpecialMethodsGeneration& other )= default;
+	op == ( TypeWithRequestedSpecialMethodsGeneration& l, TypeWithRequestedSpecialMethodsGeneration& r ) : bool = default;
+}
+
+fn GeneratedMethodsDebugInfoTest()
+{
+	var TypeWithImplicitSpecialMethods mut a; // Call generated default constructor.
+	a.contents.x_= 123u64;
+	var TypeWithImplicitSpecialMethods b( a ); // Call generated copy construcotr.
+
+	a.contents.x_= 888888u64;
+
+	a= b; // Call generated copy assignment operator.
+
+	var bool eq= a == b; // Call generated equality compare operator.
+}
+
+fn ExplicitlyGeneratedMethodsDebugInfoTest()
+{
+	var TypeWithRequestedSpecialMethodsGeneration mut a; // Call generated default constructor.
+	a.contents.x_= 123u64;
+	var TypeWithRequestedSpecialMethodsGeneration b( a ); // Call generated copy construcotr.
+
+	a.contents.x_= 888888u64;
+
+	a= b; // Call generated copy assignment operator.
+
+	var bool eq= a == b; // Call generated equality compare operator.
+}
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	FundamentalTypesTest();
@@ -496,5 +548,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	DecomposeDeclarationTest();
 	CallingConventionsTest();
 	GlobalVariablesTest();
+	GeneratedMethodsDebugInfoTest();
+	ExplicitlyGeneratedMethodsDebugInfoTest();
 	return 0;
 }

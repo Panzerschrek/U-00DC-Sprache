@@ -16,7 +16,7 @@ public:
 
 	fn destructor();
 
-	fn CreateFunctionInfo( mut this, FunctionVariable& func_variable );
+	fn CreateFunctionInfo( mut this, FunctionVariable& func_variable, SrcLoc& src_loc, ust::string_view8 name );
 
 	fn SetCurrentLocation( mut this, FunctionContext& function_context, SrcLoc& src_loc );
 	fn nodiscard StartBlock( mut this, FunctionContext &mut function_context, SrcLoc& src_loc ) : LLVMMetadataRef;

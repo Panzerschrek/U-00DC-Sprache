@@ -1284,7 +1284,8 @@ fn CodeBuilder::BuildFuncCode(
 		unsafe( LLVMSetVisibility( llvm_function, visibility ) );
 	}
 
-	debug_info_builder_.try_deref().CreateFunctionInfo( func_variable );
+	debug_info_builder_.try_deref().CreateFunctionInfo(
+		func_variable, body_syntax_element.src_loc, body_syntax_element.name.back() );
 
 	var FunctionContext mut function_context(
 		llvm_context_,
