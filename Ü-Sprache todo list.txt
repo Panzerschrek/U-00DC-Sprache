@@ -161,7 +161,6 @@ Compiler:
 *) Built-in compiler optimization hints ("assume", "likely", "unlikely", etc.)
 *) Alloca declaration - allow to specify heap fallback size limit -
 	even zero (always use heap) or infinity (always use stack)
-*) Generate debug info for generated methods
 *) Consider using range metadata for values of enum types (arguments, load results, call results)
 *) Consider generating "noalias" metadata, where language rules allow it
 *) Consider generating "lifetime.end" calls for value args passed by hidden pointer
