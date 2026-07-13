@@ -128,6 +128,13 @@ If this doesn't create fundamental problems, it should be allowed.
 Since only single implementation of each static interface is allowed, diamond-like hierarchies with static interfaces aren't possible, which may allow for static interfaces what isn't allowed for polymorph interfaces.
 Hierarchies of static interfaces may even allow creating of static interfaces which have no non-implemented methods at all, but for some reason can be still extended (implemented).
 
+It's better to forbid reimplementing a method of a static interface (if static interface hierarchies are possible) in some other static interface located deeper in hierarchy.
+This is likely bug-prone.
+So, there should exist exactly one implementation of a method of a static interface in each hierarchy.
+
+If a class implements a static interface *A* having a non-implemented method *X* and a static interface *B* having the same, but implemented method *X*, *A::X* method should call *B::X* method.
+This should work for even more complex cases.
+
 It should be considered to allow for static interfaces to have fields.
 This can't lead to duplication of fields, since the single implementation rule prevents creating diamond-like hierarchies.
 But having fields may create problems with casting of references to implementation classes into static interface classes.
