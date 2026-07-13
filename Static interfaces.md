@@ -34,3 +34,25 @@ An approach similar to C++ can be implemented in Ü too.
 But it still requires importing a file containing the definition of the wrapped class in the place where a proxy is defined.
 And one should still write proxy methods manually.
 It would be nice to be able to automate creation of such proxies, so that at least writing proxy methods manually isn't needed.
+
+
+### Static interfaces as a way to hide implementation details and restrict methods access
+
+To be able to hide implementation details of a class and to avoid too much overhead caused by dynamic polymorphism (virtual calls), it would be nice to have some kind of static interfaces in Ü.
+A static interface is a class marked as `static_interface` (or something similar), having no fields and having zero or more method prototypes without implementation (like `pure` methods in polymorph interfaces).
+Such static interface can be implemented by some other class, but exactly one such implementation is allowed.
+An implementation class should provide implementations for all interface methods (like it's required for non-final polymorph classes implementing polymorph interfaces).
+The compiler should statically redirect all calls to interface methods to methods of its implementation.
+It should be possible to cast a reference to a class implementing some specific static interface to a reference to this interface.
+Downcasts should not be allowed (even they may be technically possible) to force method access restriction.
+
+Implementing many static interfaces should be possible.
+It creates an opportunity to have as many restricted proxies for a class as needed without adding overhead.
+
+Templated static interfaces or static interfaces located directly or indirectly within a templated struct/class shouldn't'd be allowed.
+Such static interfaces have no sense, since it's impossible to guarantee that an actual implementation will be provided for each instantiation of a hypothetical templated static interface.
+
+Proxy methods generated for a static interface implemented somewhere should have public visibility if this static interface is defined in an imported file.
+It's necessary to prevent implementing a static interface in more than one compiled file.
+`public` visibility allows preventing this by providing redefinition errors in link-time.
+If a static interface is defined in an imported file located in public imports directory of a library build target, no internalization of proxy methods of this static interface should take place.
