@@ -938,6 +938,26 @@ def ClassContainsPureVirtualFunctions_Test2():
 	assert( errors_list[0].src_loc.line == 6 )
 
 
+def ClassContainsPureVirtualFunctions_Test3():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo( mut this, i32 x );
+		}
+		class B polymorph
+		{
+			fn Foo( mut this, i32 x );
+		}
+		class C : B, A
+		{
+			// Even if "B" has "Foo" method with required signature, it's not virtual and can't be used as implementation for "A::Foo".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ClassContainsPureVirtualFunctions", 10 ) )
+
+
 def NonPureVirtualFunctionInInterface_Test0():
 	c_program_text= """
 		class A interface
