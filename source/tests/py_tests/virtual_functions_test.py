@@ -1187,3 +1187,73 @@ def VirtualTablePointerSave_InMove_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 55541 )
+
+
+def TakingPointerToVirtualMethod_Test0():
+	# It shouldn't be possible to create a pointer for a pure virtual method.
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo( this );
+		}
+		fn Foo( A& a )
+		{
+			var ( fn ( A& t ) ) ptr( A::Foo );
+			ptr( a );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+
+
+def TakingPointerToVirtualMethod_Test1():
+	# It shouldn't be possible to create a pointer for a pure virtual method.
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo( this );
+		}
+		fn Foo( A& a )
+		{
+			var ( fn ( A& t ) ) mut ptr= zero_init;
+			ptr= A::Foo;
+			ptr( a );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+
+
+def TakingPointerToVirtualMethod_Test2():
+	# It shouldn't be possible to create a pointer for a pure virtual method.
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo( this );
+		}
+		fn Foo( A& a )
+		{
+			var ( fn ( A& t ) ) mut ptr( a.Foo );
+			ptr( a );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+
+
+def TakingPointerToVirtualMethod_Test3():
+	# It shouldn't be possible to create a pointer for a pure virtual method.
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo( this );
+		}
+		fn Foo( A& a )
+		{
+			var ( fn ( A& t ) ) mut ptr= zero_init;
+			ptr= a.Foo;
+			ptr( a );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
