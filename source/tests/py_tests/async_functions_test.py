@@ -57,6 +57,35 @@ def SimpleAsyncFunction_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def SimpleAsyncFunction_Test2():
+	c_program_text= """
+		fn async Gen() : i32
+		{
+			yield;
+			return 5335;
+		}
+		fn Foo()
+		{
+			// It's possible to create a function pointer for an async function and call it later.
+			var ( fn () : ( async : i32 ) ) ptr( Gen );
+			auto mut func= ptr();
+
+			if_coro_advance( x : func )
+			{
+				halt;
+			}
+
+			if_coro_advance( x : func )
+			{
+				halt if( x != 5335 );
+			}
+			else { halt; }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def ReturnForAsyncFunction_Test0():
 	c_program_text= """
 		fn async SimpleFunc( i32 x ) : i32

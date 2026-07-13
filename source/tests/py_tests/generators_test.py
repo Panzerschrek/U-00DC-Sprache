@@ -227,6 +227,33 @@ def SimpleGenerator_Test6():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def SimpleGenerator_Test7():
+	c_program_text= """
+		fn generator Gen() : i32
+		{
+			yield 5335;
+		}
+		fn Foo()
+		{
+			// It's possible to create a function pointer for a generator and call it later.
+			var ( fn () : ( generator : i32 ) ) ptr( Gen );
+			auto mut gen= ptr();
+			if_coro_advance( x : gen )
+			{
+				halt if( x != 5335 );
+			}
+			else { halt; }
+
+			if_coro_advance( x : gen )
+			{
+				halt;
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def GeneratorReturn_Test0():
 	c_program_text= """
 		fn generator SimpleGen( bool cond ) : i32
