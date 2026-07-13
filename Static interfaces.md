@@ -63,6 +63,9 @@ If a static interface is defined in an imported file located in public imports d
 If a class implements more than one static interface and at least two of them define the same method, all these interface methods should be redirected to the same method of the implementation.
 This makes it necessary to create proper LLVM proxy functions (or maybe aliases) for static interface methods, rather than just reusing LLVM function of an interface method for its implementation.
 
+A class shouldn't be allowed to implements a static interface more than once.
+It should be checked in compile-time that the list of static interfaces for implementing has no duplicates.
+
 Destructor of a static interface should call destructor of its implementation.
 Even if a custom destructor for a static interface is defined, it should implicitly call destructor of its implementation in any cases, probably as its first action.
 
@@ -122,7 +125,13 @@ Since static interfaces and their implementations are required to be classes, th
 
 It's unclear whether it should be allowed for a static interface to extend or partially implement another static interface or multiple static interfaces.
 If this doesn't create fundamental problems, it should be allowed.
-But it should be taken into account, that this may allow creating diamond-like hierarchies with all consequences caused by this.
+Since only single implementation of each static interface is allowed, diamond-like hierarchies with static interfaces aren't possible, which may allow for static interfaces what isn't allowed for polymorph interfaces.
+Hierarchies of static interfaces may even allow creating of static interfaces which have no non-implemented methods at all, but for some reason can be still extended (implemented).
+
+It should be considered to allow for static interfaces to have fields.
+This can't lead to duplication of fields, since the single implementation rule prevents creating diamond-like hierarchies.
+But having fields may create problems with casting of references to implementation classes into static interface classes.
+If more than one static interface is involved, such casts may require using additional `getelementptr` instruction.
 
 Static interfaces should be marked in a special way in `typeinfo`.
 Implementation classes probably should be marked in a special-way too.
