@@ -1291,7 +1291,7 @@ def VirtualTablePointerSave_InMove_Test0():
 	assert( call_result == 55541 )
 
 
-def TakingPointerToVirtualMethod_Test0():
+def AccessingPureVirtualFunction_Test0():
 	# It shouldn't be possible to create a pointer for a pure virtual method.
 	c_program_text= """
 		class A interface
@@ -1306,9 +1306,10 @@ def TakingPointerToVirtualMethod_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingPureVirtualFunction", 8 ) )
 
 
-def TakingPointerToVirtualMethod_Test1():
+def AccessingPureVirtualFunction_Test1():
 	# It shouldn't be possible to create a pointer for a pure virtual method.
 	c_program_text= """
 		class A interface
@@ -1324,9 +1325,10 @@ def TakingPointerToVirtualMethod_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingPureVirtualFunction", 9 ) )
 
 
-def TakingPointerToVirtualMethod_Test2():
+def AccessingPureVirtualFunction_Test2():
 	# It shouldn't be possible to create a pointer for a pure virtual method.
 	c_program_text= """
 		class A interface
@@ -1341,9 +1343,10 @@ def TakingPointerToVirtualMethod_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingPureVirtualFunction", 8 ) )
 
 
-def TakingPointerToVirtualMethod_Test3():
+def AccessingPureVirtualFunction_Test3():
 	# It shouldn't be possible to create a pointer for a pure virtual method.
 	c_program_text= """
 		class A interface
@@ -1359,3 +1362,4 @@ def TakingPointerToVirtualMethod_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingPureVirtualFunction", 9 ) )
