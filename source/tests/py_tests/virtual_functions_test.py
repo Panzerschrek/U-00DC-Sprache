@@ -1363,3 +1363,19 @@ def AccessingPureVirtualFunction_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "AccessingPureVirtualFunction", 9 ) )
+
+
+def AccessingPureVirtualFunction_Test4():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo( this );
+		}
+		fn Foo( A& a )
+		{
+			A::Foo( a ); // Try performing non-virtual call to a pure vurtual function here.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingPureVirtualFunction", 8 ) )
