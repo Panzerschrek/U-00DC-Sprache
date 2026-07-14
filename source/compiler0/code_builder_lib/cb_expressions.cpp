@@ -57,6 +57,9 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 		FunctionVariable& function= functions_set->functions.front();
 		function.referenced= true;
 
+		if( function.virtual_function_kind == Synt::VirtualFunctionKind::VirtualPure )
+			REPORT_ERROR( AccessingPureVirtualFunction, names_scope.GetErrors(), Synt::GetSrcLoc( expression ) );
+
 		FunctionPointerType fp;
 		fp.function_type= function.type;
 		fp.llvm_type= llvm::PointerType::get( llvm_context_, 0 );
