@@ -43,6 +43,10 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 					lock.deref().referenced= true;
 				}
 
+				if( function.IsPureVirtualFunction() )
+				{
+					REPORT_ERROR( AccessingPureVirtualFunction, names_scope, Synt::GetSrcLoc( expression ) )
+				}
 
 				auto llvm_function= EnsureLLVMFunctionCreated( function );
 
@@ -4522,6 +4526,12 @@ fn CodeBuilder::CallFunctionsSet(
 	if( !( function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 	{
 		function_context.has_non_constexpr_operations_inside= true;
+	}
+
+	if( this_.empty() && function_selected.IsPureVirtualFunction() )
+	{
+		REPORT_ERROR( AccessingPureVirtualFunction, names_scope, src_loc )
+		return ErrorValue();
 	}
 
 	with( mut lock : function_selected.llvm_function.lock_mut() )
