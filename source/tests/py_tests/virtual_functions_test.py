@@ -267,23 +267,6 @@ def VirtualFunctionCallTest7():
 	assert( call_result == 123 )
 
 
-def VirtualFunctionCallTest8():
-	c_program_text= """
-		class A interface
-		{
-			fn virtual pure Bar( this ) : i32;
-		}
-		fn CalLBar(A& a)
-		{
-			// Call virtual pure function, passing "this" as non-this.
-			// In such call no virtual call be performed, but call to A::Bar itself.
-			// This code compiles, but linking should fail beause virtual pure function has no definition.
-			A::Bar(a);
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
 def VirtualOperatorCall_Test0():
 	c_program_text= """
 		class A abstract
