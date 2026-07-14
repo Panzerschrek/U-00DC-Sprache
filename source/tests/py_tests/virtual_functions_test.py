@@ -605,6 +605,108 @@ def VirtualCallInDestructor_Test0():
 	assert( call_result == 88877 )
 
 
+def NonVirtualCallOfVirtualFunction_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo( this ) : i32 { return 123; }
+		}
+		class B : A
+		{
+			fn virtual final Foo( this ) : i32 { return 456; }
+		}
+		fn Foo()
+		{
+			var B b;
+			halt if( b.Foo() != 456 ); // Virtual call.
+			halt if( B::Foo( b ) != 456 ); // Non-virtual call to derived class method.
+			halt if( A::Foo( b ) != 123 ); // Non-virtual call to base class method.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def NonVirtualCallOfVirtualFunction_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo( this ) : i32 { return -77; }
+		}
+		class B : A
+		{
+			fn virtual override Foo( this ) : i32 { return -88; }
+		}
+		class C : B
+		{
+			fn virtual final Foo( this ) : i32 { return -99; }
+		}
+		fn Foo()
+		{
+			var C c;
+			halt if( c.Foo() != -99 ); // Virtual call.
+			halt if( C::Foo( c ) != -99 ); // Non-virtual call to derived class method.
+			halt if( B::Foo( c ) != -88 ); // Non-virtual call to derived class method.
+			halt if( A::Foo( c ) != -77 ); // Non-virtual call to base class method.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def NonVirtualCallOfVirtualFunction_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo( this ) : i32 { return 555; }
+		}
+		class B : A
+		{
+			fn virtual final Foo( this ) : i32 { return 666; }
+		}
+		fn Foo()
+		{
+			var ( fn( A& a ) : i32 ) a_foo( A::Foo );
+			var ( fn( B& b ) : i32 ) b_foo( B::Foo );
+			var B b;
+			halt if( a_foo( b ) != 555 ); // Non-virtual call to derived class method.
+			halt if( b_foo( b ) != 666 ); // Non-virtual call to base class method.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def NonVirtualCallOfVirtualFunction_Test3():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo( this ) : i32 { return 5555; }
+		}
+		class B : A
+		{
+			fn virtual override Foo( this ) : i32 { return 6666; }
+		}
+		class C : B
+		{
+			fn virtual final Foo( this ) : i32 { return 7777; }
+		}
+		fn Foo()
+		{
+			var ( fn( A& a ) : i32 ) mut a_foo= zero_init;
+			a_foo= A::Foo;
+			var ( fn( B& b ) : i32 ) b_foo( B::Foo );
+			var ( fn( C& c ) : i32 ) c_foo( C::Foo );
+			var C c;
+			halt if( a_foo( c ) != 5555 ); // Non-virtual call to derived class method.
+			halt if( b_foo( c ) != 6666 ); // Non-virtual call to derived class method.
+			halt if( c_foo( c ) != 7777 ); // Non-virtual call to base class method.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
 def VirtualForNonclassFunction_Test0():
 	c_program_text= """
 		fn virtual Foo();
