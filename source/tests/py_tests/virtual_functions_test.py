@@ -690,6 +690,38 @@ def NonVirtualCallOfVirtualFunction_Test3():
 	call_result= tests_lib.run_function( "_Z3Foov" )
 
 
+def NonVirtualCallOfVirtualFunction_Test4():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo( this ) : i32 { return 606; }
+		}
+		class B : A
+		{
+			fn virtual override Foo( this ) : i32 { return 717; }
+		}
+		class C : B
+		{
+			fn virtual final Foo( this ) : i32 { return 828; }
+		}
+		fn Foo()
+		{
+			var C c;
+			var A& a_ref= c;
+			var B& b_ref= c;
+			// Accessing a virtual function via an object reference without calling it and then initializing a function pointer using it results into taking address of some specific function.
+			var ( fn( A& a ) : i32 ) a_foo( a_ref.Foo );
+			var ( fn( B& b ) : i32 ) b_foo( b_ref.Foo );
+			var ( fn( C& c ) : i32 ) c_foo( c.Foo );
+			halt if( a_foo( a_ref ) != 606 ); // Non-virtual call to derived class method.
+			halt if( b_foo( b_ref ) != 717 ); // Non-virtual call to derived class method.
+			halt if( c_foo( c ) != 828 ); // Non-virtual call to base class method.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
 def VirtualForNonclassFunction_Test0():
 	c_program_text= """
 		fn virtual Foo();
