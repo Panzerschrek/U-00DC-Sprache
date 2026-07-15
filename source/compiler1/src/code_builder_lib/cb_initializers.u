@@ -1438,6 +1438,12 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 				return Null::LLVMValueRef;
 			}
 
+			if( function_variable.IsPureVirtualFunction() )
+			{
+				REPORT_ERROR( AccessingPureVirtualFunction, names_scope, initializer_src_loc )
+				return Null::LLVMValueRef;
+			}
+
 			with( mut lock : function_variable.llvm_function.lock_mut() )
 			{
 				lock.deref().referenced= true;
@@ -1458,6 +1464,12 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 			if( function_variable.is_deleted )
 			{
 				REPORT_ERROR( AccessingDeletedMethod, names_scope, initializer_src_loc )
+				return Null::LLVMValueRef;
+			}
+
+			if( function_variable.IsPureVirtualFunction() )
+			{
+				REPORT_ERROR( AccessingPureVirtualFunction, names_scope, initializer_src_loc )
 				return Null::LLVMValueRef;
 			}
 

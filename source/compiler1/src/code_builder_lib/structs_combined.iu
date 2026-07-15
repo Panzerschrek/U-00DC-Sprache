@@ -568,6 +568,7 @@ struct FunctionVariable
 	ust::shared_ptr_final_nullable</ Synt::Function /> body_syntax_element;
 
 	fn VirtuallyEquals( this, FunctionVariable& other ) : bool;
+	fn IsPureVirtualFunction( this ) : bool;
 	fn IsCoroutine( this ) : bool;
 }
 

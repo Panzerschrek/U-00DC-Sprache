@@ -57,6 +57,9 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 		FunctionVariable& function= functions_set->functions.front();
 		function.referenced= true;
 
+		if( function.virtual_function_kind == Synt::VirtualFunctionKind::VirtualPure )
+			REPORT_ERROR( AccessingPureVirtualFunction, names_scope.GetErrors(), Synt::GetSrcLoc( expression ) );
+
 		FunctionPointerType fp;
 		fp.function_type= function.type;
 		fp.llvm_type= llvm::PointerType::get( llvm_context_, 0 );
@@ -4094,6 +4097,9 @@ Value CodeBuilder::CallFunctionValue(
 
 	if( function_ptr->is_deleted )
 		REPORT_ERROR( AccessingDeletedMethod, names_scope.GetErrors(), call_src_loc );
+
+	if( this_ == nullptr && function_ptr->virtual_function_kind == Synt::VirtualFunctionKind::VirtualPure )
+		REPORT_ERROR( AccessingPureVirtualFunction, names_scope.GetErrors(), call_src_loc );
 
 	if( !( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.has_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.

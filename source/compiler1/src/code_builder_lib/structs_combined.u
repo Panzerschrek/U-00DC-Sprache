@@ -1097,6 +1097,25 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 	return true;
 }
 
+fn FunctionVariable::IsPureVirtualFunction( this ) : bool
+{
+	if( is_this_call && virtual_table_index != ~0u && !t.params.empty() )
+	{
+		if_var( &this_class_type_ptr : t.params.front().t.GetClassType() )
+		{
+			with( &virtual_table : this_class_type_ptr.lock_imut().deref().virtual_table )
+			{
+				if( size_type( virtual_table_index ) < virtual_table.size() )
+				{
+					return virtual_table[ size_type( virtual_table_index ) ].is_pure;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 fn FunctionVariable::IsCoroutine( this ) : bool
 {
 	switch(kind)

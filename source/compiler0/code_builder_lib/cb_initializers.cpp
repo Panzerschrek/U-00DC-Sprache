@@ -1576,6 +1576,9 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	if( function_variable->is_deleted )
 		REPORT_ERROR( AccessingDeletedMethod, names_scope.GetErrors(), initializer_expression_src_loc );
 
+	if( function_variable->virtual_function_kind == Synt::VirtualFunctionKind::VirtualPure )
+		REPORT_ERROR( AccessingPureVirtualFunction, names_scope.GetErrors(), initializer_expression_src_loc );
+
 	{
 		SrcLoc value_src_loc;
 		if( const auto template_parameterization= std::get_if< std::unique_ptr< const Synt::TemplateParameterization > >( &initializer_expression ) )

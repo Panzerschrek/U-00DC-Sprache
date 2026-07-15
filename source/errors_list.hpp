@@ -230,6 +230,7 @@ PROCESS_ERROR( VirtualForPrivateFunction, "Virtual for private function \"{0}\".
 PROCESS_ERROR( VirtualForFunctionTemplate, "\"virtual\" for template function \"{0}\"." )
 PROCESS_ERROR( VirtualForFunctionImplementation, "\"virtual\" for function implementation \"{0}\"." )
 PROCESS_ERROR( VirtualMismatch, "\"virtual\" specifiers mismatch for function \"{0}\"." )
+PROCESS_ERROR( AccessingPureVirtualFunction, "Accessing pure virtual function." )
 
 // NoMangle
 PROCESS_ERROR( NoMangleForNonglobalFunction, "\"nomangle\" for non-global function \"{0}\"." )
