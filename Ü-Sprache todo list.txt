@@ -126,6 +126,8 @@ Standart library:
 *) Allow setting/getting broadcast/multicast properties on UDP socket
 *) Fix inet address resolution for non-ASCII domain names on some systems (like GNU/Linux)
 *) Implement a thread-safe version of arena_allocator
+*) Support condition variable waiting with timeout
+*) Consider adding lock methods to "shared_ptr_mt" and "shared_ptr_mt_mutex" having timeout
 
 Compiler:
 *) Fix alignment mismatch for 128-bit types in C++ and in Ü
