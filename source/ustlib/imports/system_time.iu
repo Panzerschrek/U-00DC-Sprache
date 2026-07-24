@@ -47,7 +47,7 @@ public:
 	fn hash( this, Hasher &mut hasher )
 	{
 		// Just perform field-by-field hashing of an implementation struct.
-		apply_value_to_hasher( hasher, t.impl_ );
+		apply_value_to_hasher( hasher, impl_ );
 	}
 
 public:
