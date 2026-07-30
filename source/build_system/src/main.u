@@ -1317,7 +1317,7 @@ fn CreatePackageTargetBuildGraphNodes(
 
 		if( workspace.build_targets[ private_dependency ].target_type == BuildTargetType::Library )
 		{
-			var ust::filesystem_path mut lib_file=
+			var ust::filesystem_path lib_file=
 				ust::path::normalize( ust::concat(
 					GetPackageBuildDirectory( root_package_build_directory, private_dependency.package_name ),
 					"/",
@@ -1327,9 +1327,12 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.command_line.push_back( lib_file );
 			node.input_files.push_back( lib_file );
 
-			// Internalize all functions from private dependencies.
-			node.command_line.push_back( "--internalize-functions-from" );
-			node.command_line.push_back( move(lib_file) );
+			// Internalize all functions from private dependencies unless we have object files instead of source files.
+			if( !use_object_files_for_this_target_source_files )
+			{
+				node.command_line.push_back( "--internalize-functions-from" );
+				node.command_line.push_back( lib_file );
+			}
 		}
 	}
 
@@ -1339,12 +1342,16 @@ fn CreatePackageTargetBuildGraphNodes(
 		BuildTargetType::Executable, BuildTargetType::SharedLibrary, BuildTargetType::ObjectFile ->
 		{
 			// Link ustlib into build targets with binary code.
-			var ust::filesystem_path mut bc_file= GetCompiledUstlibPath( root_package_build_directory );
+			var ust::filesystem_path bc_file= GetCompiledUstlibPath( root_package_build_directory );
 			node.command_line.push_back( bc_file );
 			node.input_files.push_back( bc_file );
-			// Internalize all functions from ustlib.
-			node.command_line.push_back( "--internalize-functions-from" );
-			node.command_line.push_back( move(bc_file) );
+
+			// Internalize all functions from ustlib unless we have object files instead of source files.
+			if( !use_object_files_for_this_target_source_files )
+			{
+				node.command_line.push_back( "--internalize-functions-from" );
+				node.command_line.push_back( bc_file );
+			}
 		},
 		BuildTargetType::Library -> { /* It's not necessary to link bitcode libraries against ustlib. */ },
 	}
@@ -1481,7 +1488,11 @@ fn CreatePackageTargetBuildGraphNodes(
 		BuildTargetType::Executable ->
 		{
 			// Run full internalization in order to export only "main".
-			node.command_line.push_back( "--internalize" );
+			// But don't do this if object files are used.
+			if( !use_object_files_for_this_target_source_files )
+			{
+				node.command_line.push_back( "--internalize" );
+			}
 		},
 		BuildTargetType::Library ->
 		{
