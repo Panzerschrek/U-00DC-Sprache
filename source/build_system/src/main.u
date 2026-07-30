@@ -988,8 +988,19 @@ fn CreatePackageTargetBuildGraphNodes(
 		}
 	}
 
-	// Create nodes for compilation of each source file into a ".bc" file.
+	// Create nodes for compilation of each source file into a ".bc" (or ".o") file.
 	var ust::vector</SourceFileToCompile/> mut source_files_to_compile;
+
+	// A speed-up measure for debug builds.
+	// Build each source file into an object file instead of LLVM bitcode file.
+	// By doing so we can parallelize machine code building and avoid re-generating a lot of machine code in incremental builds.
+	// For library targets and/or release builds keep emitting LLVM bitcode.
+	var bool use_object_files_for_this_target_source_files=
+		build_configuration_extended.build_configuration == BuildConfiguration::Debug &&
+		( target.target_type == BuildTargetType::Executable || target.target_type == BuildTargetType::SharedLibrary );
+
+	var ust::string_view8 source_files_to_compile_output_extension=
+		( use_object_files_for_this_target_source_files ? ust::string_view8( ".o" ) : ust::string_view8( ".bc" ) );
 
 	foreach( &source_file : target.source_files )
 	{
@@ -997,8 +1008,8 @@ fn CreatePackageTargetBuildGraphNodes(
 			SourceFileToCompile
 			{
 				.source_file_full_path= ust::path::normalize( ust::path::join( package_source_directory, source_file ) ),
-				.bc_file_full_path=  ust::path::normalize( ust::concat( target_build_files_directory, "/", source_file, ".bc" ) ),
-				.comment= source_file + ".bc",
+				.bc_file_full_path= ust::path::normalize( ust::concat( target_build_files_directory, "/", source_file, source_files_to_compile_output_extension ) ),
+				.comment= source_file + source_files_to_compile_output_extension,
 			} );
 	}
 
@@ -1015,7 +1026,7 @@ fn CreatePackageTargetBuildGraphNodes(
 					.source_file_full_path= ust::path::normalize( ust::path::join( generated_sources_dir, generated_source_file ) ),
 					// Place "bc" files in separate build directory.
 					.bc_file_full_path= ust::path::normalize( ust::concat( generated_sources_build_dir, "/", generated_source_file, ".bc" ) ),
-					.comment= generated_source_file + ".bc",
+					.comment= generated_source_file + source_files_to_compile_output_extension,
 				} );
 		}
 	}
@@ -1088,8 +1099,11 @@ fn CreatePackageTargetBuildGraphNodes(
 		// Forbid importing anything outside include directories and source directories.
 		node.command_line.push_back( "--prevent-imports-outside-given-directories" );
 
-		// Produce an LLVM bitcode file.
-		node.command_line.push_back( "-filetype=bc" );
+		// Produce an LLVM bitcode file or an object file.
+		node.command_line.push_back(
+			( use_object_files_for_this_target_source_files
+				? ust::string_view8( "-filetype=obj" )
+				: ust::string_view8( "-filetype=bc" ) ) );
 
 		if( !target_is_windows )
 		{
@@ -1228,8 +1242,24 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	foreach( &source_file_to_compile : source_files_to_compile )
 	{
-		node.command_line.push_back( source_file_to_compile.bc_file_full_path );
 		node.input_files.push_back( source_file_to_compile.bc_file_full_path );
+	}
+
+	if( use_object_files_for_this_target_source_files )
+	{
+		// If we use object files, provide them directly to the internal linker.
+		debug_assert( target.target_type == BuildTargetType::Executable || target.target_type == BuildTargetType::SharedLibrary );
+		foreach( &source_file_to_compile : source_files_to_compile )
+		{
+			node.command_line.push_back( "-Wl," + source_file_to_compile.bc_file_full_path );
+		}
+	}
+	else
+	{
+		foreach( &source_file_to_compile : source_files_to_compile )
+		{
+			node.command_line.push_back( source_file_to_compile.bc_file_full_path );
+		}
 	}
 
 	// Link public dependencies.
@@ -1548,7 +1578,7 @@ fn CreatePackageTargetBuildGraphNodes(
 struct SourceFileToCompile
 {
 	ust::filesystem_path source_file_full_path;
-	ust::filesystem_path bc_file_full_path;
+	ust::filesystem_path bc_file_full_path; // May be also object file.
 	ust::string8 comment;
 }
 
