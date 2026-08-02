@@ -24,7 +24,6 @@ bool RunLinkerCOFF(
 	const bool remove_unreferenced_symbols,
 	const bool debug )
 {
-	(void)sysroot;
 	(void)triple;
 
 	llvm::raw_os_ostream cout(std::cout);
@@ -54,6 +53,16 @@ bool RunLinkerCOFF(
 	default:
 		break;
 	}
+
+	std::string vctoolsdir_option;
+	if( !sysroot.empty() )
+	{
+		vctoolsdir_option= "-vctoolsdir:" + sysroot;
+		args.push_back( vctoolsdir_option.data() );
+
+		args.push_back( "-lldignoreenv" );
+	}
+
 	const std::string out_str= "-out:" + output_file_path;
 	args.push_back( out_str.data() );
 
