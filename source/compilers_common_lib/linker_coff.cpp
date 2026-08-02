@@ -24,7 +24,6 @@ bool RunLinkerCOFF(
 	const bool remove_unreferenced_symbols,
 	const bool debug )
 {
-	(void)sysroot;
 	(void)triple;
 
 	llvm::raw_os_ostream cout(std::cout);
@@ -33,6 +32,36 @@ bool RunLinkerCOFF(
 	llvm::SmallVector<const char*, 32> args;
 	args.push_back( argv0 );
 	args.push_back( input_temp_file_path.data() );
+
+	switch( triple.getArch() )
+	{
+	case llvm::Triple::arm:
+		args.push_back( "-machine:arm" );
+		break;
+	case llvm::Triple::aarch64:
+		if( triple.isWindowsArm64EC() )
+			args.push_back( "-machine:arm64ec" );
+		else
+			args.push_back( "-machine:arm64" );
+		break;
+	case llvm::Triple::x86:
+		args.push_back( "-machine:x86" );
+		break;
+	case llvm::Triple::x86_64:
+		args.push_back( "-machine:x64" );
+		break;
+	default:
+		break;
+	}
+
+	std::string vctoolsdir_option;
+	if( !sysroot.empty() )
+	{
+		vctoolsdir_option= "-vctoolsdir:" + sysroot;
+		args.push_back( vctoolsdir_option.data() );
+
+		args.push_back( "-lldignoreenv" );
+	}
 
 	const std::string out_str= "-out:" + output_file_path;
 	args.push_back( out_str.data() );
