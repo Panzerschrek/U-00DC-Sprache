@@ -34,6 +34,26 @@ bool RunLinkerCOFF(
 	args.push_back( argv0 );
 	args.push_back( input_temp_file_path.data() );
 
+	switch( triple.getArch() )
+	{
+	case llvm::Triple::arm:
+		args.push_back( "-machine:arm" );
+		break;
+	case llvm::Triple::aarch64:
+		if( triple.isWindowsArm64EC() )
+			args.push_back( "-machine:arm64ec" );
+		else
+			args.push_back( "-machine:arm64" );
+		break;
+	case llvm::Triple::x86:
+		args.push_back( "-machine:x86" );
+		break;
+	case llvm::Triple::x86_64:
+		args.push_back( "-machine:x64" );
+		break;
+	default:
+		break;
+	}
 	const std::string out_str= "-out:" + output_file_path;
 	args.push_back( out_str.data() );
 
