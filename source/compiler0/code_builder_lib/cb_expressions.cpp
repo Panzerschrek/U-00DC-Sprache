@@ -2593,6 +2593,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		args.front().type == args.back().type &&
 		( args.front().type.GetClassType() != nullptr || args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
 	{
+		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
+
 		if( const auto class_type= args.front().type.GetClassType() )
 		{
 			// Forbid move-assignment for destination of non-final polymorph class.
@@ -2603,38 +2605,47 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				REPORT_ERROR( MoveAssignForNonFinalPolymorphClass, names_scope.GetErrors(), src_loc, args.front().type );
 		}
 
-		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
-		const VariablePtr r_var_real= BuildExpressionCode( right_expr, names_scope, function_context ).GetVariable();
-
-		const VariableMutPtr r_var_lock=
-			Variable::Create(
-				r_var_real->type,
-				ValueType::ReferenceMut,
-				r_var_real->location,
-				r_var_real->name + " lock",
-				r_var_real->llvm_value );
-		function_context.variables_state.AddNode( r_var_lock );
-		function_context.variables_state.TryAddLink( r_var_real, r_var_lock, names_scope.GetErrors(), src_loc );
-		function_context.variables_state.TryAddInnerLinks( r_var_real, r_var_lock, names_scope.GetErrors(), src_loc );
-
-		r_var_lock->preserve_temporary= true;
-		RegisterTemporaryVariable( function_context, r_var_lock );
+		// Evaluate left part.
 
 		const VariablePtr l_var_real= BuildExpressionCode( left_expr, names_scope, function_context ).GetVariable();
 
 		if( function_context.variables_state.HasOutgoingLinks( l_var_real ) )
 			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, l_var_real->name );
 
-		SetupReferencesInCopyOrMove( function_context, l_var_real, r_var_lock, names_scope.GetErrors(), src_loc );
 
-		function_context.variables_state.MoveNode( r_var_lock );
+		// Call destructor for left part before evaluating right part.
+
+		if( !function_context.is_functionless_context && l_var_real->type.HasDestructor() )
+			CallDestructor( l_var_real->llvm_value, l_var_real->type, function_context, names_scope.GetErrors(), src_loc );
+
+		// Create a temporary lock node for left part to prevent accessing it in right part evaluation.
+
+		const VariableMutPtr l_var_lock=
+			Variable::Create(
+				l_var_real->type,
+				ValueType::ReferenceMut,
+				l_var_real->location,
+				l_var_real->name + " lock",
+				l_var_real->llvm_value );
+		function_context.variables_state.AddNode( l_var_lock );
+		function_context.variables_state.TryAddLink( l_var_real, l_var_lock, names_scope.GetErrors(), src_loc );
+		function_context.variables_state.TryAddInnerLinks( l_var_real, l_var_lock, names_scope.GetErrors(), src_loc );
+
+		l_var_lock->preserve_temporary= true;
+		RegisterTemporaryVariable( function_context, l_var_lock );
+
+		// Evaluate right part.
+		const VariablePtr r_var_real= BuildExpressionCode( right_expr, names_scope, function_context ).GetVariable();
+
+		function_context.variables_state.MoveNode( l_var_lock );
+
+		SetupReferencesInCopyOrMove( function_context, l_var_real, r_var_real, names_scope.GetErrors(), src_loc );
+
 		function_context.variables_state.MoveNode( r_var_real );
 
+		// Copy bytes of right part into the memory of left part.
 		if( !function_context.is_functionless_context )
 		{
-			if( l_var_real->type.HasDestructor() )
-				CallDestructor( l_var_real->llvm_value, l_var_real->type, function_context, names_scope.GetErrors(), src_loc );
-
 			U_ASSERT( r_var_real->location == Variable::Location::Pointer );
 			CopyBytes( l_var_real->llvm_value, r_var_real->llvm_value, l_var_real->type, function_context );
 			CreateLifetimeEnd( function_context, r_var_real->llvm_value );
