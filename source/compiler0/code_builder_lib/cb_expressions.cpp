@@ -2614,6 +2614,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 
 		// Call destructor for left part before evaluating right part.
+		// TODO - fix this. This produces incorrect code in async functions if right part contains "await".
 
 		if( !function_context.is_functionless_context && l_var_real->type.HasDestructor() )
 			CallDestructor( l_var_real->llvm_value, l_var_real->type, function_context, names_scope.GetErrors(), src_loc );
