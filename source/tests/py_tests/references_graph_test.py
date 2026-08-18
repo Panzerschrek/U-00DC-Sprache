@@ -544,7 +544,8 @@ def ReferencesLoop_Test4():
 		fn Foo( S &mut s ) : S @(return_inner_references)
 		{
 			var S res= s;
-			s= s.TakeCopy(); // Link here inner reference node of "s" with inner reference node derived from itself.
+			auto mut s_copy= s.TakeCopy();
+			s= move( s_copy ); // Link here inner reference node of "s" with inner reference node derived from itself.
 			return res;
 		}
 	"""
@@ -1011,7 +1012,7 @@ def OperatorsWithNodeLock_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "AccessingMovedVariable", 5 ) )
+	assert( HasError( errors_list, "MovedVariableHasReferences", 5 ) )
 
 
 def MoveAssignmentForDestinationWithReferences_Test0():
