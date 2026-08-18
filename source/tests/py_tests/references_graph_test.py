@@ -1006,7 +1006,7 @@ def OperatorsWithNodeLock_Test6():
 		fn Foo()
 		{
 			var tup[ i32, f32 ] mut t= zero_init;
-			t= move(t); // Accessing in the left part of assignment operaotr a variable moved in right part.
+			t= move(t); // Accessing in the left part of assignment operator a variable moved in right part.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
