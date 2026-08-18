@@ -2607,7 +2607,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		// Evaluate left part.
 
-		const VariablePtr l_var_real= BuildExpressionCode( left_expr, names_scope, function_context ).GetVariable();
+		const VariablePtr l_var_real= BuildExpressionCodeEnsureVariable( left_expr, names_scope, function_context );
 
 		if( function_context.variables_state.HasOutgoingLinks( l_var_real ) )
 			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, l_var_real->name );
@@ -2635,7 +2635,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		RegisterTemporaryVariable( function_context, l_var_lock );
 
 		// Evaluate right part.
-		const VariablePtr r_var_real= BuildExpressionCode( right_expr, names_scope, function_context ).GetVariable();
+		const VariablePtr r_var_real= BuildExpressionCodeEnsureVariable( right_expr, names_scope, function_context );
 
 		function_context.variables_state.MoveNode( l_var_lock );
 
