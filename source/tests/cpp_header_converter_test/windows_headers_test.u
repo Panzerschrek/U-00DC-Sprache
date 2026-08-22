@@ -15,7 +15,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	unsafe( RegisterClassExA( $<(window_class) ) );
 
-	var u32 width= 400u, height= 300u;
+	var u32 width= 1024u, height= 768u;
 
 	var DWORD window_style( WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_BORDER );
 
@@ -80,40 +80,55 @@ fn nomangle main() call_conv( "C" ) : i32
 			unsafe( DispatchMessageA( $<(message) ) );
 		}
 
-		var u32 constexpr max_iterations= 320u;
+		var u32 constexpr max_iterations= 512u;
 
 		for( var u32 mut y(0); y < height; ++y)
 		{
 			for( var u32 mut x(0); x < width; ++x)
 			{
-				var [ f64, 2 ] num
+				var size_type z_bits= 61s;
+				var size_type d_bits= 30s;
+				var f64 fixed_scale= f64( 1u64 << z_bits );
+
+				var [ i64, 2 ] num
 				[
-					scale * ( f64(x) - f64( width  ) * 0.5 ) - 0.7076599,
-					scale * ( f64(y) - f64( height ) * 0.5 ) + 0.3527965,
+					i64( fixed_scale * ( scale * ( f64(x) - f64( width  ) * 0.5 ) - 0.7076602119 ) ),
+					i64( fixed_scale * ( scale * ( f64(y) - f64( height ) * 0.5 ) + 0.35279653365 ) ),
 				];
 
-				var f64 mut c= 1.0;
-				var [ f64, 2 ] mut z[ 0.0, 0.0 ];
+				var i64 mut c= 1i64 << z_bits;
+				var [ i64, 2 ] mut z[ 0i64, 0i64 ];
 
 				for( auto mut i= 0u; i < max_iterations; ++i )
 				{
-					var [ f64, 2 ] z2[ z[0] * z[0] - z[1] * z[1], z[0] * z[1] + z[1] * z[0] ];
+					var [ i64, 2 ] z2
+					[
+						( ( i128(z[0]) * i128(z[0]) - i128(z[1]) * i128(z[1]) ) >> z_bits ),
+						( ( i128(z[0]) * i128(z[1]) + i128(z[1]) * i128(z[0]) ) >> z_bits ),
+					];
 					z[0]= z2[0] + num[0];
 					z[1]= z2[1] + num[1];
 
-					var f64 d= z[0] * z[0] + z[1] * z[1];
-					if( d >= 4.0 )
+					var i64 d( ( i128(z[0]) * i128(z[0]) + i128(z[1]) * i128(z[1]) ) >> ( z_bits + z_bits - d_bits ) );
+					if( d >= ( 4i64 << d_bits ) )
 					{
 						break;
 					}
 
-					c+= 4.0 - d;
+					c+= ( 4i64 << d_bits ) - d;
 				}
 
+				var [ i64, 3 ] constexpr color_scales
+				[
+					( f64( 1i64 << d_bits ) * 15.2 ),
+					( f64( 1i64 << d_bits ) * 23.4 ),
+					( f64( 1i64 << d_bits ) * 31.3 ),
+				];
+
 				var u32 result_color=
-					( ( u32( c * 15.2 ) & 0xFFu ) <<  0u ) |
-					( ( u32( c * 23.4 ) & 0xFFu ) <<  8u ) |
-					( ( u32( c * 31.3 ) & 0xFFu ) << 16u );
+					( ( u32( ( i128(c) * i128(color_scales[0]) ) >> ( d_bits * 2s ) ) & 0xFFu ) <<  0u ) |
+					( ( u32( ( i128(c) * i128(color_scales[1]) ) >> ( d_bits * 2s ) ) & 0xFFu ) <<  8u ) |
+					( ( u32( ( i128(c) * i128(color_scales[2]) ) >> ( d_bits * 2s ) ) & 0xFFu ) << 16u );
 
 				unsafe
 				{
