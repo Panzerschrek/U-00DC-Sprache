@@ -18,6 +18,7 @@ fn CodeBuilder::BuildBlockElements( mut this, NamesScopeMutPtr& names_scope, Fun
 		if( block_element_build_info.has_terminal_instruction_inside )
 		{
 			REPORT_ERROR( UnreachableCode, names_scope, Synt::GetSrcLoc(block_element) )
+			return block_element_build_info; // Don't even try to build unreachable code, since it may break internal compiler invariants.
 		}
 
 		debug_info_builder_.try_deref().SetCurrentLocation( function_context, Synt::GetSrcLoc(block_element) );

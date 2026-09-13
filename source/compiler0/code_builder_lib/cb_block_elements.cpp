@@ -3089,7 +3089,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElements(
 		[&]( const auto& el )
 		{
 			if( block_build_info.has_terminal_instruction_inside )
+			{
 				REPORT_ERROR( UnreachableCode, names_scope.GetErrors(), el.src_loc );
+				return; // Don't even try to build unreachable code, since it may break internal compiler invariants.
+			}
 
 			debug_info_builder_->SetCurrentLocation( el.src_loc, function_context );
 			const BlockBuildInfo info= BuildBlockElementImpl( names_scope, function_context, el );
