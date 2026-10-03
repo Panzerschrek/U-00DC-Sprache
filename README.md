@@ -1,5 +1,3 @@
-![](source/docs/logo-Gebrochene-Grotesk.png)
-
 ## The Ü programming language
 
 Ü is a statically-typed compiled programming language, designed for writing programs, which should be both reliable and fast.
