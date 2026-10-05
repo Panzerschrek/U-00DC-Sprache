@@ -69,12 +69,18 @@ Following arithmetic operations are possible for values of numeric types:
 * ``%`` - binary reminder.
 * ``-`` - Unary minus. It is equivalent to subtraction of a value from 0.
 
+Arithmetic operations are possible only for values having the same type (for binary operations).
+The result has the type of its operands.
 The exact behavior of an arithmetic operation is different for different numeric type kinds.
-Operations for integer types may overflow.
-Operations for floating point types may be saturated instead.
 
-The result of the division for floating point values is nearest floating point value, for integers - nearest integer value.
-For integers division result by zero is undefined, for floating point types result is ±infinity or ``NaN``.
+Operations for integer types may overflow.
+Overflow is well-defined (it's two-complement) for both signed and unsigned types and isn't considered to be erroneous.
+Division of two integer values produces an integer (is rounded).
+Division by zero or division of a minimum signed integer value by -1 leads to program abortion (in a system-dependent way).
+
+Operations for floating point types may be saturated to ±infinity.
+Division by zero produces ±infinity or ``NaN``.
+
 
 **************************************
 *Bitwise operations for integer types*
