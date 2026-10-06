@@ -44,6 +44,30 @@ The language itself is described in details, other components have basic, but no
 Additionally there are some basic usage [examples](source/examples/README.md).
 
 
+### Why choosing Ü?
+
+The short answer is: Ü is superior in comparison to many other programming languages in terms of safety, reliability, expressiveness and feature availability.
+Below are listed important features present in Ü:
+
+* Memory safety and race condition safety with little to no overheads
+* RAII
+* Type and function templates (with duck-typing)
+* Compile-time evaluation support
+* Compile-time type information
+* Compile-time code generation
+* Encapsulation for class members
+* Inheritance (for classes) and virtual methods
+* Functions overloading
+* Operators overloading
+* References (with auto reference creation and dereferencing)
+* Lambdas (functions declared locally with context capturing)
+* Coroutines (async functions, generators)
+* C interaction support (in both directions)
+
+Ü has both strong safety/reliability guarantees and many necessary and easy to use features and abstractions.
+Other comparable languages are unsafe and/or have some important for effective programming features missing.
+
+
 ### How to build
 
 A modern C++ compiler (clang, GCC, MSVC) is required for building the project.
