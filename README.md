@@ -59,6 +59,23 @@ Since it's impossible to have more than one mutable reference to a piece of data
 In cases where mutating something from multiple threads is needed, the Ü standard library provides containers allowing doing it in a safe way, this includes RW-lock based containers, mutexes, atomic variables.
 
 
+### Development stage
+
+Ü is already many years in development.
+Most language features and mechanisms (most-importantly safety-related ones) are stable and unlikely to be changed in future.
+The standard library isn't that stable, there are many things to add and improve, but basic functionality is already present and it should remain mostly unchanged.
+
+The whole language is well-tested.
+There are many tests for each language feature, both for its functionality in normal cases and cases where its incorrect usage should lead to compilation errors.
+For now there are 5000+ test cases covering language functionality.
+The standard library is also covered with tests, there are tests for (almost) any piece of it.
+Other components like language server and C++ header converter are also covered with tests, but test coverage for them is less than it should be.
+
+Ü is also practice-tested.
+There is a self-hosted Ü compiler version, which is maintained parallel to one written in C++.
+The Ü build system is also written in Ü itself.
+
+
 ### Supported systems
 
 The table below lists supported operating systems and architectures for Ü compiler hosting and targeting.
