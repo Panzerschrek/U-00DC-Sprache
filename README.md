@@ -76,6 +76,106 @@ There is a self-hosted Ü compiler version, which is maintained parallel to one 
 The Ü build system is also written in Ü itself.
 
 
+### Code examples
+
+Here are some examples how Ü looks like.
+Note that this is just basics, read the documentation to learn about more language details.
+
+Hello world:
+
+```
+import "/main_wrapper.iu"
+import "/stdout.iu"
+
+pretty_main
+{
+	ust::stdout_print( "Hello, world!\n" );
+	return 0;
+}
+```
+
+Fibonacci numbers printing:
+
+```
+import "/main_wrapper.iu"
+import "/stdout.iu"
+import "/string_conversions.iu"
+
+pretty_main
+{
+	var u32 mut num_minus_2= 1u, mut num_minus_1= 1u;
+	PrintFibNumber( 0u, num_minus_2 );
+	PrintFibNumber( 1u, num_minus_1 );
+	for( auto mut i= 2u; i < 32u; ++i )
+	{
+		auto num= num_minus_2 + num_minus_1;
+		PrintFibNumber( i, num );
+		num_minus_2= num_minus_1;
+		num_minus_1= num;
+	}
+
+	return 0;
+}
+
+fn PrintFibNumber( u32 index, u32 num )
+{
+	ust::stdout_print(
+		ust::concat( "Fibonacci number # ", ust::to_string8(index), " is ", ust::to_string8(num), "\n" ) );
+}
+```
+
+Using iterators:
+
+```
+import "/main_wrapper.iu"
+import "/stdout.iu"
+import "/string_conversions.iu"
+import "/vector.iu"
+
+pretty_main
+{
+	auto numbers=
+		ust::make_iterator_for_generator( GenNumbers() )
+			.filter( lambda( u32 x ) : bool { return x % 3u != 0u; } )
+			.limit( 100s )
+			.map( lambda( u32 x ) : f32 { return f32(x) * 5.0f + 0.25f; } )
+			.collect</ ust::vector />();
+
+	foreach( &number : numbers )
+	{
+		ust::stdout_print( ust::concat( ust::to_string8( number ), "\n" ) );
+	}
+
+	return 0;
+}
+
+fn generator GenNumbers() : u32
+{
+	auto mut x= 0u;
+	loop
+	{
+		yield x;
+		++x;
+	}
+}
+```
+
+A quine implemented using `embed` functionality:
+
+```
+import "/main_wrapper.iu"
+import "/stdout.iu"
+
+pretty_main
+{
+	ust::stdout_print( embed</char8/>( "quine_embed.u" ) ); // Embed code of this file and print it.
+	return 0;
+}
+```
+
+You can find more examples [here](source/examples/README.md).
+
+
 ### Supported systems
 
 The table below lists supported operating systems and architectures for Ü compiler hosting and targeting.
