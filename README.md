@@ -19,6 +19,30 @@ For better development experience there is a language server and variety of synt
 Last but not least, Ü has a tool for C headers conversion, which allows to simplify interaction with foreign code.
 
 
+### Why choosing Ü?
+
+The short answer is: Ü is superior in comparison to many other programming languages in terms of safety, reliability, expressiveness and feature availability.
+Below are listed important features present in Ü:
+
+* Memory safety and race-condition safety with little to no overheads
+* RAII
+* Type and function templates (with duck-typing)
+* Compile-time evaluation support
+* Compile-time type information
+* Compile-time code generation
+* Encapsulation for class members
+* Inheritance (for classes) and virtual methods
+* Functions overloading
+* Operators overloading
+* References (with auto reference creation and dereferencing)
+* Lambdas (functions declared locally with context capturing)
+* Coroutines (async functions, generators)
+* C interaction support (in both directions)
+
+Ü has both strong safety/reliability guarantees and many necessary and easy to use features and abstractions.
+Other comparable languages are unsafe and/or have some important for effective programming features missing.
+
+
 ### How memory safety and race-condition prevention is achieved?
 
 Ü and its standard library use ownership semantics.
@@ -58,30 +82,6 @@ GNU/Linux with x32 ABI isn't supported due to some bugs in LLVM library.
 Documentation is available here: [english](https://panzerschrek.github.io/U-00DC-Sprache-site/docs/en/contents.html), [russian](https://panzerschrek.github.io/U-00DC-Sprache-site/docs/ru/contents.html).
 The language itself is described in details, other components have basic, but not very deep documentation.
 Additionally there are some basic usage [examples](source/examples/README.md).
-
-
-### Why choosing Ü?
-
-The short answer is: Ü is superior in comparison to many other programming languages in terms of safety, reliability, expressiveness and feature availability.
-Below are listed important features present in Ü:
-
-* Memory safety and race condition safety with little to no overheads
-* RAII
-* Type and function templates (with duck-typing)
-* Compile-time evaluation support
-* Compile-time type information
-* Compile-time code generation
-* Encapsulation for class members
-* Inheritance (for classes) and virtual methods
-* Functions overloading
-* Operators overloading
-* References (with auto reference creation and dereferencing)
-* Lambdas (functions declared locally with context capturing)
-* Coroutines (async functions, generators)
-* C interaction support (in both directions)
-
-Ü has both strong safety/reliability guarantees and many necessary and easy to use features and abstractions.
-Other comparable languages are unsafe and/or have some important for effective programming features missing.
 
 
 ### How to build
