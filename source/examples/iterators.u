@@ -1,0 +1,34 @@
+// This example demonstraits basic usage of iterators functionality.
+
+import "/main_wrapper.iu"
+import "/stdout.iu"
+import "/string_conversions.iu"
+import "/vector.iu"
+
+pretty_main
+{
+	// Generate integers, skip ones divisible by 3, take only 100 of them, convert to "f32", multiply by 5 and add 0.25, collect them into a vector.
+	auto numbers=
+		ust::make_iterator_for_generator( GenNumbers() )
+			.filter( lambda( u32 x ) : bool { return x % 3u != 0u; } )
+			.limit( 100s )
+			.map( lambda( u32 x ) : f32 { return f32(x) * 5.0f + 0.25f; } )
+			.collect</ ust::vector />();
+
+	foreach( &number : numbers )
+	{
+		ust::stdout_print( ust::concat( ust::to_string8( number ), "\n" ) );
+	}
+
+	return 0;
+}
+
+fn generator GenNumbers() : u32
+{
+	auto mut x= 0u;
+	loop
+	{
+		yield x;
+		++x;
+	}
+}
