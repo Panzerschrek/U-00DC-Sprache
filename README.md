@@ -19,6 +19,22 @@ For better development experience there is a language server and variety of synt
 Last but not least, Ü has a tool for C headers conversion, which allows to simplify interaction with foreign code.
 
 
+### How memory safety and race-condition prevention is achieved?
+
+Ü and its standard library use ownership semantics.
+A field of a struct, a member of an array or an element stored in a container belongs to its parent variable.
+It's allowed to have only single mutable reference to a variable or its part/member or zero or more immutable references.
+This rule is always enforced statically during compilation by sophisticated program analysis.
+It allows preventing use-after-free, double-free and some other kinds of errors.
+
+Out of bounds access is prevented by runtime checks, which aren't strictly-speaking free in terms of performance, but are pretty cheap and aren't so common in idiomatic Ü code.
+In many cases compiler's backend is able to optimize-out bounds checks, if it can prove them to be unnecessary.
+
+Race-condition safety is also achieved via rules described above.
+Since it's impossible to have more than one mutable reference to a piece of data at the same time, no concurrent mutation (from multiple threads) can take place.
+In cases where mutating something from multiple threads is needed, the Ü standard library provides containers allowing doing it in a safe way, this includes RW-lock based containers, mutexes, atomic variables.
+
+
 ### Supported systems
 
 The table below lists supported operating systems and architectures for Ü compiler hosting and targeting.
