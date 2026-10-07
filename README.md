@@ -1,5 +1,3 @@
-![](source/docs/logo-Gebrochene-Grotesk.png)
-
 ## The Ü programming language
 
 Ü is a statically-typed compiled programming language, designed for writing programs, which should be both reliable and fast.
@@ -19,6 +17,163 @@ Besides the compiler Ü has a lot of other components.
 There is a build system, which simplifies complex Ü programs building and (partially) package management.
 For better development experience there is a language server and variety of syntax highlighting files for some IDEs and text editors.
 Last but not least, Ü has a tool for C headers conversion, which allows to simplify interaction with foreign code.
+
+
+### Why choosing Ü?
+
+The short answer is: Ü is superior in comparison to many other programming languages in terms of safety, reliability, expressiveness and feature availability.
+Below are listed important features present in Ü:
+
+* Memory safety and race-condition safety with little to no overheads
+* RAII
+* Type and function templates (with duck-typing)
+* Compile-time evaluation support
+* Compile-time type information
+* Compile-time code generation
+* Encapsulation for class members
+* Inheritance (for classes) and virtual methods
+* Functions overloading
+* Operators overloading
+* References (with auto reference creation and dereferencing)
+* Lambdas (functions declared locally with context capturing)
+* Coroutines (async functions, generators)
+* C interaction support (in both directions)
+
+Ü has both strong safety/reliability guarantees and many necessary and easy to use features and abstractions.
+Other comparable languages are unsafe and/or have some important for effective programming features missing.
+
+
+### How memory safety and race-condition prevention is achieved?
+
+Ü and its standard library use ownership semantics.
+A field of a struct, a member of an array or an element stored in a container belongs to its parent variable.
+It's allowed to have only single mutable reference to a variable or its part/member or zero or more immutable references.
+This rule is always enforced statically during compilation by sophisticated program analysis.
+It allows preventing use-after-free, double-free and some other kinds of errors.
+
+Out of bounds access is prevented by runtime checks, which aren't strictly-speaking free in terms of performance, but are pretty cheap and aren't so common in idiomatic Ü code.
+In many cases compiler's backend is able to optimize-out bounds checks, if it can prove them to be unnecessary.
+
+Race-condition safety is also achieved via rules described above.
+Since it's impossible to have more than one mutable reference to a piece of data at the same time, no concurrent mutation (from multiple threads) can take place.
+In cases where mutating something from multiple threads is needed, the Ü standard library provides containers allowing doing it in a safe way, this includes RW-lock based containers, mutexes, atomic variables.
+
+
+### Development stage
+
+Ü is already many years in development.
+Most language features and mechanisms (most-importantly safety-related ones) are stable and unlikely to be changed in future.
+The standard library isn't that stable, there are many things to add and improve, but basic functionality is already present and it should remain mostly unchanged.
+
+The whole language is well-tested.
+There are many tests for each language feature, both for its functionality in normal cases and cases where its incorrect usage should lead to compilation errors.
+For now there are 5000+ test cases covering language functionality.
+The standard library is also covered with tests, there are tests for (almost) any piece of it.
+Other components like language server and C++ header converter are also covered with tests, but test coverage for them is less than it should be.
+
+Ü is also practice-tested.
+There is a self-hosted Ü compiler version, which is maintained parallel to one written in C++.
+The Ü build system is also written in Ü itself.
+
+
+### Code examples
+
+Here are some examples how Ü looks like.
+Note that this is just basics, read the documentation to learn about more language details.
+
+Hello world:
+
+```
+import "/main_wrapper.iu"
+import "/stdout.iu"
+
+pretty_main
+{
+	ust::stdout_print( "Hello, world!\n" );
+	return 0;
+}
+```
+
+Fibonacci numbers printing:
+
+```
+import "/main_wrapper.iu"
+import "/stdout.iu"
+import "/string_conversions.iu"
+
+pretty_main
+{
+	var u32 mut num_minus_2= 1u, mut num_minus_1= 1u;
+	PrintFibNumber( 0u, num_minus_2 );
+	PrintFibNumber( 1u, num_minus_1 );
+	for( auto mut i= 2u; i < 32u; ++i )
+	{
+		auto num= num_minus_2 + num_minus_1;
+		PrintFibNumber( i, num );
+		num_minus_2= num_minus_1;
+		num_minus_1= num;
+	}
+
+	return 0;
+}
+
+fn PrintFibNumber( u32 index, u32 num )
+{
+	ust::stdout_print(
+		ust::concat( "Fibonacci number # ", ust::to_string8(index), " is ", ust::to_string8(num), "\n" ) );
+}
+```
+
+Using iterators:
+
+```
+import "/main_wrapper.iu"
+import "/stdout.iu"
+import "/string_conversions.iu"
+import "/vector.iu"
+
+pretty_main
+{
+	auto numbers=
+		ust::make_iterator_for_generator( GenNumbers() )
+			.filter( lambda( u32 x ) : bool { return x % 3u != 0u; } )
+			.limit( 100s )
+			.map( lambda( u32 x ) : f32 { return f32(x) * 5.0f + 0.25f; } )
+			.collect</ ust::vector />();
+
+	foreach( &number : numbers )
+	{
+		ust::stdout_print( ust::concat( ust::to_string8( number ), "\n" ) );
+	}
+
+	return 0;
+}
+
+fn generator GenNumbers() : u32
+{
+	auto mut x= 0u;
+	loop
+	{
+		yield x;
+		++x;
+	}
+}
+```
+
+A quine implemented using `embed` functionality:
+
+```
+import "/main_wrapper.iu"
+import "/stdout.iu"
+
+pretty_main
+{
+	ust::stdout_print( embed</char8/>( "quine_embed.u" ) ); // Embed code of this file and print it.
+	return 0;
+}
+```
+
+You can find more examples [here](source/examples/README.md).
 
 
 ### Supported systems
@@ -44,60 +199,6 @@ GNU/Linux with x32 ABI isn't supported due to some bugs in LLVM library.
 Documentation is available here: [english](https://panzerschrek.github.io/U-00DC-Sprache-site/docs/en/contents.html), [russian](https://panzerschrek.github.io/U-00DC-Sprache-site/docs/ru/contents.html).
 The language itself is described in details, other components have basic, but not very deep documentation.
 Additionally there are some basic usage [examples](source/examples/README.md).
-
-
-### Why choosing Ü?
-
-The short answer is: Ü is superior in comparison to many other programming languages in terms of safety, reliability, expressiveness and feature availability.
-The table below compares important features, advantages and disadvantages of various programming languages, including Ü.
-It lists only languages, which may be directly compared to Ü - statically-typed compiled languages without heavy runtime and/or GC.
-
-| Feature/Language                                                                                 | C  | C++ | Swift | Zig | Odin | Rust | Ü |
-|--------------------------------------------------------------------------------------------------|----|-----|-------|-----|------|------|---|
-| constructors (special methods for construction, not just factory methods with user-defined name) | -  | +   | +     | -   | -    | -    | + |
-| destructors (special methods called automatically at object destruction)                         | -  | +   | +     | -   | -    | +    | + |
-| encapsulation (possibility to restrict access to some items only from some scopes)               | -  | +   | +     | +   | +    | +    | + |
-| memory-safety (no out-of bounds read/writes, no use-after-free errors, etc.)                     | -  | -   | +⁶    | -   | -    | +    | + |
-| thread-safety (no race conditions)                                                               | -  | -   | -     | -   | -    | +    | + |
-| type templates                                                                                   | -  | +   | +     | +   | +    | +    | + |
-| function templates                                                                               | -  | +   | +     | +   | +    | +    | + |
-| duck-typing in templates (without mandatory template type requirements specification)            | -  | +⁴  | -     | +   | +    | -    | + |
-| references (with auto reference creation and dereferencing)                                      | -  | +   | -⁷    | -   | -    | -¹⁵  | + |
-| functions overloading                                                                            | -  | +   | +     | -   | +¹¹  | -    | + |
-| operators overloading                                                                            | -  | +   | +     | -   | -    | +    | + |
-| frictionless copying (ability to take deep copy of a value via operator `=`)                     | -¹ | +   | +     | -⁹  | -¹²  | -¹⁶  | + |
-| compile-time calculations                                                                        | -² | +   | -     | +   | +    | +    | + |
-| compile-time type information                                                                    | -  | -   | -     | +   | -    | -    | + |
-| class inheritance and runtime polymorphism based on it                                           | -  | +   | +     | -   | -¹³  | -    | + |
-| no exceptions (means no possibility to implicitly skip control flow passing)                     | +³ | -   | +⁸    | +   | +    | ±¹⁷  | + |
-| async functions                                                                                  | -  | +⁵  | +     | ±¹⁰ | -    | +    | + |
-| lambdas (anonymous functions defined within expression context, sometimes named closures)        | -  | +   | +     | -   | -¹⁴  | +    | + |
-
-<details>
-<summary>footnotes</summary>
-
-1 - structs may be copied via `=`, but it's only a shallow copy.<br>
-2 - there is only limited compile-time evaluation of constants like `1 + 2`, but without compile-time variable constants and compile-time functions evaluation.<br>
-3 - `setjump`/`longjump` is still possible, but generally speaking it's not a language feature and it may be implemented almost in any language.<br>
-4 - in some rare cases `typename` keyword is needed in templates. There are also concepts in newer C++ standards, but one can just avoid using them if duck-typing is needed.<br>
-5 - C++ has somewhat lower-level coroutines, which allow implementing not only async functions, but generators and other constructions.<br>
-6 - memory safety was added in new versions of the language.<br>
-7 - there are generally no references, there are `inout` function parameters, but they require specifying `&` for parameter passing.<br>
-8 - Swift has `throw` keyword, `throws` function specifier and `catch` statement, but there is no unexpected control flow, since each possible error value must be explicitly handled or passed further. So, what it does is more like a second function return channel rather than proper exceptions.<br>
-9 - operator `=` only creates shallow copy, just like in C.<br>
-10 - async functions are now in development.<br>
-11 - overloading is explicit and requires adding extra code.<br>
-12 - operator `=` only creates shallow copy, just like in C.<br>
-13 - there is subtype polymorphism, but no proper inheritance-based polymorphism with runtime dispatching based on actual runtime type (via virtual functions or something similar).<br>
-14 - there are only non-capturing functions defined within other functions.<br>
-15 - Rust so-called "references" are really just pointers, one need to add `&` to create a reference and use `*` for dereferencing.<br>
-16 - all types are split into two categories, the first one allows copying via `=` (which is basically `memcpy`), the second one requires explicitly calling `clone` method.<br>
-17 - exceptions can't be thrown within Rust code, but Rust supports stack unwinding (with destructors calling) if an exception is thrown from foreign code (like C++). Code should be written with unwinding possibility in mind.<br>
-
-</details>
-
-As it can be seen, only Ü has both strong safety/reliability guarantees and many necessary and easy to use features and abstractions.
-Other languages are unsafe and/or have some important for effective programming features missing.
 
 
 ### How to build

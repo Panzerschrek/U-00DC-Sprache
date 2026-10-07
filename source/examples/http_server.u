@@ -58,10 +58,10 @@ pretty_main
 		// Status line goes first.
 		WriteAll( stream, g_http_response_status_line );
 		// Then headers follow.
-		WriteAll( stream, g_http_respense_headers );
+		WriteAll( stream, g_http_response_headers );
 		WriteAll( stream, ust::concat( "Content-Length: ", ust::to_string8( typeinfo</ typeof(g_html_page_contents) />.size_of ), g_http_line_end ) );
 		// Actual message is separated via empty line.
-		WriteAll( stream, g_http_respense_header_end_marker );
+		WriteAll( stream, g_http_response_header_end_marker );
 		// Actual HTML page (or some other contents).
 		WriteAll( stream, g_html_page_contents );
 	}
@@ -80,8 +80,8 @@ fn WriteAll( ust::tcp_stream &mut stream, ust::string_view8 message )
 auto& g_http_line_end= "\r\n";
 
 auto g_http_response_status_line= "HTTP/1.1 200 OK" + g_http_line_end;
-auto g_http_respense_headers= "Content-Type: text/html" + g_http_line_end;
-auto g_http_respense_header_end_marker= g_http_line_end;
+auto g_http_response_headers= "Content-Type: text/html" + g_http_line_end;
+auto g_http_response_header_end_marker= g_http_line_end;
 
 auto g_html_page_contents=
 "<html>" +
