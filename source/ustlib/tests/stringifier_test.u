@@ -58,6 +58,18 @@ fn nomangle main() call_conv( "C" ) : i32
 		ust::apply_value_to_stringifier( stringifier, ust::make_tuple( false, 5323, 'R' ) ); // Tuple with three elements.
 		halt if( move( stringifier ).get() != "[ false, 5323, R ]" );
 	}
+	{ // Stringify empty array view.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::array_view_mut</f32/>() );
+		halt if( move( stringifier ).get() != "[]" );
+	}
+	{ // Stringify non-empty array view.
+		var [ i32, 5 ] arr[ 89, -36, 226, 64, 6474754 ];
+		var ust::array_view_imut</i32/> arr_view= arr;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, arr_view );
+		halt if( move( stringifier ).get() != "[ 89, -36, 226, 64, 6474754 ]" );
+	}
 	{
 		var ust::default_stringifier8 mut stringifier;
 		ust::apply_value_to_stringifier( stringifier, ust::make_array( SomeEnum::Herren, SomeEnum::der, SomeEnum::Winde ) ); // Array with enum elements.

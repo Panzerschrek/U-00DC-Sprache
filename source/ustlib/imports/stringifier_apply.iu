@@ -69,6 +69,31 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, [ char32, S ]& arr 
 	stringifier( arr );
 }
 
+template</type Stringifier, type T, bool is_mutable/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, random_access_range</T, is_mutable/> arr )
+{
+	// This code should match "stringify" code for arrays!
+
+	if( arr.empty() )
+	{
+		apply_value_to_stringifier( stringifier, "[]" );
+	}
+	else
+	{
+		apply_value_to_stringifier( stringifier, "[ " );
+
+		apply_value_to_stringifier( stringifier, arr[0s] );
+
+		for( auto mut i= 1s; i < arr.size(); ++i )
+		{
+			apply_value_to_stringifier( stringifier, ", " );
+			apply_value_to_stringifier( stringifier, arr[i] );
+		}
+
+		apply_value_to_stringifier( stringifier, " ]" );
+	}
+}
+
 // Generic function for stringification of other types.
 template</type Stringifier, type T/>
 fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
@@ -123,6 +148,8 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
 	}
 	else static_if( ti.is_array )
 	{
+		// This code should match "stringify" code for "random_access_range" class!
+
 		// For empty arrays stringify as [].
 		// For non-empty arrays stringifiy in [], use commas (instead of last one) and spaces between elements.
 
