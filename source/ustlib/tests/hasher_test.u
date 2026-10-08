@@ -208,6 +208,28 @@ fn nomangle main() call_conv( "C" ) : i32
 		ust::apply_value_to_hasher( hasher, t );
 		halt if( hasher.get() == 0s );
 	}
+	{ // Very long tuple.
+		var tup[ i32, f32, bool, char8, [ i32, 2 ], tup[ bool, u16 ], byte8, [ char8, 3 ], u64, void, i128 ] t
+		[
+			78,
+			-6313.25f,
+			true,
+			'Q',
+			[ 3634763, -22153 ],
+			[ false, 363u16 ],
+			( 53u8 ),
+			"hI!",
+			36332753489555u,
+			(),
+			362477232336047747723723774i128,
+		];
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, t );
+		halt if( hasher.get() == 0s );
+	}
 	{ // Hasher for raw pointer.
 		var i32 mut x= 0, mut y= 0;
 		var $(i32) x_ptr= $<(x), y_ptr= $<(y);

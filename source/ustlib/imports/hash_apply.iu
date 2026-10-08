@@ -77,105 +77,6 @@ fn apply_value_to_hasher( Hasher &mut hasher, [ T, S ]& arr )
 	}
 }
 
-// Overloading for 0-sized tuples.
-template</type Hasher/>
-fn apply_value_to_hasher( Hasher &mut hasher, tup[]& t )
-{
-	hasher( 0s ); // Apply size first, in order to produce different hashes for sequences of sequences.
-	for( &el : t )
-	{
-		apply_value_to_hasher( hasher, el );
-	}
-}
-
-// Overloading for 1-sized tuples.
-template</type Hasher, type A/>
-fn apply_value_to_hasher( Hasher &mut hasher, tup[ A ]& t )
-{
-	hasher( 1s ); // Apply size first, in order to produce different hashes for sequences of sequences.
-	for( &el : t )
-	{
-		apply_value_to_hasher( hasher, el );
-	}
-}
-
-// Overloading for 2-sized tuples.
-template</type Hasher, type A, type B/>
-fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B ]& t )
-{
-	hasher( 2s ); // Apply size first, in order to produce different hashes for sequences of sequences.
-	for( &el : t )
-	{
-		apply_value_to_hasher( hasher, el );
-	}
-}
-
-// Overloading for 3-sized tuples.
-template</type Hasher, type A, type B, type C/>
-fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C ]& t )
-{
-	hasher( 3s ); // Apply size first, in order to produce different hashes for sequences of sequences.
-	for( &el : t )
-	{
-		apply_value_to_hasher( hasher, el );
-	}
-}
-
-// Overloading for 4-sized tuples.
-template</type Hasher, type A, type B, type C, type D/>
-fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D ]& t )
-{
-	hasher( 4s ); // Apply size first, in order to produce different hashes for sequences of sequences.
-	for( &el : t )
-	{
-		apply_value_to_hasher( hasher, el );
-	}
-}
-
-// Overloading for 5-sized tuples.
-template</type Hasher, type A, type B, type C, type D, type E/>
-fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E ]& t )
-{
-	hasher( 5s ); // Apply size first, in order to produce different hashes for sequences of sequences.
-	for( &el : t )
-	{
-		apply_value_to_hasher( hasher, el );
-	}
-}
-
-// Overloading for 6-sized tuples.
-template</type Hasher, type A, type B, type C, type D, type E, type F/>
-fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F ]& t )
-{
-	hasher( 6s ); // Apply size first, in order to produce different hashes for sequences of sequences.
-	for( &el : t )
-	{
-		apply_value_to_hasher( hasher, el );
-	}
-}
-
-// Overloading for 7-sized tuples.
-template</type Hasher, type A, type B, type C, type D, type E, type F, type G/>
-fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F, G ]& t )
-{
-	hasher( 7s ); // Apply size first, in order to produce different hashes for sequences of sequences.
-	for( &el : t )
-	{
-		apply_value_to_hasher( hasher, el );
-	}
-}
-
-// Overloading for 8-sized tuples.
-template</type Hasher, type A, type B, type C, type D, type E, type F, type G, type H/>
-fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F, G, H ]& t )
-{
-	hasher( 8s ); // Apply size first, in order to produce different hashes for sequences of sequences.
-	for( &el : t )
-	{
-		apply_value_to_hasher( hasher, el );
-	}
-}
-
 // Overloading for raw pointers.
 template</type Hasher, type T/>
 fn apply_value_to_hasher( Hasher &mut hasher, $(T) ptr )
@@ -197,6 +98,14 @@ fn apply_value_to_hasher( Hasher &mut hasher, T& t )
 	{
 		// For function pointers just take value of function pointer.
 		hasher( unsafe( cast_ref_unsafe</size_type/>(t) ) );
+	}
+	else static_if( typeinfo</T/>.is_tuple )
+	{
+		hasher( typeinfo</T/>.element_count ); // Apply size first, in order to produce different hashes for sequences of sequences.
+		for( &el : t )
+		{
+			apply_value_to_hasher( hasher, el );
+		}
 	}
 	else static_if( typeinfo</T/>.is_class )
 	{
