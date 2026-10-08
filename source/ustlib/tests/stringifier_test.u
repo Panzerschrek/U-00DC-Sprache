@@ -147,6 +147,12 @@ fn nomangle main() call_conv( "C" ) : i32
 			move( stringifier ).get() !=
 			"{ chars_field : SPQR, floating_point_field : -25667, integer_field : 963 }" );
 	}
+	{ // Struct with references.
+		var i32 y= -36465;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, StructWithReferences{ .x= 674.0f, .y= y } );
+		halt if( move( stringifier ).get() != "{ x : 674, y : -36465 }" );
+	}
 	{ // Stringify empty vector.
 		var ust::vector</f64/> v;
 		var ust::default_stringifier8 mut stringifier;
@@ -237,6 +243,12 @@ struct SomeStruct
 	i32 integer_field;
 	f32 floating_point_field;
 	[ char8, 4 ] chars_field;
+}
+
+struct StructWithReferences
+{
+	f32 x;
+	i32& y;
 }
 
 class ClassWithCustomStringifier
