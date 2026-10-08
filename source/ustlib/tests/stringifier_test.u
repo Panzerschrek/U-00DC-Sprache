@@ -94,6 +94,20 @@ fn nomangle main() call_conv( "C" ) : i32
 		ust::apply_value_to_stringifier( stringifier, lambda(){} );
 		halt if( move( stringifier ).get() != "<LAMBDA>" );
 	}
+	{ // Empty struct.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, EmptyStruct{} );
+		halt if( move( stringifier ).get() != "{}" );
+	}
+	{ // Struct with some fields.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier(
+			stringifier,
+			SomeStruct{ .integer_field= 963, .floating_point_field= -25667.0f, .chars_field= "SPQR" } );
+		halt if(
+			move( stringifier ).get() !=
+			"{ chars_field : SPQR, floating_point_field : -25667, integer_field : 963 }" );
+	}
 
 	return 0;
 }
@@ -101,3 +115,12 @@ fn nomangle main() call_conv( "C" ) : i32
 enum SomeEnum{ Herren, der, Winde }
 
 fn generator SomeGenerator() {}
+
+struct EmptyStruct{}
+
+struct SomeStruct
+{
+	i32 integer_field;
+	f32 floating_point_field;
+	[ char8, 4 ] chars_field;
+}

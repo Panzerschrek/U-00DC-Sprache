@@ -166,9 +166,44 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
 			apply_value_to_stringifier( stringifier, "<TYPEINFO>" );
 			ignore_unused(t);
 		}
+		// TODO - support classes with custom stringification code.
 		else
 		{
-			// TODO
+			// For empty structs stringify as {}.
+			// For non-empty structs stringifiy in {}, use colons, commas (instead of last one) and spaces between elements.
+
+			static_if( ti.field_count == 0s )
+			{
+				apply_value_to_stringifier( stringifier, "{}" );
+				ignore_unused(t);
+			}
+			else
+			{
+				apply_value_to_stringifier( stringifier, "{ " );
+
+				var size_type mut index= 0s;
+
+				// Use typeinfo order, which should be alphabetical.
+				for( &el : ti.fields_list )
+				{
+					static_assert( !el.is_reference, "can't automatically stringify a class with reference fields" );
+					static_assert( el.is_public, "can't automatically stringify a class with non-public fields" );
+
+					apply_value_to_stringifier( stringifier, el.name + " : " );
+					apply_value_to_stringifier( stringifier, mixin( "t." + el.name ) );
+
+					++index;
+
+					if( index < ti.field_count )
+					{
+						apply_value_to_stringifier( stringifier, ", " );
+					}
+					else
+					{
+						apply_value_to_stringifier( stringifier, " }" );
+					}
+				}
+			}
 		}
 	}
 	else
