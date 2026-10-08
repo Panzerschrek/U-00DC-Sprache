@@ -26,5 +26,37 @@ fn nomangle main() call_conv( "C" ) : i32
 	halt if( ust::stringify8( 4, ", ", 8, ", ", 15, ", ", 16, ", ", 23, ", ", 42 ) != "4, 8, 15, 16, 23, 42" );
 	halt if( ust::stringify8( 'F', 'e', 'u', 'e', 'r', 's', 'c', 'h', 'w', 'a', 'n', 'z' ) != "Feuerschwanz" );
 
+	// stringify16
+	halt if( ust::stringify16() != ""u16 );
+	halt if( ust::stringify16( "some" ) != "some"u16 );
+	halt if( ust::stringify16( true ) != "true"u16 );
+	halt if( ust::stringify16( -574 ) != "-574"u16 );
+	halt if( ust::stringify16( "two ", "words" ) != "two words"u16 );
+	halt if( ust::stringify16( "value: ", 425 ) != "value: 425"u16 );
+	halt if( ust::stringify16( -56, " grad" ) != "-56 grad"u16 );
+	halt if( ust::stringify16( false, 0 ) != "false0"u16 );
+	halt if( ust::stringify16( "this", " ", "is" ) != "this is"u16 );
+	halt if( ust::stringify16( 2, " * ", 7.0 ) != "2 * 7"u16 );
+	halt if( ust::stringify16( 7, 3, 4, 6 ) != "7346"u16 );
+	halt if( ust::stringify16( 7, "three", 4, "six" ) != "7three4six"u16 );
+	halt if( ust::stringify16( "One", "Two", "Three", -4, "Five" ) != "OneTwoThree-4Five"u16 );
+	halt if( ust::stringify16( "seq: ", false, true, false, 1, 0 ) != "seq: falsetruefalse10"u16 );
+
+	// stringify32
+	halt if( ust::stringify32() != ""u32 );
+	halt if( ust::stringify32( "some" ) != "some"u32 );
+	halt if( ust::stringify32( true ) != "true"u32 );
+	halt if( ust::stringify32( -574 ) != "-574"u32 );
+	halt if( ust::stringify32( "two ", "words" ) != "two words"u32 );
+	halt if( ust::stringify32( "value: ", 425 ) != "value: 425"u32 );
+	halt if( ust::stringify32( -56, " grad" ) != "-56 grad"u32 );
+	halt if( ust::stringify32( false, 0 ) != "false0"u32 );
+	halt if( ust::stringify32( "this", " ", "is" ) != "this is"u32 );
+	halt if( ust::stringify32( 2, " * ", 7.0 ) != "2 * 7"u32 );
+	halt if( ust::stringify32( 7, 3, 4, 6 ) != "7346"u32 );
+	halt if( ust::stringify32( 7, "three", 4, "six" ) != "7three4six"u32 );
+	halt if( ust::stringify32( "One", "Two", "Three", -4, "Five" ) != "OneTwoThree-4Five"u32 );
+	halt if( ust::stringify32( "seq: ", false, true, false, 1, 0 ) != "seq: falsetruefalse10"u32 );
+
 	return 0;
 }
