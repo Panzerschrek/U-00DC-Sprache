@@ -1,78 +1,87 @@
 import "../imports/string_conversions.iu"
 import "../imports/stringifier.iu"
 import "../imports/utf.iu"
+import "string_conversions_integer.iu"
 
 namespace ust
 {
 
 op default_stringifier8::()( mut this, void x )
 {
-	str_+= to_string8(x);
+	str_+= "void";
+	ignore_unused(x);
 }
 
 op default_stringifier8::()( mut this, bool x )
 {
-	str_+= to_string8(x);
+	if( x )
+	{
+		str_+= "true";
+	}
+	else
+	{
+		str_+= "false";
+	}
 }
 
 op default_stringifier8::()( mut this, u8 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, i8 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, u16 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, i16 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, u32 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, i32 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, u64 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, i64 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, u128 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, i128 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, size_type x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, ssize_type x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, f32 x )
@@ -99,27 +108,27 @@ op default_stringifier8::()( mut this, char32 x )
 
 op default_stringifier8::()( mut this, byte8 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, byte16 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, byte32 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, byte64 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, byte128 x )
 {
-	str_+= to_string8(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier8::()( mut this, array_view_imut</char16/> mut arr )
@@ -147,72 +156,80 @@ op default_stringifier8::()( mut this, array_view_imut</char32/> arr )
 
 op default_stringifier16::()( mut this, void x )
 {
-	str_+= to_string16(x);
+	str_+= "void"u16;
+	ignore_unused(x);
 }
 
 op default_stringifier16::()( mut this, bool x )
 {
-	str_+= to_string16(x);
+	if( x )
+	{
+		str_+= "true"u16;
+	}
+	else
+	{
+		str_+= "false"u16;
+	}
 }
 
 op default_stringifier16::()( mut this, u8 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, i8 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, u16 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, i16 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, u32 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, i32 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, u64 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, i64 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, u128 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, i128 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, size_type x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, ssize_type x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, f32 x )
@@ -239,27 +256,27 @@ op default_stringifier16::()( mut this, char32 x )
 
 op default_stringifier16::()( mut this, byte8 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, byte16 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, byte32 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, byte64 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, byte128 x )
 {
-	str_+= to_string16(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier16::()( mut this, array_view_imut</char8/> mut arr )
@@ -287,72 +304,80 @@ op default_stringifier16::()( mut this, array_view_imut</char32/> arr )
 
 op default_stringifier32::()( mut this, void x )
 {
-	str_+= to_string32(x);
+	str_+= "void"u32;
+	ignore_unused(x);
 }
 
 op default_stringifier32::()( mut this, bool x )
 {
-	str_+= to_string32(x);
+	if( x )
+	{
+		str_+= "true"u32;
+	}
+	else
+	{
+		str_+= "false"u32;
+	}
 }
 
 op default_stringifier32::()( mut this, u8 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, i8 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, u16 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, i16 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, u32 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, i32 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, u64 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, i64 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, u128 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, i128 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, size_type x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, ssize_type x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, f32 x )
@@ -381,27 +406,27 @@ op default_stringifier32::()( mut this, char16 x )
 
 op default_stringifier32::()( mut this, byte8 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, byte16 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, byte32 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, byte64 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, byte128 x )
 {
-	str_+= to_string32(x);
+	to_string_impl( str_, x );
 }
 
 op default_stringifier32::()( mut this, array_view_imut</char8/> mut arr )
