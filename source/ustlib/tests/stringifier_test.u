@@ -1,5 +1,6 @@
 //##success_test
 import "../imports/box_nullable.iu"
+import "../imports/duration.iu"
 import "../imports/hash_map.iu"
 import "../imports/hash_set.iu"
 import "../imports/inet_address.iu"
@@ -294,6 +295,11 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( s.empty() );
 		halt if( !s.range().starts_with( "{" ) );
 		halt if( !s.range().ends_with( "}" ) );
+	}
+	{ // Stringify duration.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::duration::from_nanoseconds( 54367543784336u ) );
+		halt if( move( stringifier ).get() != "54367543784336ns" );
 	}
 
 	return 0;
