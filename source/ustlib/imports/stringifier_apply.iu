@@ -1,4 +1,5 @@
-import "random_access_range.iu"
+import "memory.iu"
+import "type_traits.iu"
 
 namespace ust
 {
@@ -32,24 +33,6 @@ template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut str
 template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, f32 x ) { stringifier(x); }
 template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, f64 x ) { stringifier(x); }
 
-template</type Stringifier, bool is_mutable/>
-fn apply_value_to_stringifier( Stringifier &mut stringifier, random_access_range</char8, is_mutable/> arr )
-{
-	stringifier( arr );
-}
-
-template</type Stringifier, bool is_mutable/>
-fn apply_value_to_stringifier( Stringifier &mut stringifier, random_access_range</char16, is_mutable/> arr )
-{
-	stringifier( arr );
-}
-
-template</type Stringifier, bool is_mutable/>
-fn apply_value_to_stringifier( Stringifier &mut stringifier, random_access_range</char32, is_mutable/> arr )
-{
-	stringifier( arr );
-}
-
 template</type Stringifier, size_type S/>
 fn apply_value_to_stringifier( Stringifier &mut stringifier, [ char8, S ]& arr )
 {
@@ -66,31 +49,6 @@ template</type Stringifier, size_type S/>
 fn apply_value_to_stringifier( Stringifier &mut stringifier, [ char32, S ]& arr )
 {
 	stringifier( arr );
-}
-
-template</type Stringifier, type T, bool is_mutable/>
-fn apply_value_to_stringifier( Stringifier &mut stringifier, random_access_range</T, is_mutable/> arr )
-{
-	// This code should match "stringify" code for arrays!
-
-	if( arr.empty() )
-	{
-		apply_value_to_stringifier( stringifier, "[]" );
-	}
-	else
-	{
-		apply_value_to_stringifier( stringifier, "[ " );
-
-		apply_value_to_stringifier( stringifier, arr[0s] );
-
-		for( auto mut i= 1s; i < arr.size(); ++i )
-		{
-			apply_value_to_stringifier( stringifier, ", " );
-			apply_value_to_stringifier( stringifier, arr[i] );
-		}
-
-		apply_value_to_stringifier( stringifier, " ]" );
-	}
 }
 
 // Generic function for stringification of other types.
@@ -134,7 +92,7 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
 			apply_value_to_stringifier( stringifier, "[ " );
 
 			var size_type mut index= 0s;
-			foreach( &el : t )
+			for( &el : t )
 			{
 				apply_value_to_stringifier( stringifier, el );
 
