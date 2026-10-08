@@ -261,6 +261,81 @@ fn to_string32( size_type x ) : string32
 	}
 }
 
+fn to_string8 ( byte8   x ) : string8
+{
+	return to_string</char8 />( x );
+}
+
+fn to_string8 ( byte16  x ) : string8
+{
+	return to_string</char8 />( x );
+}
+
+fn to_string8 ( byte32  x ) : string8
+{
+	return to_string</char8 />( x );
+}
+
+fn to_string8 ( byte64  x ) : string8
+{
+	return to_string</char8 />( x );
+}
+
+fn to_string8 ( byte128 x ) : string8
+{
+	return to_string</char8 />( x );
+}
+
+fn to_string16( byte8   x ) : string16
+{
+	return to_string</char16/>( x );
+}
+
+fn to_string16( byte16  x ) : string16
+{
+	return to_string</char16/>( x );
+}
+
+fn to_string16( byte32  x ) : string16
+{
+	return to_string</char16/>( x );
+}
+
+fn to_string16( byte64  x ) : string16
+{
+	return to_string</char16/>( x );
+}
+
+fn to_string16( byte128 x ) : string16
+{
+	return to_string</char16/>( x );
+}
+
+fn to_string32( byte8   x ) : string32
+{
+	return to_string</char32/>( x );
+}
+
+fn to_string32( byte16  x ) : string32
+{
+	return to_string</char32/>( x );
+}
+
+fn to_string32( byte32  x ) : string32
+{
+	return to_string</char32/>( x );
+}
+
+fn to_string32( byte64  x ) : string32
+{
+	return to_string</char32/>( x );
+}
+
+fn to_string32( byte128 x ) : string32
+{
+	return to_string</char32/>( x );
+}
+
 template</type C/>
 fn to_string( i8 x ) : string_base</C/>
 {
@@ -531,5 +606,142 @@ fn to_string_impl( u128 x, string_base</C/>& mut result )
 		}
 	}
 }
+
+template</type C/>
+fn to_string( byte8 x ) : string_base</C/>
+{
+	var u32 num( u8(x) );
+
+	var [ C, 4 ] chars
+	[
+		( '0' ),
+		( 'x' ),
+		( g_hex_digits[ ( num >> 4 ) & 15u ] ),
+		( g_hex_digits[ ( num >> 0 ) & 15u ] ),
+	];
+
+	return chars;
+}
+
+template</type C/>
+fn to_string( byte16 x ) : string_base</C/>
+{
+	var u32 num( u16(x) );
+
+	var [ C, 6 ] chars
+	[
+		( '0' ),
+		( 'x' ),
+		( g_hex_digits[ ( num >> 12 ) & 15u ] ),
+		( g_hex_digits[ ( num >>  8 ) & 15u ] ),
+		( g_hex_digits[ ( num >>  4 ) & 15u ] ),
+		( g_hex_digits[ ( num >>  0 ) & 15u ] ),
+	];
+
+	return chars;
+}
+
+template</type C/>
+fn to_string( byte32 x ) : string_base</C/>
+{
+	var u32 num( x );
+
+	var [ C, 10 ] chars
+	[
+		( '0' ),
+		( 'x' ),
+		( g_hex_digits[ ( num >> 28 ) & 15u ] ),
+		( g_hex_digits[ ( num >> 24 ) & 15u ] ),
+		( g_hex_digits[ ( num >> 20 ) & 15u ] ),
+		( g_hex_digits[ ( num >> 16 ) & 15u ] ),
+		( g_hex_digits[ ( num >> 12 ) & 15u ] ),
+		( g_hex_digits[ ( num >>  8 ) & 15u ] ),
+		( g_hex_digits[ ( num >>  4 ) & 15u ] ),
+		( g_hex_digits[ ( num >>  0 ) & 15u ] ),
+	];
+
+	return chars;
+}
+
+template</type C/>
+fn to_string( byte64 x ) : string_base</C/>
+{
+	var u64 num(x);
+
+	var [ C, 18 ] chars
+	[
+		( '0' ),
+		( 'x' ),
+		( g_hex_digits[ ( num >> 60 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 56 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 52 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 48 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 44 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 40 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 36 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 32 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 28 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 24 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 20 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 16 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 12 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >>  8 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >>  4 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >>  0 ) & 15u64 ] ),
+	];
+
+	return chars;
+}
+
+template</type C/>
+fn to_string( byte128 x ) : string_base</C/>
+{
+	// TODO - consider optimizing this code.
+	// Doing bit shifts for 128-bit integers may be costly.
+
+	var u128 num( x );
+
+	var [ C, 34 ] chars
+	[
+		( '0' ),
+		( 'x' ),
+		( g_hex_digits[ ( num >> 124 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >> 120 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >> 116 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >> 112 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >> 108 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >> 104 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >> 100 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  96 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  92 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  88 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  84 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  80 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  76 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  72 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  68 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  64 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  60 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  56 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  52 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  48 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  44 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  40 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  36 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  32 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  28 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  24 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  20 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  16 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  12 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>   8 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>   4 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>   0 ) & 15u128 ] ),
+	];
+
+	return chars;
+}
+
+var [ char8, 16 ] g_hex_digits= "0123456789ABCDEF";
 
 } // namespace ust

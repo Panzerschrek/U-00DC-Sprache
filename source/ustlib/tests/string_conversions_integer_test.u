@@ -209,6 +209,42 @@ fn nomangle main() call_conv( "C" ) : i32
 	halt if( ust::to_string8(ssize_type(5624)) != "5624" );
 	halt if( ust::to_string8(ssize_type(2147483647)) != "2147483647" );
 
+	// byte8
+	halt if( ust::to_string8( byte8( 0x00u8 ) ) != "0x00" );
+	halt if( ust::to_string8( byte8( 0x05u8 ) ) != "0x05" );
+	halt if( ust::to_string8( byte8( 0x0Du8 ) ) != "0x0D" );
+	halt if( ust::to_string8( byte8( 0x53u8 ) ) != "0x53" );
+	halt if( ust::to_string8( byte8( 0xE0u8 ) ) != "0xE0" );
+	halt if( ust::to_string8( byte8( 0xFFu8 ) ) != "0xFF" );
+
+	// byte16
+	halt if( ust::to_string8( byte16( 0x0000u16 ) ) != "0x0000" );
+	halt if( ust::to_string8( byte16( 0x0003u16 ) ) != "0x0003" );
+	halt if( ust::to_string8( byte16( 0x008Fu16 ) ) != "0x008F" );
+	halt if( ust::to_string8( byte16( 0x0CA9u16 ) ) != "0x0CA9" );
+	halt if( ust::to_string8( byte16( 0x53D0u16 ) ) != "0x53D0" );
+	halt if( ust::to_string8( byte16( 0xFFFFu16 ) ) != "0xFFFF" );
+
+	// byte32
+	halt if( ust::to_string8( byte32( 0x00000000u32 ) ) != "0x00000000" );
+	halt if( ust::to_string8( byte32( 0x01234567u32 ) ) != "0x01234567" );
+	halt if( ust::to_string8( byte32( 0x89ABCDEFu32 ) ) != "0x89ABCDEF" );
+	halt if( ust::to_string8( byte32( 0xFEDCBA98u32 ) ) != "0xFEDCBA98" );
+	halt if( ust::to_string8( byte32( 0x76543210u32 ) ) != "0x76543210" );
+	halt if( ust::to_string8( byte32( 0xFFFFFFFFu32 ) ) != "0xFFFFFFFF" );
+
+	// byte64
+	halt if( ust::to_string8( byte64( 0x0000000000000000u64 ) ) != "0x0000000000000000" );
+	halt if( ust::to_string8( byte64( 0x0123456789ABCDEFu64 ) ) != "0x0123456789ABCDEF" );
+	halt if( ust::to_string8( byte64( 0xFEDCBA9876543210u64 ) ) != "0xFEDCBA9876543210" );
+	halt if( ust::to_string8( byte64( 0xFFFFFFFFFFFFFFFFu64 ) ) != "0xFFFFFFFFFFFFFFFF" );
+
+	// byte128
+	halt if( ust::to_string8( byte128( 0x00000000000000000000000000000000u128 ) ) != "0x00000000000000000000000000000000" );
+	halt if( ust::to_string8( byte128( 0x0123456789ABCDEFFEDCBA9876543210u128 ) ) != "0x0123456789ABCDEFFEDCBA9876543210" );
+	halt if( ust::to_string8( byte128( 0xFEDCBA98765432100123456789ABCDEFu128 ) ) != "0xFEDCBA98765432100123456789ABCDEF" );
+	halt if( ust::to_string8( byte128( 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFu128 ) ) != "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" );
+
 	// string16
 	halt if( ust::to_string16(0i8) != "0"u16 );
 	halt if( ust::to_string16(1u8) != "1"u16 );
@@ -218,6 +254,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	halt if( ust::to_string16(12545u32) != "12545"u16 );
 	halt if( ust::to_string16(-65265415858568i64) != "-65265415858568"u16 );
 	halt if( ust::to_string16(98745632100254u64) != "98745632100254"u16 );
+	halt if( ust::to_string16( byte32( 0x7235E3F4u ) ) != "0x7235E3F4"u16 );
 
 	// string32
 	halt if( ust::to_string32(0i8) != "0"u32 );
@@ -228,6 +265,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	halt if( ust::to_string32(54321u32) != "54321"u32 );
 	halt if( ust::to_string32(-65265417158868i64) != "-65265417158868"u32 );
 	halt if( ust::to_string32(58745632100744u64) != "58745632100744"u32 );
+	halt if( ust::to_string32( byte32( 0x7235E3F4u ) ) != "0x7235E3F4"u32 );
 
 	return 0;
 }

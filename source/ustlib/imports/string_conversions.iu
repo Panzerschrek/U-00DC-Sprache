@@ -48,6 +48,25 @@ fn to_string32( u128 x ) : string32;
 fn to_string32( ssize_type x ) : string32;
 fn to_string32( size_type x ) : string32;
 
+// Convert byte-types to string.
+// They are converted into base-16 numbers with "0x" prefix.
+// Leading zeros are not trimmed, so that all stringified values of the same byte-type have the same length.
+fn to_string8 ( byte8   x ) : string8;
+fn to_string8 ( byte16  x ) : string8;
+fn to_string8 ( byte32  x ) : string8;
+fn to_string8 ( byte64  x ) : string8;
+fn to_string8 ( byte128 x ) : string8;
+fn to_string16( byte8   x ) : string16;
+fn to_string16( byte16  x ) : string16;
+fn to_string16( byte32  x ) : string16;
+fn to_string16( byte64  x ) : string16;
+fn to_string16( byte128 x ) : string16;
+fn to_string32( byte8   x ) : string32;
+fn to_string32( byte16  x ) : string32;
+fn to_string32( byte32  x ) : string32;
+fn to_string32( byte64  x ) : string32;
+fn to_string32( byte128 x ) : string32;
+
 // Convert "f32" into a string.
 // The result string doesn't perfectly represent the exact value stored in "f32",
 // but it's close enough so that parsing it will give the same number.
