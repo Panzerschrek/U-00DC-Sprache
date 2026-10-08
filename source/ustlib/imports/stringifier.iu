@@ -17,6 +17,8 @@ class default_stringifier8
 	op()( mut this, i64 x );
 	op()( mut this, u128 x );
 	op()( mut this, i128 x );
+	op()( mut this, size_type x );
+	op()( mut this, ssize_type x );
 
 	op()( mut this, f32 x );
 	op()( mut this, f64 x );
@@ -60,6 +62,8 @@ class default_stringifier16
 	op()( mut this, i64 x );
 	op()( mut this, u128 x );
 	op()( mut this, i128 x );
+	op()( mut this, size_type x );
+	op()( mut this, ssize_type x );
 
 	op()( mut this, f32 x );
 	op()( mut this, f64 x );
@@ -103,6 +107,8 @@ class default_stringifier32
 	op()( mut this, i64 x );
 	op()( mut this, u128 x );
 	op()( mut this, i128 x );
+	op()( mut this, size_type x );
+	op()( mut this, ssize_type x );
 
 	op()( mut this, f32 x );
 	op()( mut this, f64 x );

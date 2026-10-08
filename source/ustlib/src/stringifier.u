@@ -65,6 +65,16 @@ op default_stringifier8::()( mut this, i128 x )
 	str_+= to_string8(x);
 }
 
+op default_stringifier8::()( mut this, size_type x )
+{
+	str_+= to_string8(x);
+}
+
+op default_stringifier8::()( mut this, ssize_type x )
+{
+	str_+= to_string8(x);
+}
+
 op default_stringifier8::()( mut this, f32 x )
 {
 	str_+= to_string8(x);
@@ -195,6 +205,16 @@ op default_stringifier16::()( mut this, i128 x )
 	str_+= to_string16(x);
 }
 
+op default_stringifier16::()( mut this, size_type x )
+{
+	str_+= to_string16(x);
+}
+
+op default_stringifier16::()( mut this, ssize_type x )
+{
+	str_+= to_string16(x);
+}
+
 op default_stringifier16::()( mut this, f32 x )
 {
 	str_+= to_string16(x);
@@ -321,6 +341,16 @@ op default_stringifier32::()( mut this, u128 x )
 }
 
 op default_stringifier32::()( mut this, i128 x )
+{
+	str_+= to_string32(x);
+}
+
+op default_stringifier32::()( mut this, size_type x )
+{
+	str_+= to_string32(x);
+}
+
+op default_stringifier32::()( mut this, ssize_type x )
 {
 	str_+= to_string32(x);
 }
