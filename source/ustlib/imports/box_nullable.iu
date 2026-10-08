@@ -185,6 +185,20 @@ public:
 		}
 	}
 
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		if( empty() )
+		{
+			apply_value_to_stringifier( stringifier, "null" );
+		}
+		else
+		{
+			apply_value_to_stringifier( stringifier, try_deref() );
+		}
+	}
+
 private:
 	$(T) ptr_= zero_init;
 }

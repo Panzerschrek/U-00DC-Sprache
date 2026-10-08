@@ -2,6 +2,7 @@ import "alloc.iu"
 import "container_utils.iu"
 import "hash_apply.iu"
 import "polymorph.iu"
+import "stringifier_apply.iu"
 
 namespace ust
 {
@@ -84,6 +85,13 @@ public:
 	{
 		// Just hash stored value.
 		apply_value_to_hasher( hasher, deref() );
+	}
+
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		apply_value_to_stringifier( stringifier, deref() );
 	}
 
 private:

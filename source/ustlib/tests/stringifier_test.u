@@ -1,4 +1,5 @@
 //##success_test
+import "../imports/box_nullable.iu"
 import "../imports/string.iu"
 import "../imports/stringifier.iu"
 import "../imports/stringifier_apply.iu"
@@ -178,6 +179,23 @@ fn nomangle main() call_conv( "C" ) : i32
 				ClassWithCustomStringifier( 15 ),
 				ClassWithCustomStringifier( 150 ) ) );
 		halt if( move( stringifier ).get() != "[ CustomClass(10), CustomClass(15), CustomClass(150) ]" );
+	}
+	{ // Stringify a box.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_box( 434415 ) );
+		halt if( move( stringifier ).get() != "434415" );
+	}
+	{ // Stringify a non-empty nullable box.
+		var ust::box_nullable</ [ char8, 4 ] /> b( "606Q" );
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, b );
+		halt if( move( stringifier ).get() != "606Q" );
+	}
+	{ // Stringify an empty nullable box.
+		var ust::box_nullable</ u64 /> b;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, b );
+		halt if( move( stringifier ).get() != "null" );
 	}
 
 	return 0;
