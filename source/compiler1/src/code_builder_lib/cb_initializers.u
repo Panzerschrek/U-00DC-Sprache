@@ -204,7 +204,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 		for( auto mut i= 0s; i < num_regular_initializers; ++i )
 		{
 			var LLVMValueRef element_llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, u32(i) );
-			var ust::string8 element_name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" );
+			var ust::string8 element_name= ust::stringify8( variable_ptr.lock_imut().deref().name, "[", i, "]" );
 
 			var VariablePtr element_variable_ptr=
 				Variable
@@ -401,7 +401,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 			var Type& element_type= tuple_type.element_types[i];
 
 			var LLVMValueRef element_llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) );
-			var ust::string8 element_name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" );
+			var ust::string8 element_name= ust::stringify8( variable_ptr.lock_imut().deref().name, "[", i, "]" );
 
 			var VariablePtr element_variable_ptr=
 				Variable
@@ -768,7 +768,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 					.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
-					.name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
+					.name= ust::stringify8( variable_ptr.lock_imut().deref().name, "[", i, "]" ),
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( element_variable_ptr );
@@ -917,7 +917,7 @@ fn CodeBuilder::ApplyEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 					.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
-					.name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
+					.name= ust::stringify8( variable_ptr.lock_imut().deref().name, "[", i, "]" ),
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( element_variable_ptr );

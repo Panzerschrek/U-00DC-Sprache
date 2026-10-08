@@ -1,6 +1,6 @@
 import "/composite.iu"
 import "/random_access_range.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "/vector.iu"
 import "code_builder_errors.iu"
 import "../lex_synt_lib/syntax_analyzer.iu"
@@ -68,7 +68,7 @@ fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, A& param0, B& param1
 template</type T/>
 fn PreprocessErrorArg( T& x ) : ust::string8
 {
-	return ust::to_string8(x);
+	return ust::stringify8(x);
 }
 
 template</size_type s/>

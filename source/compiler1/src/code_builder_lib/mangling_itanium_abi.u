@@ -1,6 +1,6 @@
 import "/assert.iu"
 import "/helpers.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "/CodeBuilderLib/keywords.iu"
 import "mangling.iu"
 
@@ -118,7 +118,7 @@ fn ManglerItaniumABI::MangleFunctionImpl(
 	var ust::string8 mut name_prefixed= DecodeOperator( name );
 	if( name_prefixed.empty() )
 	{
-		name_prefixed= ust::to_string8( name.size() );
+		name_prefixed= ust::stringify8( name.size() );
 		name_prefixed+= name;
 	}
 
@@ -220,7 +220,7 @@ fn ManglerState::PushLengthPrefixed( mut this, ust::string_view8 name )
 
 fn ManglerState::PushDecimalNumber( mut this, u64 n )
 {
-	// Small optimization for common cases. Needed because "ust::to_string8" allocates memory.
+	// Small optimization for common cases. Needed because "ust::stringify8" allocates memory.
 	auto zero_char= u64('0');
 	if( n < 10u64 )
 	{
@@ -239,7 +239,7 @@ fn ManglerState::PushDecimalNumber( mut this, u64 n )
 	}
 	else
 	{
-		Push( ust::to_string8( n ) );
+		Push( ust::stringify8( n ) );
 	}
 }
 

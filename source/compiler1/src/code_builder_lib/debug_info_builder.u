@@ -1,6 +1,6 @@
 import "/scoped_array.iu"
 import "/sort.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "debug_info_builder.iu"
 
 namespace U1
@@ -446,7 +446,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRe
 
 	for( auto mut i= 0s; i < t.element_types.size(); ++i )
 	{
-		var ust::string8 name= ust::to_string8(i);
+		var ust::string8 name= ust::stringify8(i);
 		var Type& element_type= t.element_types[i];
 		var LLVMMetadataRef element_di_type= CreateDIType( element_type );
 		var LLVMTypeRef llvm_element_type= element_type.GetLLVMType();

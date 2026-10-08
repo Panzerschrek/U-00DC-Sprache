@@ -1451,7 +1451,7 @@ fn CodeBuilder::BuildFuncCode(
 						.t= invalid_type_,
 						.value_type= ValueType::Value,
 						.location= Variable::Location::Pointer,
-						.name= in_param.name + " referenced variable " + ust::to_string8(i)
+						.name= ust::stringify8( in_param.name, " referenced variable ", i )
 					}.CreatePtr();
 
 				var SecondOrderInnerReferenceKind second_order_inner_reference_kind= type_param.t.GetSecondOrderInnerReferenceKind(i);
@@ -1467,7 +1467,7 @@ fn CodeBuilder::BuildFuncCode(
 									? ValueType::ReferenceImut
 									: ValueType::ReferenceMut ),
 							.location= Variable::Location::Pointer,
-							.name= ust::concat( in_param.name, " referenced variable ", ust::to_string8(i), " inner reference" ),
+							.name= ust::stringify8( in_param.name, " referenced variable ", i, " inner reference" ),
 							.is_inner_reference_node= true,
 							.is_variable_inner_reference_node= true,
 						}.CreatePtr();
@@ -1492,7 +1492,7 @@ fn CodeBuilder::BuildFuncCode(
 							.t= invalid_type_,
 							.value_type= ValueType::Value,
 							.location= Variable::Location::Pointer,
-							.name= ust::concat( in_param.name, " second order referenced variable ", ust::to_string8(i) ),
+							.name= ust::stringify8( in_param.name, " second order referenced variable ", i ),
 						}.CreatePtr();
 
 					function_context.references_graph.AddNode( second_order_accesible_variable );
@@ -1613,7 +1613,7 @@ fn CodeBuilder::BuildFuncCode(
 													? ValueType::ReferenceImut
 													: ValueType::ReferenceMut ),
 											.location= Variable::Location::Pointer,
-											.name= ust::concat( field_name, " referenced variable ", ust::to_string8(i), " inner reference" ),
+											.name= ust::stringify8( field_name, " referenced variable ", i, " inner reference" ),
 											.is_inner_reference_node= true,
 											.is_variable_inner_reference_node= true,
 										}.CreatePtr();
@@ -1638,7 +1638,7 @@ fn CodeBuilder::BuildFuncCode(
 											.t= invalid_type_,
 											.value_type= ValueType::Value,
 											.location= Variable::Location::Pointer,
-											.name= ust::concat( field_name, " second order referenced variable ", ust::to_string8(i) ),
+											.name= ust::stringify8( field_name, " second order referenced variable ", i ),
 										}.CreatePtr();
 
 									function_context.references_graph.AddNode( second_order_accesible_variable );
@@ -3160,7 +3160,7 @@ fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, 
 		return Null::LLVMValueRef;
 	}
 
-	auto op_name_nt= ust::concat( "[", ust::to_string8(element_index), "]\0" );
+	auto op_name_nt= ust::stringify8( "[", element_index, "]\0" );
 	unsafe
 	{
 		var [ LLVMValueRef, 2 ] mut indexes

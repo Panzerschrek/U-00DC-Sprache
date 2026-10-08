@@ -965,23 +965,24 @@ fn CodeBuilder::GetLambdaPreprocessingDummyClass( mut this, NamesScopePtr& names
 
 fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_imut</u32/> tuple_for_indices ) : ust::string8
 {
-	var ust::string8 mut name;
-	name+= "_lambda_"; // Start with "_" in order to avoid collisions with user names.
+	var ust::default_stringifier8 mut stringifier;
+
+	ust::apply_value_to_stringifier( stringifier, "_lambda_" ); // Start with "_" in order to avoid collisions with user names.
 
 	var SrcLoc mut src_loc= lambda_.src_loc;
 	loop
 	{
 		// Encode file.
 		// Use file path hash instead of file index, because we need to use stable identifier independent on from which main file this file is imported.
-		name+= source_graph_.try_deref().nodes[ size_type( src_loc.GetFileIndex() ) ].file_path_hash;
-		name+= "_";
+		ust::apply_value_to_stringifier( stringifier, source_graph_.try_deref().nodes[ size_type( src_loc.GetFileIndex() ) ].file_path_hash );
+		ust::apply_value_to_stringifier( stringifier, "_" );
 
 		// Encode line and column into the name to produce different names for different lambdas in the same file.
-		name+= ust::to_string8( src_loc.GetLine() );
-		name+= "_";
+		ust::apply_value_to_stringifier( stringifier, src_loc.GetLine() );
+		ust::apply_value_to_stringifier( stringifier, "_" );
 
-		name+= ust::to_string8( src_loc.GetColumn() );
-		name+= "_";
+		ust::apply_value_to_stringifier( stringifier, src_loc.GetColumn() );
+		ust::apply_value_to_stringifier( stringifier, "_" );
 
 		auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
 		if( macro_expansion_index != SrcLoc::c_max_macro_expanison_index )
@@ -998,16 +999,16 @@ fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_
 
 	if( !tuple_for_indices.empty() )
 	{
-		name+= "tf_";
+		ust::apply_value_to_stringifier( stringifier, "tf_" );
 
 		foreach( tuple_for_index : tuple_for_indices )
 		{
-			name+= ust::to_string8( tuple_for_index );
-			name+= "_";
+			ust::apply_value_to_stringifier( stringifier, tuple_for_index );
+			ust::apply_value_to_stringifier( stringifier,  "_" );
 		}
 	}
 
-	return name;
+	return move(stringifier).get();
 }
 
 fn CodeBuilder::CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::hash_set</VariablePtr/>
@@ -1146,7 +1147,7 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 									.t= t,
 									.value_type= ValueType::Value,
 									.location= Variable::Location::Pointer,
-									.name= ust::concat( "referenced variable ", ust::to_string8(index), " of captured lambda variable ", v.name ),
+									.name= ust::stringify8( "referenced variable ", index, " of captured lambda variable ", v.name ),
 								}.CreatePtr();
 						} ),
 			} );

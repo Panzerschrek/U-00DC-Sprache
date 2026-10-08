@@ -2,7 +2,7 @@ import "/assert.iu"
 import "/helpers.iu"
 import "/scoped_array.iu"
 import "/sort.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "/CodeBuilderLib/keywords.iu"
 import "error_reporting.iu"
 import "code_builder.iu"
@@ -2104,7 +2104,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 								SwitchUndhandledValue,
 								names_scope,
 								ust::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
-								ust::to_string8(current_high + 1u128) )
+								ust::stringify8(current_high + 1u128) )
 						}
 						else
 						{
@@ -2112,8 +2112,8 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 								SwitchUndhandledRange,
 								names_scope,
 								ust::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
-								ust::to_string8(current_high + 1u128),
-								ust::to_string8(next_low - 1u128) )
+								ust::stringify8(current_high + 1u128),
+								ust::stringify8(next_low - 1u128) )
 						}
 					}
 				}
@@ -2124,10 +2124,10 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 					SwitchRangesOverlapping,
 					names_scope,
 					ust::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
-					ust::to_string8(current_range.low ),
-					ust::to_string8(current_range.high),
-					ust::to_string8(next_range.low ),
-					ust::to_string8(next_range.high) )
+					ust::stringify8(current_range.low ),
+					ust::stringify8(current_range.high),
+					ust::stringify8(next_range.low ),
+					ust::stringify8(next_range.high) )
 			}
 		}
 
@@ -2147,7 +2147,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 							SwitchUndhandledValue,
 							names_scope,
 							all_ranges.front().src_loc,
-							ust::to_string8(type_low) )
+							ust::stringify8(type_low) )
 					}
 					else
 					{
@@ -2155,8 +2155,8 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 							SwitchUndhandledRange,
 							names_scope,
 							all_ranges.front().src_loc,
-							ust::to_string8(type_low),
-							ust::to_string8(first_range_low - 1u128) )
+							ust::stringify8(type_low),
+							ust::stringify8(first_range_low - 1u128) )
 					}
 				}
 			}
@@ -2174,7 +2174,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 							SwitchUndhandledValue,
 							names_scope,
 							all_ranges.back().src_loc,
-							ust::to_string8(type_high) )
+							ust::stringify8(type_high) )
 					}
 					else
 					{
@@ -2182,8 +2182,8 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 							SwitchUndhandledRange,
 							names_scope,
 							all_ranges.back().src_loc,
-							ust::to_string8(last_range_high + 1u128),
-							ust::to_string8(type_high) )
+							ust::stringify8(last_range_high + 1u128),
+							ust::stringify8(type_high) )
 					}
 				}
 			}
@@ -2200,7 +2200,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 						SwitchUndhandledValue,
 						names_scope,
 						switch_operator.src_loc,
-						ust::to_string8(type_high) )
+						ust::stringify8(type_high) )
 				}
 				else
 				{
@@ -2208,8 +2208,8 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 						SwitchUndhandledRange,
 						names_scope,
 						switch_operator.src_loc,
-						ust::to_string8(type_low),
-						ust::to_string8(type_high) )
+						ust::stringify8(type_low),
+						ust::stringify8(type_high) )
 				}
 			}
 		}
@@ -2563,7 +2563,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 
 			auto next_basic_block= ( is_last_iteration ? finish_basic_block : unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) ) );
 
-			var ust::string8 variable_name= range_for_operator.loop_variable_name + ust::to_string8(i);
+			var ust::string8 variable_name= ust::stringify8( range_for_operator.loop_variable_name, i );
 
 			var Type& variable_type= tuple_type.element_types[i];
 
@@ -3688,7 +3688,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 						( variable_lite.constexpr_value == Null::LLVMValueRef
 							? Null::LLVMValueRef
 							: unsafe( LLVMGetAggregateElement( variable_lite.constexpr_value, u32(i) ) ) ),
-					.name= ust::concat( initializer_variable.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
+					.name= ust::stringify8( initializer_variable.lock_imut().deref().name, "[", i, "]" ),
 					.src_loc= component.src_loc,
 				}.CreatePtr();
 
@@ -3721,7 +3721,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 						( variable_lite.constexpr_value == Null::LLVMValueRef
 							? Null::LLVMValueRef
 							: unsafe( LLVMGetAggregateElement( variable_lite.constexpr_value, u32(i) ) ) ),
-					.name= ust::concat( initializer_variable.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
+					.name= ust::stringify8( initializer_variable.lock_imut().deref().name, "[", i, "]" ),
 					.src_loc= component.src_loc,
 				}.CreatePtr();
 

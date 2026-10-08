@@ -370,6 +370,8 @@ public:
 	// Convert type name to human-readable format.
 	fn ToString( this ) : ust::string8;
 
+	// TODO - add here an internal method for stringification into default stringificator.
+
 	op==( Type& l, Type& r ) : bool;
 
 	template</type Hasher/>
