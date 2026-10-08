@@ -1,0 +1,126 @@
+import "string_base.iu"
+
+namespace ust
+{
+
+class default_stringifier8
+{
+	op()( mut this, void x );
+	op()( mut this, bool x );
+	op()( mut this, u8 x );
+	op()( mut this, i8 x );
+	op()( mut this, u16 x );
+	op()( mut this, i16 x );
+	op()( mut this, u32 x );
+	op()( mut this, i32 x );
+	op()( mut this, u64 x );
+	op()( mut this, i64 x );
+	op()( mut this, u128 x );
+	op()( mut this, i128 x );
+
+	op()( mut this, char8 x ) { str_.push_back( x ); }
+	op()( mut this, char16 x );
+	op()( mut this, char32 x );
+
+	op()( mut this, byte8 x );
+	op()( mut this, byte16 x );
+	op()( mut this, byte32 x );
+	op()( mut this, byte64 x );
+	op()( mut this, byte128 x );
+
+	op()( mut this, array_view_imut</char8/> arr ) { str_+= arr; }
+	op()( mut this, array_view_imut</char16/> arr );
+	op()( mut this, array_view_imut</char32/> arr );
+
+	// Get result string.
+	// You must move this instance in order to do this.
+	fn get( byval mut this ) : string_base</char8/>
+	{
+		return take(str_);
+	}
+
+private:
+	string_base</char8/> str_;
+}
+
+class default_stringifier16
+{
+	op()( mut this, void x );
+	op()( mut this, bool x );
+	op()( mut this, u8 x );
+	op()( mut this, i8 x );
+	op()( mut this, u16 x );
+	op()( mut this, i16 x );
+	op()( mut this, u32 x );
+	op()( mut this, i32 x );
+	op()( mut this, u64 x );
+	op()( mut this, i64 x );
+	op()( mut this, u128 x );
+	op()( mut this, i128 x );
+
+	op()( mut this, char8 x );
+	op()( mut this, char16 x ) { str_.push_back( x ); }
+	op()( mut this, char32 x );
+
+	op()( mut this, byte8 x );
+	op()( mut this, byte16 x );
+	op()( mut this, byte32 x );
+	op()( mut this, byte64 x );
+	op()( mut this, byte128 x );
+
+	op()( mut this, array_view_imut</char8/> arr );
+	op()( mut this, array_view_imut</char16/> arr ) { str_+= arr; }
+	op()( mut this, array_view_imut</char32/> arr );
+
+	// Get result string.
+	// You must move this instance in order to do this.
+	fn get( byval mut this ) : string_base</char16/>
+	{
+		return take(str_);
+	}
+
+private:
+	string_base</char16/> str_;
+}
+
+class default_stringifier32
+{
+	op()( mut this, void x );
+	op()( mut this, bool x );
+	op()( mut this, u8 x );
+	op()( mut this, i8 x );
+	op()( mut this, u16 x );
+	op()( mut this, i16 x );
+	op()( mut this, u32 x );
+	op()( mut this, i32 x );
+	op()( mut this, u64 x );
+	op()( mut this, i64 x );
+	op()( mut this, u128 x );
+	op()( mut this, i128 x );
+
+	op()( mut this, char8 x );
+	op()( mut this, char16 x );
+	op()( mut this, char32 x ) { str_.push_back( x ); }
+
+	op()( mut this, byte8 x );
+	op()( mut this, byte16 x );
+	op()( mut this, byte32 x );
+	op()( mut this, byte64 x );
+	op()( mut this, byte128 x );
+
+	op()( mut this, array_view_imut</char8/> arr );
+	op()( mut this, array_view_imut</char16/> arr );
+	op()( mut this, array_view_imut</char32/> arr ) { str_+= arr; }
+
+	// Get result string.
+	// You must move this instance in order to do this.
+	fn get( byval mut this ) : string_base</char32/>
+	{
+		return take(str_);
+	}
+
+private:
+	string_base</char32/> str_;
+}
+
+} // namespace ust
