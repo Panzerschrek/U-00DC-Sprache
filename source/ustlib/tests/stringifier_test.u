@@ -38,6 +38,26 @@ fn nomangle main() call_conv( "C" ) : i32
 		ust::apply_value_to_stringifier( stringifier, ust::make_array( 78, -234, 2363 ) ); // Array with many elements.
 		halt if( move( stringifier ).get() != "[ 78, -234, 2363 ]" );
 	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_tuple() ); // Tuple with zero elements.
+		halt if( move( stringifier ).get() != "[]" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_tuple( 'T' ) ); // Tuple with single element.
+		halt if( move( stringifier ).get() != "[ T ]" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_tuple( 78u, -2 ) ); // Tuple with two elements.
+		halt if( move( stringifier ).get() != "[ 78, -2 ]" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_tuple( false, 5323, 'R' ) ); // Tuple with three elements.
+		halt if( move( stringifier ).get() != "[ false, 5323, R ]" );
+	}
 
 	return 0;
 }

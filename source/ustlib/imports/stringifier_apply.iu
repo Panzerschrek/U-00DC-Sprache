@@ -85,6 +85,35 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
 	}
 	else static_if( ti.is_tuple )
 	{
+		// For empty tuples stringify as [].
+		// For non-empty tuples stringifiy in [], use commas (instead of last one) and spaces between elements.
+
+		static_if( ti.element_count == 0s )
+		{
+			apply_value_to_stringifier( stringifier, "[]" );
+			ust::ignore_unused(t);
+		}
+		else
+		{
+			apply_value_to_stringifier( stringifier, "[ " );
+
+			var size_type mut index= 0s;
+			foreach( &el : t )
+			{
+				apply_value_to_stringifier( stringifier, el );
+
+				++index;
+
+				if( index < ti.element_count )
+				{
+					apply_value_to_stringifier( stringifier, ", " );
+				}
+				else
+				{
+					apply_value_to_stringifier( stringifier, " ]" );
+				}
+			}
+		}
 	}
 	else static_if( ti.is_array )
 	{
