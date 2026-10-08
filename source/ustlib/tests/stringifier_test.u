@@ -2,6 +2,7 @@
 import "../imports/string.iu"
 import "../imports/stringifier.iu"
 import "../imports/stringifier_apply.iu"
+import "../imports/vector.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
@@ -119,6 +120,18 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if(
 			move( stringifier ).get() !=
 			"{ chars_field : SPQR, floating_point_field : -25667, integer_field : 963 }" );
+	}
+	{ // Stringify empty vector.
+		var ust::vector</char32/> v;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, v );
+		halt if( move( stringifier ).get() != "[]" );
+	}
+	{ // Stringify non-empty vector.
+		var ust::vector</u32/> v= ust::make_array( 6754u, 0u, 45u, 267u );
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, v );
+		halt if( move( stringifier ).get() != "[ 6754, 0, 45, 267 ]" );
 	}
 
 	return 0;

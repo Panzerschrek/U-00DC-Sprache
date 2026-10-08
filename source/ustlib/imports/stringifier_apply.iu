@@ -193,7 +193,11 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
 			apply_value_to_stringifier( stringifier, "<TYPEINFO>" );
 			ignore_unused(t);
 		}
-		// TODO - support classes with custom stringification code.
+		else static_if( stringifier_apply_impl::class_has_stringify_method</T/>() )
+		{
+			// Call existing "stringify" method.
+			t.stringify( stringifier );
+		}
 		else
 		{
 			// For empty structs stringify as {}.
@@ -238,5 +242,41 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
 		static_assert( "Unhandled type kind!" );
 	}
 }
+
+namespace stringifier_apply_impl
+{
+
+// Checks if given class has "stringify" method (regular or template).
+// Signature, return type and other properties are not checked.
+template</type T/>
+fn constexpr class_has_stringify_method() : bool
+{
+	// TODO - fix this function for polymorph classes.
+	// We should ignore inherited regular and template "stringify" functions of polymorph classes.
+	// If parent class stringification method is called on a child instance, child own fields are not stringified.
+
+	auto& ti= typeinfo</T/>;
+	auto& name= "stringify";
+
+	for( &list_element : ti.functions_list )
+	{
+		if( constexpr_string_equals( list_element.name, name ) )
+		{
+			return true;
+		}
+	}
+
+	for( &list_element : ti.function_templates_list )
+	{
+		if( constexpr_string_equals( list_element.name, name ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+} // namespace stringifier_apply_impl
 
 } // namespace ust
