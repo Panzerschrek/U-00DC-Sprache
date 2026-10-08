@@ -1,5 +1,6 @@
 //##success_test
 import "../imports/box_nullable.iu"
+import "../imports/hash_map.iu"
 import "../imports/inet_address.iu"
 import "../imports/string.iu"
 import "../imports/stringifier.iu"
@@ -263,6 +264,20 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::default_stringifier8 mut stringifier;
 		ust::apply_value_to_stringifier( stringifier, address );
 		halt if( move( stringifier ).get() != "2243:910d:0017:0000:0002:d7ff:1a4e:6124" );
+	}
+	{ // Stringify for hash-maps.
+		var ust::hash_map</ ust::string8, i32 /> mut m;
+		m.insert_new( "H", 78 );
+		m.insert_new( "www!!", -5364 );
+		m.insert_new( "_  Wq--H", 7668679 );
+
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, m );
+		var ust::string8 s= move( stringifier ).get();
+		// Can't here test contents, since hash-map order is used.
+		halt if( s.empty() );
+		halt if( !s.range().starts_with( "{" ) );
+		halt if( !s.range().ends_with( "}" ) );
 	}
 
 	return 0;
