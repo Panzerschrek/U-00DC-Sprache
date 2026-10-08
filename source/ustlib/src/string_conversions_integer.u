@@ -17,76 +17,86 @@ fn to_string8 ( bool x ) : string8
 
 fn to_string8 ( i8 x ) : string8
 {
-	return to_string</char8 />(x);
+	var ust::string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( u8 x ) : string8
 {
-	return to_string</char8 />(x);
+	var ust::string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( i16 x ) : string8
 {
-	return to_string</char8 />(x);
+	var ust::string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( u16 x ) : string8
 {
-	return to_string</char8 />(x);
+	var ust::string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( i32 x ) : string8
 {
-	return to_string</char8 />(x);
+	var ust::string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( u32 x ) : string8
 {
-	return to_string</char8 />(x);
+	var ust::string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( i64 x ) : string8
 {
-	return to_string</char8 />(x);
+	var ust::string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( u64 x ) : string8
 {
-	return to_string</char8 />(x);
+	var ust::string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( i128 x ) : string8
 {
-	return to_string</char8 />(x);
+	var ust::string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( u128 x ) : string8
 {
-	return to_string</char8 />(x);
+	var ust::string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( ssize_type x ) : string8
 {
-	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
-	{
-		return to_string8 ( i32(x) );
-	}
-	else
-	{
-		return to_string8 ( i64(x) );
-	}
+	var ust::string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( size_type x ) : string8
 {
-	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
-	{
-		return to_string8 ( u32(x) );
-	}
-	else
-	{
-		return to_string8 ( u64(x) );
-	}
+	var ust::string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( void x ) : string16
@@ -103,76 +113,86 @@ fn to_string16( bool x ) : string16
 
 fn to_string16( i8 x ) : string16
 {
-	return to_string</char16/>(x);
+	var ust::string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( u8 x ) : string16
 {
-	return to_string</char16/>(x);
+	var ust::string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( i16 x ) : string16
 {
-	return to_string</char16/>(x);
+	var ust::string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( u16 x ) : string16
 {
-	return to_string</char16/>(x);
+	var ust::string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( i32 x ) : string16
 {
-	return to_string</char16/>(x);
+	var ust::string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( u32 x ) : string16
 {
-	return to_string</char16/>(x);
+	var ust::string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( i64 x ) : string16
 {
-	return to_string</char16/>(x);
+	var ust::string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( u64 x ) : string16
 {
-	return to_string</char16/>(x);
+	var ust::string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( i128 x ) : string16
 {
-	return to_string</char16/>(x);
+	var ust::string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( u128 x ) : string16
 {
-	return to_string</char16/>(x);
+	var ust::string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( ssize_type x ) : string16
 {
-	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
-	{
-		return to_string16( i32(x) );
-	}
-	else
-	{
-		return to_string16( i64(x) );
-	}
+	var ust::string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( size_type x ) : string16
 {
-	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
-	{
-		return to_string16( u32(x) );
-	}
-	else
-	{
-		return to_string16( u64(x) );
-	}
+	var ust::string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( void x ) : string32
@@ -189,76 +209,86 @@ fn to_string32( bool x ) : string32
 
 fn to_string32( i8 x ) : string32
 {
-	return to_string</char32/>(x);
+	var ust::string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( u8 x ) : string32
 {
-	return to_string</char32/>(x);
+	var ust::string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( i16 x ) : string32
 {
-	return to_string</char32/>(x);
+	var ust::string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( u16 x ) : string32
 {
-	return to_string</char32/>(x);
+	var ust::string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( i32 x ) : string32
 {
-	return to_string</char32/>(x);
+	var ust::string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( u32 x ) : string32
 {
-	return to_string</char32/>(x);
+	var ust::string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( i64 x ) : string32
 {
-	return to_string</char32/>(x);
+	var ust::string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( u64 x ) : string32
 {
-	return to_string</char32/>(x);
+	var ust::string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( i128 x ) : string32
 {
-	return to_string</char32/>(x);
+	var ust::string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( u128 x ) : string32
 {
-	return to_string</char32/>(x);
+	var ust::string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( ssize_type x ) : string32
 {
-	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
-	{
-		return to_string32( i32(x) );
-	}
-	else
-	{
-		return to_string32( i64(x) );
-	}
+	var ust::string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( size_type x ) : string32
 {
-	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
-	{
-		return to_string32( u32(x) );
-	}
-	else
-	{
-		return to_string32( u64(x) );
-	}
+	var ust::string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( byte8   x ) : string8
@@ -367,9 +397,34 @@ fn to_string32( byte128 x ) : string32
 }
 
 template</type C/>
-fn to_string( i8 x ) : string_base</C/>
+fn to_string_impl( string_base</C/> &mut s, ssize_type x )
 {
-	var string_base</C/> mut s;
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
+	{
+		to_string_impl( s, i32(x) );
+	}
+	else
+	{
+		to_string_impl( s, i64(x) );
+	}
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, size_type x )
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		to_string_impl( s, u32(x) );
+	}
+	else
+	{
+		to_string_impl( s, u64(x) );
+	}
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, i8 x )
+{
 	if( i32(x) >= 0 )
 	{
 		to_string_impl</C/>( s, u8( x) );
@@ -379,21 +434,11 @@ fn to_string( i8 x ) : string_base</C/>
 		s.push_back( C('-') );
 		to_string_impl</C/>( s, u8(-x) );
 	}
-	return s;
 }
 
 template</type C/>
-fn to_string( u8 x ) : string_base</C/>
+fn to_string_impl( string_base</C/> &mut s, i16 x )
 {
-	var string_base</C/> mut s;
-	to_string_impl</C/>( s, x );
-	return s;
-}
-
-template</type C/>
-fn to_string( i16 x ) : string_base</C/>
-{
-	var string_base</C/> mut s;
 	if( i32(x) >= 0 )
 	{
 		to_string_impl</C/>( s, u16( x) );
@@ -403,21 +448,11 @@ fn to_string( i16 x ) : string_base</C/>
 		s.push_back( C('-') );
 		to_string_impl</C/>( s, u16(-x) );
 	}
-	return s;
 }
 
 template</type C/>
-fn to_string( u16 x ) : string_base</C/>
+fn to_string_impl( string_base</C/> &mut s, i32 x )
 {
-	var string_base</C/> mut s;
-	to_string_impl</C/>( s, x );
-	return s;
-}
-
-template</type C/>
-fn to_string( i32 x ) : string_base</C/>
-{
-	var string_base</C/> mut s;
 	if( x >= 0 )
 	{
 		to_string_impl</C/>( s, u32( x) );
@@ -427,21 +462,11 @@ fn to_string( i32 x ) : string_base</C/>
 		s.push_back( C('-') );
 		to_string_impl</C/>( s, u32(-x) );
 	}
-	return s;
 }
 
 template</type C/>
-fn to_string( u32 x ) : string_base</C/>
+fn to_string_impl( string_base</C/> &mut s, i64 x )
 {
-	var string_base</C/> mut s;
-	to_string_impl</C/>( s, x );
-	return s;
-}
-
-template</type C/>
-fn to_string( i64 x ) : string_base</C/>
-{
-	var string_base</C/> mut s;
 	if( x >= 0i64 )
 	{
 		to_string_impl</C/>( s, u64( x) );
@@ -451,21 +476,11 @@ fn to_string( i64 x ) : string_base</C/>
 		s.push_back( C('-') );
 		to_string_impl</C/>( s, u64(-x) );
 	}
-	return s;
 }
 
 template</type C/>
-fn to_string( u64 x ) : string_base</C/>
+fn to_string_impl( string_base</C/> &mut s, i128 x )
 {
-	var string_base</C/> mut s;
-	to_string_impl</C/>( s, x );
-	return s;
-}
-
-template</type C/>
-fn to_string( i128 x ) : string_base</C/>
-{
-	var string_base</C/> mut s;
 	if( x >= 0i128 )
 	{
 		to_string_impl</C/>( s, u128( x) );
@@ -475,15 +490,6 @@ fn to_string( i128 x ) : string_base</C/>
 		s.push_back( C('-') );
 		to_string_impl</C/>( s, u128(-x) );
 	}
-	return s;
-}
-
-template</type C/>
-fn to_string( u128 x ) : string_base</C/>
-{
-	var string_base</C/> mut s;
-	to_string_impl</C/>( s, x );
-	return s;
 }
 
 // 8-bit version.
