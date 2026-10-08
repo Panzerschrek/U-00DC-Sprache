@@ -79,8 +79,25 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( !( ptr_value.size() == 10s || ptr_value.size() == 18s ) );
 		halt if( ptr_value == "0x00000000" || ptr_value == "0x0000000000000000" );
 	}
+	{ // Stringify a typeinfo structure.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, typeinfo</bool/> );
+		halt if( move( stringifier ).get() != "<TYPEINFO>" );
+	}
+	{ // Stringify a coroutine.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, SomeGenerator() );
+		halt if( move( stringifier ).get() != "<COROUTINE>" );
+	}
+	{ // Stringify a lambda.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, lambda(){} );
+		halt if( move( stringifier ).get() != "<LAMBDA>" );
+	}
 
 	return 0;
 }
 
 enum SomeEnum{ Herren, der, Winde }
+
+fn generator SomeGenerator() {}

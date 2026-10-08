@@ -97,7 +97,7 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
 		static_if( ti.element_count == 0s )
 		{
 			apply_value_to_stringifier( stringifier, "[]" );
-			ust::ignore_unused(t);
+			ignore_unused(t);
 		}
 		else
 		{
@@ -129,7 +129,7 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
 		static_if( ti.element_count == 0s )
 		{
 			apply_value_to_stringifier( stringifier, "[]" );
-			ust::ignore_unused(t);
+			ignore_unused(t);
 		}
 		else
 		{
@@ -148,6 +148,28 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
 	}
 	else static_if( ti.is_class )
 	{
+		static_if( ti.is_coroutine )
+		{
+			// Don't bother stringifying coroutines properly. Just write a stub.
+			apply_value_to_stringifier( stringifier, "<COROUTINE>" );
+			ignore_unused(t);
+		}
+		else static_if( ti.is_lambda )
+		{
+			// Don't bother stringifying lambdas properly. Just write a stub.
+			apply_value_to_stringifier( stringifier, "<LAMBDA>" );
+			ignore_unused(t);
+		}
+		else static_if( ti.is_typeinfo )
+		{
+			// Don't bother stringifying typeinfo vales properly. Just write a stub.
+			apply_value_to_stringifier( stringifier, "<TYPEINFO>" );
+			ignore_unused(t);
+		}
+		else
+		{
+			// TODO
+		}
 	}
 	else
 	{
