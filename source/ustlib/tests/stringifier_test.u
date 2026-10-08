@@ -3,6 +3,7 @@ import "../imports/box_nullable.iu"
 import "../imports/string.iu"
 import "../imports/stringifier.iu"
 import "../imports/stringifier_apply.iu"
+import "../imports/variant.iu"
 import "../imports/vector.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
@@ -227,6 +228,28 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::default_stringifier8 mut stringifier;
 		ust::apply_value_to_stringifier( stringifier, o );
 		halt if( move( stringifier ).get() != "null" );
+	}
+	{ // Stringify for variants.
+		var ust::variant</ tup[ bool, u32, [ char8, 4 ] ] /> mut
+			v0= true,
+			v1= 743647u,
+			v2= "jK@1";
+
+		{
+			var ust::default_stringifier8 mut stringifier;
+			ust::apply_value_to_stringifier( stringifier, v0 );
+			halt if( move( stringifier ).get() != "true" );
+		}
+		{
+			var ust::default_stringifier8 mut stringifier;
+			ust::apply_value_to_stringifier( stringifier, v1 );
+			halt if( move( stringifier ).get() != "743647" );
+		}
+		{
+			var ust::default_stringifier8 mut stringifier;
+			ust::apply_value_to_stringifier( stringifier, v2 );
+			halt if( move( stringifier ).get() != "jK@1" );
+		}
 	}
 
 	return 0;
