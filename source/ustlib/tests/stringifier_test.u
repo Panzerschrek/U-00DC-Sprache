@@ -63,6 +63,22 @@ fn nomangle main() call_conv( "C" ) : i32
 		ust::apply_value_to_stringifier( stringifier, ust::make_array( SomeEnum::Herren, SomeEnum::der, SomeEnum::Winde ) ); // Array with enum elements.
 		halt if( move( stringifier ).get() != "[ Herren, der, Winde ]" );
 	}
+	{ // Stringify null pointer.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::nullptr</f64/>() );
+		var ust::string8 ptr_value= move( stringifier ).get();
+		halt if( !( ptr_value == "0x00000000" || ptr_value == "0x0000000000000000" ) );
+	}
+	{ // Stringify non-null pointer.
+		var i32 mut x= 785;
+		var $(i32) x_ptr= $<(x);
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, x_ptr );
+		var ust::string8 ptr_value= move( stringifier ).get();
+		halt if( !ptr_value.starts_with( "0x" ) );
+		halt if( !( ptr_value.size() == 10s || ptr_value.size() == 18s ) );
+		halt if( ptr_value == "0x00000000" || ptr_value == "0x0000000000000000" );
+	}
 
 	return 0;
 }
