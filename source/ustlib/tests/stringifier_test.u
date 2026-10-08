@@ -147,7 +147,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			"{ chars_field : SPQR, floating_point_field : -25667, integer_field : 963 }" );
 	}
 	{ // Stringify empty vector.
-		var ust::vector</char32/> v;
+		var ust::vector</f64/> v;
 		var ust::default_stringifier8 mut stringifier;
 		ust::apply_value_to_stringifier( stringifier, v );
 		halt if( move( stringifier ).get() != "[]" );
@@ -157,6 +157,12 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::default_stringifier8 mut stringifier;
 		ust::apply_value_to_stringifier( stringifier, v );
 		halt if( move( stringifier ).get() != "[ 6754, 0, 45, 267 ]" );
+	}
+	{ // Stringify vector of chars - should be handled as a string.
+		var ust::vector</char16/> v= "Ich bin ein böser Räuber in einer böser Welt"u16;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, v );
+		halt if( move( stringifier ).get() != "Ich bin ein böser Räuber in einer böser Welt" );
 	}
 	{ // Stringify a value of class having special "stringify" method.
 		var ust::default_stringifier8 mut stringifier;

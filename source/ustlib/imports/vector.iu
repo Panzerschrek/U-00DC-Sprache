@@ -370,25 +370,34 @@ public:
 	template</type Stringifier/>
 	fn stringify( this, Stringifier &mut stringifier )
 	{
-		// This code should match code stringifying ranges!
-
-		if( this.empty() )
+		static_if( c_enable_range )
 		{
-			apply_value_to_stringifier( stringifier, "[]" );
+			// Usually stringify range for vectors.
+			// This is necessary if we stringify vectors of chars.
+			range().stringify( stringifier );
 		}
 		else
 		{
-			apply_value_to_stringifier( stringifier, "[ " );
+			// This code should match code stringifying ranges!
 
-			apply_value_to_stringifier( stringifier, this[0s] );
-
-			for( auto mut i= 1s; i < this.size(); ++i )
+			if( this.empty() )
 			{
-				apply_value_to_stringifier( stringifier, ", " );
-				apply_value_to_stringifier( stringifier, this[i] );
+				apply_value_to_stringifier( stringifier, "[]" );
 			}
+			else
+			{
+				apply_value_to_stringifier( stringifier, "[ " );
 
-			apply_value_to_stringifier( stringifier, " ]" );
+				apply_value_to_stringifier( stringifier, this[0s] );
+
+				for( auto mut i= 1s; i < this.size(); ++i )
+				{
+					apply_value_to_stringifier( stringifier, ", " );
+					apply_value_to_stringifier( stringifier, this[i] );
+				}
+
+				apply_value_to_stringifier( stringifier, " ]" );
+			}
 		}
 	}
 
