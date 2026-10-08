@@ -1,6 +1,6 @@
-import "../imports/string_conversions.iu"
 import "../imports/stringifier.iu"
 import "../imports/utf.iu"
+import "string_conversions_floating_point.iu"
 import "string_conversions_integer.iu"
 
 namespace ust
@@ -86,12 +86,12 @@ op default_stringifier8::()( mut this, ssize_type x )
 
 op default_stringifier8::()( mut this, f32 x )
 {
-	str_+= to_string8(x);
+	f32_impl::to_string( str_, x );
 }
 
 op default_stringifier8::()( mut this, f64 x )
 {
-	str_+= to_string8(x);
+	f64_impl::to_string( str_, x );
 }
 
 op default_stringifier8::()( mut this, char16 x )
@@ -234,12 +234,12 @@ op default_stringifier16::()( mut this, ssize_type x )
 
 op default_stringifier16::()( mut this, f32 x )
 {
-	str_+= to_string16(x);
+	f32_impl::to_string( str_, x );
 }
 
 op default_stringifier16::()( mut this, f64 x )
 {
-	str_+= to_string16(x);
+	f64_impl::to_string( str_, x );
 }
 
 op default_stringifier16::()( mut this, char8 x )
@@ -382,12 +382,12 @@ op default_stringifier32::()( mut this, ssize_type x )
 
 op default_stringifier32::()( mut this, f32 x )
 {
-	str_+= to_string32(x);
+	f32_impl::to_string( str_, x );
 }
 
 op default_stringifier32::()( mut this, f64 x )
 {
-	str_+= to_string32(x);
+	f64_impl::to_string( str_, x );
 }
 
 op default_stringifier32::()( mut this, char8 x )
