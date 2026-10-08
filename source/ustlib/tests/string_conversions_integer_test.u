@@ -3,6 +3,14 @@ import "../imports/string_conversions.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
+	// bool
+	halt if( ust::to_string8 ( false ) != "false" );
+	halt if( ust::to_string8 ( true ) != "true" );
+	halt if( ust::to_string16( false ) != "false"u16 );
+	halt if( ust::to_string16( true ) != "true"u16 );
+	halt if( ust::to_string32( false ) != "false"u32 );
+	halt if( ust::to_string32( true ) != "true"u32 );
+
 	// i8
 	halt if( ust::to_string8(0i8) != "0" );
 	halt if( ust::to_string8(1i8) != "1" );

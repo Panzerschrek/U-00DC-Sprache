@@ -3,6 +3,12 @@ import "../imports/string_conversions.iu"
 namespace ust
 {
 
+fn to_string8 ( bool x ) : string8
+{
+	if( x ){ return "true"; }
+	return "false";
+}
+
 fn to_string8 ( i8 x ) : string8
 {
 	return to_string</char8 />(x);
@@ -77,6 +83,12 @@ fn to_string8 ( size_type x ) : string8
 	}
 }
 
+fn to_string16( bool x ) : string16
+{
+	if( x ){ return "true"u16; }
+	return "false"u16;
+}
+
 fn to_string16( i8 x ) : string16
 {
 	return to_string</char16/>(x);
@@ -149,6 +161,12 @@ fn to_string16( size_type x ) : string16
 	{
 		return to_string16( u64(x) );
 	}
+}
+
+fn to_string32( bool x ) : string32
+{
+	if( x ){ return "true"u32; }
+	return "false"u32;
 }
 
 fn to_string32( i8 x ) : string32
