@@ -91,6 +91,45 @@ public:
 		return wrap_raw_iterator( hash_set_raw_iterator</T/>( impl_.iter() ) );
 	}
 
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		auto mut it= iter();
+
+		{
+			auto first_val_opt= it.next();
+			if( first_val_opt.empty() )
+			{
+				apply_value_to_stringifier( stringifier, "{}" );
+				return;
+			}
+
+			auto& first_val= first_val_opt.try_deref();
+
+			apply_value_to_stringifier( stringifier, "{ " );
+
+			apply_value_to_stringifier( stringifier, first_val );
+		}
+
+		loop
+		{
+			auto val_opt= it.next();
+			if( val_opt.empty() )
+			{
+				break;
+			}
+
+			auto& val= val_opt.try_deref();
+
+			apply_value_to_stringifier( stringifier, ", " );
+
+			apply_value_to_stringifier( stringifier, val );
+		}
+
+		apply_value_to_stringifier( stringifier, " }" );
+	}
+
 private:
 	type Impl = hash_map</T, void/>;
 

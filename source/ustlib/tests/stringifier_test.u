@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/box_nullable.iu"
 import "../imports/hash_map.iu"
+import "../imports/hash_set.iu"
 import "../imports/inet_address.iu"
 import "../imports/string.iu"
 import "../imports/stringifier.iu"
@@ -274,7 +275,22 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::default_stringifier8 mut stringifier;
 		ust::apply_value_to_stringifier( stringifier, m );
 		var ust::string8 s= move( stringifier ).get();
-		// Can't here test contents, since hash-map order is used.
+		// Can't here test contents, since hash-map order is unpridictable.
+		halt if( s.empty() );
+		halt if( !s.range().starts_with( "{" ) );
+		halt if( !s.range().ends_with( "}" ) );
+	}
+	{ // Stringify for hash-sets.
+		var ust::hash_set</ i32 /> mut hs;
+		hs.insert( 78 );
+		hs.insert( -5364 );
+		hs.insert( 7668679 );
+		hs.insert( 536727434 );
+
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, hs );
+		var ust::string8 s= move( stringifier ).get();
+		// Can't here test contents, since hash-set order is unpridictable.
 		halt if( s.empty() );
 		halt if( !s.range().starts_with( "{" ) );
 		halt if( !s.range().ends_with( "}" ) );
