@@ -1,5 +1,6 @@
 //##success_test
 import "../imports/box_nullable.iu"
+import "../imports/inet_address.iu"
 import "../imports/string.iu"
 import "../imports/stringifier.iu"
 import "../imports/stringifier_apply.iu"
@@ -250,6 +251,18 @@ fn nomangle main() call_conv( "C" ) : i32
 			ust::apply_value_to_stringifier( stringifier, v2 );
 			halt if( move( stringifier ).get() != "jK@1" );
 		}
+	}
+	{ // Stringify for ip_address_v4.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::ip_address_v4( ust::make_array( 36u8, 243u8, 113u8, 5u8 ) ) );
+		halt if( move( stringifier ).get() != "36.243.113.5" );
+	}
+	{ // Stringify for ip_address_v6.
+		var [ u8, 16 ] octets[ 34u8, 67u8, 145u8, 13u8, 0u8, 23u8, 0u8, 0u8, 0u8, 2u8, 215u8, 255u8, 26u8, 78u8, 97u8, 36u8 ];
+		var ust::ip_address_v6 address( octets );
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, address );
+		halt if( move( stringifier ).get() != "2243:910d:0017:0000:0002:d7ff:1a4e:6124" );
 	}
 
 	return 0;

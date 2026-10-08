@@ -1,4 +1,5 @@
 import "string.iu"
+import "stringifier_apply.iu"
 import "variant.iu"
 
 namespace ust
@@ -35,6 +36,19 @@ public:
 		apply_value_to_hasher( hasher, bits_ );
 	}
 
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		apply_value_to_stringifier( stringifier, u8( bits_ >> 24 ) );
+		apply_value_to_stringifier( stringifier, "." );
+		apply_value_to_stringifier( stringifier, u8( bits_ >> 16 ) );
+		apply_value_to_stringifier( stringifier, "." );
+		apply_value_to_stringifier( stringifier, u8( bits_ >>  8 ) );
+		apply_value_to_stringifier( stringifier, "." );
+		apply_value_to_stringifier( stringifier, u8( bits_ >>  0 ) );
+	}
+
 	fn get_bits( this ) : u32
 	{
 		return bits_;
@@ -46,6 +60,7 @@ public:
 		return octets;
 	}
 
+	// TODO - remove it?
 	fn to_string( this ) : string8;
 
 private:
@@ -85,6 +100,38 @@ public:
 		apply_value_to_hasher( hasher, bits_ );
 	}
 
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		var string8 mut res( 32s + 7s, ':' );
+
+		var [ u8, 16 ] octets= get_octets();
+
+		for( var size_type mut i= 0s; i < 8s; ++i )
+		{
+			var u32 o0( octets[ i * 2s + 0s ] );
+			var u32 o1( octets[ i * 2s + 1s ] );
+
+			auto& hex_digits= "0123456789abcdef";
+
+			var [ char8, 4 ] chars
+			[
+				hex_digits[ o0 >> 4 ],
+				hex_digits[ o0 & 15u ],
+				hex_digits[ o1 >> 4 ],
+				hex_digits[ o1 & 15u ],
+			];
+
+			apply_value_to_stringifier( stringifier, chars );
+
+			if( i < 7s )
+			{
+				apply_value_to_stringifier( stringifier, ':' );
+			}
+		}
+	}
+
 	fn get_bits( this ) : u128
 	{
 		return bits_;
@@ -102,6 +149,7 @@ public:
 		return octets;
 	}
 
+	// TODO - remove it?
 	fn to_string( this ) : string8;
 
 private:
