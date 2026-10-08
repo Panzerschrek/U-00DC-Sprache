@@ -12,6 +12,19 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( move( stringifier ).get() != "-63433" );
 	}
 	{
+		var [ char8, 5 ] mut chars= "Some!";
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, chars ); // Should handle char arrays properly, even if they are mutable.
+		halt if( move( stringifier ).get() != "Some!" );
+	}
+	{
+		var [ char8, 8 ] mut chars= "Iuppiter";
+		var ust::array_view_mut</char8/> chars_view= chars;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, chars_view ); // Should handle char view properly, even if they are mutable.
+		halt if( move( stringifier ).get() != "Iuppiter" );
+	}
+	{
 		var ust::default_stringifier8 mut stringifier;
 
 		ust::apply_value_to_stringifier( stringifier, '!' ); // Should handle chars.

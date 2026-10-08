@@ -33,20 +33,20 @@ template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut str
 template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, f32 x ) { stringifier(x); }
 template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, f64 x ) { stringifier(x); }
 
-template</type Stringifier/>
-fn apply_value_to_stringifier( Stringifier &mut stringifier, array_view_imut</char8/> arr )
+template</type Stringifier, bool is_mutable/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, random_access_range</char8, is_mutable/> arr )
 {
 	stringifier( arr );
 }
 
-template</type Stringifier/>
-fn apply_value_to_stringifier( Stringifier &mut stringifier, array_view_imut</char16/> arr )
+template</type Stringifier, bool is_mutable/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, random_access_range</char16, is_mutable/> arr )
 {
 	stringifier( arr );
 }
 
-template</type Stringifier/>
-fn apply_value_to_stringifier( Stringifier &mut stringifier, array_view_imut</char32/> arr )
+template</type Stringifier, bool is_mutable/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, random_access_range</char32, is_mutable/> arr )
 {
 	stringifier( arr );
 }
