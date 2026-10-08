@@ -2,6 +2,7 @@ import "aligned_storage.iu"
 import "container_utils.iu"
 import "hash_apply.iu"
 import "optional_ref.iu"
+import "stringifier_apply.iu"
 import "ustlib_macros.iu"
 
 namespace ust
@@ -297,6 +298,20 @@ public:
 		if( !empty() )
 		{
 			apply_value_to_hasher( hasher, try_deref() );
+		}
+	}
+
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		if( empty() )
+		{
+			apply_value_to_stringifier( stringifier, "null" );
+		}
+		else
+		{
+			apply_value_to_stringifier( stringifier, try_deref() );
 		}
 	}
 

@@ -197,6 +197,18 @@ fn nomangle main() call_conv( "C" ) : i32
 		ust::apply_value_to_stringifier( stringifier, b );
 		halt if( move( stringifier ).get() != "null" );
 	}
+	{ // Stringify a non-empty optional.
+		var ust::optional</ u64 /> o( 5585654686899u );
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, o );
+		halt if( move( stringifier ).get() != "5585654686899" );
+	}
+	{ // Stringify an empty optional.
+		var ust::optional</ f32 /> o;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, o );
+		halt if( move( stringifier ).get() != "null" );
+	}
 
 	return 0;
 }
