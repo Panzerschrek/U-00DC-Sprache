@@ -1,0 +1,101 @@
+import "random_access_range.iu"
+
+namespace ust
+{
+
+//
+// Basic types, which stringifiers can handle directly.
+//
+
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, void v ) { stringifier(v); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, bool b ) { stringifier(b); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, i8 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, u8 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, i16 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, u16 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, i32 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, u32 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, i64 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, u64 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, i128 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, u128 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, ssize_type x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, size_type x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, char8 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, char16 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, char32 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, byte8 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, byte16 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, byte32 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, byte64 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, byte128 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, f32 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, f64 x ) { stringifier(x); }
+
+template</type Stringifier/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, array_view_imut</char8/> arr )
+{
+	stringifier( arr );
+}
+
+template</type Stringifier/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, array_view_imut</char16/> arr )
+{
+	stringifier( arr );
+}
+
+template</type Stringifier/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, array_view_imut</char32/> arr )
+{
+	stringifier( arr );
+}
+
+template</type Stringifier, size_type S/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, [ char8, S ]& arr )
+{
+	stringifier( arr );
+}
+
+template</type Stringifier, size_type S/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, [ char16, S ]& arr )
+{
+	stringifier( arr );
+}
+
+template</type Stringifier, size_type S/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, [ char32, S ]& arr )
+{
+	stringifier( arr );
+}
+
+// Generic function for stringification of other types.
+template</type Stringifier, type T/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
+{
+	auto& ti= typeinfo</T/>;
+
+	static_if( ti.is_enum )
+	{
+	}
+	else static_if( ti.is_raw_pointer )
+	{
+	}
+	else static_if( ti.is_function_pointer )
+	{
+	}
+	else static_if( ti.is_tuple )
+	{
+	}
+	else static_if( ti.is_array )
+	{
+	}
+	else static_if( ti.is_class )
+	{
+	}
+	else
+	{
+		static_assert( "Unhandled type kind!" );
+	}
+}
+
+} // namespace ust

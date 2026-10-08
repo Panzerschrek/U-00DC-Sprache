@@ -1,0 +1,28 @@
+//##success_test
+import "../imports/string.iu"
+import "../imports/stringifier.iu"
+import "../imports/stringifier_apply.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, -63433 ); // Should handle integers.
+		halt if( move( stringifier ).get() != "-63433" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+
+		ust::apply_value_to_stringifier( stringifier, '!' ); // Should handle chars.
+		ust::apply_value_to_stringifier( stringifier, 74.0f ); // Should handle floating-point numbers.
+		ust::apply_value_to_stringifier( stringifier, ust::string_view8( " : " ) ); // Should handle string views.
+		ust::apply_value_to_stringifier( stringifier, false ); // Should handle bol values.
+		ust::apply_value_to_stringifier( stringifier, ", " ); // Should handle char arrays.
+		ust::apply_value_to_stringifier( stringifier, byte8( 0x67u8 ) ); // Should handle byte types.
+		ust::apply_value_to_stringifier( stringifier, ".\n" );
+
+		halt if( move( stringifier ).get() != "!74 : false, 0x67.\n" );
+	}
+
+	return 0;
+}
