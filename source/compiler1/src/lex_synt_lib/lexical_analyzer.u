@@ -1,5 +1,5 @@
 import "/math.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "/utf.iu"
 import "lexical_analyzer.iu"
 import "number_parsing_utils.iu"
@@ -747,7 +747,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 				}
 
 				// This code is reachable only if we failed to process a fixed lexem.
-				result.errors.push_back( LexSyntError( src_loc, "Lexical error: unrecognized character: " + ust::to_string8( u32(c) ) ) );
+				result.errors.push_back( LexSyntError( src_loc, ust::stringify8( "Lexical error: unrecognized character: ", u32(c) ) ) );
 				it.drop_front();
 				continue;
 
@@ -765,12 +765,12 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 
 fn GetLineLimitMessage() : ust::string8
 {
-	return ust::concat( "Lexical error: line limit reached, max is ", ust::to_string8( SrcLoc::c_max_line ), "." );
+	return ust::stringify8( "Lexical error: line limit reached, max is ", SrcLoc::c_max_line, "." );
 }
 
 fn GetColumnLimitMessage() : ust::string8
 {
-	return ust::concat( "Lexical error: column limit reached, max is ", ust::to_string8( SrcLoc::c_max_column ), "." );
+	return ust::stringify8( "Lexical error: column limit reached, max is ", SrcLoc::c_max_column, "." );
 }
 
 } // namespace U1
