@@ -1,0 +1,390 @@
+import "../imports/string_base.iu"
+
+namespace ust
+{
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, ssize_type x )
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
+	{
+		to_string_impl( s, i32(x) );
+	}
+	else
+	{
+		to_string_impl( s, i64(x) );
+	}
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, size_type x )
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		to_string_impl( s, u32(x) );
+	}
+	else
+	{
+		to_string_impl( s, u64(x) );
+	}
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, i8 x )
+{
+	if( i32(x) >= 0 )
+	{
+		to_string_impl</C/>( s, u8( x) );
+	}
+	else
+	{
+		s.push_back( C('-') );
+		to_string_impl</C/>( s, u8(-x) );
+	}
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, i16 x )
+{
+	if( i32(x) >= 0 )
+	{
+		to_string_impl</C/>( s, u16( x) );
+	}
+	else
+	{
+		s.push_back( C('-') );
+		to_string_impl</C/>( s, u16(-x) );
+	}
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, i32 x )
+{
+	if( x >= 0 )
+	{
+		to_string_impl</C/>( s, u32( x) );
+	}
+	else
+	{
+		s.push_back( C('-') );
+		to_string_impl</C/>( s, u32(-x) );
+	}
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, i64 x )
+{
+	if( x >= 0i64 )
+	{
+		to_string_impl</C/>( s, u64( x) );
+	}
+	else
+	{
+		s.push_back( C('-') );
+		to_string_impl</C/>( s, u64(-x) );
+	}
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, i128 x )
+{
+	if( x >= 0i128 )
+	{
+		to_string_impl</C/>( s, u128( x) );
+	}
+	else
+	{
+		s.push_back( C('-') );
+		to_string_impl</C/>( s, u128(-x) );
+	}
+}
+
+// 8-bit version.
+template</type C/>
+fn to_string_impl( string_base</C/>& mut s , u8 in_x )
+{
+	auto constexpr zero_char= C('0');
+
+	var u32 x(in_x);
+
+	if( x >= 100u )
+	{
+		s.push_back( C( u32(zero_char) + x / 100u ) );
+		s.push_back( C( u32(zero_char) + x / 10u % 10u ) );
+	}
+	else if( x >= 10u )
+	{
+		s.push_back( C( u32(zero_char) + x / 10u ) );
+	}
+
+	s.push_back( C( u32(zero_char) + x % 10u ) );
+}
+
+// 16-bit version.
+template</type C/>
+fn to_string_impl( string_base</C/>& mut s, u16 in_x )
+{
+	auto constexpr zero_char= C('0');
+
+	var u32 x(in_x);
+
+	if( x == 0u )
+	{
+		s.push_back(zero_char);
+	}
+	else
+	{
+		var u32 mut div= 10000u;
+		while( div > x )
+		{
+			div/= 10u;
+		}
+
+		var u32 mut rem= x;
+		while( div > 0u )
+		{
+			auto digit= rem / div;
+			s.push_back( C( digit + u32(zero_char) ) );
+			rem-= digit * div;
+			div/= 10u;
+		}
+	}
+}
+
+// 32-bit version.
+template</type C/>
+fn to_string_impl( string_base</C/>& mut s, u32 x )
+{
+	auto constexpr zero_char= C('0');
+
+	if( x == 0u )
+	{
+		s.push_back(zero_char);
+	}
+	else
+	{
+		var u32 mut div= 1000000000u;
+		while( div > x )
+		{
+			div/= 10u;
+		}
+
+		var u32 mut rem= x;
+		while( div > 0u )
+		{
+			auto digit= rem / div;
+			s.push_back( C( digit + u32( zero_char ) ) );
+			rem-= digit * div;
+			div/= 10u;
+		}
+	}
+}
+
+// 64-bit version.
+template</type C/>
+fn to_string_impl( string_base</C/>& mut s, u64 x )
+{
+	auto constexpr zero_char= C('0');
+
+	if( x == 0u64 )
+	{
+		s.push_back(zero_char);
+	}
+	else
+	{
+		var u64 mut div= 10000000000000000000u64;
+		while( div > x )
+		{
+			div/= 10u64;
+		}
+
+		var u64 mut rem= x;
+		while( div > 0u64 )
+		{
+			auto digit= rem / div;
+			s.push_back( C( u32( digit ) + u32( zero_char ) ) );
+			rem-= digit * div;
+			div/= 10u64;
+		}
+	}
+}
+
+// 128-bit version.
+template</type C/>
+fn to_string_impl( string_base</C/>& mut s, u128 x )
+{
+	// A speculative optimization.
+	// Assume that a lot of 128-bit numbers don't have upper 64 bits set.
+	// If it's the case, use 64-bit number stringification, since it's significantly faster.
+	if( ( x >> 64 ) == 0u128 )
+	{
+		return to_string_impl( s, u64(x) );
+	}
+
+	auto constexpr zero_char= C('0');
+
+	if( x == 0u128 )
+	{
+		s.push_back(zero_char);
+	}
+	else
+	{
+		// This code is painfully-slow,
+		// since it requires 128-bit division,
+		// which isn't supported in hardware (at least on mainstream systems) and is emulated instead via div built-ins.
+
+		var u128 mut div= 100000000000000000000000000000000000000u128;
+		while( div > x )
+		{
+			div/= 10u128;
+		}
+
+		var u128 mut rem= x;
+		while( div > 0u128 )
+		{
+			auto digit= rem / div;
+			s.push_back( C( u32( digit ) + u32( zero_char ) ) );
+			rem-= digit * div;
+			div/= 10u128;
+		}
+	}
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, byte8 x )
+{
+	var u32 num( u8(x) );
+
+	var [ C, 4 ] chars
+	[
+		( '0' ),
+		( 'x' ),
+		( g_hex_digits[ ( num >> 4 ) & 15u ] ),
+		( g_hex_digits[ ( num >> 0 ) & 15u ] ),
+	];
+
+	s+= chars;
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, byte16 x )
+{
+	var u32 num( u16(x) );
+
+	var [ C, 6 ] chars
+	[
+		( '0' ),
+		( 'x' ),
+		( g_hex_digits[ ( num >> 12 ) & 15u ] ),
+		( g_hex_digits[ ( num >>  8 ) & 15u ] ),
+		( g_hex_digits[ ( num >>  4 ) & 15u ] ),
+		( g_hex_digits[ ( num >>  0 ) & 15u ] ),
+	];
+
+	s+= chars;
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, byte32 x )
+{
+	var u32 num( x );
+
+	var [ C, 10 ] chars
+	[
+		( '0' ),
+		( 'x' ),
+		( g_hex_digits[ ( num >> 28 ) & 15u ] ),
+		( g_hex_digits[ ( num >> 24 ) & 15u ] ),
+		( g_hex_digits[ ( num >> 20 ) & 15u ] ),
+		( g_hex_digits[ ( num >> 16 ) & 15u ] ),
+		( g_hex_digits[ ( num >> 12 ) & 15u ] ),
+		( g_hex_digits[ ( num >>  8 ) & 15u ] ),
+		( g_hex_digits[ ( num >>  4 ) & 15u ] ),
+		( g_hex_digits[ ( num >>  0 ) & 15u ] ),
+	];
+
+	s+= chars;
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, byte64 x )
+{
+	var u64 num(x);
+
+	var [ C, 18 ] chars
+	[
+		( '0' ),
+		( 'x' ),
+		( g_hex_digits[ ( num >> 60 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 56 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 52 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 48 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 44 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 40 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 36 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 32 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 28 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 24 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 20 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 16 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >> 12 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >>  8 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >>  4 ) & 15u64 ] ),
+		( g_hex_digits[ ( num >>  0 ) & 15u64 ] ),
+	];
+
+	s+= chars;
+}
+
+template</type C/>
+fn to_string_impl( string_base</C/> &mut s, byte128 x )
+{
+	// TODO - consider optimizing this code.
+	// Doing bit shifts for 128-bit integers may be costly.
+
+	var u128 num( x );
+
+	var [ C, 34 ] chars
+	[
+		( '0' ),
+		( 'x' ),
+		( g_hex_digits[ ( num >> 124 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >> 120 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >> 116 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >> 112 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >> 108 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >> 104 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >> 100 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  96 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  92 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  88 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  84 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  80 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  76 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  72 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  68 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  64 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  60 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  56 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  52 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  48 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  44 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  40 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  36 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  32 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  28 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  24 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  20 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  16 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>  12 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>   8 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>   4 ) & 15u128 ] ),
+		( g_hex_digits[ ( num >>   0 ) & 15u128 ] ),
+	];
+
+	s+= chars;
+}
+
+var [ char8, 16 ] g_hex_digits= "0123456789ABCDEF";
+
+} // namespace ust
