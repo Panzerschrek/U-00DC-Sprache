@@ -263,202 +263,232 @@ fn to_string32( size_type x ) : string32
 
 fn to_string8 ( byte8   x ) : string8
 {
-	return to_string</char8 />( x );
+	var string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( byte16  x ) : string8
 {
-	return to_string</char8 />( x );
+	var string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( byte32  x ) : string8
 {
-	return to_string</char8 />( x );
+	var string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( byte64  x ) : string8
 {
-	return to_string</char8 />( x );
+	var string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string8 ( byte128 x ) : string8
 {
-	return to_string</char8 />( x );
+	var string8 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( byte8   x ) : string16
 {
-	return to_string</char16/>( x );
+	var string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( byte16  x ) : string16
 {
-	return to_string</char16/>( x );
+	var string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( byte32  x ) : string16
 {
-	return to_string</char16/>( x );
+	var string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( byte64  x ) : string16
 {
-	return to_string</char16/>( x );
+	var string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string16( byte128 x ) : string16
 {
-	return to_string</char16/>( x );
+	var string16 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( byte8   x ) : string32
 {
-	return to_string</char32/>( x );
+	var string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( byte16  x ) : string32
 {
-	return to_string</char32/>( x );
+	var string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( byte32  x ) : string32
 {
-	return to_string</char32/>( x );
+	var string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( byte64  x ) : string32
 {
-	return to_string</char32/>( x );
+	var string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 fn to_string32( byte128 x ) : string32
 {
-	return to_string</char32/>( x );
+	var string32 mut s;
+	to_string_impl( s, x );
+	return s;
 }
 
 template</type C/>
 fn to_string( i8 x ) : string_base</C/>
 {
-	var string_base</C/> mut result;
+	var string_base</C/> mut s;
 	if( i32(x) >= 0 )
 	{
-		to_string_impl</C/>( u8( x), result );
+		to_string_impl</C/>( s, u8( x) );
 	}
 	else
 	{
-		result.push_back( C('-') );
-		to_string_impl</C/>( u8(-x), result );
+		s.push_back( C('-') );
+		to_string_impl</C/>( s, u8(-x) );
 	}
-	return result;
+	return s;
 }
 
 template</type C/>
 fn to_string( u8 x ) : string_base</C/>
 {
-	var string_base</C/> mut result;
-	to_string_impl</C/>( x, result );
-	return result;
+	var string_base</C/> mut s;
+	to_string_impl</C/>( s, x );
+	return s;
 }
 
 template</type C/>
 fn to_string( i16 x ) : string_base</C/>
 {
-	var string_base</C/> mut result;
+	var string_base</C/> mut s;
 	if( i32(x) >= 0 )
 	{
-		to_string_impl</C/>( u16( x), result );
+		to_string_impl</C/>( s, u16( x) );
 	}
 	else
 	{
-		result.push_back( C('-') );
-		to_string_impl</C/>( u16(-x), result );
+		s.push_back( C('-') );
+		to_string_impl</C/>( s, u16(-x) );
 	}
-	return result;
+	return s;
 }
 
 template</type C/>
 fn to_string( u16 x ) : string_base</C/>
 {
-	var string_base</C/> mut result;
-	to_string_impl</C/>( x, result );
-	return result;
+	var string_base</C/> mut s;
+	to_string_impl</C/>( s, x );
+	return s;
 }
 
 template</type C/>
 fn to_string( i32 x ) : string_base</C/>
 {
-	var string_base</C/> mut result;
+	var string_base</C/> mut s;
 	if( x >= 0 )
 	{
-		to_string_impl</C/>( u32( x), result );
+		to_string_impl</C/>( s, u32( x) );
 	}
 	else
 	{
-		result.push_back( C('-') );
-		to_string_impl</C/>( u32(-x), result );
+		s.push_back( C('-') );
+		to_string_impl</C/>( s, u32(-x) );
 	}
-	return result;
+	return s;
 }
 
 template</type C/>
 fn to_string( u32 x ) : string_base</C/>
 {
-	var string_base</C/> mut result;
-	to_string_impl</C/>( x, result );
-	return result;
+	var string_base</C/> mut s;
+	to_string_impl</C/>( s, x );
+	return s;
 }
 
 template</type C/>
 fn to_string( i64 x ) : string_base</C/>
 {
-	var string_base</C/> mut result;
+	var string_base</C/> mut s;
 	if( x >= 0i64 )
 	{
-		to_string_impl</C/>( u64( x), result );
+		to_string_impl</C/>( s, u64( x) );
 	}
 	else
 	{
-		result.push_back( C('-') );
-		to_string_impl</C/>( u64(-x), result );
+		s.push_back( C('-') );
+		to_string_impl</C/>( s, u64(-x) );
 	}
-	return result;
+	return s;
 }
 
 template</type C/>
 fn to_string( u64 x ) : string_base</C/>
 {
-	var string_base</C/> mut result;
-	to_string_impl</C/>( x, result );
-	return result;
+	var string_base</C/> mut s;
+	to_string_impl</C/>( s, x );
+	return s;
 }
 
 template</type C/>
 fn to_string( i128 x ) : string_base</C/>
 {
-	var string_base</C/> mut result;
+	var string_base</C/> mut s;
 	if( x >= 0i128 )
 	{
-		to_string_impl</C/>( u128( x), result );
+		to_string_impl</C/>( s, u128( x) );
 	}
 	else
 	{
-		result.push_back( C('-') );
-		to_string_impl</C/>( u128(-x), result );
+		s.push_back( C('-') );
+		to_string_impl</C/>( s, u128(-x) );
 	}
-	return result;
+	return s;
 }
 
 template</type C/>
 fn to_string( u128 x ) : string_base</C/>
 {
-	var string_base</C/> mut result;
-	to_string_impl</C/>( x, result );
-	return result;
+	var string_base</C/> mut s;
+	to_string_impl</C/>( s, x );
+	return s;
 }
 
 // 8-bit version.
 template</type C/>
-fn to_string_impl( u8 in_x, string_base</C/>& mut result )
+fn to_string_impl( string_base</C/>& mut s , u8 in_x )
 {
 	auto constexpr zero_char= C('0');
 
@@ -466,20 +496,20 @@ fn to_string_impl( u8 in_x, string_base</C/>& mut result )
 
 	if( x >= 100u )
 	{
-		result.push_back( C( u32(zero_char) + x / 100u ) );
-		result.push_back( C( u32(zero_char) + x / 10u % 10u ) );
+		s.push_back( C( u32(zero_char) + x / 100u ) );
+		s.push_back( C( u32(zero_char) + x / 10u % 10u ) );
 	}
 	else if( x >= 10u )
 	{
-		result.push_back( C( u32(zero_char) + x / 10u ) );
+		s.push_back( C( u32(zero_char) + x / 10u ) );
 	}
 
-	result.push_back( C( u32(zero_char) + x % 10u ) );
+	s.push_back( C( u32(zero_char) + x % 10u ) );
 }
 
 // 16-bit version.
 template</type C/>
-fn to_string_impl( u16 in_x, string_base</C/>& mut result )
+fn to_string_impl( string_base</C/>& mut s, u16 in_x )
 {
 	auto constexpr zero_char= C('0');
 
@@ -487,7 +517,7 @@ fn to_string_impl( u16 in_x, string_base</C/>& mut result )
 
 	if( x == 0u )
 	{
-		result.push_back(zero_char);
+		s.push_back(zero_char);
 	}
 	else
 	{
@@ -501,7 +531,7 @@ fn to_string_impl( u16 in_x, string_base</C/>& mut result )
 		while( div > 0u )
 		{
 			auto digit= rem / div;
-			result.push_back( C( digit + u32(zero_char) ) );
+			s.push_back( C( digit + u32(zero_char) ) );
 			rem-= digit * div;
 			div/= 10u;
 		}
@@ -510,13 +540,13 @@ fn to_string_impl( u16 in_x, string_base</C/>& mut result )
 
 // 32-bit version.
 template</type C/>
-fn to_string_impl( u32 x, string_base</C/>& mut result )
+fn to_string_impl( string_base</C/>& mut s, u32 x )
 {
 	auto constexpr zero_char= C('0');
 
 	if( x == 0u )
 	{
-		result.push_back(zero_char);
+		s.push_back(zero_char);
 	}
 	else
 	{
@@ -530,7 +560,7 @@ fn to_string_impl( u32 x, string_base</C/>& mut result )
 		while( div > 0u )
 		{
 			auto digit= rem / div;
-			result.push_back( C( digit + u32( zero_char ) ) );
+			s.push_back( C( digit + u32( zero_char ) ) );
 			rem-= digit * div;
 			div/= 10u;
 		}
@@ -539,13 +569,13 @@ fn to_string_impl( u32 x, string_base</C/>& mut result )
 
 // 64-bit version.
 template</type C/>
-fn to_string_impl( u64 x, string_base</C/>& mut result )
+fn to_string_impl( string_base</C/>& mut s, u64 x )
 {
 	auto constexpr zero_char= C('0');
 
 	if( x == 0u64 )
 	{
-		result.push_back(zero_char);
+		s.push_back(zero_char);
 	}
 	else
 	{
@@ -559,7 +589,7 @@ fn to_string_impl( u64 x, string_base</C/>& mut result )
 		while( div > 0u64 )
 		{
 			auto digit= rem / div;
-			result.push_back( C( u32( digit ) + u32( zero_char ) ) );
+			s.push_back( C( u32( digit ) + u32( zero_char ) ) );
 			rem-= digit * div;
 			div/= 10u64;
 		}
@@ -568,21 +598,21 @@ fn to_string_impl( u64 x, string_base</C/>& mut result )
 
 // 128-bit version.
 template</type C/>
-fn to_string_impl( u128 x, string_base</C/>& mut result )
+fn to_string_impl( string_base</C/>& mut s, u128 x )
 {
 	// A speculative optimization.
 	// Assume that a lot of 128-bit numbers don't have upper 64 bits set.
 	// If it's the case, use 64-bit number stringification, since it's significantly faster.
 	if( ( x >> 64 ) == 0u128 )
 	{
-		return to_string_impl( u64(x), result );
+		return to_string_impl( s, u64(x) );
 	}
 
 	auto constexpr zero_char= C('0');
 
 	if( x == 0u128 )
 	{
-		result.push_back(zero_char);
+		s.push_back(zero_char);
 	}
 	else
 	{
@@ -600,7 +630,7 @@ fn to_string_impl( u128 x, string_base</C/>& mut result )
 		while( div > 0u128 )
 		{
 			auto digit= rem / div;
-			result.push_back( C( u32( digit ) + u32( zero_char ) ) );
+			s.push_back( C( u32( digit ) + u32( zero_char ) ) );
 			rem-= digit * div;
 			div/= 10u128;
 		}
@@ -608,7 +638,7 @@ fn to_string_impl( u128 x, string_base</C/>& mut result )
 }
 
 template</type C/>
-fn to_string( byte8 x ) : string_base</C/>
+fn to_string_impl( string_base</C/> &mut s, byte8 x )
 {
 	var u32 num( u8(x) );
 
@@ -620,11 +650,11 @@ fn to_string( byte8 x ) : string_base</C/>
 		( g_hex_digits[ ( num >> 0 ) & 15u ] ),
 	];
 
-	return chars;
+	s+= chars;
 }
 
 template</type C/>
-fn to_string( byte16 x ) : string_base</C/>
+fn to_string_impl( string_base</C/> &mut s, byte16 x )
 {
 	var u32 num( u16(x) );
 
@@ -638,11 +668,11 @@ fn to_string( byte16 x ) : string_base</C/>
 		( g_hex_digits[ ( num >>  0 ) & 15u ] ),
 	];
 
-	return chars;
+	s+= chars;
 }
 
 template</type C/>
-fn to_string( byte32 x ) : string_base</C/>
+fn to_string_impl( string_base</C/> &mut s, byte32 x )
 {
 	var u32 num( x );
 
@@ -660,11 +690,11 @@ fn to_string( byte32 x ) : string_base</C/>
 		( g_hex_digits[ ( num >>  0 ) & 15u ] ),
 	];
 
-	return chars;
+	s+= chars;
 }
 
 template</type C/>
-fn to_string( byte64 x ) : string_base</C/>
+fn to_string_impl( string_base</C/> &mut s, byte64 x )
 {
 	var u64 num(x);
 
@@ -690,11 +720,11 @@ fn to_string( byte64 x ) : string_base</C/>
 		( g_hex_digits[ ( num >>  0 ) & 15u64 ] ),
 	];
 
-	return chars;
+	s+= chars;
 }
 
 template</type C/>
-fn to_string( byte128 x ) : string_base</C/>
+fn to_string_impl( string_base</C/> &mut s, byte128 x )
 {
 	// TODO - consider optimizing this code.
 	// Doing bit shifts for 128-bit integers may be costly.
@@ -739,7 +769,7 @@ fn to_string( byte128 x ) : string_base</C/>
 		( g_hex_digits[ ( num >>   0 ) & 15u128 ] ),
 	];
 
-	return chars;
+	s+= chars;
 }
 
 var [ char8, 16 ] g_hex_digits= "0123456789ABCDEF";
