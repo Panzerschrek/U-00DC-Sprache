@@ -1,0 +1,30 @@
+//##success_test
+import "../imports/stringification.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	// stringify8
+	halt if( ust::stringify8() != "" );
+	halt if( ust::stringify8( "some" ) != "some" );
+	halt if( ust::stringify8( true ) != "true" );
+	halt if( ust::stringify8( -574 ) != "-574" );
+	halt if( ust::stringify8( "two ", "words" ) != "two words" );
+	halt if( ust::stringify8( "value: ", 425 ) != "value: 425" );
+	halt if( ust::stringify8( -56, " grad" ) != "-56 grad" );
+	halt if( ust::stringify8( false, 0 ) != "false0" );
+	halt if( ust::stringify8( "this", " ", "is" ) != "this is" );
+	halt if( ust::stringify8( 2, " * ", 7.0 ) != "2 * 7" );
+	halt if( ust::stringify8( 7, 3, 4, 6 ) != "7346" );
+	halt if( ust::stringify8( 7, "three", 4, "six" ) != "7three4six" );
+	halt if( ust::stringify8( "One", "Two", "Three", -4, "Five" ) != "OneTwoThree-4Five" );
+	halt if( ust::stringify8( "seq: ", false, true, false, 1, 0 ) != "seq: falsetruefalse10" );
+	halt if( ust::stringify8( 7, 6, "quīnque", "quattuor", "trēs", "duo", "ūnus" ) != "76quīnquequattuortrēsduoūnus" );
+	halt if( ust::stringify8( 10, 20, 30, 40, 50, 60, 70, 80 ) != "1020304050607080" );
+	halt if( ust::stringify8( 0, " ", 1, " ", 2, " ", 3, " ", 4 ) != "0 1 2 3 4" );
+	halt if( ust::stringify8( 5, " ", 6, " ", 7, ' ', 8, " ", 9, "!" ) != "5 6 7 8 9!" );
+	halt if( ust::stringify8( "digits: ", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ) != "digits: 0123456789" );
+	halt if( ust::stringify8( 4, ", ", 8, ", ", 15, ", ", 16, ", ", 23, ", ", 42 ) != "4, 8, 15, 16, 23, 42" );
+	halt if( ust::stringify8( 'F', 'e', 'u', 'e', 'r', 's', 'c', 'h', 'w', 'a', 'n', 'z' ) != "Feuerschwanz" );
+
+	return 0;
+}

@@ -1,0 +1,174 @@
+import "string.iu"
+import "stringifier.iu"
+
+namespace ust
+{
+
+fn stringify8() : string8
+{
+	return string8();
+}
+
+template</type A/>
+fn stringify8( A& a ) : string8
+{
+	var default_stringifier8 mut stringifier;
+	apply_value_to_stringifier( stringifier, a );
+	return move(stringifier).get();
+}
+
+template</type A, type B/>
+fn stringify8( A& a, B& b ) : string8
+{
+	var default_stringifier8 mut stringifier;
+	apply_value_to_stringifier( stringifier, a );
+	apply_value_to_stringifier( stringifier, b );
+	return move(stringifier).get();
+}
+
+template</type A, type B, type C/>
+fn stringify8( A& a, B& b, C& c ) : string8
+{
+	var default_stringifier8 mut stringifier;
+	apply_value_to_stringifier( stringifier, a );
+	apply_value_to_stringifier( stringifier, b );
+	apply_value_to_stringifier( stringifier, c );
+	return move(stringifier).get();
+}
+
+template</type A, type B, type C, type D/>
+fn stringify8( A& a, B& b, C& c, D& d ) : string8
+{
+	var default_stringifier8 mut stringifier;
+	apply_value_to_stringifier( stringifier, a );
+	apply_value_to_stringifier( stringifier, b );
+	apply_value_to_stringifier( stringifier, c );
+	apply_value_to_stringifier( stringifier, d );
+	return move(stringifier).get();
+}
+
+template</type A, type B, type C, type D, type E/>
+fn stringify8( A& a, B& b, C& c, D& d, E& e ) : string8
+{
+	var default_stringifier8 mut stringifier;
+	apply_value_to_stringifier( stringifier, a );
+	apply_value_to_stringifier( stringifier, b );
+	apply_value_to_stringifier( stringifier, c );
+	apply_value_to_stringifier( stringifier, d );
+	apply_value_to_stringifier( stringifier, e );
+	return move(stringifier).get();
+}
+
+template</type A, type B, type C, type D, type E, type F/>
+fn stringify8( A& a, B& b, C& c, D& d, E& e, F& f ) : string8
+{
+	var default_stringifier8 mut stringifier;
+	apply_value_to_stringifier( stringifier, a );
+	apply_value_to_stringifier( stringifier, b );
+	apply_value_to_stringifier( stringifier, c );
+	apply_value_to_stringifier( stringifier, d );
+	apply_value_to_stringifier( stringifier, e );
+	apply_value_to_stringifier( stringifier, f );
+	return move(stringifier).get();
+}
+
+template</type A, type B, type C, type D, type E, type F, type G/>
+fn stringify8( A& a, B& b, C& c, D& d, E& e, F& f, G& g ) : string8
+{
+	var default_stringifier8 mut stringifier;
+	apply_value_to_stringifier( stringifier, a );
+	apply_value_to_stringifier( stringifier, b );
+	apply_value_to_stringifier( stringifier, c );
+	apply_value_to_stringifier( stringifier, d );
+	apply_value_to_stringifier( stringifier, e );
+	apply_value_to_stringifier( stringifier, f );
+	apply_value_to_stringifier( stringifier, g );
+	return move(stringifier).get();
+}
+
+template</type A, type B, type C, type D, type E, type F, type G, type H/>
+fn stringify8( A& a, B& b, C& c, D& d, E& e, F& f, G& g, H& h ) : string8
+{
+	var default_stringifier8 mut stringifier;
+	apply_value_to_stringifier( stringifier, a );
+	apply_value_to_stringifier( stringifier, b );
+	apply_value_to_stringifier( stringifier, c );
+	apply_value_to_stringifier( stringifier, d );
+	apply_value_to_stringifier( stringifier, e );
+	apply_value_to_stringifier( stringifier, f );
+	apply_value_to_stringifier( stringifier, g );
+	apply_value_to_stringifier( stringifier, h );
+	return move(stringifier).get();
+}
+
+template</type A, type B, type C, type D, type E, type F, type G, type H, type I/>
+fn stringify8( A& a, B& b, C& c, D& d, E& e, F& f, G& g, H& h, I& i ) : string8
+{
+	var default_stringifier8 mut stringifier;
+	apply_value_to_stringifier( stringifier, a );
+	apply_value_to_stringifier( stringifier, b );
+	apply_value_to_stringifier( stringifier, c );
+	apply_value_to_stringifier( stringifier, d );
+	apply_value_to_stringifier( stringifier, e );
+	apply_value_to_stringifier( stringifier, f );
+	apply_value_to_stringifier( stringifier, g );
+	apply_value_to_stringifier( stringifier, h );
+	apply_value_to_stringifier( stringifier, i );
+	return move(stringifier).get();
+}
+
+template</type A, type B, type C, type D, type E, type F, type G, type H, type I, type J/>
+fn stringify8( A& a, B& b, C& c, D& d, E& e, F& f, G& g, H& h, I& i, J& j ) : string8
+{
+	var default_stringifier8 mut stringifier;
+	apply_value_to_stringifier( stringifier, a );
+	apply_value_to_stringifier( stringifier, b );
+	apply_value_to_stringifier( stringifier, c );
+	apply_value_to_stringifier( stringifier, d );
+	apply_value_to_stringifier( stringifier, e );
+	apply_value_to_stringifier( stringifier, f );
+	apply_value_to_stringifier( stringifier, g );
+	apply_value_to_stringifier( stringifier, h );
+	apply_value_to_stringifier( stringifier, i );
+	apply_value_to_stringifier( stringifier, j );
+	return move(stringifier).get();
+}
+
+template</type A, type B, type C, type D, type E, type F, type G, type H, type I, type J, type K/>
+fn stringify8( A& a, B& b, C& c, D& d, E& e, F& f, G& g, H& h, I& i, J& j, K& k ) : string8
+{
+	var default_stringifier8 mut stringifier;
+	apply_value_to_stringifier( stringifier, a );
+	apply_value_to_stringifier( stringifier, b );
+	apply_value_to_stringifier( stringifier, c );
+	apply_value_to_stringifier( stringifier, d );
+	apply_value_to_stringifier( stringifier, e );
+	apply_value_to_stringifier( stringifier, f );
+	apply_value_to_stringifier( stringifier, g );
+	apply_value_to_stringifier( stringifier, h );
+	apply_value_to_stringifier( stringifier, i );
+	apply_value_to_stringifier( stringifier, j );
+	apply_value_to_stringifier( stringifier, k );
+	return move(stringifier).get();
+}
+
+template</type A, type B, type C, type D, type E, type F, type G, type H, type I, type J, type K, type L/>
+fn stringify8( A& a, B& b, C& c, D& d, E& e, F& f, G& g, H& h, I& i, J& j, K& k, L& l ) : string8
+{
+	var default_stringifier8 mut stringifier;
+	apply_value_to_stringifier( stringifier, a );
+	apply_value_to_stringifier( stringifier, b );
+	apply_value_to_stringifier( stringifier, c );
+	apply_value_to_stringifier( stringifier, d );
+	apply_value_to_stringifier( stringifier, e );
+	apply_value_to_stringifier( stringifier, f );
+	apply_value_to_stringifier( stringifier, g );
+	apply_value_to_stringifier( stringifier, h );
+	apply_value_to_stringifier( stringifier, i );
+	apply_value_to_stringifier( stringifier, j );
+	apply_value_to_stringifier( stringifier, k );
+	apply_value_to_stringifier( stringifier, l );
+	return move(stringifier).get();
+}
+
+} // namespace ust
