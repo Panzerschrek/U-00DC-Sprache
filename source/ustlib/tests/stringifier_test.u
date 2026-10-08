@@ -133,6 +133,21 @@ fn nomangle main() call_conv( "C" ) : i32
 		ust::apply_value_to_stringifier( stringifier, v );
 		halt if( move( stringifier ).get() != "[ 6754, 0, 45, 267 ]" );
 	}
+	{ // Stringify a value of class having special "stringify" method.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ClassWithCustomStringifier( 672 ) );
+		halt if( move( stringifier ).get() != "CustomClass(672)" );
+	}
+	{ // Stringify an array of class values having special "stringify" method.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier(
+			stringifier,
+			ust::make_array(
+				ClassWithCustomStringifier( 10 ),
+				ClassWithCustomStringifier( 15 ),
+				ClassWithCustomStringifier( 150 ) ) );
+		halt if( move( stringifier ).get() != "[ CustomClass(10), CustomClass(15), CustomClass(150) ]" );
+	}
 
 	return 0;
 }
@@ -148,4 +163,23 @@ struct SomeStruct
 	i32 integer_field;
 	f32 floating_point_field;
 	[ char8, 4 ] chars_field;
+}
+
+class ClassWithCustomStringifier
+{
+public:
+	fn constructor( i32 x )
+		( x_= x )
+	{}
+
+	template</ type Stringifier />
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		ust::apply_value_to_stringifier( stringifier, "CustomClass(" );
+		ust::apply_value_to_stringifier( stringifier, x_ );
+		ust::apply_value_to_stringifier( stringifier, ")" );
+	}
+
+private:
+	i32 x_;
 }
