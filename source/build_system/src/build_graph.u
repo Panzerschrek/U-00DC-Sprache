@@ -2,7 +2,7 @@ import "/assert.iu"
 import "/hash_map.iu"
 import "/path_utils.iu"
 import "/scoped_array.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "build_graph.iu"
 import "filesystem.iu"
 import "make_dep_file.iu"
@@ -249,8 +249,7 @@ fn nodiscard PerformGraphBuild(
 			return true;
 		}
 
-		var ust::string8 num_nodes_to_rebuild_str= ust::to_string8(num_nodes_to_rebuild);
-		logger.LogVerbose( ust::concat( "Has ", num_nodes_to_rebuild_str, " nodes to rebuild." ) );
+		logger.LogVerbose( ust::stringify8( "Has ", num_nodes_to_rebuild, " nodes to rebuild." ) );
 
 		auto mut process_group_opt= CreateProcessGroup( logger );
 		if( process_group_opt.empty() )
@@ -345,11 +344,11 @@ fn nodiscard PerformGraphBuild(
 				var BuildGraph::Node& node_to_rebuild = build_graph.nodes[node_to_rebuild_index];
 
 				logger.LogInfo(
-					ust::concat(
+					ust::stringify8(
 						"[",
-						ust::to_string8( build_steps_started + 1s ),
+						build_steps_started + 1s,
 						"/",
-						num_nodes_to_rebuild_str,
+						num_nodes_to_rebuild,
 						"] Building \"",
 						node_to_rebuild.comment,
 						"\"." ) );

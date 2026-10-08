@@ -1,7 +1,7 @@
 import "/arena_allocated_array.iu"
 import "/assert.iu"
 import "/scoped_array.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "/vector.iu"
 import "../process.iu"
 import "errno.iu"
@@ -44,7 +44,7 @@ public:
 		var [ i32, 2 ] mut pipe_fd= zero_init;
 		if( unsafe( ::pipe( $<(pipe_fd[0]) ) ) != 0 )
 		{
-			logger.LogError( ust::concat( "pipe error: ", ust::to_string8( GetErrno() ) ) );
+			logger.LogError( ust::stringify8( "pipe error: ", GetErrno() ) );
 			return ust::null_optional;
 		}
 		var i32 pipe_read_end= pipe_fd[0];
@@ -78,7 +78,7 @@ public:
 		var posix_spawn_file_actions_t mut file_actions= zero_init;
 		if( unsafe( posix_spawn_file_actions_init( $<(file_actions ) ) ) != 0 )
 		{
-			logger.LogError( ust::concat( "posix_spawn_file_actions_init error: ", ust::to_string8( GetErrno() ) ) );
+			logger.LogError( ust::stringify8( "posix_spawn_file_actions_init error: ", GetErrno() ) );
 			unsafe( ::close( pipe_read_end ) );
 			unsafe( ::close( pipe_write_end ) );
 			return ust::null_optional;
@@ -98,7 +98,7 @@ public:
 		var posix_spawnattr_t mut spawn_attributes= zero_init;
 		if( unsafe( ::posix_spawnattr_init( $<(spawn_attributes) ) ) != 0 )
 		{
-			logger.LogError( ust::concat( "posix_spawnattr_init error: ", ust::to_string8( GetErrno() ) ) );
+			logger.LogError( ust::stringify8( "posix_spawnattr_init error: ", GetErrno() ) );
 			unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
 			unsafe( ::close( pipe_read_end ) );
 			unsafe( ::close( pipe_write_end ) );
@@ -129,7 +129,7 @@ public:
 			}
 			else
 			{
-				logger.LogError( ust::concat( "posix_spawn error: ", ust::to_string8( error_code ) ) );
+				logger.LogError( ust::stringify8( "posix_spawn error: ", error_code ) );
 			}
 			unsafe( ::posix_spawnattr_destroy( $<(spawn_attributes) ) );
 			unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
@@ -192,7 +192,7 @@ public:
 		auto wait_res= unsafe( ::waitpid( pid_, $<(status), 0 ) );
 		if( wait_res != pid_ )
 		{
-			logger.LogError( ust::concat( "waitpid error: ", ust::to_string8( GetErrno() ) ) );
+			logger.LogError( ust::stringify8( "waitpid error: ", GetErrno() ) );
 		}
 		pid_= c_empty_descriptor; // Reset pid in order to avoid calling waitpid in destructor again.
 
@@ -305,7 +305,7 @@ public: // ProcessGroupInterface
 		auto poll_res= unsafe( ::poll( poll_fds.data(), nfds_t(poll_fds.size()), -1 ) );
 		if( poll_res < 0 )
 		{
-			logger.LogError( ust::concat( "ppoll error: ", ust::to_string8( GetErrno() ) ) );
+			logger.LogError( ust::stringify8( "ppoll error: ", GetErrno() ) );
 			return false;
 		}
 

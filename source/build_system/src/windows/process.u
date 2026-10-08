@@ -1,6 +1,6 @@
 import "/assert.iu"
 import "/atomic.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "/vector.iu"
 import "../process.iu"
 import "invalid_handle.iu"
@@ -39,7 +39,7 @@ fn nodiscard RunExecutable(
 
 	if( creation_result == 0 )
 	{
-		logger.LogError( ust::concat( "CreateProcessW error: ", ust::to_string8( unsafe( GetLastError() ) ), "\n" ) );
+		logger.LogError( ust::stringify8( "CreateProcessW error: ",  unsafe( GetLastError() ), "\n" ) );
 		return false;
 	}
 
@@ -117,12 +117,12 @@ public: // ProcessGroupInterface
 		// Use atomic increment to ensure correct work in multiple threads.
 		// Also use process id, since pipe names are global across whole system.
 		var ust::string8 pipe_name_nt=
-			ust::concat(
+			ust::stringify8(
 				"\\\\.\\pipe\\",
 				"BuildSystem_Process_",
-				ust::to_string8( unsafe( GetCurrentProcessId() ) ),
+				unsafe( GetCurrentProcessId() ),
 				"_Pipe_",
-				ust::to_string8( unsafe( ust::atomic_inc(g_pipe_counter) ) ),
+				unsafe( ust::atomic_inc(g_pipe_counter) ),
 				"\0" );
 
 		var WideString mut pipe_name_w= UTF8ToWideString( pipe_name_nt );
@@ -140,7 +140,7 @@ public: // ProcessGroupInterface
 
 		if( out_process.deref().pipe_handle == GetInvalidHandle() )
 		{
-			logger.LogError( ust::concat( "Failed to create pipe! Error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
+			logger.LogError( ust::stringify8( "Failed to create pipe! Error: ", unsafe( GetLastError() ) ) );
 			return false;
 		}
 
@@ -150,7 +150,7 @@ public: // ProcessGroupInterface
 			ust::ptr_to_int( out_process.get_ptr() ), // Take pointer to "Process" structure.
 			0u ) ) == ust::nullptr</byte8/>() )
 		{
-			logger.LogError( ust::concat( "Failed to connect to IO completion port! Error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
+			logger.LogError( ust::stringify8( "Failed to connect to IO completion port! Error: ", unsafe( GetLastError() ) ) );
 			unsafe( ::CloseHandle( out_process.deref().pipe_handle ) );
 			return false;
 		}
@@ -162,7 +162,7 @@ public: // ProcessGroupInterface
 			auto err= unsafe( ::GetLastError() );
 			if( err != DWORD(ERROR_IO_PENDING) )
 			{
-				logger.LogError( ust::concat( "Failed to connect to named pipe. Error: ", ust::to_string8( err ) ) );
+				logger.LogError( ust::stringify8( "Failed to connect to named pipe. Error: ", err ) );
 				unsafe( ::CloseHandle( out_process.deref().pipe_handle ) );
 				return false;
 			}
@@ -192,7 +192,7 @@ public: // ProcessGroupInterface
 					1, // Inherit handle.
 					DWORD(DUPLICATE_SAME_ACCESS) ) ) == 0 )
 			{
-				logger.LogError( ust::concat( "Failed to duplicate handle! Error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
+				logger.LogError( ust::stringify8( "Failed to duplicate handle! Error: ", unsafe( GetLastError() ) ) );
 				unsafe( ::CloseHandle( out_process.deref().pipe_handle ) );
 				unsafe( ::CloseHandle( output_write_handle ) );
 				return false;
@@ -219,7 +219,7 @@ public: // ProcessGroupInterface
 				ust::nullptr</byte8/>() ) );
 		if( nul == GetInvalidHandle() )
 		{
-			logger.LogError( ust::concat( "Failed to open nul! Error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
+			logger.LogError( ust::stringify8( "Failed to open nul! Error: ", unsafe( GetLastError() ) ) );
 			unsafe( ::CloseHandle( out_process.deref().pipe_handle ) );
 			unsafe( ::CloseHandle( output_write_child ) );
 			return false;
@@ -256,7 +256,7 @@ public: // ProcessGroupInterface
 
 		if( creation_result == 0 )
 		{
-			logger.LogError( ust::concat( "CreateProcessW error: ", ust::to_string8( unsafe( GetLastError() ) ), "\n" ) );
+			logger.LogError( ust::stringify8( "CreateProcessW error: ", unsafe( GetLastError() ), "\n" ) );
 			unsafe( ::CloseHandle( out_process.deref().pipe_handle ) );
 			unsafe( ::CloseHandle( output_write_child ) );
 			unsafe( ::CloseHandle( nul ) );
@@ -298,7 +298,7 @@ public: // ProcessGroupInterface
 			auto err= unsafe( ::GetLastError() );
 			if( err != DWORD(ERROR_BROKEN_PIPE) )
 			{
-				logger.LogError( ust::concat( "GetQueuedCompletionStatus error: ", ust::to_string8( err ), "\n" ) );
+				logger.LogError( ust::stringify8( "GetQueuedCompletionStatus error: ", err, "\n" ) );
 				return false;
 			}
 		}
@@ -381,7 +381,7 @@ private:
 			}
 			else
 			{
-				logger.LogError( ust::concat( "GetOverlappedResult error: ", ust::to_string8( err ), "\n" ) );
+				logger.LogError( ust::stringify8( "GetOverlappedResult error: ", err, "\n" ) );
 				return false;
 			}
 		}
@@ -416,7 +416,7 @@ private:
 			else if( err == DWORD(ERROR_IO_PENDING) ) {}
 			else
 			{
-				logger.LogError( ust::concat( "ReadFile error: ", ust::to_string8( err ), "\n" ) );
+				logger.LogError( ust::stringify8( "ReadFile error: ", err, "\n" ) );
 				return false;
 			}
 		}
@@ -438,7 +438,7 @@ private:
 
 		if( !ok )
 		{
-			logger.LogError( ust::concat( "Process exited with code ", ust::to_string8(exit_code), "." ) );
+			logger.LogError( ust::stringify8( "Process exited with code ", exit_code, "." ) );
 		}
 
 		if( !process.output.empty() )
