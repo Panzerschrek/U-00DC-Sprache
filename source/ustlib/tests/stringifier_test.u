@@ -209,6 +209,19 @@ fn nomangle main() call_conv( "C" ) : i32
 		ust::apply_value_to_stringifier( stringifier, o );
 		halt if( move( stringifier ).get() != "null" );
 	}
+	{ // Stringify a non-empty optional_ref.
+		var u32 x= 734674u;
+		var ust::optional_ref_imut</ u32 /> o= x;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, o );
+		halt if( move( stringifier ).get() != "734674" );
+	}
+	{ // Stringify an empty optional_ref.
+		var ust::optional_ref_imut</ f32 /> o;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, o );
+		halt if( move( stringifier ).get() != "null" );
+	}
 
 	return 0;
 }

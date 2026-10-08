@@ -2,7 +2,6 @@ import "aligned_storage.iu"
 import "container_utils.iu"
 import "hash_apply.iu"
 import "optional_ref.iu"
-import "stringifier_apply.iu"
 import "ustlib_macros.iu"
 
 namespace ust
