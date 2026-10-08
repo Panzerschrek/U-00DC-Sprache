@@ -1,3 +1,4 @@
+import "enum_string_conversions.iu"
 import "random_access_range.iu"
 
 namespace ust
@@ -76,6 +77,8 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
 
 	static_if( ti.is_enum )
 	{
+		// Convert enums to strings directly.
+		apply_value_to_stringifier( stringifier, enum_to_string( t ) );
 	}
 	else static_if( ti.is_raw_pointer )
 	{
