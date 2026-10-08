@@ -5,50 +5,51 @@ namespace ust
 
 fn to_string8( f32 x ) : string8
 {
-	return f32_impl::to_string8( x );
+	var string8 mut s;
+	f32_impl::to_string( s, x );
+	return s;
 }
 
 fn to_string16( f32 x ) : string16
 {
-	// For simplicity just stringify to string8 and convert the result into string16.
-	// It adds a little bit overhead, but it's not so problematic, since almost nobody actually uses char16-strings.
-	var string8 s= f32_impl::to_string8( x );
-	return string16::from_mapped_range( s.range(), lambda( char8 c ) : char16 { return char16(c); } );
+	var string16 mut s;
+	f32_impl::to_string( s, x );
+	return s;
 }
 
 fn to_string32( f32 x ) : string32
 {
-	// For simplicity just stringify to string8 and convert the result into string32.
-	// It adds a little bit overhead, but it's not so problematic, since almost nobody actually uses char32-strings.
-	var string8 s= f32_impl::to_string8( x );
-	return string32::from_mapped_range( s.range(), lambda( char8 c ) : char32 { return char32(c); } );
+	var string32 mut s;
+	f32_impl::to_string( s, x );
+	return s;
 }
 
 fn to_string8( f64 x ) : string8
 {
-	return f64_impl::to_string8( x );
+	var string8 mut s;
+	f64_impl::to_string( s, x );
+	return s;
 }
 
 fn to_string16( f64 x ) : string16
 {
-	// For simplicity just stringify to string8 and convert the result into string16.
-	// It adds a little bit overhead, but it's not so problematic, since almost nobody actually uses char16-strings.
-	var string8 s= f64_impl::to_string8( x );
-	return string16::from_mapped_range( s.range(), lambda( char8 c ) : char16 { return char16(c); } );
+	var string16 mut s;
+	f64_impl::to_string( s, x );
+	return s;
 }
 
 fn to_string32( f64 x ) : string32
 {
-	// For simplicity just stringify to string8 and convert the result into string32.
-	// It adds a little bit overhead, but it's not so problematic, since almost nobody actually uses char32-strings.
-	var string8 s= f64_impl::to_string8( x );
-	return string32::from_mapped_range( s.range(), lambda( char8 c ) : char32 { return char32(c); } );
+	var string32 mut s;
+	f64_impl::to_string( s, x );
+	return s;
 }
 
 namespace f32_impl
 {
 
-fn to_string8( f32 x ) : string8
+template</type C/>
+fn to_string( string_base</C/> &mut s, f32 x )
 {
 	// Add extra decimal digit of precision.
 	// It's needed to provide proper precision of the end result.
@@ -68,10 +69,29 @@ fn to_string8( f32 x ) : string8
 
 	if( exponent == ( ( 1u << c_num_exponent_bits ) - 1u ) )
 	{
-		return
-			( mantissa_bits == 0u
-				? ( is_negative ? string_view8( "-inf" ) : string_view8( "inf" ) )
-				: ( is_negative ? string_view8( "-nan" ) : string_view8( "nan" ) ) );
+		if( mantissa_bits == 0u32 )
+		{
+			if( is_negative )
+			{
+				s+= cast_char_literal</C/>( "-inf" );
+			}
+			else
+			{
+				s+= cast_char_literal</C/>( "inf" );
+			}
+		}
+		else
+		{
+			if( is_negative )
+			{
+				s+= cast_char_literal</C/>( "-nan" );
+			}
+			else
+			{
+				s+= cast_char_literal</C/>( "nan" );
+			}
+		}
+		return;
 	}
 
 	var u32 mantissa=
@@ -84,7 +104,15 @@ fn to_string8( f32 x ) : string8
 	if( mantissa == 0u )
 	{
 		// Handle zero earlier. We need to do this anyway, so, avoid fetching scale and multiplying by it at all.
-		return ( is_negative ? string_view8( "-0" ) : string_view8( "0" ) );
+		if( is_negative )
+		{
+			s+= cast_char_literal</C/>( "-0" );
+		}
+		else
+		{
+			s.push_back( C('0') );
+		}
+		return;
 	}
 
 	// We have a number in form x * 2^n.
@@ -123,14 +151,14 @@ fn to_string8( f32 x ) : string8
 	var size_type
 		mut num_lower_bound_significant_decimal_digits= 0s,
 		mut num_upper_bound_significant_decimal_digits= 0s;
-	var [ char8, c_max_decimal_digits ]
-		mut lower_bound_decimal_digit_chars[ '0' ... ],
-		mut upper_bound_decimal_digit_chars[ '0' ... ];
+	var [ C, c_max_decimal_digits ]
+		mut lower_bound_decimal_digit_chars[ C('0') ... ],
+		mut upper_bound_decimal_digit_chars[ C('0') ... ];
 
 	// Calculate digit chars for lower bound value.
 	for( auto mut n= decimal_mantissa_lower_bound; n > 0u; )
 	{
-		lower_bound_decimal_digit_chars[ num_lower_bound_significant_decimal_digits ]= char8( u32('0') + n % 10u );
+		lower_bound_decimal_digit_chars[ num_lower_bound_significant_decimal_digits ]= C( u32('0') + n % 10u );
 		n/= 10u;
 		++num_lower_bound_significant_decimal_digits;
 	}
@@ -138,7 +166,7 @@ fn to_string8( f32 x ) : string8
 	// Calculate digit chars for upper bound value.
 	for( auto mut n= decimal_mantissa_upper_bound; n > 0u; )
 	{
-		upper_bound_decimal_digit_chars[ num_upper_bound_significant_decimal_digits ]= char8( u32('0') + n % 10u );
+		upper_bound_decimal_digit_chars[ num_upper_bound_significant_decimal_digits ]= C( u32('0') + n % 10u );
 		n/= 10u;
 		++num_upper_bound_significant_decimal_digits;
 	}
@@ -148,15 +176,15 @@ fn to_string8( f32 x ) : string8
 	// At first mismatch select digit from the upper bound representation and set remaining digits to zero.
 	for( auto mut i= 0s; i < c_max_decimal_digits; ++i )
 	{
-		var char8 c0= lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ];
-		var char8 c1= upper_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ];
+		var C c0= lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ];
+		var C c1= upper_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ];
 
 		if( c0 != c1 )
 		{
 			lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ]= c1;
 			for( auto mut j= i + 1s; j < c_max_decimal_digits; ++j )
 			{
-				lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - j ]= '0';
+				lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - j ]= C('0');
 			}
 			break;
 		}
@@ -178,7 +206,7 @@ fn to_string8( f32 x ) : string8
 		// If no fractional point is present, try removing trailing zeros by making exponent bigger.
 		// This makes 625000000e-10 into 625e-4.
 		while( first_non_zero_interer_part_digit < num_significant_decimal_digits &&
-			lower_bound_decimal_digit_chars[ first_non_zero_interer_part_digit ] == '0' )
+			lower_bound_decimal_digit_chars[ first_non_zero_interer_part_digit ] == C('0') )
 		{
 			++first_non_zero_interer_part_digit;
 			++decimal_exponent;
@@ -188,24 +216,22 @@ fn to_string8( f32 x ) : string8
 	var size_type num_decimal_digits_in_integer_part=
 		num_significant_decimal_digits - num_decimal_digits_in_fractional_part;
 
-	var string8 mut result;
-
 	if( is_negative )
 	{
-		result.push_back( '-' );
+		s.push_back( C('-') );
 	}
 
 	// Put digit chars calculated previously into the result string and flip them to use major to minor digit order.
 
 	if( num_decimal_digits_in_integer_part == 0s )
 	{
-		result.push_back( '0' );
+		s.push_back( C('0') );
 	}
 	else
 	{
 		for( auto mut i= 0s; i < num_decimal_digits_in_integer_part - first_non_zero_interer_part_digit; ++i )
 		{
-			result.push_back( lower_bound_decimal_digit_chars[ num_significant_decimal_digits - 1s - i ] );
+			s.push_back( lower_bound_decimal_digit_chars[ num_significant_decimal_digits - 1s - i ] );
 		}
 	}
 
@@ -214,7 +240,7 @@ fn to_string8( f32 x ) : string8
 		// Reject trailing zeros in fractional part.
 		var size_type mut first_non_zero_fractional_digit= 0s;
 		while( first_non_zero_fractional_digit < num_decimal_digits_in_fractional_part &&
-				lower_bound_decimal_digit_chars[ first_non_zero_fractional_digit ] == '0' )
+				lower_bound_decimal_digit_chars[ first_non_zero_fractional_digit ] == C('0') )
 		{
 			++first_non_zero_fractional_digit;
 		}
@@ -222,10 +248,10 @@ fn to_string8( f32 x ) : string8
 		if( first_non_zero_fractional_digit < num_decimal_digits_in_fractional_part )
 		{
 			// Add fractional part only if at least one non-zero fractional digit is present.
-			result.push_back( '.' );
+			s.push_back( C('.') );
 			for( auto mut i= 0s; i < num_decimal_digits_in_fractional_part - first_non_zero_fractional_digit; ++i )
 			{
-				result.push_back( lower_bound_decimal_digit_chars[ num_decimal_digits_in_fractional_part - 1s - i ] );
+				s.push_back( lower_bound_decimal_digit_chars[ num_decimal_digits_in_fractional_part - 1s - i ] );
 			}
 		}
 	}
@@ -234,7 +260,7 @@ fn to_string8( f32 x ) : string8
 	{
 		// Exponent has one or two digits.
 
-		result.push_back( 'e' );
+		s.push_back( C('e') );
 
 		var u32 mut e= 0u;
 		if( decimal_exponent > 0 )
@@ -244,17 +270,15 @@ fn to_string8( f32 x ) : string8
 		else
 		{
 			e= u32( -decimal_exponent );
-			result.push_back( '-' );
+			s.push_back( C('-') );
 		}
 
 		if( e >= 10u )
 		{
-			result.push_back( char8( e / 10u + u32( '0' ) ) );
+			s.push_back( C( e / 10u + u32( '0' ) ) );
 		}
-		result.push_back( char8( e % 10u + u32( '0' ) ) );
+		s.push_back( C( e % 10u + u32( '0' ) ) );
 	}
-
-	return result;
 }
 
 var u32 constexpr c_num_mantissa_bits= 23u;
@@ -348,7 +372,8 @@ fn constexpr BuildScaleForExponentTable() : ScaleForExponentTable
 namespace f64_impl
 {
 
-fn to_string8( f64 x ) : string8
+template</type C/>
+fn to_string( string_base</C/> &mut s, f64 x )
 {
 	// Add extra decimal digit of precision.
 	// It's needed to provide proper precision of the end result.
@@ -368,10 +393,29 @@ fn to_string8( f64 x ) : string8
 
 	if( exponent == ( ( 1u64 << c_num_exponent_bits ) - 1u64 ) )
 	{
-		return
-			( mantissa_bits == 0u64
-				? ( is_negative ? string_view8( "-inf" ) : string_view8( "inf" ) )
-				: ( is_negative ? string_view8( "-nan" ) : string_view8( "nan" ) ) );
+		if( mantissa_bits == 0u64 )
+		{
+			if( is_negative )
+			{
+				s+= cast_char_literal</C/>( "-inf" );
+			}
+			else
+			{
+				s+= cast_char_literal</C/>( "inf" );
+			}
+		}
+		else
+		{
+			if( is_negative )
+			{
+				s+= cast_char_literal</C/>( "-nan" );
+			}
+			else
+			{
+				s+= cast_char_literal</C/>( "nan" );
+			}
+		}
+		return;
 	}
 
 	var u64 mantissa=
@@ -384,7 +428,15 @@ fn to_string8( f64 x ) : string8
 	if( mantissa == 0u64 )
 	{
 		// Handle zero earlier. We need to do this anyway, so, avoid fetching scale and multiplying by it at all.
-		return ( is_negative ? string_view8( "-0" ) : string_view8( "0" ) );
+		if( is_negative )
+		{
+			s+= cast_char_literal</C/>( "-0" );
+		}
+		else
+		{
+			s.push_back( C('0') );
+		}
+		return;
 	}
 
 	// We have a number in form x * 2^n.
@@ -423,14 +475,14 @@ fn to_string8( f64 x ) : string8
 	var size_type
 		mut num_lower_bound_significant_decimal_digits= 0s,
 		mut num_upper_bound_significant_decimal_digits= 0s;
-	var [ char8, c_max_decimal_digits ]
-		mut lower_bound_decimal_digit_chars[ '0' ... ],
-		mut upper_bound_decimal_digit_chars[ '0' ... ];
+	var [ C, c_max_decimal_digits ]
+		mut lower_bound_decimal_digit_chars[ C('0') ... ],
+		mut upper_bound_decimal_digit_chars[ C('0') ... ];
 
 	// Calculate digit chars for lower bound value.
 	for( auto mut n= decimal_mantissa_lower_bound; n > 0u64; )
 	{
-		lower_bound_decimal_digit_chars[ num_lower_bound_significant_decimal_digits ]= char8( u64('0') + n % 10u64 );
+		lower_bound_decimal_digit_chars[ num_lower_bound_significant_decimal_digits ]= C( u64('0') + n % 10u64 );
 		n/= 10u64;
 		++num_lower_bound_significant_decimal_digits;
 	}
@@ -438,7 +490,7 @@ fn to_string8( f64 x ) : string8
 	// Calculate digit chars for upper bound value.
 	for( auto mut n= decimal_mantissa_upper_bound; n > 0u64; )
 	{
-		upper_bound_decimal_digit_chars[ num_upper_bound_significant_decimal_digits ]= char8( u64('0') + n % 10u64 );
+		upper_bound_decimal_digit_chars[ num_upper_bound_significant_decimal_digits ]= C( u64('0') + n % 10u64 );
 		n/= 10u64;
 		++num_upper_bound_significant_decimal_digits;
 	}
@@ -448,15 +500,15 @@ fn to_string8( f64 x ) : string8
 	// At first mismatch select digit from the upper bound representation and set remaining digits to zero.
 	for( auto mut i= 0s; i < c_max_decimal_digits; ++i )
 	{
-		var char8 c0= lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ];
-		var char8 c1= upper_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ];
+		var C c0= lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ];
+		var C c1= upper_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ];
 
 		if( c0 != c1 )
 		{
 			lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - i ]= c1;
 			for( auto mut j= i + 1s; j < c_max_decimal_digits; ++j )
 			{
-				lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - j ]= '0';
+				lower_bound_decimal_digit_chars[ c_max_decimal_digits - 1s - j ]= C('0');
 			}
 			break;
 		}
@@ -478,7 +530,7 @@ fn to_string8( f64 x ) : string8
 		// If no fractional point is present, try removing trailing zeros by making exponent bigger.
 		// This makes 625000000e-10 into 625e-4.
 		while( first_non_zero_interer_part_digit < num_significant_decimal_digits &&
-			lower_bound_decimal_digit_chars[ first_non_zero_interer_part_digit ] == '0' )
+			lower_bound_decimal_digit_chars[ first_non_zero_interer_part_digit ] == C('0') )
 		{
 			++first_non_zero_interer_part_digit;
 			++decimal_exponent;
@@ -488,24 +540,22 @@ fn to_string8( f64 x ) : string8
 	var size_type num_decimal_digits_in_integer_part=
 		num_significant_decimal_digits - num_decimal_digits_in_fractional_part;
 
-	var string8 mut result;
-
 	if( is_negative )
 	{
-		result.push_back( '-' );
+		s.push_back( C('-') );
 	}
 
 	// Put digit chars calculated previously into the result string and flip them to use major to minor digit order.
 
 	if( num_decimal_digits_in_integer_part == 0s )
 	{
-		result.push_back( '0' );
+		s.push_back( C('0') );
 	}
 	else
 	{
 		for( auto mut i= 0s; i < num_decimal_digits_in_integer_part - first_non_zero_interer_part_digit; ++i )
 		{
-			result.push_back( lower_bound_decimal_digit_chars[ num_significant_decimal_digits - 1s - i ] );
+			s.push_back( lower_bound_decimal_digit_chars[ num_significant_decimal_digits - 1s - i ] );
 		}
 	}
 
@@ -514,7 +564,7 @@ fn to_string8( f64 x ) : string8
 		// Reject trailing zeros in fractional part.
 		var size_type mut first_non_zero_fractional_digit= 0s;
 		while( first_non_zero_fractional_digit < num_decimal_digits_in_fractional_part &&
-				lower_bound_decimal_digit_chars[ first_non_zero_fractional_digit ] == '0' )
+				lower_bound_decimal_digit_chars[ first_non_zero_fractional_digit ] == C('0') )
 		{
 			++first_non_zero_fractional_digit;
 		}
@@ -522,10 +572,10 @@ fn to_string8( f64 x ) : string8
 		if( first_non_zero_fractional_digit < num_decimal_digits_in_fractional_part )
 		{
 			// Add fractional part only if at least one non-zero fractional digit is present.
-			result.push_back( '.' );
+			s.push_back( C('.') );
 			for( auto mut i= 0s; i < num_decimal_digits_in_fractional_part - first_non_zero_fractional_digit; ++i )
 			{
-				result.push_back( lower_bound_decimal_digit_chars[ num_decimal_digits_in_fractional_part - 1s - i ] );
+				s.push_back( lower_bound_decimal_digit_chars[ num_decimal_digits_in_fractional_part - 1s - i ] );
 			}
 		}
 	}
@@ -534,7 +584,7 @@ fn to_string8( f64 x ) : string8
 	{
 		// Exponent has one, two or three digits.
 
-		result.push_back( 'e' );
+		s.push_back( C('e') );
 
 		var u32 mut e= 0u;
 		if( decimal_exponent > 0 )
@@ -544,21 +594,19 @@ fn to_string8( f64 x ) : string8
 		else
 		{
 			e= u32( -decimal_exponent );
-			result.push_back( '-' );
+			s.push_back( C('-') );
 		}
 
 		if( e >= 10u )
 		{
 			if( e >= 100u )
 			{
-				result.push_back( char8( e / 100u + u32( '0' ) ) );
+				s.push_back( C( e / 100u + u32( '0' ) ) );
 			}
-			result.push_back( char8( e / 10u % 10u + u32( '0' ) ) );
+			s.push_back( C( e / 10u % 10u + u32( '0' ) ) );
 		}
-		result.push_back( char8( e % 10u + u32( '0' ) ) );
+		s.push_back( C( e % 10u + u32( '0' ) ) );
 	}
-
-	return result;
 }
 
 var u32 constexpr c_num_mantissa_bits= 52u;
@@ -647,5 +695,22 @@ fn constexpr BuildScaleForExponentTable() : ScaleForExponentTable
 }
 
 } // namespace f64_impl
+
+template</size_type S/>
+fn constexpr cast_char_literal( [ char8, S ]& str ) : [ char8, S ]&
+{
+	return str;
+}
+
+template</type C, size_type S/>
+fn constexpr cast_char_literal( [ char8, S ]& str ) : [ C, S ]
+{
+	var [ C, S ] mut res= zero_init;
+	for( auto mut i= 0s; i < S; ++i )
+	{
+		res[i]= C( str[i] );
+	}
+	return res;
+}
 
 } // namespace ust
