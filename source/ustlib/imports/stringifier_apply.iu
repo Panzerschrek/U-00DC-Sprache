@@ -88,6 +88,28 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
 	}
 	else static_if( ti.is_array )
 	{
+		// For empty arrays stringify as [].
+		// For non-empty arrays stringifiy in [], use commas (instead of last one) and spaces between elements.
+
+		static_if( ti.element_count == 0s )
+		{
+			apply_value_to_stringifier( stringifier, "[]" );
+			ust::ignore_unused(t);
+		}
+		else
+		{
+			apply_value_to_stringifier( stringifier, "[ " );
+
+			apply_value_to_stringifier( stringifier, t[0] );
+
+			for( auto mut i= 1s; i < ti.element_count; ++i )
+			{
+				apply_value_to_stringifier( stringifier, ", " );
+				apply_value_to_stringifier( stringifier, t[i] );
+			}
+
+			apply_value_to_stringifier( stringifier, " ]" );
+		}
 	}
 	else static_if( ti.is_class )
 	{

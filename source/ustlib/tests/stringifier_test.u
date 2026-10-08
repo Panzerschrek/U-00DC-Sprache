@@ -23,6 +23,21 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		halt if( move( stringifier ).get() != "!74 : false, 0x67.\n" );
 	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_array</u32/>() ); // Array with zero elements.
+		halt if( move( stringifier ).get() != "[]" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_array( 43447398u ) ); // Array with single element.
+		halt if( move( stringifier ).get() != "[ 43447398 ]" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_array( 78, -234, 2363 ) ); // Array with many elements.
+		halt if( move( stringifier ).get() != "[ 78, -234, 2363 ]" );
+	}
 
 	return 0;
 }
