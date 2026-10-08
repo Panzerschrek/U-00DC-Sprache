@@ -24,6 +24,18 @@ fn nomangle main() call_conv( "C" ) : i32
 		ust::apply_value_to_stringifier( stringifier, chars_view ); // Should handle char view properly, even if they are mutable.
 		halt if( move( stringifier ).get() != "Iuppiter" );
 	}
+	{ // Stringify strings.
+		var ust::string8 s= "Roko's Basilisk";
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, s );
+		halt if( move( stringifier ).get() != "Roko's Basilisk" );
+	}
+	{ // Stringify strings - can do proper conversion.
+		var ust::string32 s= "Bärentanz"u32;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, s );
+		halt if( move( stringifier ).get() != "Bärentanz" );
+	}
 	{
 		var ust::default_stringifier8 mut stringifier;
 
