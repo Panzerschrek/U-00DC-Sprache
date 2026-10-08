@@ -3,6 +3,7 @@ import "string.iu"
 namespace ust
 {
 
+fn to_string8 ( void x ) : string8;
 fn to_string8 ( bool x ) : string8;
 fn to_string8 ( i8 x ) : string8;
 fn to_string8 ( u8 x ) : string8;
@@ -17,6 +18,7 @@ fn to_string8 ( u128 x ) : string8;
 fn to_string8 ( ssize_type x ) : string8;
 fn to_string8 ( size_type x ) : string8;
 
+fn to_string16( void x ) : string16;
 fn to_string16( bool x ) : string16;
 fn to_string16( i8 x ) : string16;
 fn to_string16( u8 x ) : string16;
@@ -31,6 +33,7 @@ fn to_string16( u128 x ) : string16;
 fn to_string16( ssize_type x ) : string16;
 fn to_string16( size_type x ) : string16;
 
+fn to_string32( void x ) : string32;
 fn to_string32( bool x ) : string32;
 fn to_string32( i8 x ) : string32;
 fn to_string32( u8 x ) : string32;

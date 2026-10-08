@@ -3,6 +3,12 @@ import "../imports/string_conversions.iu"
 namespace ust
 {
 
+fn to_string8 ( void x ) : string8
+{
+	ignore_unused(x);
+	return "void";
+}
+
 fn to_string8 ( bool x ) : string8
 {
 	if( x ){ return "true"; }
@@ -83,6 +89,12 @@ fn to_string8 ( size_type x ) : string8
 	}
 }
 
+fn to_string16( void x ) : string16
+{
+	ignore_unused(x);
+	return "void"u16;
+}
+
 fn to_string16( bool x ) : string16
 {
 	if( x ){ return "true"u16; }
@@ -161,6 +173,12 @@ fn to_string16( size_type x ) : string16
 	{
 		return to_string16( u64(x) );
 	}
+}
+
+fn to_string32( void x ) : string32
+{
+	ignore_unused(x);
+	return "void"u32;
 }
 
 fn to_string32( bool x ) : string32
