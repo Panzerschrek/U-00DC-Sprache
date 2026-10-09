@@ -383,8 +383,6 @@ public:
 
 	fn ReferenceIsConvertibleTo( this, Type& dst ) : bool;
 
-	// TODO - add here an internal method for stringification into default stringificator.
-
 	op==( Type& l, Type& r ) : bool;
 
 	template</type Hasher/>

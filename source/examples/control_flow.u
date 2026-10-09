@@ -61,7 +61,7 @@ fn ForLoop( f32 x )
 	{
 		if( (i32(i) & 3) == 0 )
 		{
-			ust::stdout_print_line( "For loop skip iteration ",i32(i) );
+			ust::stdout_print_line( "For loop skip iteration ", i32(i) );
 			continue; // Go to the loop iteration part.
 		}
 		ust::stdout_print_line( "For loop iteration counter: ", i32(i) );

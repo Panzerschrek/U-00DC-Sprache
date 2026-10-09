@@ -10,7 +10,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// Ipv4 string conversions.
 	halt if( ust::stringify8( ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ) ) != "127.0.0.1" );
-	halt if( ust::stringify8(  ust::ip_address_v4( 0x7E31FD8Cu ) ) != "126.49.253.140" );
+	halt if( ust::stringify8( ust::ip_address_v4( 0x7E31FD8Cu ) ) != "126.49.253.140" );
 	halt if( ust::stringify8( ust::ip_address_v4( 0u ) ) != "0.0.0.0" );
 	halt if( ust::stringify8( ust::ip_address_v4( 0xFFFFFFFFu ) ) != "255.255.255.255" );
 	halt if( ust::stringify8( ust::ip_address_v4( ust::make_array( 13u8, 218u8, 187u8, 44u8 ) ) ) != "13.218.187.44" );

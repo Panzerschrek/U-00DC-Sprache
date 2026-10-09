@@ -10,7 +10,7 @@ pretty_main
 	{
 		ust::stdout_print_line( arg );
 	}
-	ust::stdout_print( "\n" );
+	ust::stdout_print_line();
 
 	return 0;
 }

@@ -814,38 +814,31 @@ fn Type::stringify( this, ust::default_stringifier8 &mut stringifier )
 {
 	if_var( &fundamental_type : GetFundamentalType() )
 	{
-		ust::apply_value_to_stringifier( stringifier, fundamental_type );
-		return;
+		return ust::apply_value_to_stringifier( stringifier, fundamental_type );
 	}
 	if_var( &array_type : GetArrayType() )
 	{
-		ust::apply_value_to_stringifier( stringifier, array_type );
-		return;
+		return ust::apply_value_to_stringifier( stringifier, array_type );
 	}
 	if_var( &tuple_type : GetTupleType() )
 	{
-		ust::apply_value_to_stringifier( stringifier, tuple_type );
-		return;
+		return ust::apply_value_to_stringifier( stringifier, tuple_type );
 	}
 	if_var( &raw_pointer_type : GetRawPointerType() )
 	{
-		ust::apply_value_to_stringifier( stringifier, raw_pointer_type );
-		return;
+		return ust::apply_value_to_stringifier( stringifier, raw_pointer_type );
 	}
 	if_var( &function_pointer_type : GetFunctionPointerType() )
 	{
-		ust::apply_value_to_stringifier( stringifier, function_pointer_type );
-		return;
+		return ust::apply_value_to_stringifier( stringifier, function_pointer_type );
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		ust::apply_value_to_stringifier( stringifier, class_type.lock_imut().deref() );
-		return;
+		return ust::apply_value_to_stringifier( stringifier, class_type.lock_imut().deref() );
 	}
 	if_var( &enum_type : GetEnumType() )
 	{
-		ust::apply_value_to_stringifier( stringifier, enum_type.lock_imut().deref()  );
-		return;
+		return ust::apply_value_to_stringifier( stringifier, enum_type.lock_imut().deref() );
 	}
 
 	// Unhandled type kind.
@@ -964,9 +957,7 @@ fn StringifyConstantVariable( ust::default_stringifier8 &mut stringifier, Type& 
 	{
 		if( fundamental_type.fundamental_type == U_FundamentalType::bool_ )
 		{
-			ust::apply_value_to_stringifier(
-				stringifier,
-				( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) == 0u64 ? ust::string8("false") : ust::string8("true") ) );
+			ust::apply_value_to_stringifier( stringifier, unsafe( LLVMConstIntGetZExtValue( constant_value ) ) != 0u64 );
 			return;
 		}
 		else if( IsSignedInteger( fundamental_type.fundamental_type ) )

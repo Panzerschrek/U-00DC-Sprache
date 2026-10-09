@@ -731,7 +731,6 @@ public:
 	template</type Stringifier/>
 	fn stringify( this, Stringifier &mut stringifier )
 	{
-
 		auto mut it= iter();
 
 		{

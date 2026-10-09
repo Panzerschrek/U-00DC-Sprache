@@ -717,12 +717,7 @@ fn TestRandomBitPatternF64Parsing()
 		}
 		else if( num != num_parsed )
 		{
-			ust::stderr_print_line(
-				"Parsing result for \"",
-				num_str,
-				"\" is wrong! It is ",
-				num_parsed,
-				"." );
+			ust::stderr_print_line( "Parsing result for \"", num_str, "\" is wrong! It is ", num_parsed, "." );
 			halt;
 		}
 	}

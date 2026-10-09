@@ -25,16 +25,8 @@ fn async ServerFunc( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore
 	// Use ipv4 address, but ipv6 addresses may be used too.
 	var ust::socket_address_v4 address( ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ), 57854u16 );
 
-	ust::stdout_print_line(
-		"starting TCP server listening on address ", address.get_ip(), " and port ", address.get_port() );
-
-	ust::stdout_print_line(
-		"Open it in browser via link like \"http://",
-		address.get_ip(),
-		":",
-		address.get_port(),
-		"\"\n",
-		"Press Ctrl+C to stop it" );
+	ust::stdout_print_line( "starting TCP server listening on address ", address );
+	ust::stdout_print_line( "Open it in browser via link like \"http://", address, "\"\n", "Press Ctrl+C to stop it" );
 
 	// Create listener port.
 	var sm_async_net::tcp_listener mut listener= sm_async_net::tcp_listener::create_and_bind( address ).try_take();
