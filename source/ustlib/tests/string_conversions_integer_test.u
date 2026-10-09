@@ -1,271 +1,271 @@
 //##success_test
-import "../imports/string_conversions.iu"
+import "../imports/stringification.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
 	// void
-	halt if( ust::to_string8 ( void() ) != "void" );
-	halt if( ust::to_string16( void() ) != "void"u16 );
-	halt if( ust::to_string32( void() ) != "void"u32 );
+	halt if( ust::stringify8 ( void() ) != "void" );
+	halt if( ust::stringify16( void() ) != "void"u16 );
+	halt if( ust::stringify32( void() ) != "void"u32 );
 
 	// bool
-	halt if( ust::to_string8 ( false ) != "false" );
-	halt if( ust::to_string8 ( true ) != "true" );
-	halt if( ust::to_string16( false ) != "false"u16 );
-	halt if( ust::to_string16( true ) != "true"u16 );
-	halt if( ust::to_string32( false ) != "false"u32 );
-	halt if( ust::to_string32( true ) != "true"u32 );
+	halt if( ust::stringify8 ( false ) != "false" );
+	halt if( ust::stringify8 ( true ) != "true" );
+	halt if( ust::stringify16( false ) != "false"u16 );
+	halt if( ust::stringify16( true ) != "true"u16 );
+	halt if( ust::stringify32( false ) != "false"u32 );
+	halt if( ust::stringify32( true ) != "true"u32 );
 
 	// i8
-	halt if( ust::to_string8(0i8) != "0" );
-	halt if( ust::to_string8(1i8) != "1" );
-	halt if( ust::to_string8(7i8) != "7" );
-	halt if( ust::to_string8(15i8) != "15" );
-	halt if( ust::to_string8(34i8) != "34" );
-	halt if( ust::to_string8(105i8) != "105" );
-	halt if( ust::to_string8(127i8) != "127" );
-	halt if( ust::to_string8(-2i8) != "-2" );
-	halt if( ust::to_string8(-9i8) != "-9" );
-	halt if( ust::to_string8(-14i8) != "-14" );
-	halt if( ust::to_string8(-47i8) != "-47" );
-	halt if( ust::to_string8(-115i8) != "-115" );
-	halt if( ust::to_string8(i8(-128)) != "-128" );
+	halt if( ust::stringify8(0i8) != "0" );
+	halt if( ust::stringify8(1i8) != "1" );
+	halt if( ust::stringify8(7i8) != "7" );
+	halt if( ust::stringify8(15i8) != "15" );
+	halt if( ust::stringify8(34i8) != "34" );
+	halt if( ust::stringify8(105i8) != "105" );
+	halt if( ust::stringify8(127i8) != "127" );
+	halt if( ust::stringify8(-2i8) != "-2" );
+	halt if( ust::stringify8(-9i8) != "-9" );
+	halt if( ust::stringify8(-14i8) != "-14" );
+	halt if( ust::stringify8(-47i8) != "-47" );
+	halt if( ust::stringify8(-115i8) != "-115" );
+	halt if( ust::stringify8(i8(-128)) != "-128" );
 
 	// u8
-	halt if( ust::to_string8(0u8) != "0" );
-	halt if( ust::to_string8(1u8) != "1" );
-	halt if( ust::to_string8(5u8) != "5" );
-	halt if( ust::to_string8(13u8) != "13" );
-	halt if( ust::to_string8(78u8) != "78" );
-	halt if( ust::to_string8(127u8) != "127" );
-	halt if( ust::to_string8(128u8) != "128" );
-	halt if( ust::to_string8(129u8) != "129" );
-	halt if( ust::to_string8(254u8) != "254" );
-	halt if( ust::to_string8(255u8) != "255" );
+	halt if( ust::stringify8(0u8) != "0" );
+	halt if( ust::stringify8(1u8) != "1" );
+	halt if( ust::stringify8(5u8) != "5" );
+	halt if( ust::stringify8(13u8) != "13" );
+	halt if( ust::stringify8(78u8) != "78" );
+	halt if( ust::stringify8(127u8) != "127" );
+	halt if( ust::stringify8(128u8) != "128" );
+	halt if( ust::stringify8(129u8) != "129" );
+	halt if( ust::stringify8(254u8) != "254" );
+	halt if( ust::stringify8(255u8) != "255" );
 
 	// i16
-	halt if( ust::to_string8(0i16) != "0" );
-	halt if( ust::to_string8(1i16) != "1" );
-	halt if( ust::to_string8(7i16) != "7" );
-	halt if( ust::to_string8(15i16) != "15" );
-	halt if( ust::to_string8(34i16) != "34" );
-	halt if( ust::to_string8(651i16) != "651" );
-	halt if( ust::to_string8(1234i16) != "1234" );
-	halt if( ust::to_string8(32767i16) != "32767" );
-	halt if( ust::to_string8(-2i16) != "-2" );
-	halt if( ust::to_string8(-9i16) != "-9" );
-	halt if( ust::to_string8(-14i16) != "-14" );
-	halt if( ust::to_string8(-47i16) != "-47" );
-	halt if( ust::to_string8(-854i16) != "-854" );
-	halt if( ust::to_string8(-7654i16) != "-7654" );
-	halt if( ust::to_string8(i16(-32768)) != "-32768" );
+	halt if( ust::stringify8(0i16) != "0" );
+	halt if( ust::stringify8(1i16) != "1" );
+	halt if( ust::stringify8(7i16) != "7" );
+	halt if( ust::stringify8(15i16) != "15" );
+	halt if( ust::stringify8(34i16) != "34" );
+	halt if( ust::stringify8(651i16) != "651" );
+	halt if( ust::stringify8(1234i16) != "1234" );
+	halt if( ust::stringify8(32767i16) != "32767" );
+	halt if( ust::stringify8(-2i16) != "-2" );
+	halt if( ust::stringify8(-9i16) != "-9" );
+	halt if( ust::stringify8(-14i16) != "-14" );
+	halt if( ust::stringify8(-47i16) != "-47" );
+	halt if( ust::stringify8(-854i16) != "-854" );
+	halt if( ust::stringify8(-7654i16) != "-7654" );
+	halt if( ust::stringify8(i16(-32768)) != "-32768" );
 
 	// u16
-	halt if( ust::to_string8(0u16) != "0" );
-	halt if( ust::to_string8(1u16) != "1" );
-	halt if( ust::to_string8(5u16) != "5" );
-	halt if( ust::to_string8(13u16) != "13" );
-	halt if( ust::to_string8(78u16) != "78" );
-	halt if( ust::to_string8(412u16) != "412" );
-	halt if( ust::to_string8(5624u16) != "5624" );
-	halt if( ust::to_string8(32767u16) != "32767" );
-	halt if( ust::to_string8(32768u16) != "32768" );
-	halt if( ust::to_string8(65534u16) != "65534" );
-	halt if( ust::to_string8(65535u16) != "65535" );
+	halt if( ust::stringify8(0u16) != "0" );
+	halt if( ust::stringify8(1u16) != "1" );
+	halt if( ust::stringify8(5u16) != "5" );
+	halt if( ust::stringify8(13u16) != "13" );
+	halt if( ust::stringify8(78u16) != "78" );
+	halt if( ust::stringify8(412u16) != "412" );
+	halt if( ust::stringify8(5624u16) != "5624" );
+	halt if( ust::stringify8(32767u16) != "32767" );
+	halt if( ust::stringify8(32768u16) != "32768" );
+	halt if( ust::stringify8(65534u16) != "65534" );
+	halt if( ust::stringify8(65535u16) != "65535" );
 
 	// i32
-	halt if( ust::to_string8(0) != "0" );
-	halt if( ust::to_string8(1) != "1" );
-	halt if( ust::to_string8(7) != "7" );
-	halt if( ust::to_string8(15) != "15" );
-	halt if( ust::to_string8(34) != "34" );
-	halt if( ust::to_string8(651) != "651" );
-	halt if( ust::to_string8(1234) != "1234" );
-	halt if( ust::to_string8(2147483647) != "2147483647" );
-	halt if( ust::to_string8(-2) != "-2" );
-	halt if( ust::to_string8(-9) != "-9" );
-	halt if( ust::to_string8(-14) != "-14" );
-	halt if( ust::to_string8(-47) != "-47" );
-	halt if( ust::to_string8(-854) != "-854" );
-	halt if( ust::to_string8(-7654) != "-7654" );
-	halt if( ust::to_string8(-2147483648) != "-2147483648" );
+	halt if( ust::stringify8(0) != "0" );
+	halt if( ust::stringify8(1) != "1" );
+	halt if( ust::stringify8(7) != "7" );
+	halt if( ust::stringify8(15) != "15" );
+	halt if( ust::stringify8(34) != "34" );
+	halt if( ust::stringify8(651) != "651" );
+	halt if( ust::stringify8(1234) != "1234" );
+	halt if( ust::stringify8(2147483647) != "2147483647" );
+	halt if( ust::stringify8(-2) != "-2" );
+	halt if( ust::stringify8(-9) != "-9" );
+	halt if( ust::stringify8(-14) != "-14" );
+	halt if( ust::stringify8(-47) != "-47" );
+	halt if( ust::stringify8(-854) != "-854" );
+	halt if( ust::stringify8(-7654) != "-7654" );
+	halt if( ust::stringify8(-2147483648) != "-2147483648" );
 
 	// u32
-	halt if( ust::to_string8(0u) != "0" );
-	halt if( ust::to_string8(1u) != "1" );
-	halt if( ust::to_string8(5u) != "5" );
-	halt if( ust::to_string8(13u) != "13" );
-	halt if( ust::to_string8(78u) != "78" );
-	halt if( ust::to_string8(412u) != "412" );
-	halt if( ust::to_string8(5624u) != "5624" );
-	halt if( ust::to_string8(2147483647u) != "2147483647" );
-	halt if( ust::to_string8(2147483648u) != "2147483648" );
-	halt if( ust::to_string8(4294967295u) != "4294967295" );
+	halt if( ust::stringify8(0u) != "0" );
+	halt if( ust::stringify8(1u) != "1" );
+	halt if( ust::stringify8(5u) != "5" );
+	halt if( ust::stringify8(13u) != "13" );
+	halt if( ust::stringify8(78u) != "78" );
+	halt if( ust::stringify8(412u) != "412" );
+	halt if( ust::stringify8(5624u) != "5624" );
+	halt if( ust::stringify8(2147483647u) != "2147483647" );
+	halt if( ust::stringify8(2147483648u) != "2147483648" );
+	halt if( ust::stringify8(4294967295u) != "4294967295" );
 
 	// i64
-	halt if( ust::to_string8(0i64) != "0" );
-	halt if( ust::to_string8(1i64) != "1" );
-	halt if( ust::to_string8(7i64) != "7" );
-	halt if( ust::to_string8(15i64) != "15" );
-	halt if( ust::to_string8(34i64) != "34" );
-	halt if( ust::to_string8(651i64) != "651" );
-	halt if( ust::to_string8(1234i64) != "1234" );
-	halt if( ust::to_string8(2147483647i64) != "2147483647" );
-	halt if( ust::to_string8(76451872782597282i64) != "76451872782597282" );
-	halt if( ust::to_string8(9223372036854775807i64) != "9223372036854775807" );
-	halt if( ust::to_string8(-2i64) != "-2" );
-	halt if( ust::to_string8(-9i64) != "-9" );
-	halt if( ust::to_string8(-14i64) != "-14" );
-	halt if( ust::to_string8(-47i64) != "-47" );
-	halt if( ust::to_string8(-854i64) != "-854" );
-	halt if( ust::to_string8(-7654i64) != "-7654" );
-	halt if( ust::to_string8(-2147483648i64) != "-2147483648" );
-	halt if( ust::to_string8(-774612927736889278i64) != "-774612927736889278" );
-	halt if( ust::to_string8(i64(-9223372036854775808)) != "-9223372036854775808" );
+	halt if( ust::stringify8(0i64) != "0" );
+	halt if( ust::stringify8(1i64) != "1" );
+	halt if( ust::stringify8(7i64) != "7" );
+	halt if( ust::stringify8(15i64) != "15" );
+	halt if( ust::stringify8(34i64) != "34" );
+	halt if( ust::stringify8(651i64) != "651" );
+	halt if( ust::stringify8(1234i64) != "1234" );
+	halt if( ust::stringify8(2147483647i64) != "2147483647" );
+	halt if( ust::stringify8(76451872782597282i64) != "76451872782597282" );
+	halt if( ust::stringify8(9223372036854775807i64) != "9223372036854775807" );
+	halt if( ust::stringify8(-2i64) != "-2" );
+	halt if( ust::stringify8(-9i64) != "-9" );
+	halt if( ust::stringify8(-14i64) != "-14" );
+	halt if( ust::stringify8(-47i64) != "-47" );
+	halt if( ust::stringify8(-854i64) != "-854" );
+	halt if( ust::stringify8(-7654i64) != "-7654" );
+	halt if( ust::stringify8(-2147483648i64) != "-2147483648" );
+	halt if( ust::stringify8(-774612927736889278i64) != "-774612927736889278" );
+	halt if( ust::stringify8(i64(-9223372036854775808)) != "-9223372036854775808" );
 
 	// u64
-	halt if( ust::to_string8(0u64) != "0" );
-	halt if( ust::to_string8(1u64) != "1" );
-	halt if( ust::to_string8(5u64) != "5" );
-	halt if( ust::to_string8(13u64) != "13" );
-	halt if( ust::to_string8(78u64) != "78" );
-	halt if( ust::to_string8(412u64) != "412" );
-	halt if( ust::to_string8(5624u64) != "5624" );
-	halt if( ust::to_string8(2147483647u64) != "2147483647" );
-	halt if( ust::to_string8(2147483648u64) != "2147483648" );
-	halt if( ust::to_string8(4294967295u64) != "4294967295" );
-	halt if( ust::to_string8(123456789012345u64) != "123456789012345" );
-	halt if( ust::to_string8(1844674407370955161u64) != "1844674407370955161" );
-	halt if( ust::to_string8(18446744073709551614u64) != "18446744073709551614" );
-	halt if( ust::to_string8(18446744073709551615u64) != "18446744073709551615" );
+	halt if( ust::stringify8(0u64) != "0" );
+	halt if( ust::stringify8(1u64) != "1" );
+	halt if( ust::stringify8(5u64) != "5" );
+	halt if( ust::stringify8(13u64) != "13" );
+	halt if( ust::stringify8(78u64) != "78" );
+	halt if( ust::stringify8(412u64) != "412" );
+	halt if( ust::stringify8(5624u64) != "5624" );
+	halt if( ust::stringify8(2147483647u64) != "2147483647" );
+	halt if( ust::stringify8(2147483648u64) != "2147483648" );
+	halt if( ust::stringify8(4294967295u64) != "4294967295" );
+	halt if( ust::stringify8(123456789012345u64) != "123456789012345" );
+	halt if( ust::stringify8(1844674407370955161u64) != "1844674407370955161" );
+	halt if( ust::stringify8(18446744073709551614u64) != "18446744073709551614" );
+	halt if( ust::stringify8(18446744073709551615u64) != "18446744073709551615" );
 
 	// i128
-	halt if( ust::to_string8(0i128) != "0" );
-	halt if( ust::to_string8(1i128) != "1" );
-	halt if( ust::to_string8(7i128) != "7" );
-	halt if( ust::to_string8(15i128) != "15" );
-	halt if( ust::to_string8(34i128) != "34" );
-	halt if( ust::to_string8(651i128) != "651" );
-	halt if( ust::to_string8(1234i128) != "1234" );
-	halt if( ust::to_string8(2147483647i128) != "2147483647" );
-	halt if( ust::to_string8(76451872782597282i128) != "76451872782597282" );
-	halt if( ust::to_string8(9223372036854775807i128) != "9223372036854775807" );
-	halt if( ust::to_string8(8545488949569333589353459695695696i128 ) != "8545488949569333589353459695695696" );
-	halt if( ust::to_string8(77844678907656787234568905443647786434i128) != "77844678907656787234568905443647786434" );
-	halt if( ust::to_string8(170141183460469231731687303715884105727i128) != "170141183460469231731687303715884105727" );
-	halt if( ust::to_string8(-2i128) != "-2" );
-	halt if( ust::to_string8(-9i128) != "-9" );
-	halt if( ust::to_string8(-14i128) != "-14" );
-	halt if( ust::to_string8(-47i128) != "-47" );
-	halt if( ust::to_string8(-854i128) != "-854" );
-	halt if( ust::to_string8(-7654i128) != "-7654" );
-	halt if( ust::to_string8(-2147483648i128) != "-2147483648" );
-	halt if( ust::to_string8(-774612927736889278i128) != "-774612927736889278" );
-	halt if( ust::to_string8(i128(-9223372036854775808)) != "-9223372036854775808" );
-	halt if( ust::to_string8(-5636473475475445899966466669945558545) != "-5636473475475445899966466669945558545" );
-	halt if( ust::to_string8(i128(0x80000000000000000000000000000000u128)) != "-170141183460469231731687303715884105728" );
+	halt if( ust::stringify8(0i128) != "0" );
+	halt if( ust::stringify8(1i128) != "1" );
+	halt if( ust::stringify8(7i128) != "7" );
+	halt if( ust::stringify8(15i128) != "15" );
+	halt if( ust::stringify8(34i128) != "34" );
+	halt if( ust::stringify8(651i128) != "651" );
+	halt if( ust::stringify8(1234i128) != "1234" );
+	halt if( ust::stringify8(2147483647i128) != "2147483647" );
+	halt if( ust::stringify8(76451872782597282i128) != "76451872782597282" );
+	halt if( ust::stringify8(9223372036854775807i128) != "9223372036854775807" );
+	halt if( ust::stringify8(8545488949569333589353459695695696i128 ) != "8545488949569333589353459695695696" );
+	halt if( ust::stringify8(77844678907656787234568905443647786434i128) != "77844678907656787234568905443647786434" );
+	halt if( ust::stringify8(170141183460469231731687303715884105727i128) != "170141183460469231731687303715884105727" );
+	halt if( ust::stringify8(-2i128) != "-2" );
+	halt if( ust::stringify8(-9i128) != "-9" );
+	halt if( ust::stringify8(-14i128) != "-14" );
+	halt if( ust::stringify8(-47i128) != "-47" );
+	halt if( ust::stringify8(-854i128) != "-854" );
+	halt if( ust::stringify8(-7654i128) != "-7654" );
+	halt if( ust::stringify8(-2147483648i128) != "-2147483648" );
+	halt if( ust::stringify8(-774612927736889278i128) != "-774612927736889278" );
+	halt if( ust::stringify8(i128(-9223372036854775808)) != "-9223372036854775808" );
+	halt if( ust::stringify8(-5636473475475445899966466669945558545) != "-5636473475475445899966466669945558545" );
+	halt if( ust::stringify8(i128(0x80000000000000000000000000000000u128)) != "-170141183460469231731687303715884105728" );
 
 	// u128
-	halt if( ust::to_string8(0u128) != "0" );
-	halt if( ust::to_string8(1u128) != "1" );
-	halt if( ust::to_string8(5u128) != "5" );
-	halt if( ust::to_string8(13u128) != "13" );
-	halt if( ust::to_string8(78u128) != "78" );
-	halt if( ust::to_string8(412u128) != "412" );
-	halt if( ust::to_string8(5624u128) != "5624" );
-	halt if( ust::to_string8(2147483647u128) != "2147483647" );
-	halt if( ust::to_string8(2147483648u128) != "2147483648" );
-	halt if( ust::to_string8(4294967295u128) != "4294967295" );
-	halt if( ust::to_string8(123456789012345u128) != "123456789012345" );
-	halt if( ust::to_string8(1844674407370955161u128) != "1844674407370955161" );
-	halt if( ust::to_string8(18446744073709551614u128) != "18446744073709551614" );
-	halt if( ust::to_string8(18446744073709551615u128) != "18446744073709551615" );
-	halt if( ust::to_string8(40564819207450914800501358985219u128) != "40564819207450914800501358985219" );
-	halt if( ust::to_string8(170141183460469231731687303715884105727u128) != "170141183460469231731687303715884105727" );
-	halt if( ust::to_string8(170141183460469231731687303715884105728u128) != "170141183460469231731687303715884105728" );
-	halt if( ust::to_string8(170141183460469231731687303715884105729u128) != "170141183460469231731687303715884105729" );
-	halt if( ust::to_string8(255211815834751219776337396895213158401u128) != "255211815834751219776337396895213158401" );
-	halt if( ust::to_string8(340282366920938463463374607431768211455u128) != "340282366920938463463374607431768211455" );
+	halt if( ust::stringify8(0u128) != "0" );
+	halt if( ust::stringify8(1u128) != "1" );
+	halt if( ust::stringify8(5u128) != "5" );
+	halt if( ust::stringify8(13u128) != "13" );
+	halt if( ust::stringify8(78u128) != "78" );
+	halt if( ust::stringify8(412u128) != "412" );
+	halt if( ust::stringify8(5624u128) != "5624" );
+	halt if( ust::stringify8(2147483647u128) != "2147483647" );
+	halt if( ust::stringify8(2147483648u128) != "2147483648" );
+	halt if( ust::stringify8(4294967295u128) != "4294967295" );
+	halt if( ust::stringify8(123456789012345u128) != "123456789012345" );
+	halt if( ust::stringify8(1844674407370955161u128) != "1844674407370955161" );
+	halt if( ust::stringify8(18446744073709551614u128) != "18446744073709551614" );
+	halt if( ust::stringify8(18446744073709551615u128) != "18446744073709551615" );
+	halt if( ust::stringify8(40564819207450914800501358985219u128) != "40564819207450914800501358985219" );
+	halt if( ust::stringify8(170141183460469231731687303715884105727u128) != "170141183460469231731687303715884105727" );
+	halt if( ust::stringify8(170141183460469231731687303715884105728u128) != "170141183460469231731687303715884105728" );
+	halt if( ust::stringify8(170141183460469231731687303715884105729u128) != "170141183460469231731687303715884105729" );
+	halt if( ust::stringify8(255211815834751219776337396895213158401u128) != "255211815834751219776337396895213158401" );
+	halt if( ust::stringify8(340282366920938463463374607431768211455u128) != "340282366920938463463374607431768211455" );
 
 	// size_type
-	halt if( ust::to_string8(0s) != "0" );
-	halt if( ust::to_string8(1s) != "1" );
-	halt if( ust::to_string8(5s) != "5" );
-	halt if( ust::to_string8(13s) != "13" );
-	halt if( ust::to_string8(78s) != "78" );
-	halt if( ust::to_string8(412s) != "412" );
-	halt if( ust::to_string8(5624s) != "5624" );
-	halt if( ust::to_string8(2147483647s) != "2147483647" );
-	halt if( ust::to_string8(2147483648s) != "2147483648" );
-	halt if( ust::to_string8(4294967295s) != "4294967295" );
+	halt if( ust::stringify8(0s) != "0" );
+	halt if( ust::stringify8(1s) != "1" );
+	halt if( ust::stringify8(5s) != "5" );
+	halt if( ust::stringify8(13s) != "13" );
+	halt if( ust::stringify8(78s) != "78" );
+	halt if( ust::stringify8(412s) != "412" );
+	halt if( ust::stringify8(5624s) != "5624" );
+	halt if( ust::stringify8(2147483647s) != "2147483647" );
+	halt if( ust::stringify8(2147483648s) != "2147483648" );
+	halt if( ust::stringify8(4294967295s) != "4294967295" );
 
 	// ssize_type
-	halt if( ust::to_string8(ssize_type(0)) != "0" );
-	halt if( ust::to_string8(ssize_type(1)) != "1" );
-	halt if( ust::to_string8(ssize_type(5)) != "5" );
-	halt if( ust::to_string8(ssize_type(13)) != "13" );
-	halt if( ust::to_string8(ssize_type(78)) != "78" );
-	halt if( ust::to_string8(ssize_type(412)) != "412" );
-	halt if( ust::to_string8(ssize_type(5624)) != "5624" );
-	halt if( ust::to_string8(ssize_type(2147483647)) != "2147483647" );
+	halt if( ust::stringify8(ssize_type(0)) != "0" );
+	halt if( ust::stringify8(ssize_type(1)) != "1" );
+	halt if( ust::stringify8(ssize_type(5)) != "5" );
+	halt if( ust::stringify8(ssize_type(13)) != "13" );
+	halt if( ust::stringify8(ssize_type(78)) != "78" );
+	halt if( ust::stringify8(ssize_type(412)) != "412" );
+	halt if( ust::stringify8(ssize_type(5624)) != "5624" );
+	halt if( ust::stringify8(ssize_type(2147483647)) != "2147483647" );
 
 	// byte8
-	halt if( ust::to_string8( byte8( 0x00u8 ) ) != "0x00" );
-	halt if( ust::to_string8( byte8( 0x05u8 ) ) != "0x05" );
-	halt if( ust::to_string8( byte8( 0x0Du8 ) ) != "0x0D" );
-	halt if( ust::to_string8( byte8( 0x53u8 ) ) != "0x53" );
-	halt if( ust::to_string8( byte8( 0xE0u8 ) ) != "0xE0" );
-	halt if( ust::to_string8( byte8( 0xFFu8 ) ) != "0xFF" );
+	halt if( ust::stringify8( byte8( 0x00u8 ) ) != "0x00" );
+	halt if( ust::stringify8( byte8( 0x05u8 ) ) != "0x05" );
+	halt if( ust::stringify8( byte8( 0x0Du8 ) ) != "0x0D" );
+	halt if( ust::stringify8( byte8( 0x53u8 ) ) != "0x53" );
+	halt if( ust::stringify8( byte8( 0xE0u8 ) ) != "0xE0" );
+	halt if( ust::stringify8( byte8( 0xFFu8 ) ) != "0xFF" );
 
 	// byte16
-	halt if( ust::to_string8( byte16( 0x0000u16 ) ) != "0x0000" );
-	halt if( ust::to_string8( byte16( 0x0003u16 ) ) != "0x0003" );
-	halt if( ust::to_string8( byte16( 0x008Fu16 ) ) != "0x008F" );
-	halt if( ust::to_string8( byte16( 0x0CA9u16 ) ) != "0x0CA9" );
-	halt if( ust::to_string8( byte16( 0x53D0u16 ) ) != "0x53D0" );
-	halt if( ust::to_string8( byte16( 0xFFFFu16 ) ) != "0xFFFF" );
+	halt if( ust::stringify8( byte16( 0x0000u16 ) ) != "0x0000" );
+	halt if( ust::stringify8( byte16( 0x0003u16 ) ) != "0x0003" );
+	halt if( ust::stringify8( byte16( 0x008Fu16 ) ) != "0x008F" );
+	halt if( ust::stringify8( byte16( 0x0CA9u16 ) ) != "0x0CA9" );
+	halt if( ust::stringify8( byte16( 0x53D0u16 ) ) != "0x53D0" );
+	halt if( ust::stringify8( byte16( 0xFFFFu16 ) ) != "0xFFFF" );
 
 	// byte32
-	halt if( ust::to_string8( byte32( 0x00000000u32 ) ) != "0x00000000" );
-	halt if( ust::to_string8( byte32( 0x01234567u32 ) ) != "0x01234567" );
-	halt if( ust::to_string8( byte32( 0x89ABCDEFu32 ) ) != "0x89ABCDEF" );
-	halt if( ust::to_string8( byte32( 0xFEDCBA98u32 ) ) != "0xFEDCBA98" );
-	halt if( ust::to_string8( byte32( 0x76543210u32 ) ) != "0x76543210" );
-	halt if( ust::to_string8( byte32( 0xFFFFFFFFu32 ) ) != "0xFFFFFFFF" );
+	halt if( ust::stringify8( byte32( 0x00000000u32 ) ) != "0x00000000" );
+	halt if( ust::stringify8( byte32( 0x01234567u32 ) ) != "0x01234567" );
+	halt if( ust::stringify8( byte32( 0x89ABCDEFu32 ) ) != "0x89ABCDEF" );
+	halt if( ust::stringify8( byte32( 0xFEDCBA98u32 ) ) != "0xFEDCBA98" );
+	halt if( ust::stringify8( byte32( 0x76543210u32 ) ) != "0x76543210" );
+	halt if( ust::stringify8( byte32( 0xFFFFFFFFu32 ) ) != "0xFFFFFFFF" );
 
 	// byte64
-	halt if( ust::to_string8( byte64( 0x0000000000000000u64 ) ) != "0x0000000000000000" );
-	halt if( ust::to_string8( byte64( 0x0123456789ABCDEFu64 ) ) != "0x0123456789ABCDEF" );
-	halt if( ust::to_string8( byte64( 0xFEDCBA9876543210u64 ) ) != "0xFEDCBA9876543210" );
-	halt if( ust::to_string8( byte64( 0xFFFFFFFFFFFFFFFFu64 ) ) != "0xFFFFFFFFFFFFFFFF" );
+	halt if( ust::stringify8( byte64( 0x0000000000000000u64 ) ) != "0x0000000000000000" );
+	halt if( ust::stringify8( byte64( 0x0123456789ABCDEFu64 ) ) != "0x0123456789ABCDEF" );
+	halt if( ust::stringify8( byte64( 0xFEDCBA9876543210u64 ) ) != "0xFEDCBA9876543210" );
+	halt if( ust::stringify8( byte64( 0xFFFFFFFFFFFFFFFFu64 ) ) != "0xFFFFFFFFFFFFFFFF" );
 
 	// byte128
-	halt if( ust::to_string8( byte128( 0x00000000000000000000000000000000u128 ) ) != "0x00000000000000000000000000000000" );
-	halt if( ust::to_string8( byte128( 0x0123456789ABCDEFFEDCBA9876543210u128 ) ) != "0x0123456789ABCDEFFEDCBA9876543210" );
-	halt if( ust::to_string8( byte128( 0xFEDCBA98765432100123456789ABCDEFu128 ) ) != "0xFEDCBA98765432100123456789ABCDEF" );
-	halt if( ust::to_string8( byte128( 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFu128 ) ) != "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" );
+	halt if( ust::stringify8( byte128( 0x00000000000000000000000000000000u128 ) ) != "0x00000000000000000000000000000000" );
+	halt if( ust::stringify8( byte128( 0x0123456789ABCDEFFEDCBA9876543210u128 ) ) != "0x0123456789ABCDEFFEDCBA9876543210" );
+	halt if( ust::stringify8( byte128( 0xFEDCBA98765432100123456789ABCDEFu128 ) ) != "0xFEDCBA98765432100123456789ABCDEF" );
+	halt if( ust::stringify8( byte128( 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFu128 ) ) != "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" );
 
 	// string16
-	halt if( ust::to_string16(0i8) != "0"u16 );
-	halt if( ust::to_string16(1u8) != "1"u16 );
-	halt if( ust::to_string16(-5i16) != "-5"u16 );
-	halt if( ust::to_string16(23u16) != "23"u16 );
-	halt if( ust::to_string16(635i32) != "635"u16 );
-	halt if( ust::to_string16(12545u32) != "12545"u16 );
-	halt if( ust::to_string16(-65265415858568i64) != "-65265415858568"u16 );
-	halt if( ust::to_string16(98745632100254u64) != "98745632100254"u16 );
-	halt if( ust::to_string16( byte32( 0x7235E3F4u ) ) != "0x7235E3F4"u16 );
+	halt if( ust::stringify16(0i8) != "0"u16 );
+	halt if( ust::stringify16(1u8) != "1"u16 );
+	halt if( ust::stringify16(-5i16) != "-5"u16 );
+	halt if( ust::stringify16(23u16) != "23"u16 );
+	halt if( ust::stringify16(635i32) != "635"u16 );
+	halt if( ust::stringify16(12545u32) != "12545"u16 );
+	halt if( ust::stringify16(-65265415858568i64) != "-65265415858568"u16 );
+	halt if( ust::stringify16(98745632100254u64) != "98745632100254"u16 );
+	halt if( ust::stringify16( byte32( 0x7235E3F4u ) ) != "0x7235E3F4"u16 );
 
 	// string32
-	halt if( ust::to_string32(0i8) != "0"u32 );
-	halt if( ust::to_string32(5u8) != "5"u32 );
-	halt if( ust::to_string32(-8i16) != "-8"u32 );
-	halt if( ust::to_string32(75u16) != "75"u32 );
-	halt if( ust::to_string32(127i32) != "127"u32 );
-	halt if( ust::to_string32(54321u32) != "54321"u32 );
-	halt if( ust::to_string32(-65265417158868i64) != "-65265417158868"u32 );
-	halt if( ust::to_string32(58745632100744u64) != "58745632100744"u32 );
-	halt if( ust::to_string32( byte32( 0x7235E3F4u ) ) != "0x7235E3F4"u32 );
+	halt if( ust::stringify32(0i8) != "0"u32 );
+	halt if( ust::stringify32(5u8) != "5"u32 );
+	halt if( ust::stringify32(-8i16) != "-8"u32 );
+	halt if( ust::stringify32(75u16) != "75"u32 );
+	halt if( ust::stringify32(127i32) != "127"u32 );
+	halt if( ust::stringify32(54321u32) != "54321"u32 );
+	halt if( ust::stringify32(-65265417158868i64) != "-65265417158868"u32 );
+	halt if( ust::stringify32(58745632100744u64) != "58745632100744"u32 );
+	halt if( ust::stringify32( byte32( 0x7235E3F4u ) ) != "0x7235E3F4"u32 );
 
 	return 0;
 }
