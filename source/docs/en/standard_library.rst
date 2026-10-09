@@ -35,8 +35,8 @@ if you want to learn more, read its sources yourself.
 * Additional functions for files reading/writing (file_helpers.iu).
 * File metadata structures (file_metadata.iu).
 * Filesystem-related functions (filesystem.iu).
-* Hashing functions (hash.iu).
-  Hashing of all basic language types is supported.
+* Utilities for hashing (hash_apply.iu).
+* Default hasher class (hasher.iu).
 * Various helpers (helpers.iu).
 * Ip address and socket address structures (inet_address.iu).
 * Inet address resolution function declaration (inet_address_resolve.iu).
