@@ -1,4 +1,4 @@
-import "/stdout.iu"
+import "/stdout_ext.iu"
 import "/stringification.iu"
 import "../lex_synt_lib/source_graph.iu"
 import "../code_builder_lib/code_builder.iu"
@@ -422,8 +422,7 @@ fn PrintLexSyntErrors( SourceGraph& source_graph )
 			str+= source_graph.nodes[file_index].file_path_normalized;
 		}
 
-		ust::stderr_print(
-			ust::stringify8( ":", err.src_loc.GetLine(), ":", err.src_loc.GetColumn(), ": error: ", err.text, "\n" ) );
+		ust::stderr_print_line( str, ":", err.src_loc.GetLine(), ":", err.src_loc.GetColumn(), ": error: ", err.text );
 	}
 }
 
@@ -441,8 +440,7 @@ fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
 			str+= source_graph.nodes[file_index].file_path_normalized;
 		}
 
-		ust::stderr_print(
-			ust::stringify8( ":", err.src_loc.GetLine(), ":", err.src_loc.GetColumn(), ": error: ", err.text, "\n" ) );
+		ust::stderr_print_line( str, ":", err.src_loc.GetLine(), ":", err.src_loc.GetColumn(), ": error: ", err.text );
 	}
 }
 

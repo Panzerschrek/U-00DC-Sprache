@@ -401,7 +401,7 @@ fn TestRandomBitPatternF32Parsing()
 		var ust::optional</f32/> num_parsed_opt= ust::parse_number_exact</f32/>( num_str.range() );
 		if( num_parsed_opt.empty() )
 		{
-			ust::stderr_print( ust::concat( "Failed to parse ", num_str, "!\n" ) );
+			ust::stderr_print_line( "Failed to parse ", num_str, "!" );
 			halt;
 		}
 
@@ -413,13 +413,7 @@ fn TestRandomBitPatternF32Parsing()
 		}
 		else if( num != num_parsed )
 		{
-			ust::stderr_print(
-				ust::stringify8(
-					"Parsing result for \"",
-					num_str,
-					"\" is wrong! It is ",
-					num_parsed,
-					".\n" ) );
+			ust::stderr_print_line( "Parsing result for \"", num_str, "\" is wrong! It is ", num_parsed, "." );
 			halt;
 		}
 	}
@@ -486,7 +480,7 @@ fn TestAllF32ValuesParsing()
 		var ust::optional</f32/> num_parsed_opt= ust::parse_number_exact</f32/>( num_str.range() );
 		if( num_parsed_opt.empty() )
 		{
-			ust::stderr_print( ust::concat( "Failed to parse ", num_str, "!\n" ) );
+			ust::stderr_print_line( "Failed to parse ", num_str, "!" );
 			halt;
 		}
 
@@ -498,13 +492,7 @@ fn TestAllF32ValuesParsing()
 		}
 		else if( num != num_parsed )
 		{
-			ust::stderr_print(
-				ust::stringify8(
-					"Parsing result for \"",
-					num_str,
-					"\" is wrong! It is ",
-					 num_parsed,
-					".\n" ) );
+			ust::stderr_print_line( "Parsing result for \"", num_str, "\" is wrong! It is ",  num_parsed, "." );
 			halt;
 		}
 
@@ -717,7 +705,7 @@ fn TestRandomBitPatternF64Parsing()
 		var ust::optional</f64/> num_parsed_opt= ust::parse_number_exact</f64/>( num_str.range() );
 		if( num_parsed_opt.empty() )
 		{
-			ust::stderr_print( ust::concat( "Failed to parse ", num_str, "!\n" ) );
+			ust::stderr_print_line( "Failed to parse ", num_str, "!" );
 			halt;
 		}
 
@@ -729,13 +717,12 @@ fn TestRandomBitPatternF64Parsing()
 		}
 		else if( num != num_parsed )
 		{
-			ust::stderr_print(
-				ust::stringify8(
-					"Parsing result for \"",
-					num_str,
-					"\" is wrong! It is ",
-					num_parsed,
-					".\n" ) );
+			ust::stderr_print_line(
+				"Parsing result for \"",
+				num_str,
+				"\" is wrong! It is ",
+				num_parsed,
+				"." );
 			halt;
 		}
 	}
@@ -804,7 +791,7 @@ fn TestNumberParsing( ust::string_view8 num_str )
 	var ust::optional</T/> num_parsed_opt= ust::parse_number_exact</T/>( num_str );
 	if( num_parsed_opt.empty() )
 	{
-		ust::stderr_print( ust::concat( "Failed to parse ", num_str, "!\n" ) );
+		ust::stderr_print_line( "Failed to parse ", num_str, "!" );
 		halt;
 	}
 
@@ -819,15 +806,14 @@ fn TestNumberParsing( ust::string_view8 num_str )
 	}
 	else if( external_parser_result != num_parsed )
 	{
-		ust::stderr_print(
-			ust::stringify8(
-				"Parsing result for \"",
-				num_str,
-				"\" is wrong! It should be ",
-				external_parser_result,
-				" but it's ",
-				num_parsed,
-				".\n" ) );
+		ust::stderr_print_line(
+			"Parsing result for \"",
+			num_str,
+			"\" is wrong! It should be ",
+			external_parser_result,
+			" but it's ",
+			num_parsed,
+			"." );
 
 		halt;
 	}
