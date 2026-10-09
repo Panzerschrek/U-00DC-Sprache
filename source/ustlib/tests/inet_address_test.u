@@ -204,6 +204,11 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Invalid socket address - ip address octet out of range.
 	halt if( ust::parse_socket_address( "276.23.45.67:123" ) != ust::null_optional );
 
+	// Socket address stringification.
+	halt if(
+		ust::stringify8( ust::socket_address_v4( ust::ip_address_v4( ust::make_array( 67u8, 133u8, 245u8, 5u8 ) ), 5463u16 ) ) !=
+		"67.133.245.5:5463" );
+
 	// Ipv6 socket address.
 	{
 		var ust::socket_address_v6 a= ust::socket_address_v6::parse( "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]:7823" ).try_deref();
@@ -239,6 +244,15 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// Invalid Ipv6 socket address - missing scope id after %.
 	halt if( ust::socket_address_v6::parse( "[ffee:ddcc:bbaa::3322:11%]:58" ) != ust::null_optional );
+
+	// Socket address stringification.
+	halt if(
+		ust::stringify8( ust::socket_address_v6::parse(  "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]:7823" ).try_deref() ) !=
+		"[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]:7823" );
+
+	halt if(
+		ust::stringify8( ust::socket_address_v6::parse( "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100%12345]:7823" ).try_deref() ) !=
+		"[ffee:ddcc:bbaa:9988:7766:5544:3322:1100%12345]:7823" );
 
 	return 0;
 }

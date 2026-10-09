@@ -39,14 +39,8 @@ pretty_main
 
 		variant_visit( &a : address )
 		{
-			ust::stdout_print( ust::stringify8(
-				"Received message \"",
-				received_message,
-				"\" from ip ",
-				a.get_ip(),
-				" and port ",
-				a.get_port(),
-				"\n" ) );
+			ust::stdout_print(
+				ust::stringify8( "Received message \"", received_message, "\" from address ", a, "\n" ) );
 		}
 	}
 

@@ -10,22 +10,10 @@ pretty_main
 	// Use ipv4 address, but ipv6 addresses may be used too.
 	var ust::socket_address_v4 address( ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ), 57854u16 );
 
-	ust::stdout_print(
-		ust::stringify8(
-			"starting TCP server listening on address ",
-			address.get_ip(),
-			" and port ",
-			address.get_port(),
-			"\n" ) );
+	ust::stdout_print( ust::stringify8( "starting TCP server listening on address ", address, "\n" ) );
 
 	ust::stdout_print(
-		ust::stringify8(
-			"Open it in browser via link like \"http://",
-			address.get_ip(),
-			":",
-			address.get_port(),
-			"\"\n",
-			"Press Ctrl+C to stop it\n" ) );
+		ust::stringify8( "Open it in browser via link like \"http://", address, "\"\n", "Press Ctrl+C to stop it\n" ) );
 
 	// Create listener port.
 	var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( address ).try_take();

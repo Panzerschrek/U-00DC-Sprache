@@ -174,6 +174,15 @@ public:
 		apply_value_to_hasher( hasher, port_ );
 	}
 
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		apply_value_to_stringifier( stringifier, ip_ );
+		apply_value_to_stringifier( stringifier, ":" );
+		apply_value_to_stringifier( stringifier, port_ );
+	}
+
 	fn get_ip( this ) : ip_address_v4
 	{
 		return ip_;
@@ -220,6 +229,22 @@ public:
 		apply_value_to_hasher( hasher, port_ );
 		apply_value_to_hasher( hasher, flow_info_ );
 		apply_value_to_hasher( hasher, scope_id_ );
+	}
+
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		apply_value_to_stringifier( stringifier, "[" );
+		apply_value_to_stringifier( stringifier, ip_ );
+		if( scope_id_ != 0u )
+		{
+			apply_value_to_stringifier( stringifier, "%" );
+			apply_value_to_stringifier( stringifier, scope_id_ );
+		}
+		apply_value_to_stringifier( stringifier, "]" );
+		apply_value_to_stringifier( stringifier, ":" );
+		apply_value_to_stringifier( stringifier, port_ );
 	}
 
 	fn get_ip( this ) : ip_address_v6
