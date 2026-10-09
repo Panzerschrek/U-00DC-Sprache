@@ -740,7 +740,7 @@ fn DebugInfoBuilder::BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_
 		// Leave fields list empty and use stub size/alignment for incomplete classes (in case of error).
 	}
 
-	var ust::string8 name= ust::stringify8( class_.lock_imut().deref() );
+	var ust::string8 name= ust::stringify8( class_type );
 
 	auto di_type= unsafe( LLVMDIBuilderCreateStructType(
 		builder_,

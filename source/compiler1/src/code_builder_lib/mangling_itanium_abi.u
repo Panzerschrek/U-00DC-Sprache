@@ -118,8 +118,7 @@ fn ManglerItaniumABI::MangleFunctionImpl(
 	var ust::string8 mut name_prefixed= DecodeOperator( name );
 	if( name_prefixed.empty() )
 	{
-		name_prefixed= ust::stringify8( name.size() );
-		name_prefixed+= name;
+		name_prefixed= ust::stringify8( name.size(), name );
 	}
 
 	if_var( &template_args : template_args_opt )
