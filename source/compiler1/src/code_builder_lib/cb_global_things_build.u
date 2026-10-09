@@ -35,7 +35,7 @@ private:
 	GlobalThingsStackPtr imut stack_;
 }
 
-fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
+fn StringifyGlobalValue( ust::default_stringifier8 &mut stringifier, NamesScopeValue& global_thing )
 {
 	{
 		auto functions_set_ptr= global_thing.Get</FunctionsSet/>();
@@ -46,32 +46,32 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 
 			if( !functions_set.syntax_elements.empty() )
 			{
-				return functions_set.syntax_elements.front().deref().name.back();
+				return ust::apply_value_to_stringifier( stringifier, functions_set.syntax_elements.front().deref().name.back() );
 			}
 			if( !functions_set.out_of_line_syntax_elements.empty() )
 			{
-				return functions_set.out_of_line_syntax_elements.front().deref().name.back();
+				return ust::apply_value_to_stringifier( stringifier, functions_set.out_of_line_syntax_elements.front().deref().name.back() );
 			}
 			if( !functions_set.function_templates_syntax_elements.empty() )
 			{
-				return functions_set.function_templates_syntax_elements.front().deref().name;
+				return ust::apply_value_to_stringifier( stringifier, functions_set.function_templates_syntax_elements.front().deref().name );
 			}
 
 			foreach( &function : functions_set.functions )
 			{
 				if_var( &el : function.prototype_syntax_element )
 				{
-					return el.name.back();
+					return ust::apply_value_to_stringifier( stringifier, el.name.back() );
 				}
 				if_var( &el : function.body_syntax_element )
 				{
-					return el.name.back();
+					return ust::apply_value_to_stringifier( stringifier, el.name.back() );
 				}
 			}
 
 			if( !functions_set.function_templates.empty() )
 			{
-				return functions_set.function_templates.front().lock_imut().deref().syntax_element.deref().name;
+				return ust::apply_value_to_stringifier( stringifier, functions_set.function_templates.front().lock_imut().deref().syntax_element.deref().name );
 			}
 		}
 	}
@@ -79,21 +79,21 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 		auto class_type_ptr= global_thing.Get</ClassType/>();
 		if( !class_type_ptr.empty() )
 		{
-			return ust::stringify8( class_type_ptr.try_lock_imut().deref() );
+			return ust::apply_value_to_stringifier( stringifier, class_type_ptr.try_lock_imut().deref() );
 		}
 	}
 	{
 		auto enum_type_ptr= global_thing.Get</Enum/>();
 		if( !enum_type_ptr.empty() )
 		{
-			return ust::stringify8( enum_type_ptr.try_lock_imut().deref() );
+			return ust::apply_value_to_stringifier( stringifier, enum_type_ptr.try_lock_imut().deref() );
 		}
 	}
 	{
 		auto type_alias_ptr= global_thing.Get</Enum/>();
 		if( !type_alias_ptr.empty() )
 		{
-			return type_alias_ptr.try_lock_imut().deref().syntax_element.deref().name;
+			return ust::apply_value_to_stringifier( stringifier, type_alias_ptr.try_lock_imut().deref().syntax_element.deref().name );
 		}
 	}
 	{
@@ -105,11 +105,11 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 
 			if( !type_templates_set.syntax_elements.empty() )
 			{
-				return type_templates_set.syntax_elements.front().deref().name;
+				return ust::apply_value_to_stringifier( stringifier, type_templates_set.syntax_elements.front().deref().name );
 			}
 			if( !type_templates_set.type_templates.empty() )
 			{
-				return type_templates_set.type_templates.front().lock_imut().deref().syntax_element.deref().name;
+				return ust::apply_value_to_stringifier( stringifier, type_templates_set.type_templates.front().lock_imut().deref().syntax_element.deref().name );
 			}
 		}
 	}
@@ -119,18 +119,16 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 		{
 			auto lock= global_variable_ptr.try_lock_imut();
 			var GlobalVariable& global_variable= lock.deref();
-			return global_variable.syntax_element.deref().variables[ size_type(global_variable.variable_index) ].name;
+			return ust::apply_value_to_stringifier( stringifier, global_variable.syntax_element.deref().variables[ size_type(global_variable.variable_index) ].name );
 		}
 	}
 	{
 		auto global_auto_variable_ptr= global_thing.Get</GlobalAutoVariable/>();
 		if( !global_auto_variable_ptr.empty() )
 		{
-			return global_auto_variable_ptr.try_lock_imut().deref().syntax_element.deref().name;
+			return ust::apply_value_to_stringifier( stringifier, global_auto_variable_ptr.try_lock_imut().deref().syntax_element.deref().name );
 		}
 	}
-
-	return "";
 }
 
 fn AddAncestorsAccessRights_r( NamesScope &mut dst_class_members, ClassTypePtr& ancestor_class )
@@ -155,18 +153,18 @@ fn CodeBuilder::DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool
 		return false; // No loop detected
 	}
 
-	var ust::string8 mut description;
+	var ust::default_stringifier8 mut stringifier;
 	for( ; i < stack.size(); ++i )
 	{
-		description+= GlobalValueToString(stack[i]);
-		description+= " -> ";
+		StringifyGlobalValue( stringifier, stack[i] );
+		ust::apply_value_to_stringifier( stringifier, " -> " );
 	}
-	description+= GlobalValueToString(global_thing);
+	StringifyGlobalValue( stringifier, global_thing );
 
 	auto mut errors_container_lock= root_errors_container_.try_lock_mut();
 
 	errors_container_lock.deref().push_back(
-		ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, GetValueSrcLoc(global_thing), description ) );
+		ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, GetValueSrcLoc(global_thing), move(stringifier).get() ) );
 
 	return true;
 }
