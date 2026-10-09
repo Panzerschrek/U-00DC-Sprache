@@ -3,10 +3,19 @@ import "string_base.iu"
 namespace ust
 {
 
+// This is the default class using for stringification.
+// Any alternative implementation should use the same interface (be able to stringify all types listed below).
+// But output format may be different, not only a string.
+//
 class default_stringifier8
 {
+	// Stringify always into "void".
 	op()( mut this, void x );
+
+	// Stringify into "false" or true"
 	op()( mut this, bool x );
+
+	// Stringify into decimal number.
 	op()( mut this, u8 x );
 	op()( mut this, i8 x );
 	op()( mut this, u16 x );
@@ -20,19 +29,31 @@ class default_stringifier8
 	op()( mut this, size_type x );
 	op()( mut this, ssize_type x );
 
+	// Stringification for floating-pint types.
+	// The result string doesn't perfectly represent the exact value stored in "f32"/"f64",
+	// but it's close enough so that parsing it will give the same number.
+	// The result isn't guaranteed to be the shortest possible nor to look pretty.
+	// The result string can contain fractional point (.), it's always point and no other separator.
+	// The result string can contain decimal exponent - positive or negative.
+	// The result string is "inf" or "-inf" for infinity numbers.
+	// The result string is "nan" or "-nan" for NaNs.
 	op()( mut this, f32 x );
 	op()( mut this, f64 x );
 
+	// Characters are stringified directly.
 	op()( mut this, char8 x ) { str_.push_back( x ); }
 	op()( mut this, char16 x );
 	op()( mut this, char32 x );
 
+	// Byte types are stringifier into base-16 numbers with "0x" prefix.
+	// Leading zeros are not trimmed, so that all stringified values of the same byte-type have the same length.
 	op()( mut this, byte8 x );
 	op()( mut this, byte16 x );
 	op()( mut this, byte32 x );
 	op()( mut this, byte64 x );
 	op()( mut this, byte128 x );
 
+	// Arrays of characters are stringified directly.
 	op()( mut this, array_view_imut</char8/> arr ) { str_+= arr; }
 	op()( mut this, array_view_imut</char16/> arr );
 	op()( mut this, array_view_imut</char32/> arr );
@@ -48,6 +69,7 @@ private:
 	string_base</char8/> str_;
 }
 
+// Stringifier producing string16.
 class default_stringifier16
 {
 	op()( mut this, void x );
@@ -82,8 +104,6 @@ class default_stringifier16
 	op()( mut this, array_view_imut</char16/> arr ) { str_+= arr; }
 	op()( mut this, array_view_imut</char32/> arr );
 
-	// Get result string.
-	// You must move this instance in order to do this.
 	fn get( byval mut this ) : string_base</char16/>
 	{
 		return take(str_);
@@ -93,6 +113,7 @@ private:
 	string_base</char16/> str_;
 }
 
+// Stringifier producing string32.
 class default_stringifier32
 {
 	op()( mut this, void x );
@@ -127,8 +148,6 @@ class default_stringifier32
 	op()( mut this, array_view_imut</char16/> arr );
 	op()( mut this, array_view_imut</char32/> arr ) { str_+= arr; }
 
-	// Get result string.
-	// You must move this instance in order to do this.
 	fn get( byval mut this ) : string_base</char32/>
 	{
 		return take(str_);
