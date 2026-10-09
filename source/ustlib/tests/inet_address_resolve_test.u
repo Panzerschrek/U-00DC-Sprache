@@ -30,7 +30,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			variant_visit( &a_specific : a )
 			{
-				ust::stdout_print( ust::concat( a_specific.to_string(), "\n" ) );
+				ust::stdout_print( ust::stringify8( a_specific, "\n" ) );
 			}
 		}
 	}

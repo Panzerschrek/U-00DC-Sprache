@@ -74,7 +74,7 @@ fn async ClientHandlerFunc( sm_async_net::tcp_stream mut stream, ust::socket_add
 	// Print client address in all possible forms - ipv4, ipv6.
 	variant_visit( &a : client_address )
 	{
-		ust::stdout_print( ust::concat( "Incoming connection from ", a.get_ip().to_string(), "\n" ) );
+		ust::stdout_print( ust::stringify8( "Incoming connection from ", a.get_ip(), "\n" ) );
 	}
 
 	// Receive and print request text.

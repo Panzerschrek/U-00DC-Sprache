@@ -21,7 +21,7 @@ pretty_main
 	ust::stdout_print(
 		ust::stringify8(
 			"Open it in browser via link like \"http://",
-			address.get_ip().to_string(),
+			address.get_ip(),
 			":",
 			address.get_port(),
 			"\"\n",
@@ -38,7 +38,7 @@ pretty_main
 		// Print client address in all possible forms - ipv4, ipv6.
 		variant_visit( &a : client_address )
 		{
-			ust::stdout_print( ust::concat( "Incoming connection from ", a.get_ip().to_string(), "\n" ) );
+			ust::stdout_print( ust::stringify8( "Incoming connection from ", a.get_ip(), "\n" ) );
 		}
 
 		// Receive and print request text.
