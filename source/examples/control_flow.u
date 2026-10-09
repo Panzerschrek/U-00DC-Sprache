@@ -1,8 +1,7 @@
 // This example demonstraits basic control flow constructions - loops and conditions.
 
 import "/main_wrapper.iu"
-import "/stdout.iu"
-import "/stringification.iu"
+import "/stdout_ext.iu"
 
 pretty_main
 {
@@ -13,7 +12,7 @@ pretty_main
 	for( auto mut i= 0u; i <= 75u; ++i )
 	{
 		auto mask= GetDiv15Mask(i);
-		ust::stdout_print( ust::stringify8( "Mask for ", i, " is ", mask, "\n" ) );
+		ust::stdout_print_line( "Mask for ", i, " is ", mask );
 	}
 
 	return 0;
@@ -26,7 +25,7 @@ fn SimpleLoop()
 	loop
 	{
 		i+= i;
-		ust::stdout_print( ust::stringify8( "Loop iteration counter: ", i, "\n" ) );
+		ust::stdout_print_line( "Loop iteration counter: ", i );
 		if( i > 100 )
 		{
 			break;
@@ -44,10 +43,10 @@ fn WhileLoop( u32 x )
 		i+= i / 5u;
 		if( i % 7u < 2u )
 		{
-			ust::stdout_print( ust::stringify8( "While loop skip iteration ", i, "\n" ) );
+			ust::stdout_print_line( "While loop skip iteration ", i );
 			continue; // Go direct to the next loop iteration.
 		}
-		ust::stdout_print( ust::stringify8( "While loop iteration counter: ", i, "\n" ) );
+		ust::stdout_print_line( "While loop iteration counter: ", i );
 	}
 }
 
@@ -62,10 +61,10 @@ fn ForLoop( f32 x )
 	{
 		if( (i32(i) & 3) == 0 )
 		{
-			ust::stdout_print( ust::stringify8( "For loop skip iteration ",i32(i), "\n" ) );
+			ust::stdout_print_line( "For loop skip iteration ",i32(i) );
 			continue; // Go to the loop iteration part.
 		}
-		ust::stdout_print( ust::stringify8( "For loop iteration counter: ", i32(i), "\n" ) );
+		ust::stdout_print_line( "For loop iteration counter: ", i32(i) );
 	}
 }
 

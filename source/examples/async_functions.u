@@ -2,7 +2,7 @@
 
 import "/assert.iu"
 import "/main_wrapper.iu"
-import "/stdout.iu"
+import "/stdout_ext.iu"
 import "/stringification.iu"
 
 pretty_main
@@ -13,7 +13,7 @@ pretty_main
 	var i32 res= ExecuteAsyncFunc( move(f) );
 	assert( res == 3308 );
 
-	ust::stdout_print( ust::stringify8( "Async execution result is ", res, ".\n" ) );
+	ust::stdout_print_line( "Async execution result is ", res, "." );
 
 	return 0;
 }

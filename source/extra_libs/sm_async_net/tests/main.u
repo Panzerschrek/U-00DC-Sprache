@@ -6,7 +6,7 @@ import "/semaphore.iu"
 import "/sort.iu"
 import "/shared_barrier.iu"
 import "/shared_ptr_mt_final.iu"
-import "/stdout.iu"
+import "/stdout_ext.iu"
 import "/stringification.iu"
 import "/thread.iu"
 import "/sm_async_net/join.iu"
@@ -612,20 +612,20 @@ fn async SenderReceiver(
 	{
 		assert( socket.send_to( other_address, message.range().to_byte8_range() ).await.try_take() == message.size() );
 
-		if( false ) { ust::stdout_print( ust::stringify8( "Sent message \"", message, "\" to port ", other_address.get_port(), ".\n" ) ); }
+		if( false ) { ust::stdout_print_line( "Sent message \"", message, "\" to port ", other_address.get_port(), "." ); }
 
 		var size_type size= socket.receive( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take();
 		var ust::string_view8 received_message= ust::string_view8( buf ).subrange_end( size );
 
 		received_messages.insert( received_message );
 
-		if( false ) { ust::stdout_print( ust::stringify8( "Received message \"", received_message, "\" from port ", other_address.get_port(), ".\n" ) ); }
+		if( false ) { ust::stdout_print_line( "Received message \"", received_message, "\" from port ", other_address.get_port(), "." ); }
 	}
 
 	assert( expected_messages.size() == received_messages.size() );
 	assert( expected_messages == received_messages );
 
-	if( false ) { ust::stdout_print( ust::stringify8( "Finished sending to and receiving from port ", other_address.get_port(), ".\n" ) ); }
+	if( false ) { ust::stdout_print_line( "Finished sending to and receiving from port ", other_address.get_port(), "." ); }
 
 	finish_semaphore.deref().release();
 }
@@ -757,14 +757,14 @@ fn async Func( ust::socket_address_v4 server_address, SemaphorePtr finish_semaph
 	{
 		var ust::string_view8 message0_view= message0;
 		assert( stream.write( message0_view.to_byte8_range() ).await.try_take() == message0_view.size() );
-		if( false ) { ust::stdout_print( ust::stringify8( "Sent message \"", message0_view, "\" to TCP server at port ", server_address.get_port(), ".\n" ) ); }
+		if( false ) { ust::stdout_print_line( "Sent message \"", message0_view, "\" to TCP server at port ", server_address.get_port(), "." ); }
 	}
 	{
 		var [ char8, 64 ] mut buf= zero_init;
 		var ust::string_view8 message1_view= message1;
 		assert( stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take() == message1_view.size() );
 		var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( message1_view.size() );
-		if( false ) { ust::stdout_print( ust::stringify8( "Got message \"", message_received, "\" from TCP server at port ", server_address.get_port(), ".\n" ) ); }
+		if( false ) { ust::stdout_print_line( "Got message \"", message_received, "\" from TCP server at port ", server_address.get_port(), "." ); }
 		assert( message_received == message1 );
 	}
 
@@ -791,14 +791,14 @@ fn Run()
 	{
 		var ust::string_view8 message0_view= message0;
 		assert( stream.write( message0_view.to_byte8_range() ).try_take() == message0_view.size() );
-		if( false ) { ust::stdout_print( ust::stringify8( "Sent message \"", message0_view, "\" to TCP server at port ", server_address.get_port(), ".\n" ) ); }
+		if( false ) { ust::stdout_print_line( "Sent message \"", message0_view, "\" to TCP server at port ", server_address.get_port(), "." ); }
 	}
 	{
 		var [ char8, 64 ] mut buf= zero_init;
 		var ust::string_view8 message1_view= message1;
 		assert( stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).try_take() == message1_view.size() );
 		var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( message1_view.size() );
-		if( false ) { ust::stdout_print( ust::stringify8( "Got message \"", message_received, "\" from TCP server at port ", server_address.get_port(), ".\n" ) ); }
+		if( false ) { ust::stdout_print_line( "Got message \"", message_received, "\" from TCP server at port ", server_address.get_port(), "." ); }
 		assert( message_received == message1 );
 	}
 }
@@ -872,7 +872,7 @@ fn async ServerListenerFunc( tcp_listener mut listener, ust::box</runner_interfa
 	{
 		auto [ mut stream, client_address ]= listener.accept().await.try_take();
 
-		if( false ){ ust::stdout_print( ust::stringify8( "Got a client with sequential number ", num_client_accepted, ".\n" ) ); }
+		if( false ){ ust::stdout_print_line( "Got a client with sequential number ", num_client_accepted, "." ); }
 		++num_client_accepted;
 
 		clinet_processing_runner.deref().add_task( ServerProcessorFunc( move(stream) ) );
@@ -897,14 +897,14 @@ fn async ClientFunc( u32 client_index, ust::socket_address_v4 server_address, Se
 
 	var ust::string8 message0= ust::stringify8( "client hello ", client_index );
 	assert( stream.write( message0.range().to_byte8_range() ).await.try_take() == message0.size() );
-	if( false ){ ust::stdout_print( ust::stringify8( "Sent message \"", message0, "\" to TCP server at port ", server_address.get_port(), ".\n" ) ); }
+	if( false ){ ust::stdout_print_line( "Sent message \"", message0, "\" to TCP server at port ", server_address.get_port(), "." ); }
 
 	var ust::string8 message1= "Response to " + message0;
 
 	var [ char8, 64 ] mut buf= zero_init;
 	assert( stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take() == message1.size() );
 	var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( message1.size() );
-	if( false ){ ust::stdout_print( ust::stringify8( "Got message \"", message_received, "\" from TCP server at port ", server_address.get_port(), ".\n" ) ); }
+	if( false ){ ust::stdout_print_line( "Got message \"", message_received, "\" from TCP server at port ", server_address.get_port(), "." ); }
 	assert( message_received == message1 );
 
 	finish_semaphore.deref().release();
@@ -1303,13 +1303,13 @@ fn async FuncInner( udp_socket mut socket, ust::socket_address_v4& other_address
 {
 	// Send given message to other socket.
 	assert( socket.send_to( other_address, message.to_byte8_range() ).await.try_deref() == message.size() );
-	if( false ) { ust::stdout_print( ust::stringify8( "Sent message \"", message, "\" to port ", other_address.get_port(), "\n" ) ); }
+	if( false ) { ust::stdout_print_line( "Sent message \"", message, "\" to port ", other_address.get_port() ); }
 
 	// Receive a message from other socket.
 	var [ char8, 64 ] mut buf= zero_init;
 	var size_type size= socket.receive( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_deref();
 	var ust::string8 result= ust::string_view8( buf ).subrange_end( size );
-	if( false ) { ust::stdout_print( ust::stringify8( "Received message \"", result, "\" from port ", other_address.get_port(), "\n" ) ); }
+	if( false ) { ust::stdout_print_line( "Received message \"", result, "\" from port ", other_address.get_port() ); }
 	return result;
 }
 
@@ -1614,11 +1614,11 @@ fn async SocketFunc(
 	foreach( &address : addresses )
 	{
 		assert( socket.send_to( address, message.range().to_byte8_range() ).await.try_take() == message.size() );
-		if( false ) { ust::stdout_print(  ust::stringify8( "Sent message \"", message, "\" to port ", address.try_get</ust::socket_address_v4/>().get_port(), "\n" ) ); }
+		if( false ) { ust::stdout_print_line( "Sent message \"", message, "\" to port ", address.try_get</ust::socket_address_v4/>().get_port() ); }
 
 		var size_type size= socket.receive( ust::array_view_mut</char8/>(buf).to_byte8_range() ).await.try_take();
 		var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( size );
-		if( false ) { ust::stdout_print( ust::stringify8( "Received message \"", message_received, "\" on port ", port, "\n" ) ); }
+		if( false ) { ust::stdout_print_line( "Received message \"", message_received, "\" on port ", port ); }
 		res.push_back( message_received );
 	}
 

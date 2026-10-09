@@ -1,6 +1,6 @@
 import "../../ustlib/imports/math.iu"
 import "../../ustlib/imports/main_wrapper.iu"
-import "../../ustlib/imports/stdout.iu"
+import "../../ustlib/imports/stdout_ext.iu"
 import "../../ustlib/imports/stringification.iu"
 
 // This executable should properly link against C standard library (with allocation and stdout functionality).
@@ -8,7 +8,7 @@ import "../../ustlib/imports/stringification.iu"
 
 pretty_main
 {
-	ust::stdout_print( ust::stringify8( "Compiler exe result test: ", compiler::generation, "\n" ) );
-	ust::stdout_print( ust::stringify8( "tan(89)= ", ust::tan( 89.0 / 180.0 * 3.1415926535 ), "\n" ) );
+	ust::stdout_print_line( "Compiler exe result test: ", compiler::generation );
+	ust::stdout_print_line( "tan(89)= ", ust::tan( 89.0 / 180.0 * 3.1415926535 ) );
 	return 0;
 }

@@ -1,8 +1,7 @@
 // This example demonstraits basic usage of iterators functionality.
 
 import "/main_wrapper.iu"
-import "/stdout.iu"
-import "/stringification.iu"
+import "/stdout_ext.iu"
 import "/vector.iu"
 
 pretty_main
@@ -17,7 +16,7 @@ pretty_main
 
 	foreach( &number : numbers )
 	{
-		ust::stdout_print( ust::stringify8( number, "\n" ) );
+		ust::stdout_print_line( number );
 	}
 
 	return 0;

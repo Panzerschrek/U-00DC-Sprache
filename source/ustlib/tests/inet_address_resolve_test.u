@@ -1,7 +1,7 @@
 //##success_test
 import "../imports/assert.iu"
 import "../imports/inet_address_resolve.iu"
-import "../imports/stringification.iu"
+import "../imports/stdout_ext.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
@@ -24,14 +24,11 @@ fn nomangle main() call_conv( "C" ) : i32
 	foreach( &site : sites )
 	{
 		var ust::vector</ust::ip_address/> addresses= ust::resolve_inet_address( site );
-		ust::stdout_print( ust::stringify8( "Has ", addresses.size(), " addresses for \"", site, "\"\n" ) );
+		ust::stdout_print_line( "Has ", addresses.size(), " addresses for \"", site, "\"" );
 
 		foreach( &a : addresses )
 		{
-			variant_visit( &a_specific : a )
-			{
-				ust::stdout_print( ust::stringify8( a_specific, "\n" ) );
-			}
+			ust::stdout_print_line( a );
 		}
 	}
 

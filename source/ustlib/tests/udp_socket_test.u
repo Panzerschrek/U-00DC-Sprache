@@ -3,6 +3,7 @@ import "../imports/assert.iu"
 import "../imports/enum_string_conversions.iu"
 import "../imports/hash_set.iu"
 import "../imports/semaphore.iu"
+import "../imports/stdout_ext.iu"
 import "../imports/stringification.iu"
 import "../imports/thread.iu"
 import "../imports/udp_socket.iu"
@@ -594,7 +595,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		// Should eventually finish this thread.
 		var size_type num_retries= move(t).join();
 
-		ust::stdout_print( ust::stringify8( "Receive on non-blocking thread using ", num_retries, " retries\n" ) );
+		ust::stdout_print_line( "Receive on non-blocking thread using ", num_retries, " retries" );
 	}
 
 	// Receive from multiple senders.
