@@ -62,7 +62,10 @@ if you want to learn more, read its sources yourself.
 * Sorting routines (sort.iu).
 * stdin support (stdin.iu).
 * stdout support (stdout.iu).
-* Number to string conversion utilities (string_conversions.iu).
+* Additional stdout-related functions (stdout_ext.iu).
+* Stringification functions (stringification.iu).
+* Stringifier classes (stringifier.iu).
+* Utilities for stringification (stringifier_apply.iu).
 * System time class (system_time.iu).
 * TCP listener class (tcp_listener.iu).
 * TCP stream class (tcp_stream.iu).
