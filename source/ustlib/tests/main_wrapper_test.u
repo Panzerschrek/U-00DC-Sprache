@@ -1,11 +1,11 @@
 //##success_test
 import "../imports/main_wrapper.iu"
 import "../imports/stdout.iu"
-import "../imports/string_conversions.iu"
+import "../imports/stringification.iu"
 
 pretty_main
 {
-	ust::stdout_print( ust::concat( "Has total ", ust::to_string8( args.size() ), " command-line args:", "\n" ) );
+	ust::stdout_print( ust::stringify8( "Has total ", args.size(), " command-line args:\n" ) );
 
 	foreach( &arg : args )
 	{

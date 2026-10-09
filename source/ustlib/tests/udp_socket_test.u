@@ -3,8 +3,7 @@ import "../imports/assert.iu"
 import "../imports/enum_string_conversions.iu"
 import "../imports/hash_set.iu"
 import "../imports/semaphore.iu"
-import "../imports/string.iu"
-import "../imports/string_conversions.iu"
+import "../imports/stringification.iu"
 import "../imports/thread.iu"
 import "../imports/udp_socket.iu"
 
@@ -77,7 +76,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			Ok( bytes_sent ) ->
 			{
-				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+				assert( bytes_sent == message_range.size(), ust::stringify8( "Sent unexpected number of bytes ", bytes_sent ) );
 			},
 			Err( e ) ->
 			{
@@ -97,7 +96,7 @@ fn nomangle main() call_conv( "C" ) : i32
 					address_obtained == sender_address || address_obtained == ust::socket_address_v4( loopback, sender_address.get_port() ),
 					"Unexpected address obtained in \"receive_from\" call!" );
 
-				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( bytes_received == message_range.size(), ust::stringify8( "Received unexpected number of bytes ", bytes_received ) );
 				assert( received_message == message, "Received unexpected message!" );
 			},
 			Err( e ) ->
@@ -122,7 +121,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			Ok( bytes_sent ) ->
 			{
-				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+				assert( bytes_sent == message_range.size(), ust::stringify8( "Sent unexpected number of bytes ", bytes_sent ) );
 			},
 			Err( e ) ->
 			{
@@ -143,7 +142,7 @@ fn nomangle main() call_conv( "C" ) : i32
 					assert( a_ip_v4.get_ip() == loopback, "Unexpected address obtained in \"receive_from\" call!" );
 				}
 
-				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( bytes_received == message_range.size(), ust::stringify8( "Received unexpected number of bytes ", bytes_received ) );
 				assert( received_message == message, "Received unexpected message!" );
 			},
 			Err( e ) ->
@@ -167,7 +166,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			Ok( bytes_sent ) ->
 			{
-				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+				assert( bytes_sent == message_range.size(), ust::stringify8( "Sent unexpected number of bytes ", bytes_sent ) );
 			},
 			Err( e ) ->
 			{
@@ -188,7 +187,7 @@ fn nomangle main() call_conv( "C" ) : i32
 					assert( a_ip_v4.get_ip() == loopback, "Unexpected address obtained in \"receive_from\" call!" );
 				}
 
-				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( bytes_received == message_range.size(), ust::stringify8( "Received unexpected number of bytes ", bytes_received ) );
 				assert( received_message == message, "Received unexpected message!" );
 			},
 			Err( e ) ->
@@ -219,7 +218,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			Ok( bytes_sent ) ->
 			{
-				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+				assert( bytes_sent == message_range.size(), ust::stringify8( "Sent unexpected number of bytes ", bytes_sent ) );
 			},
 			Err( e ) ->
 			{
@@ -233,7 +232,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			Ok( mut bytes_received ) ->
 			{
-				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( bytes_received == message_range.size(), ust::stringify8( "Received unexpected number of bytes ", bytes_received ) );
 				assert( received_message == message, "Received unexpected message!" );
 			},
 			Err( e ) ->
@@ -263,7 +262,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			Ok( bytes_sent ) ->
 			{
-				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+				assert( bytes_sent == message_range.size(), ust::stringify8( "Sent unexpected number of bytes ", bytes_sent ) );
 			},
 			Err( e ) ->
 			{
@@ -277,7 +276,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			Ok( mut bytes_received ) ->
 			{
-				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( bytes_received == message_range.size(), ust::stringify8( "Received unexpected number of bytes ", bytes_received ) );
 				assert( received_message == message, "Received unexpected message!" );
 			},
 			Err( e ) ->
@@ -306,7 +305,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			Ok( bytes_sent ) ->
 			{
-				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+				assert( bytes_sent == message_range.size(), ust::stringify8( "Sent unexpected number of bytes ", bytes_sent ) );
 			},
 			Err( e ) ->
 			{
@@ -327,7 +326,7 @@ fn nomangle main() call_conv( "C" ) : i32
 					assert( a_ip_v4.get_ip() == loopback, "Unexpected address obtained in \"receive_from\" call!" );
 				}
 
-				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( bytes_received == message_range.size(), ust::stringify8( "Received unexpected number of bytes ", bytes_received ) );
 				assert( received_message == message, "Received unexpected message!" );
 			},
 			Err( e ) ->
@@ -354,7 +353,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			Ok( bytes_sent ) ->
 			{
-				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+				assert( bytes_sent == message_range.size(), ust::stringify8( "Sent unexpected number of bytes ", bytes_sent ) );
 			},
 			Err( e ) ->
 			{
@@ -368,7 +367,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			Ok( mut bytes_received ) ->
 			{
-				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( bytes_received == message_range.size(), ust::stringify8( "Received unexpected number of bytes ", bytes_received ) );
 				assert( received_message == message, "Received unexpected message!" );
 			},
 			Err( e ) ->
@@ -429,7 +428,7 @@ fn nomangle main() call_conv( "C" ) : i32
 						address_obtained == sender_address || address_obtained == ust::socket_address_v4( loopback, sender_address.get_port() ),
 						"Unexpected address obtained in \"receive_from\" call!" );
 
-					assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+					assert( bytes_received == message_range.size(), ust::stringify8( "Received unexpected number of bytes ", bytes_received ) );
 					assert( peeked_message == message, "Received unexpected message!" );
 				},
 				Err( e ) ->
@@ -447,7 +446,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			address_obtained == sender_address || address_obtained == ust::socket_address_v4( loopback, sender_address.get_port() ),
 			"Unexpected address obtained in \"receive_from\" call!" );
 
-		assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+		assert( bytes_received == message_range.size(), ust::stringify8( "Received unexpected number of bytes ", bytes_received ) );
 		assert( received_message == message, "Received unexpected message!" );
 	}
 
@@ -479,7 +478,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			{
 				Ok( mut bytes_received ) ->
 				{
-					assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+					assert( bytes_received == message_range.size(), ust::stringify8( "Received unexpected number of bytes ", bytes_received ) );
 					assert( peeked_message == message, "Received unexpected message!" );
 				},
 				Err( e ) ->
@@ -494,7 +493,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var size_type bytes_received = receiver_socket.receive( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ).try_take();
 
-		assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+		assert( bytes_received == message_range.size(), ust::stringify8( "Received unexpected number of bytes ", bytes_received ) );
 		assert( received_message == message, "Received unexpected message!" );
 	}
 
@@ -595,7 +594,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		// Should eventually finish this thread.
 		var size_type num_retries= move(t).join();
 
-		ust::stdout_print( ust::concat( "Receive on non-blocking thread using ", ust::to_string8(num_retries), " retries\n" ) );
+		ust::stdout_print( ust::stringify8( "Receive on non-blocking thread using ", num_retries, " retries\n" ) );
 	}
 
 	// Receive from multiple senders.
@@ -1026,7 +1025,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			Ok( bytes_sent ) ->
 			{
-				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+				assert( bytes_sent == message_range.size(), ust::stringify8( "Sent unexpected number of bytes ", bytes_sent ) );
 			},
 			Err( e ) ->
 			{
@@ -1051,7 +1050,7 @@ fn nomangle main() call_conv( "C" ) : i32
 				}
 				else { assert( false, "Sender address should be IP v6!" ); }
 
-				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( bytes_received == message_range.size(), ust::stringify8( "Received unexpected number of bytes ", bytes_received ) );
 				assert( received_message == message, "Received unexpected message!" );
 			},
 			Err( e ) ->

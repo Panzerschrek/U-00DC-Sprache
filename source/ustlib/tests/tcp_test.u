@@ -2,7 +2,7 @@
 import "../imports/assert.iu"
 import "../imports/enum_string_conversions.iu"
 import "../imports/semaphore.iu"
-import "../imports/string_conversions.iu"
+import "../imports/stringification.iu"
 import "../imports/thread.iu"
 import "../imports/tcp_listener.iu"
 import "../imports/udp_socket.iu"
@@ -541,7 +541,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var size_type num_attempts= move(background_thread).join();
 
-		ust::stdout_print( ust::concat( "Accept a client in ", ust::to_string8( num_attempts ), " attempts\n" ) );
+		ust::stdout_print( ust::stringify8( "Accept a client in ", num_attempts, " attempts\n" ) );
 	}
 
 	// Non-blocking stream - should not block on reading if no data was sent.
@@ -1018,7 +1018,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			{
 				Ok(v) ->
 				{
-					ust::stdout_print( ust::concat( "Connected to the server in ", ust::to_string8( num_attempts ), " attempts\n" ) );
+					ust::stdout_print( ust::stringify8( "Connected to the server in ", num_attempts, " attempts\n" ) );
 					break;
 				},
 				Err(e) ->
