@@ -708,7 +708,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	var Type t= PrepareType( names_scope, function_context, typeinfo_.type_name );
 	if( !EnsureTypeComplete( t ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names_scope, typeinfo_.src_loc, t.ToString() )
+		REPORT_ERROR( UsingIncompleteType, names_scope, typeinfo_.src_loc, t )
 		return ErrorValue();
 	}
 
@@ -867,7 +867,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	auto array_type= variable.t.GetArrayType();
 	if( array_type.empty() || array_type.try_deref().element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ) )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope, embed_.src_loc, "char8 array", variable.t.ToString() )
+		REPORT_ERROR( TypesMismatch, names_scope, embed_.src_loc, "char8 array", variable.t )
 		return ErrorValue();
 	}
 
@@ -939,7 +939,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		auto fundamental_type= t.GetFundamentalType();
 		if( fundamental_type.empty() || GetFundamentalTypeSize( fundamental_type.try_deref().fundamental_type ) != 1u )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( element_type_name ), "any fundamental 8-bit type", t.ToString() )
+			REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( element_type_name ), "any fundamental 8-bit type", t )
 			return ErrorValue();
 		}
 
@@ -2235,7 +2235,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	if( names_scope.lock_imut().deref().GetAccessFor( class_type ) < class_member[1] )
 	{
-		REPORT_ERROR( AccessingNonpublicClassMember, names_scope, member_access_operator.src_loc, member_access_operator.member_name, variable.t.ToString() )
+		REPORT_ERROR( AccessingNonpublicClassMember, names_scope, member_access_operator.src_loc, member_access_operator.member_name, variable.t )
 	}
 
 	auto field_ptr= class_member[0].Get</ClassField/>();
@@ -2390,7 +2390,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		return ErrorValue();
 	}
 
-	var ust::string8 mut name= "temp " + t.ToString();
+	var ust::string8 mut name= ust::stringify8( "temp ", t );
 
 	var Variable mut result
 	{
@@ -4953,7 +4953,7 @@ fn CodeBuilder::DoCallFunction(
 		.t= function_type.return_type,
 		.value_type= function_type.return_value_type,
 		.location= Variable::Location::Pointer, // set later
-		.name= "call result " + function_type.return_type.ToString(),
+		.name= ust::stringify8( "call result ", function_type.return_type ),
 		.no_discard= no_discard,
 	};
 
@@ -5326,7 +5326,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 		return ErrorValue();
 	}
 
-	var ust::string8 mut name= "temp " + t.ToString();
+	var ust::string8 mut name= ust::stringify8( "temp ", t );
 
 	var Variable mut result
 	{
@@ -5404,7 +5404,7 @@ fn CodeBuilder::ConvertVariable(
 			.value_type= ValueType::Value,
 			.location= Variable::Location::Pointer,
 			.llvm_value= llvm_value,
-			.name= "converted " + dst_type.ToString(),
+			.name= ust::stringify8( "converted ", dst_type ),
 		}.CreatePtr();
 
 	function_context.references_graph.AddNode( result_ptr );
@@ -5421,7 +5421,7 @@ fn CodeBuilder::ConvertVariable(
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 					.llvm_value= llvm_value,
-					.name= "converted " + dst_type.ToString(),
+					.name= ust::stringify8( "converted ", dst_type ),
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( result_for_constructor_call_ptr );

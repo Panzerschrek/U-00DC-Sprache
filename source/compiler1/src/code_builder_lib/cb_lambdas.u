@@ -17,7 +17,7 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 		.t= lambda_class,
 		.value_type= ValueType::Value,
 		.location= Variable::Location::Pointer,
-		.name= "value of " + Type(lambda_class).ToString(),
+		.name= ust::stringify8( "value of ", lambda_class.lock_imut().deref() ),
 	};
 
 	if( !function_context.is_functionless_context )

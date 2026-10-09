@@ -1,5 +1,4 @@
-import "/helpers.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "/CodeBuilderLib/keywords.iu"
 import "structs_combined.iu"
 
@@ -15,151 +14,6 @@ static_assert( typeinfo</NamesScopeValue/>.size_of <= 16s, "size of NamesScopeVa
 // Type
 //
 
-namespace ToStringHelper
-{
-
-template</type T/>
-fn ToString( ust::shared_ptr_final</T/>& b ) : ust::string8
-{
-	return ToString( b.deref() );
-}
-
-fn ToString( FundamentalType& fundamental_type ) : ust::string8
-{
-	return GetFundamentalTypeName( fundamental_type.fundamental_type );
-}
-
-fn ToString( ArrayType& array_type ) : ust::string8
-{
-	return ust::concat( "[ ", array_type.element_type.ToString(), ", ", ust::to_string8(array_type.element_count), " ]" );
-}
-
-fn ToString( TupleType& tuple_type ) : ust::string8
-{
-	var ust::string8 mut result;
-	result+= KeywordToString( Keyword::tup_ );
-
-	if( tuple_type.element_types.empty() )
-	{
-		result+= "[]";
-		return result;
-	}
-
-	result+= "[ ";
-
-	foreach( &element_type : tuple_type.element_types )
-	{
-		result+= element_type.ToString();
-		if( ust::ref_cmp_ne( element_type, tuple_type.element_types.back() ) )
-		{
-			result+= ", ";
-		}
-	}
-
-	result+= " ]";
-	return result;
-}
-
-fn ToString( RawPointerType& raw_pointer_type ) : ust::string8
-{
-	return ust::concat( "$", "(", raw_pointer_type.element_type.ToString(), ")" );
-}
-
-fn ToString( FunctionType& function_type ) : ust::string8
-{
-	// TODO - add references pollution/return references
-
-	var ust::string8 mut result;
-
-	result+= KeywordToString( Keyword::fn_ );
-
-	if( function_type.params.empty() )
-	{
-		result+= "()";
-	}
-	else
-	{
-		result+= "( ";
-		result+= FunctionParamsToString( function_type.params );
-		result+= " )";
-	}
-
-	if( function_type.is_unsafe )
-	{
-		result+= " ";
-		result+= KeywordToString( Keyword::unsafe_ );
-	}
-
-	switch( function_type.calling_convention )
-	{
-		CallingConvention::Default -> {},
-		CallingConvention::C ->
-		{
-			result+= " ";
-			result+= KeywordToString( Keyword::call_conv_ );
-			result+= " (\"";
-			result+= "C";
-			result+= "\")";
-		},
-		CallingConvention::Fast ->
-		{
-			result+= " ";
-			result+= KeywordToString( Keyword::call_conv_ );
-			result+= " (\"";
-			result+= "fast";
-			result+= "\")";
-		},
-		CallingConvention::Cold ->
-		{
-			result+= " ";
-			result+= KeywordToString( Keyword::call_conv_ );
-			result+= " (\"";
-			result+= "cold";
-			result+= "\")";
-		},
-		CallingConvention::System ->
-		{
-			result+= " ";
-			result+= KeywordToString( Keyword::call_conv_ );
-			result+= " (\"";
-			result+= "system";
-			result+= "\")";
-		},
-	}
-
-	result+= " : ";
-
-	result+= function_type.return_type.ToString();
-
-	if( function_type.return_value_type == ValueType::ReferenceMut )
-	{
-		result+= " &mut";
-	}
-	if( function_type.return_value_type == ValueType::ReferenceImut )
-	{
-		result+= " &imut";
-	}
-
-	return result;
-}
-
-fn ToString( FunctionPointerType& function_pointer_type ) : ust::string8
-{
-	return ToString( function_pointer_type.function_type );
-}
-
-fn ToString( ClassTypePtr& class_type ) : ust::string8
-{
-	return class_type.lock_imut().deref().members.lock_imut().deref().ToString();
-}
-
-fn ToString( EnumTypePtr& enum_type ) : ust::string8
-{
-	return enum_type.lock_imut().deref().names_scope.lock_imut().deref().ToString();
-}
-
-} // namespace ToStringHelper
-
 fn FundamentalType::constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type )
 	( fundamental_type= in_fundamental_type, llvm_type= in_llvm_type )
 {}
@@ -169,9 +23,23 @@ op FundamentalType::==( FundamentalType& l, FundamentalType& r ) : bool
 	return l.fundamental_type == r.fundamental_type;
 }
 
+fn FundamentalType::stringify( this, ust::default_stringifier8 &mut stringifier )
+{
+	ust::apply_value_to_stringifier( stringifier, GetFundamentalTypeName( fundamental_type ) );
+}
+
 op ArrayType::==( ArrayType& l, ArrayType& r ) : bool
 {
 	return l.element_type == r.element_type && l.element_count == r.element_count;
+}
+
+fn ArrayType::stringify( this, ust::default_stringifier8 &mut stringifier )
+{
+	ust::apply_value_to_stringifier( stringifier, "[ " );
+	ust::apply_value_to_stringifier( stringifier, element_type );
+	ust::apply_value_to_stringifier( stringifier, ", " );
+	ust::apply_value_to_stringifier( stringifier, element_count );
+	ust::apply_value_to_stringifier( stringifier, " ]" );
 }
 
 op TupleType::==( TupleType& l, TupleType& r ) : bool
@@ -179,9 +47,40 @@ op TupleType::==( TupleType& l, TupleType& r ) : bool
 	return l.element_types == r.element_types;
 }
 
+fn TupleType::stringify( this, ust::default_stringifier8 &mut stringifier )
+{
+	ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::tup_ ) );
+
+	if( element_types.empty() )
+	{
+		ust::apply_value_to_stringifier( stringifier, "[]" );
+	}
+	else
+	{
+		ust::apply_value_to_stringifier( stringifier, "[ " );
+
+		ust::apply_value_to_stringifier( stringifier, element_types.front() );
+
+		foreach( &element_type : element_types.range().subrange_start(1s) )
+		{
+			ust::apply_value_to_stringifier( stringifier, ", " );
+			ust::apply_value_to_stringifier( stringifier, element_type );
+		}
+
+		ust::apply_value_to_stringifier( stringifier, " ]" );
+	}
+}
+
 op RawPointerType::==( RawPointerType& l, RawPointerType& r ) : bool
 {
 	return l.element_type == r.element_type;
+}
+
+fn RawPointerType::stringify( this, ust::default_stringifier8 &mut stringifier )
+{
+	ust::apply_value_to_stringifier( stringifier, "$(" );
+	ust::apply_value_to_stringifier( stringifier, element_type );
+	ust::apply_value_to_stringifier( stringifier, ")" );
 }
 
 op FunctionType::ParamReference::<=>(ParamReference& l, ParamReference& r) : i32
@@ -309,38 +208,112 @@ fn FunctionType::ReturnsCompositeValue( this ) : bool
 		( !return_type.GetClassType().empty() || !return_type.GetArrayType().empty() || !return_type.GetTupleType().empty() );
 }
 
-fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) : ust::string8
+fn FunctionType::stringify( this, ust::default_stringifier8 &mut stringifier )
 {
-	var ust::string8 mut result;
+	// TODO - add references pollution/return references
 
+	ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::fn_ ) );
+
+	if( params.empty() )
+	{
+		ust::apply_value_to_stringifier( stringifier, "()" );
+	}
+	else
+	{
+		ust::apply_value_to_stringifier( stringifier, "( " );
+		StringifyFunctionParams( stringifier, params );
+		ust::apply_value_to_stringifier( stringifier, " )" );
+	}
+
+	if( is_unsafe )
+	{
+		ust::apply_value_to_stringifier( stringifier, " " );
+		ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::unsafe_ ) );
+	}
+
+	switch( calling_convention )
+	{
+		CallingConvention::Default -> {},
+		CallingConvention::C ->
+		{
+			ust::apply_value_to_stringifier( stringifier, " " );
+			ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::call_conv_ ) );
+			ust::apply_value_to_stringifier( stringifier," (\"C\")" );
+		},
+		CallingConvention::Fast ->
+		{
+			ust::apply_value_to_stringifier( stringifier, " " );
+			ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::call_conv_ ) );
+			ust::apply_value_to_stringifier( stringifier," (\"fast\")" );
+		},
+		CallingConvention::Cold ->
+		{
+			ust::apply_value_to_stringifier( stringifier, " " );
+			ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::call_conv_ ) );
+			ust::apply_value_to_stringifier( stringifier," (\"cold\")" );
+		},
+		CallingConvention::System ->
+		{
+			ust::apply_value_to_stringifier( stringifier, " " );
+			ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::call_conv_ ) );
+			ust::apply_value_to_stringifier( stringifier," (\"system\")" );
+		},
+	}
+
+	ust::apply_value_to_stringifier( stringifier, " : " );
+
+	ust::apply_value_to_stringifier( stringifier, return_type );
+
+	if( return_value_type == ValueType::ReferenceMut )
+	{
+		ust::apply_value_to_stringifier( stringifier, " &mut" );
+	}
+	if( return_value_type == ValueType::ReferenceImut )
+	{
+		ust::apply_value_to_stringifier( stringifier, " &imut" );
+	}
+}
+
+fn StringifyFunctionParams( ust::default_stringifier8 &mut stringifier, ust::array_view_imut</FunctionType::Param/> params )
+{
 	foreach( &param : params )
 	{
-		result+= param.t.ToString();
-		result+= " ";
+		ust::apply_value_to_stringifier( stringifier, param.t );
+		ust::apply_value_to_stringifier( stringifier, " " );
 
 		if( param.value_type == ValueType::ReferenceMut )
 		{
-			result+= "&mut ";
+			ust::apply_value_to_stringifier( stringifier, "&mut " );
 		}
 		if( param.value_type == ValueType::ReferenceImut )
 		{
-			result+= "&imut ";
+			ust::apply_value_to_stringifier( stringifier, "&imut " );
 		}
 
-		result+= "_"; // use some dummy for param name.
+		ust::apply_value_to_stringifier( stringifier, "_" ); // use some dummy for param name.
 
 		if( ust::ref_cmp_ne( param, params.back() ) )
 		{
-			result+= ", ";
+			ust::apply_value_to_stringifier( stringifier, ", " );
 		}
 	}
+}
 
-	return result;
+fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) : ust::string8
+{
+	var ust::default_stringifier8 mut stringifier;
+	StringifyFunctionParams( stringifier, params );
+	return move(stringifier).get();
 }
 
 op FunctionPointerType::==( FunctionPointerType& l, FunctionPointerType& r ) : bool
 {
 	return l.function_type == r.function_type;
+}
+
+fn FunctionPointerType::stringify( this, ust::default_stringifier8 &mut stringifier )
+{
+	ust::apply_value_to_stringifier( stringifier, function_type );
 }
 
 fn Type::conversion_constructor( FundamentalType mut fundamental_type )
@@ -837,12 +810,45 @@ fn Type::ReferenceIsConvertibleTo( this, Type& dst ) : bool
 	return false;
 }
 
-fn Type::ToString( this ) : ust::string8
+fn Type::stringify( this, ust::default_stringifier8 &mut stringifier )
 {
-	variant_visit( &t : something_ )
+	if_var( &fundamental_type : GetFundamentalType() )
 	{
-		return ToStringHelper::ToString(t);
+		ust::apply_value_to_stringifier( stringifier, fundamental_type );
+		return;
 	}
+	if_var( &array_type : GetArrayType() )
+	{
+		ust::apply_value_to_stringifier( stringifier, array_type );
+		return;
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		ust::apply_value_to_stringifier( stringifier, tuple_type );
+		return;
+	}
+	if_var( &raw_pointer_type : GetRawPointerType() )
+	{
+		ust::apply_value_to_stringifier( stringifier, raw_pointer_type );
+		return;
+	}
+	if_var( &function_pointer_type : GetFunctionPointerType() )
+	{
+		ust::apply_value_to_stringifier( stringifier, function_pointer_type );
+		return;
+	}
+	if_var( &class_type : GetClassType() )
+	{
+		ust::apply_value_to_stringifier( stringifier, class_type.lock_imut().deref() );
+		return;
+	}
+	if_var( &enum_type : GetEnumType() )
+	{
+		ust::apply_value_to_stringifier( stringifier, enum_type.lock_imut().deref()  );
+		return;
+	}
+
+	// Unhandled type kind.
 	halt;
 }
 
@@ -908,6 +914,11 @@ fn ClassType::HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool
 	return false;
 }
 
+fn ClassType::stringify( this, ust::default_stringifier8 &mut stringifier )
+{
+	ust::apply_value_to_stringifier( stringifier, members.lock_imut().deref() );
+}
+
 //
 // Value
 //
@@ -927,7 +938,7 @@ fn Variable::CreatePtr( byval mut this ) : VariablePtr
 					{
 						.value_type= ( v.t.GetInnerReferenceKind(index) == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 						.location= Variable::Location::Pointer,
-						.name= ust::concat( v.name, " inner reference ", ust::to_string8(index) ),
+						.name= ust::stringify8( v.name, " inner reference ", index ),
 						.is_variable_inner_reference_node= v.value_type == ValueType::Value,
 						.is_inner_reference_node= true,
 					} );
@@ -942,67 +953,65 @@ fn Variable::CreateChildPtr( byval mut this, VariablePtr& parent ) : VariablePtr
 	return VariablePtr( move(this) );
 }
 
-fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::string8
+fn StringifyConstantVariable( ust::default_stringifier8 &mut stringifier, Type& t, LLVMValueRef constant_value )
 {
 	if( constant_value == Null::LLVMValueRef )
 	{
-		return "";
+		return;
 	}
 
 	if_var( &fundamental_type : t.GetFundamentalType() )
 	{
 		if( fundamental_type.fundamental_type == U_FundamentalType::bool_ )
 		{
-			return ( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) == 0u64 ? ust::string8("false") : ust::string8("true") );
+			ust::apply_value_to_stringifier(
+				stringifier,
+				( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) == 0u64 ? ust::string8("false") : ust::string8("true") ) );
+			return;
 		}
 		else if( IsSignedInteger( fundamental_type.fundamental_type ) )
 		{
-			var ust::string_view8 mut suffix;
-			if( fundamental_type.fundamental_type == U_FundamentalType::i32_ )
-			{  suffix= "";  }
-			else
-			{  suffix= GetFundamentalTypeName( fundamental_type.fundamental_type );  }
+			ust::apply_value_to_stringifier( stringifier, unsafe( LLVMConstIntGetSExtValue( constant_value ) ) );
 
-			return ust::to_string8( unsafe( LLVMConstIntGetSExtValue( constant_value ) ) ) + suffix;
+			if( fundamental_type.fundamental_type != U_FundamentalType::i32_ )
+			{
+				ust::apply_value_to_stringifier( stringifier, GetFundamentalTypeName( fundamental_type.fundamental_type ) );
+			}
+
+			return;
 		}
 		else if( IsUnsignedInteger( fundamental_type.fundamental_type ) )
 		{
-			var ust::string_view8 mut suffix;
-			if( fundamental_type.fundamental_type == U_FundamentalType::u32_ )
-			{  suffix= "u";  }
-			else
-			{  suffix= GetFundamentalTypeName( fundamental_type.fundamental_type );  }
-
-			return ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) ) + suffix;
+			ust::apply_value_to_stringifier( stringifier, unsafe( LLVMConstIntGetZExtValue( constant_value ) ) );
+			ust::apply_value_to_stringifier( stringifier, GetFundamentalTypeName( fundamental_type.fundamental_type ) );
+			return;
 		}
 		else if( IsChar( fundamental_type.fundamental_type ) )
 		{
-			var ust::string8 mut result;
-			result+= GetFundamentalTypeName( fundamental_type.fundamental_type );
-			result.push_back( '(' );
-			result+= ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) );
-			result.push_back( ')' );
-			return result;
+			ust::apply_value_to_stringifier( stringifier,  GetFundamentalTypeName( fundamental_type.fundamental_type ) );
+			ust::apply_value_to_stringifier( stringifier, '(' );
+			ust::apply_value_to_stringifier( stringifier, unsafe( LLVMConstIntGetZExtValue( constant_value ) ) );
+			ust::apply_value_to_stringifier( stringifier, ')' );
+			return;
 		}
 		else if( IsByte( fundamental_type.fundamental_type ) )
 		{
-			var ust::string8 mut res;
-			res+= GetFundamentalTypeName( fundamental_type.fundamental_type );
-			res+= "( ";
+			ust::apply_value_to_stringifier( stringifier, GetFundamentalTypeName( fundamental_type.fundamental_type ) );
+			ust::apply_value_to_stringifier( stringifier, "( " );
 
-			res+= ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) );
+			ust::apply_value_to_stringifier( stringifier, unsafe( LLVMConstIntGetZExtValue( constant_value ) ) );
 			switch( fundamental_type.fundamental_type )
 			{
-				U_FundamentalType::byte8_   -> { res+= GetFundamentalTypeName( U_FundamentalType::u8_   ); },
-				U_FundamentalType::byte16_  -> { res+= GetFundamentalTypeName( U_FundamentalType::u16_  ); },
-				U_FundamentalType::byte32_  -> { res+= GetFundamentalTypeName( U_FundamentalType::u32_  ); },
-				U_FundamentalType::byte64_  -> { res+= GetFundamentalTypeName( U_FundamentalType::u64_  ); },
-				U_FundamentalType::byte128_ -> { res+= GetFundamentalTypeName( U_FundamentalType::u128_ ); },
-				default -> { halt; },
+			U_FundamentalType::byte8_   -> { ust::apply_value_to_stringifier( stringifier, GetFundamentalTypeName( U_FundamentalType::u8_   ) ); },
+			U_FundamentalType::byte16_  -> { ust::apply_value_to_stringifier( stringifier, GetFundamentalTypeName( U_FundamentalType::u16_  ) ); },
+			U_FundamentalType::byte32_  -> { ust::apply_value_to_stringifier( stringifier, GetFundamentalTypeName( U_FundamentalType::u32_  ) ); },
+			U_FundamentalType::byte64_  -> { ust::apply_value_to_stringifier( stringifier, GetFundamentalTypeName( U_FundamentalType::u64_  ) ); },
+			U_FundamentalType::byte128_ -> { ust::apply_value_to_stringifier( stringifier, GetFundamentalTypeName( U_FundamentalType::u128_ ) ); },
+			default -> { halt; },
 			}
 
-			res+= " )";
-			return res;
+			ust::apply_value_to_stringifier( stringifier, " )" );
+			return;
 		}
 	}
 	if_var( &enum_type : t.GetEnumType() )
@@ -1010,56 +1019,51 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 		foreach( &element : enum_type.lock_imut().deref().elements )
 		{
 			// LLVM constants are deduplicated, so, comparing pointers should work.
-			if( constant_value == element.value().constexpr_value  )
+			if( constant_value == element.value().constexpr_value )
 			{
-				var ust::string8 mut res;
-				res+= t.ToString();
-				res+= "::";
-				res+= element.key();
-				return res;
+				ust::apply_value_to_stringifier( stringifier, t );
+				ust::apply_value_to_stringifier( stringifier, "::" );
+				ust::apply_value_to_stringifier( stringifier, element.key() );
+				return;
 			}
 		}
 	}
 	if_var( &array_type : t.GetArrayType() )
 	{
 		// For now we have no special syntax for array literals. So, use just a comma-separated list in [].
-		var ust::string8 mut res;
-		res+= t.ToString();
-		res+= "[ ";
+		ust::apply_value_to_stringifier( stringifier, t );
+		ust::apply_value_to_stringifier( stringifier, "[ " );
 
 		for( auto mut i= 0u64; i < array_type.element_count; ++i )
 		{
-			res+= ConstantVariableToString( array_type.element_type, unsafe( LLVMGetAggregateElement( constant_value, u32(i) ) ) );
+			StringifyConstantVariable( stringifier, array_type.element_type, unsafe( LLVMGetAggregateElement( constant_value, u32(i) ) ) );
 			if( i + 1u64 < array_type.element_count )
 			{
-				res+= ", ";
+				ust::apply_value_to_stringifier( stringifier, ", " );
 			}
 		}
 
-		res+= "]";
-		return res;
+		ust::apply_value_to_stringifier( stringifier, "]" );
+		return;
 	}
 	if_var( &tuple_type : t.GetTupleType() )
 	{
 		// For now we have no special syntax for tuple literals. So, use just a comma-separated list in [].
-		var ust::string8 mut res;
-		res+= t.ToString();
-		res+= "[ ";
+		ust::apply_value_to_stringifier( stringifier, t );
+		ust::apply_value_to_stringifier( stringifier, "[ " );
 
 		for(auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			res+= ConstantVariableToString( tuple_type.element_types[i], unsafe( LLVMGetAggregateElement( constant_value, u32(i) ) ) );
+			StringifyConstantVariable( stringifier, tuple_type.element_types[i], unsafe( LLVMGetAggregateElement( constant_value, u32(i) ) ) );
 			if( i + 1s < tuple_type.element_types.size() )
 			{
-				res+= ", ";
+				ust::apply_value_to_stringifier( stringifier, ", " );
 			}
 		}
 
-		res+= "]";
-		return res;
+		ust::apply_value_to_stringifier( stringifier, "]" );
+		return;
 	}
-
-	return "";
 }
 
 fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
@@ -1176,20 +1180,22 @@ fn GetValueKindName( Value& v ) : ust::string_view8
 	halt;
 }
 
-fn TypeTemplate::ToString( this ) : ust::string8
+fn Enum::stringify( this, ust::default_stringifier8 &mut stringifier )
 {
-	var ust::string8 mut result;
+	ust::apply_value_to_stringifier( stringifier, names_scope.lock_imut().deref() );
+}
+
+fn TypeTemplate::stringify( this, ust::default_stringifier8 &mut stringifier )
+{
 	with( &n : parent_names_scope.upgrade().try_lock_imut().deref() )
 	{
 		if( !n.GetParent().empty() )
 		{
-			result += n.ToString();
-			result += "::";
+			ust::apply_value_to_stringifier( stringifier, n );
+			ust::apply_value_to_stringifier( stringifier, "::" );
 		}
 	}
-	result += syntax_element.deref().name;
-
-	return result;
+	ust::apply_value_to_stringifier( stringifier, syntax_element.deref().name );
 }
 
 //
@@ -1641,128 +1647,6 @@ fn NamesScope::GetThisNamespaceName( this ) : ust::string8&
 	return name_;
 }
 
-fn NamesScope::ToString( this ) : ust::string8
-{
-	if( !class_.empty() )
-	{
-		auto class_lock= class_.try_lock_imut();
-		auto& class_type= class_lock.deref();
-		if_var( &base_template : class_type.generated_class_data.get</ ClassType::BaseTemplate />() )
-		{
-			// This is class template. So, parent namespace is arguments names scope.
-			with( &type_template : base_template.class_template.lock_imut().deref() )
-			{
-				auto parent= type_template.parent_names_scope.upgrade();
-				if( !parent.empty() )
-				{
-					var ust::string8 mut res;
-
-					auto parent_lock= parent.try_lock_imut();
-					if( !parent_lock.deref().GetParent().empty() )
-					{
-						res+= parent.try_lock_imut().deref().ToString();
-						res+= "::";
-					}
-					res+= type_template.syntax_element.deref().name;
-
-					res+= "</";
-					foreach( &arg : base_template.signature_args )
-					{
-						if_var( &t : arg.get</Type/>() )
-						{
-							res+= t.ToString();
-						}
-						else if_var( &v_ptr : arg.get</VariablePtr/>() )
-						{
-							with( &v : v_ptr.lock_imut().deref() )
-							{
-								res+= ConstantVariableToString( v.t, v.constexpr_value );
-							}
-						}
-						else if_var( &type_template : arg.get</TypeTemplatePtr/>() )
-						{
-							res+= type_template.lock_imut().deref().ToString();
-						}
-
-						if( ust::ref_cmp_ne( arg, base_template.signature_args.back() ) )
-						{
-							res+= ", ";
-						}
-					}
-					res+= "/>";
-
-					return res;
-				}
-			}
-		}
-		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ TypeinfoClassDescription />() )
-		{
-			return ust::concat(
-				KeywordToString(Keyword::typeof_),
-				"(",
-				KeywordToString(Keyword::typeinfo_),
-				"</",
-				typeinfo_class_description.source_type.ToString(),
-				 "/>",
-				")" );
-		}
-		if_var( &coroutine_type_description : class_type.generated_class_data.get</ CoroutineTypeDescription />() )
-		{
-			var ust::string8 mut res;
-			switch( coroutine_type_description.kind )
-			{
-				CoroutineKind::Generator -> { res+= KeywordToString( Keyword::generator_ ); },
-				CoroutineKind::AsyncFunc -> { res+= KeywordToString( Keyword::async_ ); },
-			}
-
-			// TODO - print inner refernces.
-
-			res+= " ";
-
-			if( coroutine_type_description.non_sync_ )
-			{
-				res+= KeywordToString( Keyword::non_sync_ );
-			}
-
-			res+= ": ";
-
-			res+= coroutine_type_description.return_type.ToString();
-
-			if( coroutine_type_description.return_value_type == ValueType::Value )
-			{}
-			else if( coroutine_type_description.return_value_type == ValueType::ReferenceImut )
-			{
-				res+= " &";
-				res+= KeywordToString( Keyword::imut_ );
-			}
-			else if( coroutine_type_description.return_value_type == ValueType::ReferenceMut )
-			{
-				res+= " &";
-				res+= KeywordToString( Keyword::mut_ );
-			}
-			else { halt; }
-
-			return res;
-		}
-	}
-
-	var ust::string8 mut res;
-
-	auto mut parent= parent_.upgrade();
-	if( !parent.empty() )
-	{
-		auto parent_lock= parent.try_lock_imut();
-		if( !parent_lock.deref().GetParent().empty() )
-		{
-			res+= parent_lock.deref().ToString();
-			res+= "::";
-		}
-	}
-
-	res+= name_;
-	return res;
-}
-
 fn NamesScope::SetClass( mut this, ust::shared_ptr_nullable_mut</ClassType/> in_class_ )
 {
 	class_= in_class_;
@@ -1795,6 +1679,122 @@ fn NamesScope::GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisib
 fn NamesScope::CopyAccessRightsFrom( mut this, NamesScope& src )
 {
 	access_rights_= src.access_rights_;
+}
+
+fn NamesScope::stringify( this, ust::default_stringifier8 &mut stringifier )
+{
+	if( !class_.empty() )
+	{
+		auto class_lock= class_.try_lock_imut();
+		auto& class_type= class_lock.deref();
+		if_var( &base_template : class_type.generated_class_data.get</ ClassType::BaseTemplate />() )
+		{
+			// This is class template. So, parent namespace is arguments names scope.
+			with( &type_template : base_template.class_template.lock_imut().deref() )
+			{
+				auto parent= type_template.parent_names_scope.upgrade();
+				if( !parent.empty() )
+				{
+					auto parent_lock= parent.try_lock_imut();
+					if( !parent_lock.deref().GetParent().empty() )
+					{
+						ust::apply_value_to_stringifier( stringifier, parent.try_lock_imut().deref() );
+						ust::apply_value_to_stringifier( stringifier, "::" );
+					}
+					ust::apply_value_to_stringifier( stringifier, type_template.syntax_element.deref().name );
+
+					ust::apply_value_to_stringifier( stringifier, "</" );
+					foreach( &arg : base_template.signature_args )
+					{
+						if_var( &t : arg.get</Type/>() )
+						{
+							ust::apply_value_to_stringifier( stringifier, t );
+						}
+						else if_var( &v_ptr : arg.get</VariablePtr/>() )
+						{
+							with( &v : v_ptr.lock_imut().deref() )
+							{
+								StringifyConstantVariable( stringifier, v.t, v.constexpr_value );
+							}
+						}
+						else if_var( &type_template : arg.get</TypeTemplatePtr/>() )
+						{
+							ust::apply_value_to_stringifier( stringifier, type_template.lock_imut().deref() );
+						}
+
+						if( ust::ref_cmp_ne( arg, base_template.signature_args.back() ) )
+						{
+							ust::apply_value_to_stringifier( stringifier, ", " );
+						}
+					}
+					ust::apply_value_to_stringifier( stringifier, "/>" );
+
+					return;
+				}
+			}
+		}
+		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ TypeinfoClassDescription />() )
+		{
+			ust::apply_value_to_stringifier( stringifier, KeywordToString(Keyword::typeof_) );
+			ust::apply_value_to_stringifier( stringifier, "(" );
+			ust::apply_value_to_stringifier( stringifier, KeywordToString(Keyword::typeinfo_) );
+			ust::apply_value_to_stringifier( stringifier, "</" );
+			ust::apply_value_to_stringifier( stringifier, typeinfo_class_description.source_type );
+			ust::apply_value_to_stringifier( stringifier, "/>" );
+			ust::apply_value_to_stringifier( stringifier, ")" );
+			return;
+		}
+		if_var( &coroutine_type_description : class_type.generated_class_data.get</ CoroutineTypeDescription />() )
+		{
+			switch( coroutine_type_description.kind )
+			{
+			CoroutineKind::Generator -> { ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::generator_ ) ); },
+			CoroutineKind::AsyncFunc -> { ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::async_ ) ); },
+			}
+
+			// TODO - print inner refernces.
+
+			ust::apply_value_to_stringifier( stringifier, " " );
+
+			if( coroutine_type_description.non_sync_ )
+			{
+				ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::non_sync_ ) );
+			}
+
+			ust::apply_value_to_stringifier( stringifier, ": " );
+
+			ust::apply_value_to_stringifier( stringifier, coroutine_type_description.return_type );
+
+			if( coroutine_type_description.return_value_type == ValueType::Value )
+			{}
+			else if( coroutine_type_description.return_value_type == ValueType::ReferenceImut )
+			{
+				ust::apply_value_to_stringifier( stringifier, " &" );
+				ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::imut_ ) );
+			}
+			else if( coroutine_type_description.return_value_type == ValueType::ReferenceMut )
+			{
+				ust::apply_value_to_stringifier( stringifier, " &" );
+				ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::mut_ ) );
+			}
+			else { halt; }
+
+			return;
+		}
+	}
+
+	auto mut parent= parent_.upgrade();
+	if( !parent.empty() )
+	{
+		auto parent_lock= parent.try_lock_imut();
+		if( !parent_lock.deref().GetParent().empty() )
+		{
+			ust::apply_value_to_stringifier( stringifier, parent_lock.deref() );
+			ust::apply_value_to_stringifier( stringifier, "::" );
+		}
+	}
+
+	ust::apply_value_to_stringifier( stringifier, name_ );
 }
 
 fn GetRootNamespace( NamesScopePtr& names_scope ) : NamesScopePtr

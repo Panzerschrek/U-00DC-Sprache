@@ -79,14 +79,14 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 		auto class_type_ptr= global_thing.Get</ClassType/>();
 		if( !class_type_ptr.empty() )
 		{
-			return Type( class_type_ptr.try_to_non_nullable() ).ToString();
+			return ust::stringify8( class_type_ptr.try_lock_imut().deref() );
 		}
 	}
 	{
 		auto enum_type_ptr= global_thing.Get</Enum/>();
 		if( !enum_type_ptr.empty() )
 		{
-			return Type( enum_type_ptr.try_to_non_nullable() ).ToString();
+			return ust::stringify8( enum_type_ptr.try_lock_imut().deref() );
 		}
 	}
 	{

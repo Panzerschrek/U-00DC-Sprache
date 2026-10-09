@@ -2,6 +2,7 @@ import "/box.iu"
 import "/hash_map.iu"
 import "/shared_ptr.iu"
 import "/shared_ptr_final.iu"
+import "/stringifier.iu"
 import "/variant.iu"
 import "/vector.iu"
 import "../lex_synt_lib/syntax_elements.iu"
@@ -59,6 +60,8 @@ struct FundamentalType
 		ust::apply_value_to_hasher( hasher, fundamental_type );
 		// Ignore LLVM type.
 	}
+
+	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
 struct ArrayType
@@ -76,6 +79,8 @@ struct ArrayType
 		ust::apply_value_to_hasher( hasher, element_count );
 		// Ignore LLVM type.
 	}
+
+	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
 struct TupleType
@@ -91,6 +96,8 @@ struct TupleType
 		ust::apply_value_to_hasher( hasher, element_types );
 		// Ignore LLVM type.
 	}
+
+	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
 struct RawPointerType
@@ -106,6 +113,8 @@ struct RawPointerType
 		ust::apply_value_to_hasher( hasher, element_type );
 		// Ignore LLVM type.
 	}
+
+	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
 enum CallingConvention
@@ -172,8 +181,11 @@ struct FunctionType
 
 	fn PointerCanBeConvertedTo( this, FunctionType& dst ) : bool;
 	fn ReturnsCompositeValue( this ) : bool;
+
+	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
+fn StringifyFunctionParams( ust::default_stringifier8 &mut stringifier, ust::array_view_imut</FunctionType::Param/> params );
 fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) : ust::string8;
 
 struct FunctionPointerType
@@ -189,6 +201,8 @@ struct FunctionPointerType
 		ust::apply_value_to_hasher( hasher, function_type );
 		// Ignore LLVM type.
 	}
+
+	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
 //
@@ -274,6 +288,8 @@ struct ClassType
 	fn SetMemberVisibility( mut this, ust::string_view8 member_name, Synt::ClassVisibility visibility );
 
 	fn HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool;
+
+	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 
 	//
 	// Fields
@@ -367,9 +383,6 @@ public:
 
 	fn ReferenceIsConvertibleTo( this, Type& dst ) : bool;
 
-	// Convert type name to human-readable format.
-	fn ToString( this ) : ust::string8;
-
 	// TODO - add here an internal method for stringification into default stringificator.
 
 	op==( Type& l, Type& r ) : bool;
@@ -418,6 +431,8 @@ public:
 		// Unhandled type kind.
 		halt;
 	}
+
+	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 
 private:
 	auto ret_tags= ust::reference_notation::return_inner_references::param0;
@@ -530,7 +545,7 @@ struct VariableLite
 	{}
 }
 
-fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::string8;
+fn StringifyConstantVariable( ust::default_stringifier8 &mut stringifier, Type& t, LLVMValueRef constant_value );
 
 struct VariableTypeExtended
 {
@@ -666,6 +681,8 @@ struct Enum
 
 	bool no_discard= false;
 	bool referenced= false;
+
+	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
 type EnumTypePtr= ust::shared_ptr_mut</Enum/>;
@@ -776,8 +793,7 @@ class TypeTemplate final : TemplateBase
 		)
 	{}
 
-	// Convert type template name to human-readable format.
-	fn ToString( this ) : ust::string8;
+	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
 type TypeTemplatePtr = ust::shared_ptr_mut</TypeTemplate/>;
@@ -1144,9 +1160,6 @@ public:
 	auto& c_template_args_namespace_name= "_tp_ns";
 	fn IsInsideTemplate( this ) : bool;
 
-	// Get full name (with enclosing namespaces) un human-readable format.
-	fn ToString( this ) : ust::string8;
-
 	// Sometimes it's needed to identify class namespace. So, store pointer to class directly inside it's names_scope.
 	fn SetClass( mut this, ust::shared_ptr_nullable_mut</ClassType/> in_class_ );
 	fn GetClass( this ) : ust::shared_ptr_nullable_mut</ClassType/>;
@@ -1154,6 +1167,8 @@ public:
 	fn AddAccessRightsFor( mut this, ClassTypePtr& class_type, Synt::ClassVisibility visibility );
 	fn GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisibility;
 	fn CopyAccessRightsFrom( mut this, NamesScope& src );
+
+	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 
 private:
 	auto ret_tags= ust::reference_notation::return_inner_references::param0;

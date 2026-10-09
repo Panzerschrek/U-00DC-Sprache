@@ -80,7 +80,7 @@ fn PreprocessErrorArg( [ char8, s ]& str )
 
 fn PreprocessErrorArg( Type& t ) : ust::string8
 {
-	return t.ToString();
+	return ust::stringify8(t);
 }
 
 fn PreprocessErrorArg( ust::string8& s )

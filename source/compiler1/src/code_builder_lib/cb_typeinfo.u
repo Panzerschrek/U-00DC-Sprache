@@ -222,7 +222,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		.t= typeinfo_class,
 		.value_type= ValueType::ReferenceImut,
 		.location= Variable::Location::Pointer,
-		.name= Type(typeinfo_class).ToString()
+		.name= ust::stringify8( typeinfo_class.lock_imut().deref() )
 	};
 
 	unsafe

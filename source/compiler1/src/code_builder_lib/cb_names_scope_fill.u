@@ -24,7 +24,7 @@ fn CodeBuilder::NamesScopeFillClass(
 			{
 				if( is_struct )
 				{
-					REPORT_ERROR( VisibilityForStruct, names_scope_ptr, el.src_loc, Type(class_type).ToString() )
+					REPORT_ERROR( VisibilityForStruct, names_scope_ptr, el.src_loc, class_type.lock_imut().deref() )
 				}
 				else
 				{

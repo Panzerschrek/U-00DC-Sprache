@@ -444,7 +444,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 		{
 			if( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) < class_value[1] )
 			{
-				REPORT_ERROR( AccessingNonpublicClassMember, names_scope, names_scope_fetch.src_loc, names_scope_fetch.name, Type(class_non_null).ToString() )
+				REPORT_ERROR( AccessingNonpublicClassMember, names_scope, names_scope_fetch.src_loc, names_scope_fetch.name, class_non_null.lock_imut().deref() )
 			}
 
 			if( names_scope_fetch.name == KeywordToString( Keyword::constructor_ ) ||
@@ -504,7 +504,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 				TemplateInstantiationRequired,
 				names_scope,
 				names_scope_fetch.src_loc,
-				( type_templates.empty() ? ust::string8() : type_templates.front().lock_imut().deref().ToString() ) )
+				( type_templates.empty() ? ust::string8() : ust::stringify8( type_templates.front().lock_imut().deref() ) ) )
 		}
 		return ust::null_optional;
 	}
@@ -671,7 +671,7 @@ fn CodeBuilder::LookupName( mut this, NamesScopePtr& names_scope, FunctionContex
 			{
 				if( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) <  class_value[1] )
 				{
-					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, name, Type(class_non_null).ToString() )
+					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, name, class_non_null.lock_imut().deref() )
 				}
 
 				if( name == KeywordToString( Keyword::constructor_ ) ||

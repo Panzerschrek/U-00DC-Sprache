@@ -106,7 +106,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			// We support value params with references inside, but no second order inner references.
 			if( param.t.GetReferenceIndirectionDepth() > 1s )
 			{
-				var ust::string8 field_name= ust::stringify8( "param ", param_index, " of type ", param.t.ToString() );
+				var ust::string8 field_name= ust::stringify8( "param ", param_index, " of type ", param.t );
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
 			}
 
@@ -123,7 +123,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			// since it would create second order inner references, which aren't allowed for coroutines.
 			if( reference_tag_count > 0u )
 			{
-				var ust::string8 field_name= ust::stringify8( "param ", param_index, " of type ", param.t.ToString() );
+				var ust::string8 field_name= ust::stringify8( "param ", param_index, " of type ", param.t );
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
 			}
 

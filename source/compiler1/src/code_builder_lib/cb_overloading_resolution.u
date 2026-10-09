@@ -441,30 +441,31 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 
 fn ActualArgsToString( ust::array_view_imut</VariableTypeExtended/> actual_args ) : ust::string8
 {
-	var ust::string8 mut result;
+	var ust::default_stringifier8 mut stringifier;
+
 	foreach( &type_extended : actual_args )
 	{
-		result+= type_extended.t.ToString();
-		result+= " ";
+		ust::apply_value_to_stringifier( stringifier, type_extended.t );
+		ust::apply_value_to_stringifier( stringifier, " " );
 
 		if( type_extended.value_type == ValueType::ReferenceMut )
 		{
-			result+= "&mut ";
+			ust::apply_value_to_stringifier( stringifier, "&mut " );
 		}
 		else if( type_extended.value_type == ValueType::ReferenceImut )
 		{
-			result+= "&imut ";
+			ust::apply_value_to_stringifier( stringifier, "&imut " );
 		}
 
-		result+= "_"; // use some dummy for param name.
+		ust::apply_value_to_stringifier( stringifier, "_" ); // use some dummy for param name.
 
 		if( ust::ref_cmp_ne( type_extended, actual_args.back() ) )
 		{
-			result+= ", ";
+			ust::apply_value_to_stringifier( stringifier, ", " );
 		}
 	}
 
-	return result;
+	return move(stringifier).get();
 }
 
 fn CodeBuilder::GetFunctionWithSameType( FunctionsSet & mut functions_set, FunctionType& function_type ) : ust::optional_ref_mut</ FunctionVariable /> @(ust::reference_notation::return_inner_references::param0)
@@ -943,7 +944,7 @@ fn CodeBuilder::GetOverloadedOperator(
 				auto& class_type= visibility[0];
 				if( names_scope.lock_imut().deref().GetAccessFor( class_type ) < visibility[1] )
 				{
-					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, OverloadedOperatorToString( operator ), Type(class_type).ToString() )
+					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, OverloadedOperatorToString( operator ), class_type.lock_imut().deref() )
 				}
 			}
 
