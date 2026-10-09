@@ -2104,7 +2104,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 								SwitchUndhandledValue,
 								names_scope,
 								ust::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
-								ust::stringify8(current_high + 1u128) )
+								current_high + 1u128 )
 						}
 						else
 						{
@@ -2112,8 +2112,8 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 								SwitchUndhandledRange,
 								names_scope,
 								ust::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
-								ust::stringify8(current_high + 1u128),
-								ust::stringify8(next_low - 1u128) )
+								current_high + 1u128,
+								next_low - 1u128 )
 						}
 					}
 				}
@@ -2124,10 +2124,10 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 					SwitchRangesOverlapping,
 					names_scope,
 					ust::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
-					ust::stringify8(current_range.low ),
-					ust::stringify8(current_range.high),
-					ust::stringify8(next_range.low ),
-					ust::stringify8(next_range.high) )
+					current_range.low ,
+					current_range.high,
+					next_range.low ,
+					next_range.high )
 			}
 		}
 
@@ -2143,20 +2143,11 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 				{
 					if( begin_gap_size == 1u128 )
 					{
-						REPORT_ERROR(
-							SwitchUndhandledValue,
-							names_scope,
-							all_ranges.front().src_loc,
-							ust::stringify8(type_low) )
+						REPORT_ERROR( SwitchUndhandledValue, names_scope, all_ranges.front().src_loc, type_low )
 					}
 					else
 					{
-						REPORT_ERROR(
-							SwitchUndhandledRange,
-							names_scope,
-							all_ranges.front().src_loc,
-							ust::stringify8(type_low),
-							ust::stringify8(first_range_low - 1u128) )
+						REPORT_ERROR( SwitchUndhandledRange, names_scope, all_ranges.front().src_loc, type_low, first_range_low - 1u128 )
 					}
 				}
 			}
@@ -2170,20 +2161,11 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 				{
 					if( end_gap_size == 1u128 )
 					{
-						REPORT_ERROR(
-							SwitchUndhandledValue,
-							names_scope,
-							all_ranges.back().src_loc,
-							ust::stringify8(type_high) )
+						REPORT_ERROR( SwitchUndhandledValue, names_scope, all_ranges.back().src_loc, type_high )
 					}
 					else
 					{
-						REPORT_ERROR(
-							SwitchUndhandledRange,
-							names_scope,
-							all_ranges.back().src_loc,
-							ust::stringify8(last_range_high + 1u128),
-							ust::stringify8(type_high) )
+						REPORT_ERROR( SwitchUndhandledRange, names_scope, all_ranges.back().src_loc, last_range_high + 1u128, type_high )
 					}
 				}
 			}
@@ -2196,20 +2178,11 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 			{
 				if( type_high == type_low )
 				{
-					REPORT_ERROR(
-						SwitchUndhandledValue,
-						names_scope,
-						switch_operator.src_loc,
-						ust::stringify8(type_high) )
+					REPORT_ERROR( SwitchUndhandledValue, names_scope, switch_operator.src_loc, type_high )
 				}
 				else
 				{
-					REPORT_ERROR(
-						SwitchUndhandledRange,
-						names_scope,
-						switch_operator.src_loc,
-						ust::stringify8(type_low),
-						ust::stringify8(type_high) )
+					REPORT_ERROR( SwitchUndhandledRange, names_scope, switch_operator.src_loc, type_low, type_high )
 				}
 			}
 		}
