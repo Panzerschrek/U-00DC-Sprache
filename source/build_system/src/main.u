@@ -1563,7 +1563,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 	// Hardcode all files that we need to compile. There is no other way to do this.
 	// It's not possible to use a usual build script for ustlib, since building it requires building ustlib first.
 
-	var [ ust::filesystem_path_view, 9 ] sources_common
+	var [ ust::filesystem_path_view, 10 ] sources_common
 	[
 		"arena_allocator.u",
 		"file_helpers.u",
@@ -1573,6 +1573,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"stdin.u",
 		"string_conversions_floating_point.u",
 		"string_conversions_integer.u",
+		"stringifier.u",
 		"utf.u",
 	];
 
