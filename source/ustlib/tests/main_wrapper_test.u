@@ -1,7 +1,6 @@
 //##success_test
 import "../imports/main_wrapper.iu"
 import "../imports/stdout_ext.iu"
-import "../imports/stringification.iu"
 
 pretty_main
 {
