@@ -3,7 +3,7 @@ import "/main_wrapper.iu"
 import "/semaphore.iu"
 import "/shared_ptr_mt_final.iu"
 import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "/sm_async_net/runner.iu"
 import "/sm_async_net/tcp_listener.iu"
 
@@ -26,19 +26,19 @@ fn async ServerFunc( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore
 	var ust::socket_address_v4 address( ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ), 57854u16 );
 
 	ust::stdout_print(
-		ust::concat(
+		ust::stringify8(
 			"starting TCP server listening on address ",
-			address.get_ip().to_string(),
+			address.get_ip(),
 			" and port ",
-			ust::to_string8( address.get_port() ),
+			address.get_port(),
 			"\n" ) );
 
 	ust::stdout_print(
-		ust::concat(
+		ust::stringify8(
 			"Open it in browser via link like \"http://",
-			address.get_ip().to_string(),
+			address.get_ip(),
 			":",
-			ust::to_string8( address.get_port() ),
+			address.get_port(),
 			"\"\n",
 			"Press Ctrl+C to stop it\n" ) );
 
@@ -95,7 +95,7 @@ fn async ClientHandlerFunc( sm_async_net::tcp_stream mut stream, ust::socket_add
 	WriteAll( stream, g_http_response_status_line ).await;
 	// Then headers follow.
 	WriteAll( stream, g_http_respense_headers ).await;
-	WriteAll( stream, ust::concat( "Content-Length: ", ust::to_string8( typeinfo</ typeof(g_html_page_contents) />.size_of ), g_http_line_end ) ).await;
+	WriteAll( stream, ust::stringify8( "Content-Length: ", typeinfo</ typeof(g_html_page_contents) />.size_of, g_http_line_end ) ).await;
 	// Actual message is separated via empty line.
 	WriteAll( stream, g_http_respense_header_end_marker ).await;
 	// Actual HTML page (or some other contents).
