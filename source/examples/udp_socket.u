@@ -2,7 +2,7 @@
 
 import "/main_wrapper.iu"
 import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "/udp_socket.iu"
 
 pretty_main
@@ -39,13 +39,13 @@ pretty_main
 
 		variant_visit( &a : address )
 		{
-			ust::stdout_print( ust::concat(
+			ust::stdout_print( ust::stringify8(
 				"Received message \"",
 				received_message,
 				"\" from ip ",
-				a.get_ip().to_string(),
+				a.get_ip(),
 				" and port ",
-				ust::to_string8( a.get_port() ),
+				a.get_port(),
 				"\n" ) );
 		}
 	}

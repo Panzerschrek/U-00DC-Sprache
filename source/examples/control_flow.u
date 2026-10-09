@@ -2,7 +2,7 @@
 
 import "/main_wrapper.iu"
 import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 
 pretty_main
 {
@@ -13,7 +13,7 @@ pretty_main
 	for( auto mut i= 0u; i <= 75u; ++i )
 	{
 		auto mask= GetDiv15Mask(i);
-		ust::stdout_print( "Mask for " + ust::to_string8(i) + " is " + ust::to_string8(mask) + "\n" );
+		ust::stdout_print( ust::stringify8( "Mask for ", i, " is ", mask, "\n" ) );
 	}
 
 	return 0;
@@ -26,7 +26,7 @@ fn SimpleLoop()
 	loop
 	{
 		i+= i;
-		ust::stdout_print( "Loop iteration counter: " + ust::to_string8(i) + "\n" );
+		ust::stdout_print( ust::stringify8( "Loop iteration counter: ", i, "\n" ) );
 		if( i > 100 )
 		{
 			break;
@@ -44,10 +44,10 @@ fn WhileLoop( u32 x )
 		i+= i / 5u;
 		if( i % 7u < 2u )
 		{
-			ust::stdout_print( "While loop skip iteration " + ust::to_string8(i) + "\n" );
+			ust::stdout_print( ust::stringify8( "While loop skip iteration ", i, "\n" ) );
 			continue; // Go direct to the next loop iteration.
 		}
-		ust::stdout_print( "While loop iteration counter: " + ust::to_string8(i) + "\n" );
+		ust::stdout_print( ust::stringify8( "While loop iteration counter: ", i, "\n" ) );
 	}
 }
 
@@ -62,10 +62,10 @@ fn ForLoop( f32 x )
 	{
 		if( (i32(i) & 3) == 0 )
 		{
-			ust::stdout_print(  "For loop skip iteration " + ust::to_string8( i32(i) ) + "\n" );
+			ust::stdout_print( ust::stringify8( "For loop skip iteration ",i32(i), "\n" ) );
 			continue; // Go to the loop iteration part.
 		}
-		ust::stdout_print( "For loop iteration counter: " + ust::to_string8( i32(i) ) + "\n" );
+		ust::stdout_print( ust::stringify8( "For loop iteration counter: ", i32(i), "\n" ) );
 	}
 }
 
