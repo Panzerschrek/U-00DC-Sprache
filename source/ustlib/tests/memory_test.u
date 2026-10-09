@@ -41,6 +41,16 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( p != really_zero_p );
 		halt if( !ust::is_nullptr( p ) );
 	}
+	{
+		type FnPtrType= ( fn() : i32 );
+		var FnPtrType ptr= Bar;
+		var size_type i= ust::function_ptr_to_int(ptr);
+		halt if( i == 0s );
+		var FnPtrType ptr_casted_back= unsafe( ust::int_to_function_ptr</ FnPtrType />( i ) );
+		halt if( ptr() != 123 );
+	}
 
 	return 0;
 }
+
+fn Bar() : i32 { return 123; }
