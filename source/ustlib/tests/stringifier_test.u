@@ -124,6 +124,21 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( !( ptr_value.size() == 10s || ptr_value.size() == 18s ) );
 		halt if( ptr_value == "0x00000000" || ptr_value == "0x0000000000000000" );
 	}
+	{ // Stringify null function pointer.
+		var ( fn( i32 x ) : f32 ) ptr= zero_init;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ptr );
+		var ust::string8 ptr_value= move( stringifier ).get();
+		halt if( !( ptr_value == "0x00000000" || ptr_value == "0x0000000000000000" ) );
+	}
+	{ // Stringify non-null function pointer.
+		var ( fn( i32 x ) : i32 ) ptr= TestFunction;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ptr );
+		var ust::string8 ptr_value= move( stringifier ).get();
+		halt if( ptr_value == "0x00000000" || ptr_value == "0x0000000000000000" );
+		halt if( !ptr_value.starts_with( "0x" ) );
+	}
 	{ // Stringify a typeinfo structure.
 		var ust::default_stringifier8 mut stringifier;
 		ust::apply_value_to_stringifier( stringifier, typeinfo</bool/> );
@@ -349,3 +364,5 @@ public:
 private:
 	i32 x_;
 }
+
+fn TestFunction( i32 x ) : i32 { return x + 5; }

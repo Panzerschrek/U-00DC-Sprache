@@ -76,6 +76,9 @@ fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
 	}
 	else static_if( ti.is_function_pointer )
 	{
+		// Stringify function pointers as byte types.
+		var type_select</ typeinfo</size_type/>.size_of == 4s, byte32, byte64 /> mut pointer_bytes( function_ptr_to_int( t ) );
+		apply_value_to_stringifier( stringifier, pointer_bytes );
 	}
 	else static_if( ti.is_tuple )
 	{
