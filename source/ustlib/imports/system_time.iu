@@ -1,4 +1,5 @@
 import "hash_apply.iu"
+import "stringifier_apply.iu"
 import "type_traits.iu"
 
 namespace ust
@@ -48,6 +49,14 @@ public:
 	{
 		// Just perform field-by-field hashing of an implementation struct.
 		apply_value_to_hasher( hasher, impl_ );
+	}
+
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		// Just perform field-by-field stringification of an implementation struct.
+		apply_value_to_stringifier( stringifier, impl_ );
 	}
 
 public:

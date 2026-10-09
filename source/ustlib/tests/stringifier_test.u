@@ -7,6 +7,7 @@ import "../imports/inet_address.iu"
 import "../imports/string.iu"
 import "../imports/stringifier.iu"
 import "../imports/stringifier_apply.iu"
+import "../imports/system_time.iu"
 import "../imports/variant.iu"
 import "../imports/vector.iu"
 
@@ -300,6 +301,12 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::default_stringifier8 mut stringifier;
 		ust::apply_value_to_stringifier( stringifier, ust::duration::from_nanoseconds( 54367543784336u ) );
 		halt if( move( stringifier ).get() != "54367543784336ns" );
+	}
+	{ // Stringify system time.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::system_time::now() );
+		var ust::string8 s= move( stringifier ).get();
+		halt if( s.empty() );
 	}
 
 	return 0;
