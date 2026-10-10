@@ -2263,6 +2263,22 @@ llvm::Value* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, co
 	if( generate_tbaa_metadata_ )
 		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( type ) );
 
+	// For "load" instructions created for enum values create range metadata.
+	if( const auto enum_= type.GetEnumType() )
+	{
+		if( enum_->syntax_element == nullptr ) // Make sure it's complete.
+		{
+			// TODO - handle case with full unsigned range required.
+			const uint32_t num_bits= 8u * uint32_t( GetFundamentalTypeSize( enum_->underlying_type.fundamental_type ) );
+			llvm::MDBuilder builder( llvm_context_ );
+			result->setMetadata(
+				llvm::LLVMContext::MD_range,
+				builder.createRange(
+					llvm::APInt( num_bits, uint64_t(0) ),
+					llvm::APInt( num_bits, uint64_t( enum_->element_count ) ) ) );
+		}
+	}
+
 	return result;
 }
 
