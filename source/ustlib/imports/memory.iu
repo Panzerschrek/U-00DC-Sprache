@@ -66,7 +66,7 @@ fn enable_if( typeinfo</T/>.is_function_pointer ) function_ptr_to_int( T ptr ) :
 {
 	unsafe
 	{
-		// Cast reference to $(T) to reference to a byte-type. Load byte-type value to initialize byte-type variable.
+		// Cast reference to function pointer to reference to a byte-type. Load byte-type value to initialize byte-type variable.
 		// Casting a reference to pointer to a byte-type reference is not UB.
 		auto ptr_storage= cast_ref_unsafe</ memory_impl::pointer_size_byte_type />( ptr );
 		// Cast byte-type reference to size_type type and load it.
@@ -83,7 +83,7 @@ fn enable_if( typeinfo</T/>.is_function_pointer ) int_to_function_ptr( size_type
 		// Cast reference to size_type to reference to a byte-type. Load byte-type value to initialize byte-type variable.
 		// Casting a reference to size_type to a byte-type reference is not UB.
 		auto ptr_storage= cast_ref_unsafe</ memory_impl::pointer_size_byte_type />( i );
-		// Cast byte-type reference to $(T) type and load it.
+		// Cast byte-type reference to function pointer type and load it.
 		// Casting byte-type rerefernce to reference to any pointer type is not UB.
 		return cast_ref_unsafe</ T />( ptr_storage );
 	}

@@ -61,6 +61,7 @@ struct FundamentalType
 		// Ignore LLVM type.
 	}
 
+	// Stringify into human-readable format.
 	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
@@ -80,6 +81,7 @@ struct ArrayType
 		// Ignore LLVM type.
 	}
 
+	// Stringify into human-readable format.
 	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
@@ -97,6 +99,7 @@ struct TupleType
 		// Ignore LLVM type.
 	}
 
+	// Stringify into human-readable format.
 	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
@@ -114,6 +117,7 @@ struct RawPointerType
 		// Ignore LLVM type.
 	}
 
+	// Stringify into human-readable format.
 	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
@@ -182,6 +186,7 @@ struct FunctionType
 	fn PointerCanBeConvertedTo( this, FunctionType& dst ) : bool;
 	fn ReturnsCompositeValue( this ) : bool;
 
+	// Stringify into human-readable format.
 	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
@@ -202,6 +207,7 @@ struct FunctionPointerType
 		// Ignore LLVM type.
 	}
 
+	// Stringify into human-readable format.
 	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
@@ -289,6 +295,7 @@ struct ClassType
 
 	fn HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool;
 
+	// Stringify into human-readable format.
 	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 
 	//
@@ -430,6 +437,7 @@ public:
 		halt;
 	}
 
+	// Stringify into human-readable format.
 	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 
 private:
@@ -680,6 +688,7 @@ struct Enum
 	bool no_discard= false;
 	bool referenced= false;
 
+	// Stringify into human-readable format.
 	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
@@ -791,6 +800,7 @@ class TypeTemplate final : TemplateBase
 		)
 	{}
 
+	// Stringify into human-readable format.
 	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 }
 
@@ -1166,6 +1176,7 @@ public:
 	fn GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisibility;
 	fn CopyAccessRightsFrom( mut this, NamesScope& src );
 
+	// Stringify into human-readable format.
 	fn stringify( this, ust::default_stringifier8 &mut stringifier );
 
 private:
