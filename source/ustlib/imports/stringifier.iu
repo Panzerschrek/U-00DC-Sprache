@@ -12,7 +12,7 @@ class default_stringifier8
 	// Stringify always into "void".
 	op()( mut this, void x );
 
-	// Stringify into "false" or true"
+	// Stringify into "false" or true".
 	op()( mut this, bool x );
 
 	// Stringify into decimal number.

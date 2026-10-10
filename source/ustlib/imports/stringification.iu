@@ -1,3 +1,20 @@
+//
+// This file contains helper functions for stringification.
+// stringify8/stringify16/stringify32 functions stringify and concatenate given arguments.
+// Variable number of arguments is supported (up to some number).
+//
+// Fundamental types, enums, function pointers, raw pointers, arrays, tuples and some structures can be automatically stringifier.
+// If you need custom stringification logic for your struct/class, create a template method inside it called "stringify" (as shown below):
+//
+//  template</ type Stringifier />
+//  fn stringify( this, Stringifier &mut stringifier ) { }
+//
+// "Stringifier" type is assumed to have interface like "ust::default_stringifier8" class.
+// This method should usually contain calls to "ust::apply_value_to_stringifier" functions for fileds.
+//
+// Note that for string-only (string-like) arguments it's better to use "ust::concat" functions, they are usually a little bit faster.
+//
+
 import "string.iu"
 import "stringifier.iu"
 

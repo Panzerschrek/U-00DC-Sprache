@@ -1,3 +1,13 @@
+//
+// This file contains functions allowing stringifying given arguments and printing them into stdout/stderr.
+// Variable number of arguments is supported (up to some number).
+// They work similar to stringify8/stringify16/stringify32 functions,
+// but print result into stdout/stderr instead of returning it as a string.
+//
+// Newline is always added in stdout_print_line/stderr_print_line functions.
+// If you don't need it, consider using stdout_print/stderr_print functions directly.
+//
+
 import "stdout.iu"
 import "string.iu"
 import "stringifier.iu"

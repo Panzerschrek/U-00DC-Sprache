@@ -1,3 +1,8 @@
+//
+// This file includes helper functions allowing stringification of many kinds of types.
+// You should usually call "ust::apply_value_to_stringifier" for members of classes for which you implement "stringify" method.
+//
+
 import "memory.iu"
 import "type_traits.iu"
 
