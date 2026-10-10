@@ -101,8 +101,6 @@ public:
 	template</type Stringifier/>
 	fn stringify( this, Stringifier &mut stringifier )
 	{
-		var string8 mut res( 32s + 7s, ':' );
-
 		var [ u8, 16 ] octets= get_octets();
 
 		for( var size_type mut i= 0s; i < 8s; ++i )
