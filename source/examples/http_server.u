@@ -30,7 +30,7 @@ pretty_main
 			var size_type bytes_read= stream.read( request_text.range().to_byte8_range() ).try_take();
 			request_text.resize( bytes_read, '\0' );
 
-			ust::stdout_print( "\n" );
+			ust::stdout_print_line();
 			ust::stdout_print( request_text );
 		}
 

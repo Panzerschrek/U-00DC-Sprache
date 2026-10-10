@@ -2,7 +2,7 @@
 
 import "/assert.iu"
 import "/main_wrapper.iu"
-import "/stdout.iu"
+import "/stdout_ext.iu"
 import "/string.iu"
 
 pretty_main
@@ -19,25 +19,25 @@ pretty_main
 	var ust::string8 mut s= char_arr;
 	assert( s == "some" );
 	ust::stdout_print( s );
-	ust::stdout_print( "\n" );
+	ust::stdout_print_line();
 
 	// This class supports concatenations.
 	s+= " foo";
 	assert( s == "some foo" );
 	ust::stdout_print( s );
-	ust::stdout_print( "\n" );
+	ust::stdout_print_line();
 
 	// Adding strings is also possible.
 	auto s2= s + s;
 	assert( s2 == "some foosome foo" );
 	ust::stdout_print( s2 );
-	ust::stdout_print( "\n" );
+	ust::stdout_print_line();
 
 	// "string8 + string literal" and "string literal + string8" additions are supported too.
 	var ust::string8 s3= s + "!\n";
 	assert( s3 == "some foo!\n" );
 	ust::stdout_print( s3 );
-	ust::stdout_print( "\n" );
+	ust::stdout_print_line();
 
 	// ust::string8 supports order comparison.
 	assert( s < s3 );
@@ -49,7 +49,7 @@ pretty_main
 	s[1s]= '0';
 	assert( s == "s0me foo" );
 	ust::stdout_print( s );
-	ust::stdout_print( "\n" );
+	ust::stdout_print_line();
 
 	// There are also front/back methods.
 	assert( s3.front() == 's' );
@@ -57,26 +57,26 @@ pretty_main
 	s.back() = '!';
 	assert( s[7s] == '!' );
 	ust::stdout_print( s );
-	ust::stdout_print( "\n" );
+	ust::stdout_print_line();
 
 	// "range" method returns a view object.
 	auto mut s2_range= s2.range();
 	s2_range.drop_front();
 	assert( s2_range == "ome foosome foo" );
 	ust::stdout_print( s2_range );
-	ust::stdout_print( "\n" );
+	ust::stdout_print_line();
 
 	// It's possible to obtain a subrange.
 	auto s2_subrange= s2_range.subrange( 2s, 6s );
 	assert( s2_subrange == "e fo" );
 	ust::stdout_print( s2_subrange );
-	ust::stdout_print( "\n" );
+	ust::stdout_print_line();
 
 	// Range object allows also to mutate source string.
 	s.range()[3s] = '_';
 	assert( s == "s0m_ fo!" );
 	ust::stdout_print( s );
-	ust::stdout_print( "\n" );
+	ust::stdout_print_line();
 
 	return 0;
 }

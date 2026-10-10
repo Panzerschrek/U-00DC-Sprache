@@ -1,4 +1,4 @@
-import "/stdout.iu"
+import "/stdout_ext.iu"
 import "logger.iu"
 
 
@@ -18,7 +18,7 @@ fn Logger::LogVerbose( mut this, ust::string_view8 message )
 	}
 
 	ust::stdout_print( message );
-	ust::stdout_print( "\n" );
+	ust::stdout_print_line();
 }
 
 fn Logger::LogInfo( mut this, ust::string_view8 message )
@@ -29,13 +29,13 @@ fn Logger::LogInfo( mut this, ust::string_view8 message )
 	}
 
 	ust::stdout_print( message );
-	ust::stdout_print( "\n" );
+	ust::stdout_print_line();
 }
 
 fn Logger::LogError( mut this, ust::string_view8 message )
 {
 	ust::stderr_print( message );
-	ust::stderr_print( "\n" );
+	ust::stdout_print_line();
 }
 
 } // namespace BK
