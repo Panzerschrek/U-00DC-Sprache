@@ -96,7 +96,7 @@ op default_stringifier8::()( mut this, f64 x )
 
 op default_stringifier8::()( mut this, char16 x )
 {
-	// TODO - handle broken/wierd UTF-16 here?
+	// TODO - handle broken/wired UTF-16 here?
 	auto mut view= single_element_array_view( x );
 	utf::push_code_point_to_string( str_, utf::extract_code_point_or_null_from_string( view ) );
 }
@@ -394,14 +394,14 @@ op default_stringifier32::()( mut this, char8 x )
 {
 	// Giving only single char we can't do anything but assuming it's just an 7-bit code point.
 	// Normally this code should not be executed, whole strings should be processed instead.
-	utf::push_code_point_to_string( str_, char32(x) );
+	str_.push_back( char32(x) );
 }
 
 op default_stringifier32::()( mut this, char16 x )
 {
 	// Giving only single char we can't do anything but assuming it's just a 16-bit code point.
 	// Normally this code should not be executed, whole strings should be processed instead.
-	utf::push_code_point_to_string( str_, char32(x) );
+	str_.push_back( char32(x) );
 }
 
 op default_stringifier32::()( mut this, byte8 x )
@@ -440,7 +440,7 @@ op default_stringifier32::()( mut this, array_view_imut</char8/> mut arr )
 		}
 		// TODO - handle cases when given string contains broken UTF-8 or zero chars?
 
-		utf::push_code_point_to_string( str_, cp );
+		str_.push_back( cp );
 	}
 }
 
@@ -455,7 +455,7 @@ op default_stringifier32::()( mut this, array_view_imut</char16/> mut arr )
 		}
 		// TODO - handle cases when given string contains broken UTF-16 or zero chars?
 
-		utf::push_code_point_to_string( str_, cp );
+		str_.push_back( cp );
 	}
 }
 
