@@ -247,7 +247,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// Socket address stringification.
 	halt if(
-		ust::stringify8( ust::socket_address_v6::parse(  "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]:7823" ).try_deref() ) !=
+		ust::stringify8( ust::socket_address_v6::parse( "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]:7823" ).try_deref() ) !=
 		"[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]:7823" );
 
 	halt if(
