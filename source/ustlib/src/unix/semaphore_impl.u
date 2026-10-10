@@ -2,7 +2,7 @@ import "../../imports/memory.iu"
 import "../../imports/alloc.iu"
 import "../../imports/atomic.iu"
 import "../../imports/semaphore_impl.iu"
-import "../../imports/string_conversions.iu"
+import "../../imports/stringification.iu"
 import "semaphore.iu"
 
 namespace ust
@@ -27,7 +27,7 @@ fn create_semaphore( u32 initial_value ) unsafe : semaphore_handle_t
 		var pid_t pid= unsafe( ::getpid() );
 		var u32 id= unsafe( atomic_inc( semaphore_unique_index ) );
 
-		var string8 mut name_nt= ust::concat( "/u_semaphore_", to_string8( pid ), "_", to_string8( id ), "\0" );
+		var string8 mut name_nt= ust::stringify8( "/u_semaphore_", pid, "_", id, "\0" );
 
 		var $(sem_t) res= unsafe( ::sem_open( name_nt.data(), i32(O_CREAT | O_EXCL), mode_t(0o744), initial_value ) );
 		halt if( is_nullptr(res) );

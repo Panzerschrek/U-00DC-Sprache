@@ -2,7 +2,7 @@ import "/assert.iu"
 import "/hash_set.iu"
 import "/number_parsing.iu"
 import "/shared_ptr.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "/utf.iu"
 import "/CodeBuilderLib/keywords.iu"
 import "number_parsing_utils.iu"
@@ -274,9 +274,7 @@ private:
 
 			errors_.push_back(
 				LexSyntError(
-					expansion_src_loc,
-					ust::concat( "Macro expansion depth ", ust::to_string8(depth_limit), " reached" )
-				) );
+					expansion_src_loc, ust::stringify8( "Macro expansion depth ", depth_limit, " reached" ) ) );
 
 			return T();
 		}
@@ -290,7 +288,7 @@ private:
 			errors_.push_back(
 				LexSyntError(
 					expansion_src_loc,
-					ust::concat( "Macro expansions limit ", ust::to_string8(total_expansions_limit), " reached" )
+					ust::stringify8( "Macro expansions limit ", total_expansions_limit, " reached" )
 				) );
 
 			return T();
@@ -299,12 +297,12 @@ private:
 		// Append expansion point line/column in order to make macro unique identifiers unique in different macto expansions.
 		// Use only line/column and not use file index/macro expansion index, bacause we need to produce same result for file imported in different files.
 		var ust::string8 mut macro_unique_identifiers_base_name=
-			ust::concat(
+			ust::stringify8(
 				macro_unique_identifiers_base_name_,
 				"_l",
-				ust::to_string8( expansion_src_loc.GetLine() ),
+				expansion_src_loc.GetLine(),
 				"_c",
-				ust::to_string8( expansion_src_loc.GetColumn() ) );
+				expansion_src_loc.GetColumn() );
 
 		var Lexems lexems_expanded= ExpandMacroImpl( macro, macro_unique_identifiers_base_name );
 
@@ -4725,13 +4723,13 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 						result_element.lexem.text,
 						lambda[&]() : ust::string8
 						{
-							return ust::concat(
+							return ust::stringify8(
 								"_macro_ident_",
 								result_element.lexem.text,
 								"_",
 								 macro_unique_identifiers_base_name,
 								"_",
-								ust::to_string8(map_size) );
+								map_size );
 						} );
 
 				result_lexems.push_back(

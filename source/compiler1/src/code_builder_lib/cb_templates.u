@@ -20,7 +20,7 @@ fn CreateTemplateErrorsContext(
 	auto parent_names_scope= template_.parent_names_scope.upgrade();
 	if( !parent_names_scope.empty() )
 	{
-		context_name= parent_names_scope.try_lock_imut().deref().ToString();
+		context_name= ust::stringify8( parent_names_scope.try_lock_imut().deref() );
 		if( !context_name.empty() )
 		{
 			context_name+= "::";
@@ -39,38 +39,42 @@ fn CreateTemplateErrorsContext(
 		auto args_names_scope_lock= args_names_scope_ptr.lock_imut();
 		var NamesScope& args_names_scope= args_names_scope_lock.deref();
 
-		result.args_description+= "[ with ";
+		var ust::default_stringifier8 mut stringifier;
+
+		ust::apply_value_to_stringifier( stringifier, "[ with " );
 		foreach( &param : template_.params )
 		{
-			result.args_description+= param.name;
-			result.args_description+= " = ";
+			ust::apply_value_to_stringifier( stringifier, param.name );
+			ust::apply_value_to_stringifier( stringifier, " = " );
 
 			auto arg_ptr= args_names_scope.GetThisScopeValue( param.name ).try_deref().Get</TemplateArg/>();
 			auto arg_lock= arg_ptr.try_lock_imut();
 			var TemplateArg& arg= arg_lock.deref();
 			if_var( &t : arg.something.get</Type/>() )
 			{
-				result.args_description+= t.ToString();
+				ust::apply_value_to_stringifier( stringifier, t );
 			}
 			else if_var( &v_ptr : arg.something.get</VariablePtr/>() )
 			{
 				with( &v : v_ptr.lock_imut().deref() )
 				{
-					result.args_description+= ConstantVariableToString( v.t, v.constexpr_value );
+					StringifyConstantVariable( stringifier, v.t, v.constexpr_value );
 				}
 			}
 			else if_var( &type_template : arg.something.get</TypeTemplatePtr/>() )
 			{
-				result.args_description += type_template.lock_imut().deref().ToString();
+				ust::apply_value_to_stringifier( stringifier, type_template.lock_imut().deref() );
 			}
 			else { halt; }
 
 			if( ust::ref_cmp_ne( param, template_.params.back() ) )
 			{
-				result.args_description+= ", ";
+				ust::apply_value_to_stringifier( stringifier, ", " );
 			}
 		}
-		result.args_description+= " ]";
+		ust::apply_value_to_stringifier( stringifier, " ]" );
+
+		result.args_description= move(stringifier).get();
 	}
 
 	with( mut lock : instantiation_point_names_scope_ptr.lock_imut().deref().GetErrors().try_lock_mut() )

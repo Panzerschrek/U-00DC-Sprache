@@ -1,6 +1,7 @@
 import "helpers.iu"
 import "container_utils.iu"
 import "reference_notation.iu"
+import "stringifier_apply.iu"
 
 namespace ust
 {
@@ -166,6 +167,20 @@ public:
 	{
 		ignore_unused(n);
 		return r.empty();
+	}
+
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		if( empty() )
+		{
+			apply_value_to_stringifier( stringifier, "null" );
+		}
+		else
+		{
+			apply_value_to_stringifier( stringifier, try_deref() );
+		}
 	}
 
 private:

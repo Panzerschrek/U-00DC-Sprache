@@ -35,8 +35,8 @@ if you want to learn more, read its sources yourself.
 * Additional functions for files reading/writing (file_helpers.iu).
 * File metadata structures (file_metadata.iu).
 * Filesystem-related functions (filesystem.iu).
-* Hashing functions (hash.iu).
-  Hashing of all basic language types is supported.
+* Utilities for hashing (hash_apply.iu).
+* Default hasher class (hasher.iu).
 * Various helpers (helpers.iu).
 * Ip address and socket address structures (inet_address.iu).
 * Inet address resolution function declaration (inet_address_resolve.iu).
@@ -62,7 +62,10 @@ if you want to learn more, read its sources yourself.
 * Sorting routines (sort.iu).
 * stdin support (stdin.iu).
 * stdout support (stdout.iu).
-* Number to string conversion utilities (string_conversions.iu).
+* Additional stdout-related functions (stdout_ext.iu).
+* Stringification functions (stringification.iu).
+* Stringifier classes (stringifier.iu).
+* Utilities for stringification (stringifier_apply.iu).
 * System time class (system_time.iu).
 * TCP listener class (tcp_listener.iu).
 * TCP stream class (tcp_stream.iu).

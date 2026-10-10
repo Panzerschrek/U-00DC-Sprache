@@ -1,8 +1,7 @@
 // This example demonstraits usage of destructors.
 
 import "/main_wrapper.iu"
-import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stdout_ext.iu"
 
 pretty_main
 {
@@ -42,10 +41,7 @@ struct S
 	// Each class has a destructor, when no explicit destructor is specified the compiler will generate one.
 	fn destructor()
 	{
-		var ust::string8 mut s= "S::destructor ";
-		s+= ust::to_string8(x);
-		s+= "\n";
-		ust::stdout_print( s );
+		ust::stdout_print_line( "S::destructor ", x );
 	}
 }
 

@@ -1,4 +1,4 @@
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "../shared_library.iu"
 import "wide_string.iu"
 import "windows.iu"
@@ -14,7 +14,7 @@ fn LoadSharedLibrary( Logger &mut logger, ust::filesystem_path_view path ) : ust
 	var HMODULE mut handle = unsafe( ::LoadLibraryW( path_null_terminated.data() ) );
 	if( ust::is_nullptr(handle) )
 	{
-		logger.LogError( ust::concat( "LoadLibraryW error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
+		logger.LogError( ust::stringify8( "LoadLibraryW error: ", unsafe( GetLastError() ) ) );
 		return ust::null_optional;
 	}
 
@@ -29,7 +29,7 @@ fn SharedLibrary::LoadSymbol( imut this, Logger &mut logger, ust::string_view8 s
 	auto res = unsafe( ::GetProcAddress( ust::byte_ptr_cast</HINSTANCE__/>( system_handle_ ), symbol_null_terminated.data() ) );
 	if( ust::is_nullptr(res) )
 	{
-		logger.LogError( ust::concat( "GetProcAddress error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
+		logger.LogError( ust::stringify8( "GetProcAddress error: ", unsafe( GetLastError() ) ) );
 	}
 
 	return res;

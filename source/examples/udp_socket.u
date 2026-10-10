@@ -1,8 +1,7 @@
 // This example shows basic usage of the UDP socket class.
 
 import "/main_wrapper.iu"
-import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stdout_ext.iu"
 import "/udp_socket.iu"
 
 pretty_main
@@ -37,17 +36,7 @@ pretty_main
 
 		ust::ignore_unused( bytes_received );
 
-		variant_visit( &a : address )
-		{
-			ust::stdout_print( ust::concat(
-				"Received message \"",
-				received_message,
-				"\" from ip ",
-				a.get_ip().to_string(),
-				" and port ",
-				ust::to_string8( a.get_port() ),
-				"\n" ) );
-		}
+		ust::stdout_print_line( "Received message \"", received_message, "\" from address ", address );
 	}
 
 	// Connect + send/receive.
@@ -74,7 +63,7 @@ pretty_main
 
 		ust::ignore_unused( bytes_received );
 
-		ust::stdout_print( ust::concat( "Received \"", received_message, "\"\n" ) );
+		ust::stdout_print_line( "Received \"", received_message, "\"" );
 	}
 
 	return 0;

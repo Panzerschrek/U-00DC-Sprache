@@ -3,6 +3,7 @@ import "container_utils.iu"
 import "hash_apply.iu"
 import "minmax.iu"
 import "optional_ref.iu"
+import "stringifier_apply.iu"
 import "ustlib_macros.iu"
 
 ?macro <? variant_visit:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
@@ -337,6 +338,17 @@ public:
 				apply_value_to_hasher( hasher, unsafe( cast_ref_unsafe</ typeof(element.type)::src_type />(storage_) ) );
 			}
 			++cur_index;
+		}
+	}
+
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		// Don't bother stringifying kind index. Stringify only stored value.
+		variant_visit( &el : this )
+		{
+			apply_value_to_stringifier( stringifier, el );
 		}
 	}
 

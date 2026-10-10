@@ -300,6 +300,20 @@ public:
 		}
 	}
 
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		if( empty() )
+		{
+			apply_value_to_stringifier( stringifier, "null" );
+		}
+		else
+		{
+			apply_value_to_stringifier( stringifier, try_deref() );
+		}
+	}
+
 private:
 	type this_type= optional</T/>;
 	type storage_type= aligned_storage</ typeinfo</T/>.size_of, typeinfo</T/>.align_of />;

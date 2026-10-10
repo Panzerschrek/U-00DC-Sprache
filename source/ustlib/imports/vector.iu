@@ -5,6 +5,7 @@ import "container_utils.iu"
 import "hash_apply.iu"
 import "minmax.iu"
 import "random_access_range.iu"
+import "stringifier_apply.iu"
 
 namespace ust
 {
@@ -362,6 +363,40 @@ public:
 			for( var size_type mut i= 0s; i < size_; ++i )
 			{
 				apply_value_to_hasher( hasher, unsafe( $>( ptr_ + i ) ) );
+			}
+		}
+	}
+
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		static_if( c_enable_range )
+		{
+			// Usually stringify range for vectors.
+			// This is necessary if we stringify vectors of chars.
+			range().stringify( stringifier );
+		}
+		else
+		{
+			// This code should match code stringifying ranges!
+
+			if( this.empty() )
+			{
+				apply_value_to_stringifier( stringifier, "[]" );
+			}
+			else
+			{
+				apply_value_to_stringifier( stringifier, "[ " );
+
+				apply_value_to_stringifier( stringifier, this[0s] );
+
+				for( auto mut i= 1s; i < this.size(); ++i )
+				{
+					apply_value_to_stringifier( stringifier, ", " );
+					apply_value_to_stringifier( stringifier, this[i] );
+				}
+
+				apply_value_to_stringifier( stringifier, " ]" );
 			}
 		}
 	}

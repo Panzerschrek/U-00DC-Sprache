@@ -1,7 +1,7 @@
 //##success_test
 import "../imports/math.iu"
 import "../imports/scoped_array.iu"
-import "../imports/string_conversions.iu"
+import "../imports/stringification.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
@@ -111,7 +111,7 @@ fn TestF32Conversions()
 	// Test exact string output.
 	foreach( &pair : special_numbers )
 	{
-		var ust::string8 s= ust::to_string8( pair[0] );
+		var ust::string8 s= ust::stringify8( pair[0] );
 		halt if( s != pair[1] );
 	}
 }
@@ -168,25 +168,25 @@ fn TestF32ConversionsToWideStringTypes()
 	// Test only some selected values.
 	// We don't require testing them all, since underlying implemetation should really not depend on string type.
 
-	halt if( ust::to_string16( 0.0f ) != "0"u16 );
-	halt if( ust::to_string16( -0.0f ) != "-0"u16 );
-	halt if( ust::to_string16( 0.0009765625f ) != "9765625e-10"u16 );
-	halt if( ust::to_string16( 675.125f ) != "675.125"u16 );
-	halt if( ust::to_string16( -266732.0f ) != "-266732"u16 );
-	halt if( ust::to_string16( 36893485948395847680.0f ) != "36893486e12"u16 );
-	halt if( ust::to_string16( ust::plus_inf </f32/>() ) !=  "inf"u16 );
-	halt if( ust::to_string16( ust::minus_inf</f32/>() ) != "-inf"u16 );
-	halt if( ust::to_string16( 0.0f / 0.0f ) != "nan"u16 );
+	halt if( ust::stringify16( 0.0f ) != "0"u16 );
+	halt if( ust::stringify16( -0.0f ) != "-0"u16 );
+	halt if( ust::stringify16( 0.0009765625f ) != "9765625e-10"u16 );
+	halt if( ust::stringify16( 675.125f ) != "675.125"u16 );
+	halt if( ust::stringify16( -266732.0f ) != "-266732"u16 );
+	halt if( ust::stringify16( 36893485948395847680.0f ) != "36893486e12"u16 );
+	halt if( ust::stringify16( ust::plus_inf </f32/>() ) !=  "inf"u16 );
+	halt if( ust::stringify16( ust::minus_inf</f32/>() ) != "-inf"u16 );
+	halt if( ust::stringify16( 0.0f / 0.0f ) != "nan"u16 );
 
-	halt if( ust::to_string32( 0.0f ) != "0"u32 );
-	halt if( ust::to_string32( -0.0f ) != "-0"u32 );
-	halt if( ust::to_string32( 0.0009765625f ) != "9765625e-10"u32 );
-	halt if( ust::to_string32( 675.125f ) != "675.125"u32 );
-	halt if( ust::to_string32( -266732.0f ) != "-266732"u32 );
-	halt if( ust::to_string32( 36893485948395847680.0f ) != "36893486e12"u32 );
-	halt if( ust::to_string32( ust::plus_inf </f32/>() ) !=  "inf"u32 );
-	halt if( ust::to_string32( ust::minus_inf</f32/>() ) != "-inf"u32 );
-	halt if( ust::to_string32( 0.0f / 0.0f ) != "nan"u32 );
+	halt if( ust::stringify32( 0.0f ) != "0"u32 );
+	halt if( ust::stringify32( -0.0f ) != "-0"u32 );
+	halt if( ust::stringify32( 0.0009765625f ) != "9765625e-10"u32 );
+	halt if( ust::stringify32( 675.125f ) != "675.125"u32 );
+	halt if( ust::stringify32( -266732.0f ) != "-266732"u32 );
+	halt if( ust::stringify32( 36893485948395847680.0f ) != "36893486e12"u32 );
+	halt if( ust::stringify32( ust::plus_inf </f32/>() ) !=  "inf"u32 );
+	halt if( ust::stringify32( ust::minus_inf</f32/>() ) != "-inf"u32 );
+	halt if( ust::stringify32( 0.0f / 0.0f ) != "nan"u32 );
 }
 
 fn TestAllF32Conversions()
@@ -209,7 +209,7 @@ fn TestAllF32Conversions()
 // Test against a parser - a stringified and then parsed number should remain the same.
 fn TestF32Conversion( f32 num )
 {
-	var ust::string8 s= ust::to_string8( num );
+	var ust::string8 s= ust::stringify8( num );
 	var f32 num_parsed= ParseF32( s );
 
 	if( ust::is_nan( num ) )
@@ -310,7 +310,7 @@ fn TestF64Conversions()
 	// Test exact string output.
 	foreach( &pair : special_numbers )
 	{
-		var ust::string8 s= ust::to_string8( pair[0] );
+		var ust::string8 s= ust::stringify8( pair[0] );
 		halt if( s != pair[1] );
 	}
 }
@@ -385,25 +385,25 @@ fn TestF64ConversionsToWideStringTypes()
 	// Test only some selected values.
 	// We don't require testing them all, since underlying implemetation should really not depend on string type.
 
-	halt if( ust::to_string16( 0.0 ) != "0"u16 );
-	halt if( ust::to_string16( -0.0 ) != "-0"u16 );
-	halt if( ust::to_string16( 0.0009765625 ) != "9765625e-10"u16 );
-	halt if( ust::to_string16( 675.125 ) != "675.125"u16 );
-	halt if( ust::to_string16( -266732.0 ) != "-266732"u16 );
-	halt if( ust::to_string16( 36893485948395847680.0 ) != "36893485948395849e3"u16 );
-	halt if( ust::to_string16( ust::plus_inf </f64/>() ) !=  "inf"u16 );
-	halt if( ust::to_string16( ust::minus_inf</f64/>() ) != "-inf"u16 );
-	halt if( ust::to_string16( 0.0f / 0.0f ) != "nan"u16 );
+	halt if( ust::stringify16( 0.0 ) != "0"u16 );
+	halt if( ust::stringify16( -0.0 ) != "-0"u16 );
+	halt if( ust::stringify16( 0.0009765625 ) != "9765625e-10"u16 );
+	halt if( ust::stringify16( 675.125 ) != "675.125"u16 );
+	halt if( ust::stringify16( -266732.0 ) != "-266732"u16 );
+	halt if( ust::stringify16( 36893485948395847680.0 ) != "36893485948395849e3"u16 );
+	halt if( ust::stringify16( ust::plus_inf </f64/>() ) !=  "inf"u16 );
+	halt if( ust::stringify16( ust::minus_inf</f64/>() ) != "-inf"u16 );
+	halt if( ust::stringify16( 0.0f / 0.0f ) != "nan"u16 );
 
-	halt if( ust::to_string32( 0.0 ) != "0"u32 );
-	halt if( ust::to_string32( -0.0 ) != "-0"u32 );
-	halt if( ust::to_string32( 0.0009765625 ) != "9765625e-10"u32 );
-	halt if( ust::to_string32( 675.125 ) != "675.125"u32 );
-	halt if( ust::to_string32( -266732.0 ) != "-266732"u32 );
-	halt if( ust::to_string32( 36893485948395847680.0 ) != "36893485948395849e3"u32 );
-	halt if( ust::to_string32( ust::plus_inf </f64/>() ) !=  "inf"u32 );
-	halt if( ust::to_string32( ust::minus_inf</f64/>() ) != "-inf"u32 );
-	halt if( ust::to_string32( 0.0 / 0.0 ) != "nan"u32 );
+	halt if( ust::stringify32( 0.0 ) != "0"u32 );
+	halt if( ust::stringify32( -0.0 ) != "-0"u32 );
+	halt if( ust::stringify32( 0.0009765625 ) != "9765625e-10"u32 );
+	halt if( ust::stringify32( 675.125 ) != "675.125"u32 );
+	halt if( ust::stringify32( -266732.0 ) != "-266732"u32 );
+	halt if( ust::stringify32( 36893485948395847680.0 ) != "36893485948395849e3"u32 );
+	halt if( ust::stringify32( ust::plus_inf </f64/>() ) !=  "inf"u32 );
+	halt if( ust::stringify32( ust::minus_inf</f64/>() ) != "-inf"u32 );
+	halt if( ust::stringify32( 0.0 / 0.0 ) != "nan"u32 );
 }
 
 fn TestAllF64Conversions()
@@ -426,7 +426,7 @@ fn TestAllF64Conversions()
 // Test against a parser - a stringified and then parsed number should remain the same.
 fn TestF64Conversion( f64 num )
 {
-	var ust::string8 s= ust::to_string8( num );
+	var ust::string8 s= ust::stringify8( num );
 	var f64 num_parsed= ParseF64( s );
 
 	if( ust::is_nan( num ) )

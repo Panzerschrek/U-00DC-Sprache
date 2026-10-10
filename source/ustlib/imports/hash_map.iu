@@ -6,6 +6,7 @@ import "hash_apply.iu"
 import "minmax.iu"
 import "optional.iu"
 import "optional_ref.iu"
+import "stringifier_apply.iu"
 
 namespace ust
 {
@@ -724,6 +725,49 @@ public:
 	fn iter(  mut this ) : auto
 	{
 		return wrap_raw_iterator( raw_iterator</true />( this ) );
+	}
+
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		auto mut it= iter();
+
+		{
+			auto first_val_opt= it.next();
+			if( first_val_opt.empty() )
+			{
+				apply_value_to_stringifier( stringifier, "{}" );
+				return;
+			}
+
+			auto& first_val= first_val_opt.try_deref();
+
+			apply_value_to_stringifier( stringifier, "{ " );
+
+			apply_value_to_stringifier( stringifier, first_val.key() );
+			apply_value_to_stringifier( stringifier, " : " );
+			apply_value_to_stringifier( stringifier, first_val.value() );
+		}
+
+		loop
+		{
+			auto val_opt= it.next();
+			if( val_opt.empty() )
+			{
+				break;
+			}
+
+			auto& val= val_opt.try_deref();
+
+			apply_value_to_stringifier( stringifier, ", " );
+
+			apply_value_to_stringifier( stringifier, val.key() );
+			apply_value_to_stringifier( stringifier, " : " );
+			apply_value_to_stringifier( stringifier, val.value() );
+		}
+
+		apply_value_to_stringifier( stringifier, " }" );
 	}
 
 private:

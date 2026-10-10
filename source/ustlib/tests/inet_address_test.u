@@ -1,5 +1,6 @@
 //##success_test
 import "../imports/inet_address.iu"
+import "../imports/stringification.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
@@ -8,11 +9,11 @@ fn nomangle main() call_conv( "C" ) : i32
 	halt if( ust::ip_address_v4( 0x7F000001u ) != ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ) );
 
 	// Ipv4 string conversions.
-	halt if( ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ).to_string() != "127.0.0.1" );
-	halt if( ust::ip_address_v4( 0x7E31FD8Cu ).to_string() != "126.49.253.140" );
-	halt if( ust::ip_address_v4( 0u ).to_string() != "0.0.0.0" );
-	halt if( ust::ip_address_v4( 0xFFFFFFFFu ).to_string() != "255.255.255.255" );
-	halt if( ust::ip_address_v4( ust::make_array( 13u8, 218u8, 187u8, 44u8 ) ).to_string() != "13.218.187.44" );
+	halt if( ust::stringify8( ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ) ) != "127.0.0.1" );
+	halt if( ust::stringify8( ust::ip_address_v4( 0x7E31FD8Cu ) ) != "126.49.253.140" );
+	halt if( ust::stringify8( ust::ip_address_v4( 0u ) ) != "0.0.0.0" );
+	halt if( ust::stringify8( ust::ip_address_v4( 0xFFFFFFFFu ) ) != "255.255.255.255" );
+	halt if( ust::stringify8( ust::ip_address_v4( ust::make_array( 13u8, 218u8, 187u8, 44u8 ) ) ) != "13.218.187.44" );
 
 	halt if( ust::ip_address_v4::parse( "0.0.0.0" ) != ust::ip_address_v4( ust::make_array( 0u8, 0u8, 0u8, 0u8 ) ) );
 	halt if( ust::ip_address_v4::parse( "2.3.4.5" ) != ust::ip_address_v4( ust::make_array( 2u8, 3u8, 4u8, 5u8 ) ) );
@@ -47,7 +48,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Ipv6 string conversions.
 	{
 		var [ u8, 16 ] octets[ 34u8, 67u8, 145u8, 13u8, 0u8, 23u8, 0u8, 0u8, 0u8, 2u8, 215u8, 255u8, 26u8, 78u8, 97u8, 36u8 ];
-		halt if( ust::ip_address_v6( octets ).to_string() != "2243:910d:0017:0000:0002:d7ff:1a4e:6124" );
+		halt if( ust::stringify8( ust::ip_address_v6( octets ) ) != "2243:910d:0017:0000:0002:d7ff:1a4e:6124" );
 	}
 
 	// Ipv6 - basic form lowercase.
@@ -203,6 +204,11 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Invalid socket address - ip address octet out of range.
 	halt if( ust::parse_socket_address( "276.23.45.67:123" ) != ust::null_optional );
 
+	// Socket address stringification.
+	halt if(
+		ust::stringify8( ust::socket_address_v4( ust::ip_address_v4( ust::make_array( 67u8, 133u8, 245u8, 5u8 ) ), 5463u16 ) ) !=
+		"67.133.245.5:5463" );
+
 	// Ipv6 socket address.
 	{
 		var ust::socket_address_v6 a= ust::socket_address_v6::parse( "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]:7823" ).try_deref();
@@ -238,6 +244,15 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// Invalid Ipv6 socket address - missing scope id after %.
 	halt if( ust::socket_address_v6::parse( "[ffee:ddcc:bbaa::3322:11%]:58" ) != ust::null_optional );
+
+	// Socket address stringification.
+	halt if(
+		ust::stringify8( ust::socket_address_v6::parse( "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]:7823" ).try_deref() ) !=
+		"[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]:7823" );
+
+	halt if(
+		ust::stringify8( ust::socket_address_v6::parse( "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100%12345]:7823" ).try_deref() ) !=
+		"[ffee:ddcc:bbaa:9988:7766:5544:3322:1100%12345]:7823" );
 
 	return 0;
 }

@@ -19,8 +19,7 @@ function InterpreterCompileAndRun( program_text )
 		'/ustlib/src/inet_address.u',
 		'/ustlib/src/number_parsing_floating_point.u',
 		'/ustlib/src/number_parsing_integer.u',
-		'/ustlib/src/string_conversions_floating_point.u',
-		'/ustlib/src/string_conversions_integer.u',
+		'/ustlib/src/stringifier.u',
 		// ignore stdin.u
 		'/ustlib/src/utf.u',
 	];

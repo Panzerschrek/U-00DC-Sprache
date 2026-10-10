@@ -1,4 +1,5 @@
 import "hash_apply.iu"
+import "stringifier_apply.iu"
 
 namespace ust
 {
@@ -64,6 +65,15 @@ public:
 	fn hash( this, Hasher &mut hasher )
 	{
 		apply_value_to_hasher( hasher, nanoseconds_ );
+	}
+
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		// Stringify as number with "ns" suffix.
+		apply_value_to_stringifier( stringifier, nanoseconds_ );
+		apply_value_to_stringifier( stringifier, "ns" );
 	}
 
 	//

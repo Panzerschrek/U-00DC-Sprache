@@ -1,0 +1,256 @@
+//
+// This file includes helper functions allowing stringification of many kinds of types.
+// You should usually call "ust::apply_value_to_stringifier" for members of classes for which you implement "stringify" method.
+//
+
+import "memory.iu"
+import "type_traits.iu"
+
+namespace ust
+{
+
+//
+// Basic types, which stringifiers can handle directly.
+//
+
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, void v ) { stringifier(v); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, bool b ) { stringifier(b); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, i8 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, u8 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, i16 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, u16 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, i32 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, u32 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, i64 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, u64 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, i128 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, u128 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, ssize_type x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, size_type x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, char8 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, char16 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, char32 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, byte8 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, byte16 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, byte32 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, byte64 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, byte128 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, f32 x ) { stringifier(x); }
+template</type Stringifier/> fn apply_value_to_stringifier( Stringifier &mut stringifier, f64 x ) { stringifier(x); }
+
+template</type Stringifier, size_type S/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, [ char8, S ]& arr )
+{
+	stringifier( arr );
+}
+
+template</type Stringifier, size_type S/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, [ char16, S ]& arr )
+{
+	stringifier( arr );
+}
+
+template</type Stringifier, size_type S/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, [ char32, S ]& arr )
+{
+	stringifier( arr );
+}
+
+// Generic function for stringification of other types.
+template</type Stringifier, type T/>
+fn apply_value_to_stringifier( Stringifier &mut stringifier, T& t )
+{
+	auto& ti= typeinfo</T/>;
+
+	static_if( ti.is_enum )
+	{
+		// Extract and use enum name in form of string.
+		for( &el : ti.elements_list )
+		{
+			if( el.value == ti.underlying_type.src_type( t ) )
+			{
+				apply_value_to_stringifier( stringifier, el.name );
+			}
+		}
+	}
+	else static_if( ti.is_raw_pointer )
+	{
+		// Stringify pointers as byte types.
+		var type_select</ typeinfo</size_type/>.size_of == 4s, byte32, byte64 /> mut pointer_bytes( ptr_to_int( t ) );
+		apply_value_to_stringifier( stringifier, pointer_bytes );
+	}
+	else static_if( ti.is_function_pointer )
+	{
+		// Stringify function pointers as byte types.
+		var type_select</ typeinfo</size_type/>.size_of == 4s, byte32, byte64 /> mut pointer_bytes( function_ptr_to_int( t ) );
+		apply_value_to_stringifier( stringifier, pointer_bytes );
+	}
+	else static_if( ti.is_tuple )
+	{
+		// For empty tuples stringify as [].
+		// For non-empty tuples stringifiy in [], use commas (instead of last one) and spaces between elements.
+
+		static_if( ti.element_count == 0s )
+		{
+			apply_value_to_stringifier( stringifier, "[]" );
+			ignore_unused(t);
+		}
+		else
+		{
+			apply_value_to_stringifier( stringifier, "[ " );
+
+			var size_type mut index= 0s;
+			for( &el : t )
+			{
+				apply_value_to_stringifier( stringifier, el );
+
+				++index;
+
+				if( index < ti.element_count )
+				{
+					apply_value_to_stringifier( stringifier, ", " );
+				}
+				else
+				{
+					apply_value_to_stringifier( stringifier, " ]" );
+				}
+			}
+		}
+	}
+	else static_if( ti.is_array )
+	{
+		// This code should match "stringify" code for "random_access_range" class!
+
+		// For empty arrays stringify as [].
+		// For non-empty arrays stringifiy in [], use commas (instead of last one) and spaces between elements.
+
+		static_if( ti.element_count == 0s )
+		{
+			apply_value_to_stringifier( stringifier, "[]" );
+			ignore_unused(t);
+		}
+		else
+		{
+			apply_value_to_stringifier( stringifier, "[ " );
+
+			apply_value_to_stringifier( stringifier, t[0] );
+
+			for( auto mut i= 1s; i < ti.element_count; ++i )
+			{
+				apply_value_to_stringifier( stringifier, ", " );
+				apply_value_to_stringifier( stringifier, t[i] );
+			}
+
+			apply_value_to_stringifier( stringifier, " ]" );
+		}
+	}
+	else static_if( ti.is_class )
+	{
+		static_if( ti.is_coroutine )
+		{
+			// Don't bother stringifying coroutines properly. Just write a stub.
+			apply_value_to_stringifier( stringifier, "<COROUTINE>" );
+			ignore_unused(t);
+		}
+		else static_if( ti.is_lambda )
+		{
+			// Don't bother stringifying lambdas properly. Just write a stub.
+			apply_value_to_stringifier( stringifier, "<LAMBDA>" );
+			ignore_unused(t);
+		}
+		else static_if( ti.is_typeinfo )
+		{
+			// Don't bother stringifying typeinfo vales properly. Just write a stub.
+			apply_value_to_stringifier( stringifier, "<TYPEINFO>" );
+			ignore_unused(t);
+		}
+		else static_if( stringifier_apply_impl::class_has_stringify_method</T/>() )
+		{
+			// Call existing "stringify" method.
+			t.stringify( stringifier );
+		}
+		else
+		{
+			// For empty structs stringify as {}.
+			// For non-empty structs stringifiy in {}, use colons, commas (instead of last one) and spaces between elements.
+
+			static_if( ti.field_count == 0s )
+			{
+				apply_value_to_stringifier( stringifier, "{}" );
+				ignore_unused(t);
+			}
+			else
+			{
+				apply_value_to_stringifier( stringifier, "{ " );
+
+				var size_type mut index= 0s;
+
+				// Use typeinfo order, which should be alphabetical.
+				for( &el : ti.fields_list )
+				{
+					static_assert( el.is_public, "can't automatically stringify a class with non-public fields" );
+
+					// Stringify reference fields as regular ones.
+					// It shouldn't be problematic.
+					// Creating a loop with regular references and thus causing infinite recursion shouldn't be possible.
+
+					apply_value_to_stringifier( stringifier, el.name + " : " );
+					apply_value_to_stringifier( stringifier, mixin( "t." + el.name ) );
+
+					++index;
+
+					if( index < ti.field_count )
+					{
+						apply_value_to_stringifier( stringifier, ", " );
+					}
+					else
+					{
+						apply_value_to_stringifier( stringifier, " }" );
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		static_assert( "Unhandled type kind!" );
+	}
+}
+
+namespace stringifier_apply_impl
+{
+
+// Checks if given class has "stringify" method (regular or template).
+// Signature, return type and other properties are not checked.
+template</type T/>
+fn constexpr class_has_stringify_method() : bool
+{
+	// TODO - fix this function for polymorph classes.
+	// We should ignore inherited regular and template "stringify" functions of polymorph classes.
+	// If parent class stringification method is called on a child instance, child own fields are not stringified.
+
+	auto& ti= typeinfo</T/>;
+	auto& name= "stringify";
+
+	for( &list_element : ti.functions_list )
+	{
+		if( constexpr_string_equals( list_element.name, name ) )
+		{
+			return true;
+		}
+	}
+
+	for( &list_element : ti.function_templates_list )
+	{
+		if( constexpr_string_equals( list_element.name, name ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+} // namespace stringifier_apply_impl
+
+} // namespace ust

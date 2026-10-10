@@ -7,6 +7,7 @@ import "memory.iu"
 import "minmax.iu"
 import "optional_ref.iu"
 import "reference_notation.iu"
+import "stringifier_apply.iu"
 
 namespace ust
 {
@@ -286,6 +287,45 @@ public:
 			{
 				apply_value_to_hasher( hasher, unsafe( $>( begin_ + i ) ) );
 			}
+		}
+	}
+
+	// stringification
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		static_if( typeinfo</T/>.is_fundamental )
+		{
+			static_if( typeinfo</T/>.is_char )
+			{
+				// Stringifier classes should handle ranges of chars properly.
+				if( true ) // Introduce fake branching to avoid "unreachable code" error for general case code below.
+				{
+					stringifier( this );
+					return;
+				}
+			}
+		}
+
+		// This code should match "stringify" code for arrays!
+
+		if( this.empty() )
+		{
+			apply_value_to_stringifier( stringifier, "[]" );
+		}
+		else
+		{
+			apply_value_to_stringifier( stringifier, "[ " );
+
+			apply_value_to_stringifier( stringifier, this[0s] );
+
+			for( auto mut i= 1s; i < this.size(); ++i )
+			{
+				apply_value_to_stringifier( stringifier, ", " );
+				apply_value_to_stringifier( stringifier, this[i] );
+			}
+
+			apply_value_to_stringifier( stringifier, " ]" );
 		}
 	}
 

@@ -1,0 +1,368 @@
+//##success_test
+import "../imports/box_nullable.iu"
+import "../imports/duration.iu"
+import "../imports/hash_map.iu"
+import "../imports/hash_set.iu"
+import "../imports/inet_address.iu"
+import "../imports/string.iu"
+import "../imports/stringifier.iu"
+import "../imports/stringifier_apply.iu"
+import "../imports/system_time.iu"
+import "../imports/variant.iu"
+import "../imports/vector.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, -63433 ); // Should handle integers.
+		halt if( move( stringifier ).get() != "-63433" );
+	}
+	{
+		var [ char8, 5 ] mut chars= "Some!";
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, chars ); // Should handle char arrays properly, even if they are mutable.
+		halt if( move( stringifier ).get() != "Some!" );
+	}
+	{
+		var [ char8, 8 ] mut chars= "Iuppiter";
+		var ust::array_view_mut</char8/> chars_view= chars;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, chars_view ); // Should handle char view properly, even if they are mutable.
+		halt if( move( stringifier ).get() != "Iuppiter" );
+	}
+	{ // Stringify strings.
+		var ust::string8 s= "Roko's Basilisk";
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, s );
+		halt if( move( stringifier ).get() != "Roko's Basilisk" );
+	}
+	{ // Stringify strings - can do proper conversion.
+		var ust::string32 s= "Bärentanz"u32;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, s );
+		halt if( move( stringifier ).get() != "Bärentanz" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+
+		ust::apply_value_to_stringifier( stringifier, '!' ); // Should handle chars.
+		ust::apply_value_to_stringifier( stringifier, 74.0f ); // Should handle floating-point numbers.
+		ust::apply_value_to_stringifier( stringifier, ust::string_view8( " : " ) ); // Should handle string views.
+		ust::apply_value_to_stringifier( stringifier, false ); // Should handle bol values.
+		ust::apply_value_to_stringifier( stringifier, ", " ); // Should handle char arrays.
+		ust::apply_value_to_stringifier( stringifier, byte8( 0x67u8 ) ); // Should handle byte types.
+		ust::apply_value_to_stringifier( stringifier, ".\n" );
+
+		halt if( move( stringifier ).get() != "!74 : false, 0x67.\n" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_array</u32/>() ); // Array with zero elements.
+		halt if( move( stringifier ).get() != "[]" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_array( 43447398u ) ); // Array with single element.
+		halt if( move( stringifier ).get() != "[ 43447398 ]" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_array( 78, -234, 2363 ) ); // Array with many elements.
+		halt if( move( stringifier ).get() != "[ 78, -234, 2363 ]" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_tuple() ); // Tuple with zero elements.
+		halt if( move( stringifier ).get() != "[]" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_tuple( 'T' ) ); // Tuple with single element.
+		halt if( move( stringifier ).get() != "[ T ]" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_tuple( 78u, -2 ) ); // Tuple with two elements.
+		halt if( move( stringifier ).get() != "[ 78, -2 ]" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_tuple( false, 5323, 'R' ) ); // Tuple with three elements.
+		halt if( move( stringifier ).get() != "[ false, 5323, R ]" );
+	}
+	{ // Stringify empty array view.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::array_view_mut</f32/>() );
+		halt if( move( stringifier ).get() != "[]" );
+	}
+	{ // Stringify non-empty array view.
+		var [ i32, 5 ] arr[ 89, -36, 226, 64, 6474754 ];
+		var ust::array_view_imut</i32/> arr_view= arr;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, arr_view );
+		halt if( move( stringifier ).get() != "[ 89, -36, 226, 64, 6474754 ]" );
+	}
+	{
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_array( SomeEnum::Herren, SomeEnum::der, SomeEnum::Winde ) ); // Array with enum elements.
+		halt if( move( stringifier ).get() != "[ Herren, der, Winde ]" );
+	}
+	{ // Stringify null pointer.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::nullptr</f64/>() );
+		var ust::string8 ptr_value= move( stringifier ).get();
+		halt if( !( ptr_value == "0x00000000" || ptr_value == "0x0000000000000000" ) );
+	}
+	{ // Stringify non-null pointer.
+		var i32 mut x= 785;
+		var $(i32) x_ptr= $<(x);
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, x_ptr );
+		var ust::string8 ptr_value= move( stringifier ).get();
+		halt if( !ptr_value.starts_with( "0x" ) );
+		halt if( !( ptr_value.size() == 10s || ptr_value.size() == 18s ) );
+		halt if( ptr_value == "0x00000000" || ptr_value == "0x0000000000000000" );
+	}
+	{ // Stringify null function pointer.
+		var ( fn( i32 x ) : f32 ) ptr= zero_init;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ptr );
+		var ust::string8 ptr_value= move( stringifier ).get();
+		halt if( !( ptr_value == "0x00000000" || ptr_value == "0x0000000000000000" ) );
+	}
+	{ // Stringify non-null function pointer.
+		var ( fn( i32 x ) : i32 ) ptr= TestFunction;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ptr );
+		var ust::string8 ptr_value= move( stringifier ).get();
+		halt if( ptr_value == "0x00000000" || ptr_value == "0x0000000000000000" );
+		halt if( !ptr_value.starts_with( "0x" ) );
+	}
+	{ // Stringify a typeinfo structure.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, typeinfo</bool/> );
+		halt if( move( stringifier ).get() != "<TYPEINFO>" );
+	}
+	{ // Stringify a coroutine.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, SomeGenerator() );
+		halt if( move( stringifier ).get() != "<COROUTINE>" );
+	}
+	{ // Stringify a lambda.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, lambda(){} );
+		halt if( move( stringifier ).get() != "<LAMBDA>" );
+	}
+	{ // Empty struct.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, EmptyStruct{} );
+		halt if( move( stringifier ).get() != "{}" );
+	}
+	{ // Struct with some fields.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier(
+			stringifier,
+			SomeStruct{ .integer_field= 963, .floating_point_field= -25667.0f, .chars_field= "SPQR" } );
+		halt if(
+			move( stringifier ).get() !=
+			"{ chars_field : SPQR, floating_point_field : -25667, integer_field : 963 }" );
+	}
+	{ // Struct with references.
+		var i32 y= -36465;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, StructWithReferences{ .x= 674.0f, .y= y } );
+		halt if( move( stringifier ).get() != "{ x : 674, y : -36465 }" );
+	}
+	{ // Stringify empty vector.
+		var ust::vector</f64/> v;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, v );
+		halt if( move( stringifier ).get() != "[]" );
+	}
+	{ // Stringify non-empty vector.
+		var ust::vector</u32/> v= ust::make_array( 6754u, 0u, 45u, 267u );
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, v );
+		halt if( move( stringifier ).get() != "[ 6754, 0, 45, 267 ]" );
+	}
+	{ // Stringify vector of chars - should be handled as a string.
+		var ust::vector</char16/> v= "Ich bin ein böser Räuber in einer böser Welt"u16;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, v );
+		halt if( move( stringifier ).get() != "Ich bin ein böser Räuber in einer böser Welt" );
+	}
+	{ // Stringify a value of class having special "stringify" method.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ClassWithCustomStringifier( 672 ) );
+		halt if( move( stringifier ).get() != "CustomClass(672)" );
+	}
+	{ // Stringify an array of class values having special "stringify" method.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier(
+			stringifier,
+			ust::make_array(
+				ClassWithCustomStringifier( 10 ),
+				ClassWithCustomStringifier( 15 ),
+				ClassWithCustomStringifier( 150 ) ) );
+		halt if( move( stringifier ).get() != "[ CustomClass(10), CustomClass(15), CustomClass(150) ]" );
+	}
+	{ // Stringify a box.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::make_box( 434415 ) );
+		halt if( move( stringifier ).get() != "434415" );
+	}
+	{ // Stringify a non-empty nullable box.
+		var ust::box_nullable</ [ char8, 4 ] /> b( "606Q" );
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, b );
+		halt if( move( stringifier ).get() != "606Q" );
+	}
+	{ // Stringify an empty nullable box.
+		var ust::box_nullable</ u64 /> b;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, b );
+		halt if( move( stringifier ).get() != "null" );
+	}
+	{ // Stringify a non-empty optional.
+		var ust::optional</ u64 /> o( 5585654686899u );
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, o );
+		halt if( move( stringifier ).get() != "5585654686899" );
+	}
+	{ // Stringify an empty optional.
+		var ust::optional</ f32 /> o;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, o );
+		halt if( move( stringifier ).get() != "null" );
+	}
+	{ // Stringify a non-empty optional_ref.
+		var u32 x= 734674u;
+		var ust::optional_ref_imut</ u32 /> o= x;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, o );
+		halt if( move( stringifier ).get() != "734674" );
+	}
+	{ // Stringify an empty optional_ref.
+		var ust::optional_ref_imut</ f32 /> o;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, o );
+		halt if( move( stringifier ).get() != "null" );
+	}
+	{ // Stringify for variants.
+		var ust::variant</ tup[ bool, u32, [ char8, 4 ] ] /> mut
+			v0= true,
+			v1= 743647u,
+			v2= "jK@1";
+
+		{
+			var ust::default_stringifier8 mut stringifier;
+			ust::apply_value_to_stringifier( stringifier, v0 );
+			halt if( move( stringifier ).get() != "true" );
+		}
+		{
+			var ust::default_stringifier8 mut stringifier;
+			ust::apply_value_to_stringifier( stringifier, v1 );
+			halt if( move( stringifier ).get() != "743647" );
+		}
+		{
+			var ust::default_stringifier8 mut stringifier;
+			ust::apply_value_to_stringifier( stringifier, v2 );
+			halt if( move( stringifier ).get() != "jK@1" );
+		}
+	}
+	{ // Stringify for ip_address_v4.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::ip_address_v4( ust::make_array( 36u8, 243u8, 113u8, 5u8 ) ) );
+		halt if( move( stringifier ).get() != "36.243.113.5" );
+	}
+	{ // Stringify for ip_address_v6.
+		var [ u8, 16 ] octets[ 34u8, 67u8, 145u8, 13u8, 0u8, 23u8, 0u8, 0u8, 0u8, 2u8, 215u8, 255u8, 26u8, 78u8, 97u8, 36u8 ];
+		var ust::ip_address_v6 address( octets );
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, address );
+		halt if( move( stringifier ).get() != "2243:910d:0017:0000:0002:d7ff:1a4e:6124" );
+	}
+	{ // Stringify for hash-maps.
+		var ust::hash_map</ ust::string8, i32 /> mut m;
+		m.insert_new( "H", 78 );
+		m.insert_new( "www!!", -5364 );
+		m.insert_new( "_  Wq--H", 7668679 );
+
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, m );
+		var ust::string8 s= move( stringifier ).get();
+		// Can't here test contents, since hash-map order is unpridictable.
+		halt if( s.empty() );
+		halt if( !s.range().starts_with( "{" ) );
+		halt if( !s.range().ends_with( "}" ) );
+	}
+	{ // Stringify for hash-sets.
+		var ust::hash_set</ i32 /> mut hs;
+		hs.insert( 78 );
+		hs.insert( -5364 );
+		hs.insert( 7668679 );
+		hs.insert( 536727434 );
+
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, hs );
+		var ust::string8 s= move( stringifier ).get();
+		// Can't here test contents, since hash-set order is unpridictable.
+		halt if( s.empty() );
+		halt if( !s.range().starts_with( "{" ) );
+		halt if( !s.range().ends_with( "}" ) );
+	}
+	{ // Stringify duration.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::duration::from_nanoseconds( 54367543784336u ) );
+		halt if( move( stringifier ).get() != "54367543784336ns" );
+	}
+	{ // Stringify system time.
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, ust::system_time::now() );
+		var ust::string8 s= move( stringifier ).get();
+		halt if( s.empty() );
+	}
+
+	return 0;
+}
+
+enum SomeEnum{ Herren, der, Winde }
+
+fn generator SomeGenerator() {}
+
+struct EmptyStruct{}
+
+struct SomeStruct
+{
+	i32 integer_field;
+	f32 floating_point_field;
+	[ char8, 4 ] chars_field;
+}
+
+struct StructWithReferences
+{
+	f32 x;
+	i32& y;
+}
+
+class ClassWithCustomStringifier
+{
+public:
+	fn constructor( i32 x )
+		( x_= x )
+	{}
+
+	template</ type Stringifier />
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		ust::apply_value_to_stringifier( stringifier, "CustomClass(" );
+		ust::apply_value_to_stringifier( stringifier, x_ );
+		ust::apply_value_to_stringifier( stringifier, ")" );
+	}
+
+private:
+	i32 x_;
+}
+
+fn TestFunction( i32 x ) : i32 { return x + 5; }

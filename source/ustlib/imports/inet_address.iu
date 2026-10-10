@@ -1,4 +1,5 @@
 import "string.iu"
+import "stringifier_apply.iu"
 import "variant.iu"
 
 namespace ust
@@ -35,6 +36,19 @@ public:
 		apply_value_to_hasher( hasher, bits_ );
 	}
 
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		apply_value_to_stringifier( stringifier, u8( bits_ >> 24 ) );
+		apply_value_to_stringifier( stringifier, "." );
+		apply_value_to_stringifier( stringifier, u8( bits_ >> 16 ) );
+		apply_value_to_stringifier( stringifier, "." );
+		apply_value_to_stringifier( stringifier, u8( bits_ >>  8 ) );
+		apply_value_to_stringifier( stringifier, "." );
+		apply_value_to_stringifier( stringifier, u8( bits_ >>  0 ) );
+	}
+
 	fn get_bits( this ) : u32
 	{
 		return bits_;
@@ -45,8 +59,6 @@ public:
 		var [ u8, 4 ] octets[ ( bits_ >> 24 ), ( bits_ >> 16 ), ( bits_ >> 8 ), ( bits_ >> 0 ) ];
 		return octets;
 	}
-
-	fn to_string( this ) : string8;
 
 private:
 	u32 bits_;
@@ -85,6 +97,36 @@ public:
 		apply_value_to_hasher( hasher, bits_ );
 	}
 
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		var [ u8, 16 ] octets= get_octets();
+
+		for( var size_type mut i= 0s; i < 8s; ++i )
+		{
+			var u32 o0( octets[ i * 2s + 0s ] );
+			var u32 o1( octets[ i * 2s + 1s ] );
+
+			auto& hex_digits= "0123456789abcdef";
+
+			var [ char8, 4 ] chars
+			[
+				hex_digits[ o0 >> 4 ],
+				hex_digits[ o0 & 15u ],
+				hex_digits[ o1 >> 4 ],
+				hex_digits[ o1 & 15u ],
+			];
+
+			apply_value_to_stringifier( stringifier, chars );
+
+			if( i < 7s )
+			{
+				apply_value_to_stringifier( stringifier, ':' );
+			}
+		}
+	}
+
 	fn get_bits( this ) : u128
 	{
 		return bits_;
@@ -101,8 +143,6 @@ public:
 		];
 		return octets;
 	}
-
-	fn to_string( this ) : string8;
 
 private:
 	u128 bits_;
@@ -130,6 +170,15 @@ public:
 	{
 		apply_value_to_hasher( hasher, ip_ );
 		apply_value_to_hasher( hasher, port_ );
+	}
+
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		apply_value_to_stringifier( stringifier, ip_ );
+		apply_value_to_stringifier( stringifier, ":" );
+		apply_value_to_stringifier( stringifier, port_ );
 	}
 
 	fn get_ip( this ) : ip_address_v4
@@ -178,6 +227,22 @@ public:
 		apply_value_to_hasher( hasher, port_ );
 		apply_value_to_hasher( hasher, flow_info_ );
 		apply_value_to_hasher( hasher, scope_id_ );
+	}
+
+	// Stringification.
+	template</type Stringifier/>
+	fn stringify( this, Stringifier &mut stringifier )
+	{
+		apply_value_to_stringifier( stringifier, "[" );
+		apply_value_to_stringifier( stringifier, ip_ );
+		if( scope_id_ != 0u )
+		{
+			apply_value_to_stringifier( stringifier, "%" );
+			apply_value_to_stringifier( stringifier, scope_id_ );
+		}
+		apply_value_to_stringifier( stringifier, "]" );
+		apply_value_to_stringifier( stringifier, ":" );
+		apply_value_to_stringifier( stringifier, port_ );
 	}
 
 	fn get_ip( this ) : ip_address_v6

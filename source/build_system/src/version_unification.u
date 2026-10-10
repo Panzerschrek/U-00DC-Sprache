@@ -1,6 +1,6 @@
 import "/hash_set.iu"
 import "/sort.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "version_unification.iu"
 
 namespace BK
@@ -82,7 +82,7 @@ fn nodiscard UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, Wor
 
 			foreach( &pair : connectded_components )
 			{
-				logger.LogVerbose( ust::concat( "Component ", ust::to_string8( pair.key() ) ) );
+				logger.LogVerbose( ust::stringify8( "Component ", pair.key() ) );
 				foreach( &component_build_target : pair.value() )
 				{
 					logger.LogVerbose( ust::concat( "\t", component_build_target.name ) );
@@ -91,15 +91,15 @@ fn nodiscard UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, Wor
 				var SemanticVersion max_version=
 					GetMaxBuildTargetDependencyVersion( workspace, pair.value(), build_target_name );
 
-				logger.LogVerbose( ust::concat(
+				logger.LogVerbose( ust::stringify8(
 					"Component max version is ",
-					ust::to_string8(max_version.major),
+					max_version.major,
 					".",
-					ust::to_string8(max_version.minor),
+					max_version.minor,
 					".",
-					ust::to_string8(max_version.patch),
+					max_version.patch,
 					".",
-					ust::to_string8(max_version.tweak) ) );
+					max_version.tweak ) );
 
 				num_dependencies_changed_in_this_iteration+=
 					SetBuildTargetDependencyVersion( workspace, pair.value(), build_target_name, max_version );
@@ -109,9 +109,9 @@ fn nodiscard UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, Wor
 		if( num_dependencies_changed_in_this_iteration == 0u )
 		{
 			// Nothing to unify left.
-			logger.LogVerbose( ust::concat(
+			logger.LogVerbose( ust::stringify8(
 				"Workspace global versioned packages version unification finished in ",
-				ust::to_string8( num_full_iterations + 1u ),
+				num_full_iterations + 1u,
 				" steps." ) );
 			break;
 		}
@@ -120,9 +120,9 @@ fn nodiscard UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, Wor
 		var u32 constexpr full_iterations_limit= 128u;
 		if( num_full_iterations >= full_iterations_limit )
 		{
-			logger.LogError( ust::concat(
+			logger.LogError( ust::stringify8(
 				"Error, global versioned packages version unification limit ",
-				ust::to_string8( full_iterations_limit ),
+				full_iterations_limit,
 				" reached!" ) );
 			return false;
 		}

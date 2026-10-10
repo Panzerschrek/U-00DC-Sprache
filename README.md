@@ -98,8 +98,7 @@ Fibonacci numbers printing:
 
 ```
 import "/main_wrapper.iu"
-import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stdout_ext.iu"
 
 pretty_main
 {
@@ -119,8 +118,7 @@ pretty_main
 
 fn PrintFibNumber( u32 index, u32 num )
 {
-	ust::stdout_print(
-		ust::concat( "Fibonacci number # ", ust::to_string8(index), " is ", ust::to_string8(num), "\n" ) );
+	ust::stdout_print_line( "Fibonacci number # ", index, " is ", num );
 }
 ```
 
@@ -128,8 +126,7 @@ Using iterators:
 
 ```
 import "/main_wrapper.iu"
-import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stdout_ext.iu"
 import "/vector.iu"
 
 pretty_main
@@ -143,7 +140,7 @@ pretty_main
 
 	foreach( &number : numbers )
 	{
-		ust::stdout_print( ust::concat( ust::to_string8( number ), "\n" ) );
+		ust::stdout_print_line( number );
 	}
 
 	return 0;

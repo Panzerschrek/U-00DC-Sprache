@@ -1,5 +1,5 @@
 import "/path_utils.iu"
-import "/string_conversions.iu"
+import "/stringification.iu"
 import "build_system_paths.iu"
 
 namespace BK
@@ -109,15 +109,7 @@ fn GetBuildTargetGeneratedPublicHeadersDirectory(
 
 fn StringifySemanticVersion( SemanticVersion& v ) : ust::string8
 {
-	return
-		ust::concat(
-			ust::to_string8( v.major ),
-			".",
-			ust::to_string8( v.minor ),
-			".",
-			ust::to_string8( v.patch ),
-			".",
-			ust::to_string8( v.tweak ) );
+	return ust::stringify8( v.major, ".", v.minor, ".", v.patch, ".", v.tweak );
 }
 
 } // namespace BK

@@ -1,9 +1,8 @@
-import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stdout_ext.iu"
 import "/lib/lib.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
-	ust::stdout_print( "Div result: " + ust::to_string8( Div( 76u, 5u ) ) + "\n" );
+	ust::stdout_print_line( "Div result: ", Div( 76u, 5u ) );
 	return 0;
 }

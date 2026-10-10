@@ -1,8 +1,7 @@
 //##success_test
 import "../imports/hash_map.iu"
-import "../imports/stdout.iu"
+import "../imports/stdout_ext.iu"
 import "../imports/string.iu"
-import "../imports/string_conversions.iu"
 import "../imports/vector.iu"
 
 
@@ -664,7 +663,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{
 		// Fill map, then remove most of the elements, then iterate it many times.
@@ -702,7 +701,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{
 		// Fill map, then clear, then iterate it many times.
@@ -732,7 +731,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{
 		// Fill map, then clear it using "retain" method, then iterate it many times.
@@ -772,7 +771,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{ // Test insertion/removal of many elements with somewhat intermediate chance of identical elements.
 
@@ -802,7 +801,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{ // Test with many searches for not so many elements.
 
@@ -829,7 +828,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{ // Insert sequential integers. Performance should not degrade.
 		var ust::hash_map</u32, i32/> mut m;
@@ -850,7 +849,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{ // Insert sequential integers shifted by several bits. Performance should not degrade.
 		var ust::hash_map</u32, i32/> mut m;
@@ -872,7 +871,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{ // Insert sequential floats. Performance should not degrade.
 		var ust::hash_map</f32, i32/> mut m;
@@ -893,7 +892,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{ // Insert sequential scaled down floats. Performance should not degrade.
 		var ust::hash_map</f32, i32/> mut m;
@@ -914,7 +913,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{ // Insert sequential scaled up floats. Performance should not degrade.
 		var ust::hash_map</f32, i32/> mut m;
@@ -935,7 +934,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{ // Insert a lot of random strings.
 		var ust::hash_map</ust::string8, u32/> mut m;
@@ -979,7 +978,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{ // Insert and remove the same value a lot of times.
 
@@ -1003,7 +1002,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
-		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		ust::stdout_print_line( "Result combination: ", combination );
 	}
 	{
 		// Fill map and then remove all elements.
@@ -1047,7 +1046,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			}
 
 			// Print result of iteration in order to prevent iteration loop to be optimized-out.
-			ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+			ust::stdout_print_line( "Result combination: ", combination );
 		}
 
 		// Iterate map many times. It should be fast, since map is empty.

@@ -2,8 +2,7 @@
 
 import "/assert.iu"
 import "/main_wrapper.iu"
-import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stdout_ext.iu"
 import "/vector.iu"
 
 pretty_main
@@ -52,8 +51,7 @@ pretty_main
 	// It's possible to iterate over a vector.
 	foreach( &el : float_vec )
 	{
-		ust::stdout_print( ust::to_string8( i32(el) ) );
-		ust::stdout_print( "\n" );
+		ust::stdout_print_line( el );
 	}
 
 	// Mutable iteration is also supported.

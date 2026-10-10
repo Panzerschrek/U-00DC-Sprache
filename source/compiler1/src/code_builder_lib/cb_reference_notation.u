@@ -139,7 +139,7 @@ fn CodeBuilder::EvaluateFunctionReferencePollution(
 	}
 	else
 	{
-		REPORT_ERROR( TypesMismatch, names_scope, src_loc, "array of " + reference_notation_pollution_element_type_.ToString(), variable.t )
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, ust::stringify8( "array of ", reference_notation_pollution_element_type_ ), variable.t )
 		return result;
 	}
 }
@@ -182,7 +182,7 @@ fn CodeBuilder::EvaluateFunctionReturnReferences(
 	}
 	else
 	{
-		REPORT_ERROR( TypesMismatch, names_scope, src_loc, "array of " + reference_notation_pollution_element_type_.ToString(), variable.t )
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, ust::stringify8( "array of ", reference_notation_pollution_element_type_ ), variable.t )
 		return result;
 	}
 }
@@ -232,7 +232,7 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences(
 			}
 			else
 			{
-				REPORT_ERROR( TypesMismatch, names_scope, src_loc, "array of " + reference_notation_param_reference_description_type_.ToString(), tuple_element_type )
+				REPORT_ERROR( TypesMismatch, names_scope, src_loc, ust::stringify8( "array of ", reference_notation_param_reference_description_type_ ), tuple_element_type )
 				continue;
 			}
 		}
@@ -241,7 +241,7 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences(
 	}
 	else
 	{
-		REPORT_ERROR( TypesMismatch, names_scope, src_loc, ust::concat( "tuple of ", reference_notation_param_reference_description_type_.ToString(), " arrays" ), variable.t )
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, ust::stringify8( "tuple of ", reference_notation_param_reference_description_type_, " arrays" ), variable.t )
 		return result;
 	}
 }

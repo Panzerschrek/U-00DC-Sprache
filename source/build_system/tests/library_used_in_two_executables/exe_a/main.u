@@ -1,9 +1,8 @@
-import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stdout_ext.iu"
 import "/lib/lib.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
-	ust::stdout_print( "exe_a: " + ust::to_string8( GetX() ) + "\n" );
+	ust::stdout_print_line( "exe_a: ", GetX() );
 	return 0;
 }

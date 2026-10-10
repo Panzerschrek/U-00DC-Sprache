@@ -89,7 +89,6 @@ Standart library:
 *) Reverse iterators for hash_map and hash_set. They are mostly useless, but should exist for completeness.
 *) Time library - request monotonic time, perform time difference calculations, perform conversions from/to calendar
 	time, perform conversions to human-readable format
-*) String formatting library
 *) Support casting "shared_ptr_final</A/>" to "shared_ptr_final</B/>" if A and B are polymorph related types
 *) Formatted console output functions
 *) More type traits
@@ -128,6 +127,8 @@ Standart library:
 *) Implement a thread-safe version of arena_allocator
 *) Support condition variable waiting with timeout
 *) Consider adding lock methods to "shared_ptr_mt" and "shared_ptr_mt_mutex" having timeout
+*) Consider implementing stringification for more library types - shared pointers, atomic variables, files, sockets,
+	but only if it makes sense
 
 Compiler:
 *) Fix alignment mismatch for 128-bit types in C++ and in Ü

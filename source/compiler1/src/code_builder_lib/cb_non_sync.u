@@ -19,26 +19,26 @@ fn CodeBuilder::GetTypeNonSync( mut this, Type& t, NamesScopePtr& names_scope, S
 
 	if( loop_start < non_sync_expression_stack_.size() )
 	{
-		var ust::string8 mut description;
+		var ust::default_stringifier8 mut stringifier;
 
 		for( auto mut i= loop_start; i < non_sync_expression_stack_.size(); ++i )
 		{
-			description += KeywordToString( Keyword::non_sync_ );
-			description += "</";
-			description += non_sync_expression_stack_[i].ToString();
-			description += "/>";
-			description += " -> ";
+			ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::non_sync_ ) );
+			ust::apply_value_to_stringifier( stringifier, "</" );
+			ust::apply_value_to_stringifier( stringifier, non_sync_expression_stack_[i] );
+			ust::apply_value_to_stringifier( stringifier, "/>" );
+			ust::apply_value_to_stringifier( stringifier, " -> " );
 		}
 
-		description += KeywordToString( Keyword::non_sync_ );
-		description += "</";
-		description += t.ToString();
-		description += "/>";
+		ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::non_sync_ ) );
+		ust::apply_value_to_stringifier( stringifier, "</" );
+		ust::apply_value_to_stringifier( stringifier, t );
+		ust::apply_value_to_stringifier( stringifier, "/>" );
 
 		auto mut errors_container_lock= root_errors_container_.try_lock_mut();
 
 		errors_container_lock.deref().push_back(
-			ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, src_loc, description ) );
+			ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, src_loc, move(stringifier).get() ) );
 
 		return false;
 	}

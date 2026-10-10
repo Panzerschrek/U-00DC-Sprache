@@ -1,8 +1,8 @@
 // This example demonstraits usage of TCP listener class, which is used to implement a simple HTTP server.
 
 import "/main_wrapper.iu"
-import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stdout_ext.iu"
+import "/stringification.iu"
 import "/tcp_listener.iu"
 
 pretty_main
@@ -10,22 +10,8 @@ pretty_main
 	// Use ipv4 address, but ipv6 addresses may be used too.
 	var ust::socket_address_v4 address( ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ), 57854u16 );
 
-	ust::stdout_print(
-		ust::concat(
-			"starting TCP server listening on address ",
-			address.get_ip().to_string(),
-			" and port ",
-			ust::to_string8( address.get_port() ),
-			"\n" ) );
-
-	ust::stdout_print(
-		ust::concat(
-			"Open it in browser via link like \"http://",
-			address.get_ip().to_string(),
-			":",
-			ust::to_string8( address.get_port() ),
-			"\"\n",
-			"Press Ctrl+C to stop it\n" ) );
+	ust::stdout_print_line( "starting TCP server listening on address ", address );
+	ust::stdout_print_line( "Open it in browser via link like \"http://", address, "\"\n", "Press Ctrl+C to stop it" );
 
 	// Create listener port.
 	var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( address ).try_take();
@@ -35,11 +21,7 @@ pretty_main
 	{
 		auto [ mut stream, client_address ] = listener.accept().try_take();
 
-		// Print client address in all possible forms - ipv4, ipv6.
-		variant_visit( &a : client_address )
-		{
-			ust::stdout_print( ust::concat( "Incoming connection from ", a.get_ip().to_string(), "\n" ) );
-		}
+		ust::stdout_print_line( "Incoming connection from ", client_address );
 
 		// Receive and print request text.
 		// It may be used to process request properly, but for now just ignore it.
@@ -48,7 +30,7 @@ pretty_main
 			var size_type bytes_read= stream.read( request_text.range().to_byte8_range() ).try_take();
 			request_text.resize( bytes_read, '\0' );
 
-			ust::stdout_print( "\n" );
+			ust::stdout_print_line();
 			ust::stdout_print( request_text );
 		}
 
@@ -59,7 +41,7 @@ pretty_main
 		WriteAll( stream, g_http_response_status_line );
 		// Then headers follow.
 		WriteAll( stream, g_http_response_headers );
-		WriteAll( stream, ust::concat( "Content-Length: ", ust::to_string8( typeinfo</ typeof(g_html_page_contents) />.size_of ), g_http_line_end ) );
+		WriteAll( stream, ust::stringify8( "Content-Length: ", typeinfo</ typeof(g_html_page_contents) />.size_of, g_http_line_end ) );
 		// Actual message is separated via empty line.
 		WriteAll( stream, g_http_response_header_end_marker );
 		// Actual HTML page (or some other contents).
