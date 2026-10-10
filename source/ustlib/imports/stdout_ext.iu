@@ -9,7 +9,6 @@
 //
 
 import "stdout.iu"
-import "string.iu"
 import "stringifier.iu"
 
 namespace ust

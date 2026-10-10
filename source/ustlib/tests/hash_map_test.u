@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/hash_map.iu"
 import "../imports/stdout_ext.iu"
+import "../imports/string.iu"
 import "../imports/vector.iu"
 
 
