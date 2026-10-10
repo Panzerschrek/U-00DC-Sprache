@@ -1,5 +1,4 @@
-import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stdout_ext.iu"
 import "/lib_a/lib_a.iu"
 import "/lib_b/lib_b.iu"
 
@@ -8,6 +7,6 @@ fn nomangle main() call_conv( "C" ) : i32
 	var Num x(17);
 	auto square= Square(x);
 	auto third_power= ThirdPower(x);
-	ust::stdout_print( ust::to_string8(x) + ": squared is " + ust::to_string8( square ) + ", third power is " + ust::to_string8(third_power) + "\n" );
+	ust::stdout_print_line( x, " squared is ", square, ", third power is ", third_power );
 	return 0;
 }

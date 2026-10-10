@@ -1,9 +1,8 @@
-import "/stdout.iu"
-import "/string_conversions.iu"
+import "/stdout_ext.iu"
 import "/exe/test.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
-	ust::stdout_print( ust::concat( "Constant value: ", ust::to_string8( some_constant ), "\n" ) );
+	ust::stdout_print_line( "Constant value: ", some_constant );
 	return 0;
 }
