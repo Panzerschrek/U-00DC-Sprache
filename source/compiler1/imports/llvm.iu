@@ -224,12 +224,11 @@ var LLVMOpcodeType
 
 } // LLVMOpcode
 
-enum LLVMUnnamedAddr : u32
-{
-	NoUnnamedAddr,    /**< Address of the GV is significant. */
-	LocalUnnamedAddr, /**< Address of the GV is locally insignificant. */
-	GlobalUnnamedAddr /**< Address of the GV is globally insignificant. */
-}
+type LLVMUnnamedAddr= u32;
+var LLVMUnnamedAddr
+	LLVMNoUnnamedAddr( 0 ),
+	LLVMLocalUnnamedAddr( 1 ),
+	LLVMGlobalUnnamedAddr( 2 );
 
 type LLVMAttributeIndex= u32;
 auto LLVMAttributeReturnIndex= 0u;

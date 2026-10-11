@@ -2477,7 +2477,7 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string_view8 name_null_ter
 
 		var LLVMValueRef global_value= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front() );
 		LLVMSetLinkage( global_value, LLVMPrivateLinkage );
-		LLVMSetUnnamedAddress( global_value, LLVMUnnamedAddr::GlobalUnnamedAddr );
+		LLVMSetUnnamedAddress( global_value, LLVMGlobalUnnamedAddr );
 		LLVMSetGlobalConstant( global_value, LLVMBool_::True );
 		if( initializer != Null::LLVMValueRef )
 		{
@@ -2611,7 +2611,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 
 	// Merge functions with identical code.
 	// We doesn't need different addresses for different functions.
-	unsafe( LLVMSetUnnamedAddress( llvm_function, LLVMUnnamedAddr::GlobalUnnamedAddr ) );
+	unsafe( LLVMSetUnnamedAddress( llvm_function, LLVMGlobalUnnamedAddr ) );
 
 	// We do not support exceptions. So, mark all functions as "nounwind".
 	AddFunctionAttribute( llvm_function, LLVMAttributeFunctionIndex, "nounwind" );
