@@ -3364,8 +3364,8 @@ fn CodeBuilder::ConstexprCompareEqual(
 
 			return
 				( is_float
-					? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l, r, g_null_string )
-					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l, r, g_null_string ) );
+					? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealOEQ, l, r, g_null_string )
+					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntEQ, l, r, g_null_string ) );
 		}
 	}
 	else if_var( &array_type : t.GetArrayType() )

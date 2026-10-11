@@ -649,7 +649,7 @@ fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_sc
 		var LLVMValueRef less_than_limit=
 			LLVMBuildICmp(
 				function_context.llvm_ir_builder,
-				LLVMIntPredicate::ULT,
+				LLVMIntULT,
 				memory_size,
 				LLVMConstInt(
 					fundamental_llvm_types_.size_type_,
@@ -2229,7 +2229,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 
 			if( case_range.low == case_range.high )
 			{
-				current_value_equals= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, switch_value, constant_low, g_null_string ) );
+				current_value_equals= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntEQ, switch_value, constant_low, g_null_string ) );
 			}
 			else
 			{
@@ -2240,8 +2240,8 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 					current_value_equals= unsafe(
 						LLVMBuildAnd(
 							function_context.llvm_ir_builder,
-							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, switch_value, constant_low , g_null_string ),
-							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, switch_value, constant_high, g_null_string ),
+							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntSGE, switch_value, constant_low , g_null_string ),
+							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntSLE, switch_value, constant_high, g_null_string ),
 							g_null_string ) );
 				}
 				else
@@ -2249,8 +2249,8 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 					current_value_equals= unsafe(
 						LLVMBuildAnd(
 							function_context.llvm_ir_builder,
-							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, switch_value, constant_low , g_null_string ),
-							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULE, switch_value, constant_high, g_null_string ),
+							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntUGE, switch_value, constant_low , g_null_string ),
+							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntULE, switch_value, constant_high, g_null_string ),
 							g_null_string ) );
 				}
 			}

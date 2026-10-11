@@ -76,7 +76,7 @@ private:
 
 				safe( move(func)( this, function_context, counter_value ) );
 
-				auto counter_test= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, counter_value_plus_one, loop_count_value, g_null_string );
+				auto counter_test= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntULT, counter_value_plus_one, loop_count_value, g_null_string );
 				LLVMBuildCondBr( function_context.llvm_ir_builder, counter_test, loop_block, block_after_loop );
 
 				var [ LLVMValueRef, 2 ] mut incoming_values[ zero_value, counter_value_plus_one ];

@@ -316,7 +316,7 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 			var LLVMValueRef r_address= unsafe( LLVMGetParam( llvm_function, 1u ) );
 			var LLVMValueRef l_value= unsafe( LLVMBuildLoad2( ir_builder, coroutine_handle_type, l_address, g_null_string ) );
 			var LLVMValueRef r_value= unsafe( LLVMBuildLoad2( ir_builder, coroutine_handle_type, r_address, g_null_string ) );
-			var LLVMValueRef cmp= unsafe( LLVMBuildICmp( ir_builder, LLVMIntPredicate::EQ, l_value, r_value, g_null_string ) );
+			var LLVMValueRef cmp= unsafe( LLVMBuildICmp( ir_builder, LLVMIntEQ, l_value, r_value, g_null_string ) );
 			unsafe( LLVMBuildRet( ir_builder, cmp ) );
 
 			unsafe( LLVMDisposeBuilder( ir_builder ) );
@@ -413,7 +413,7 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 		var LLVMValueRef mut mem_for_free= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.free ), coro_.free, $<(coro_free_args[0]), 2u, "coro_frame_memory_for_free\0"[0] );
 		MarkInstructionWithEmptyMetadata( mem_for_free, "u_coro_block_cleanup" );
 
-		var LLVMValueRef need_to_free= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::NE, mem_for_free, null, "coro_need_to_free\0"[0] );
+		var LLVMValueRef need_to_free= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntNE, mem_for_free, null, "coro_need_to_free\0"[0] );
 
 		var LLVMBasicBlockRef block_need_to_free= LLVMCreateBasicBlockInContext( llvm_context_, "need_to_free\0"[0] );
 		LLVMBuildCondBr( function_context.llvm_ir_builder, need_to_free, block_need_to_free, function_context.coro_suspend_bb );
