@@ -2265,19 +2265,7 @@ llvm::Value* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, co
 
 	// For "load" instructions created for enum values create range metadata.
 	if( const auto enum_= type.GetEnumType() )
-	{
-		if( enum_->syntax_element == nullptr ) // Make sure it's complete.
-		{
-			// TODO - handle case with full unsigned range required.
-			const uint32_t num_bits= 8u * uint32_t( GetFundamentalTypeSize( enum_->underlying_type.fundamental_type ) );
-			llvm::MDBuilder builder( llvm_context_ );
-			result->setMetadata(
-				llvm::LLVMContext::MD_range,
-				builder.createRange(
-					llvm::APInt( num_bits, uint64_t(0) ),
-					llvm::APInt( num_bits, uint64_t( enum_->element_count ) ) ) );
-		}
-	}
+		AddRangeMetadata( *result, *enum_ );
 
 	return result;
 }
@@ -2487,6 +2475,21 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 
 	U_ASSERT(false);
 	return nullptr;
+}
+
+void CodeBuilder::AddRangeMetadata( llvm::Instruction& value, const Enum& enum_type )
+{
+	if( enum_type.syntax_element == nullptr ) // Make sure it's complete.
+	{
+		// TODO - handle case with full unsigned range required.
+		const uint32_t num_bits= 8u * uint32_t( GetFundamentalTypeSize( enum_type.underlying_type.fundamental_type ) );
+		llvm::MDBuilder builder( llvm_context_ );
+		value.setMetadata(
+			llvm::LLVMContext::MD_range,
+			builder.createRange(
+				llvm::APInt( num_bits, uint64_t(0) ),
+				llvm::APInt( num_bits, uint64_t( enum_type.element_count ) ) ) );
+	}
 }
 
 llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
