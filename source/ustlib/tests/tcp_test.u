@@ -591,7 +591,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto [ mut server_stream, client_address ]= listener.accept().try_take();
 
 		auto& message= "Testing peek";
-		var size_type message_size= typeinfo</ typeof(message) />.element_count;
+		var size_type message_size= ust::array_size( message );
 
 		assert( server_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
 
@@ -805,7 +805,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		else{ assert( false, "Unexpected client address, expected ip v6!" ); }
 
 		auto& message= "Testing TCP with IP v6 sockets.";
-		var size_type message_size= typeinfo</ typeof(message) />.element_count;
+		var size_type message_size= ust::array_size( message );
 
 		assert( server_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
 
@@ -826,7 +826,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		{
 			auto& message= "Testing explicit socket close - server to client.";
-			var size_type message_size= typeinfo</ typeof(message) />.element_count;
+			var size_type message_size= ust::array_size( message );
 
 			assert( server_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
 
@@ -836,7 +836,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 		{
 			auto& message= "Testing explicit socket close - client to server.";
-			var size_type message_size= typeinfo</ typeof(message) />.element_count;
+			var size_type message_size= ust::array_size( message );
 
 			assert( client_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
 
