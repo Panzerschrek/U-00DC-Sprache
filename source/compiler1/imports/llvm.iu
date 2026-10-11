@@ -66,12 +66,11 @@ var LLVMLinkage
 	LLVMLinkerPrivateLinkage( 15 ),
 	LLVMLinkerPrivateWeakLinkage( 16 );
 
-enum LLVMVisibility : u32
-{
-	Default,  /**< The GV is visible */
-	Hidden,   /**< The GV is hidden */
-	Protected /**< The GV is protected */
-}
+type LLVMVisibility= u32;
+var LLVMVisibility
+	LLVMDefaultVisibility( 0 ),
+	LLVMHiddenVisibility( 1 ),
+	LLVMProtectedVisibility( 2 );
 
 enum LLVMIntPredicate : u32
 {

@@ -1239,18 +1239,18 @@ fn CodeBuilder::BuildFuncCode(
 	auto body_syntax_element_ptr= func_variable.body_syntax_element.try_to_non_nullable();
 	var Synt::Function& body_syntax_element= body_syntax_element_ptr.deref();
 
-	var LLVMVisibility mut visibility= LLVMVisibility::Hidden;
+	var LLVMVisibility mut visibility= LLVMHiddenVisibility;
 	if( !func_variable.prototype_syntax_element.empty() &&
 		IsSrcLocFromOtherImportedFile( func_variable.prototype_syntax_element.try_deref().src_loc ) )
 	{
 		// This function is declared within an imported file,
 		// which means that is should be acessible outside current build target.
 		// Mark such functions with default visibility. Other functions should have hidden visibility.
-		visibility= LLVMVisibility::Default;
+		visibility= LLVMDefaultVisibility;
 	}
 	else
 	{
-		visibility= LLVMVisibility::Hidden;
+		visibility= LLVMHiddenVisibility;
 	}
 
 	if( names_scope.lock_imut().deref().IsInsideTemplate() )
@@ -2528,7 +2528,7 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 		}
 
 		// Use hidden visibility - in order to avoid exporting variables from shared libraries (we don't support it).
-		LLVMSetVisibility( global_variable, LLVMVisibility::Hidden );
+		LLVMSetVisibility( global_variable, LLVMHiddenVisibility );
 
 		return global_variable;
 	}

@@ -437,7 +437,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 		}
 
 		// Make type id table hidden in order to avoid exporting it.
-		LLVMSetVisibility( global_value, LLVMVisibility::Hidden );
+		LLVMSetVisibility( global_value, LLVMHiddenVisibility );
 
 		halt if( class_.polymorph_type_id_table != Null::LLVMValueRef );
 		class_.polymorph_type_id_table= global_value;
