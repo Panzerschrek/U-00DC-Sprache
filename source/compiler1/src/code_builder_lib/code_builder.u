@@ -2877,6 +2877,11 @@ fn CodeBuilder::CreateTypedLoad( mut this, FunctionContext& function_context, Ty
 		MarkInstructionWithTBAAMetadata( result, access_tag );
 	}
 
+	if_var( &enum_ : t.GetEnumType() )
+	{
+		AddRangeMetadata( result, enum_.lock_imut().deref() );
+	}
+
 	return result;
 }
 
@@ -3070,6 +3075,56 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 	}
 
 	halt;
+}
+
+fn CodeBuilder::AddRangeMetadata( this, LLVMValueRef value, Enum& enum_type )
+{
+	if( enum_type.underlying_type.llvm_type == Null::LLVMTypeRef )
+	{
+		return; // Some incomplete enum. May be in case of error.
+	}
+
+	var u32 element_count( enum_type.elements.size() );
+
+	if( element_count == 0u )
+	{
+		return; // Some error?
+	}
+
+	var u32 num_bits= 8u * GetFundamentalTypeSize( enum_type.underlying_type.fundamental_type );
+
+	if( num_bits <= 32u )
+	{
+		// Since signed numbers are used in ranges, we can represent range bounds only to maxumum signed values.
+		// For example if an enum has 150 values,  it should have range [ 0, 150 ),
+		// but we can't represent 150, since its signed representation is -106.
+		//
+		// It may be possible to use two ranges - for signed and unsigned parts,
+		// but for now just don't care and avoid emitting range metadata in such complicated cases.
+		//
+		var u32 max_signed_value_of_given_bit_width= ( 1u << ( num_bits - 1u ) ) - 1u;
+		if( element_count > max_signed_value_of_given_bit_width )
+		{
+			return;
+		}
+	}
+
+	unsafe
+	{
+		var [ LLVMMetadataRef, 2 ] mut range_values
+		[
+			LLVMValueAsMetadata( LLVMConstInt( enum_type.underlying_type.llvm_type, u64(0), LLVMBool_::False ) ),
+			LLVMValueAsMetadata( LLVMConstInt( enum_type.underlying_type.llvm_type, u64(element_count), LLVMBool_::False ) ),
+		];
+
+		var ust::string_view8 name= "range";
+
+		LLVMSetMetadata(
+			value,
+			LLVMGetMDKindIDInContext( llvm_context_, name.data(), u32( name.size() ) ),
+			LLVMMetadataAsValue( llvm_context_,
+				LLVMMDNodeInContext2( llvm_context_, $<(range_values[0]), 2s ) ) );
+	}
 }
 
 fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, VariableLite& class_variable, ClassField& field ) : LLVMValueRef

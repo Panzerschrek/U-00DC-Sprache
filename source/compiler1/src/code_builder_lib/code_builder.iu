@@ -1268,6 +1268,9 @@ private:
 	fn CreateMoveToLLVMRegisterInstruction( mut this, VariableLite& variable, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
 
+	// Given value should be "load" or "call" instruction!
+	fn AddRangeMetadata( this, LLVMValueRef value, Enum& enum_type );
+
 	fn CreateClassFieldGEP( this, FunctionContext& function_context, VariableLite& class_variable, ClassField& field ) : LLVMValueRef;
 	fn CreateClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassField& field ) : LLVMValueRef;
 	fn CreateClassParentFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassType::Parent& parent ) : LLVMValueRef;

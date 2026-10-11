@@ -5056,6 +5056,15 @@ fn CodeBuilder::DoCallFunction(
 			unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeReturnIndex, attr ) );
 		}
 
+		if( function_type.return_value_type == ValueType::Value )
+		{
+			// For value-results of enum types add range metadata.
+			if_var( &enum_ : function_type.return_type.GetEnumType() )
+			{
+				AddRangeMetadata( call_result, enum_.lock_imut().deref() );
+			}
+		}
+
 		switch( call_info.return_value_passing.kind )
 		{
 			ICallingConventionInfo::ReturnValuePassingKind::Direct -> {},
