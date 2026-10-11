@@ -104,26 +104,29 @@ var LLVMRealPredicate
 	LLVMRealUNE( 14 ),
 	LLVMRealPredicateTrue( 15 );
 
-enum LLVMTypeKind : u32
-{
-	Void,        /**< type with no size */
-	Half,        /**< 16 bit floating point type */
-	Float,       /**< 32 bit floating point type */
-	Double,      /**< 64 bit floating point type */
-	X86_FP80,    /**< 80 bit floating point type (X87) */
-	P128,       /**< 128 bit floating point type (112-bit mantissa)*/
-	PPC_FP128,   /**< 128 bit floating point type (two 64-bits) */
-	Label,       /**< Labels */
-	Integer,     /**< Arbitrary bit width integers */
-	Function,    /**< Functions */
-	Struct,      /**< Structures */
-	Array,       /**< Arrays */
-	Pointer,     /**< Pointers */
-	Vector,      /**< SIMD 'packed' format, or other vector type */
-	Metadata,    /**< Metadata */
-	X86_MMX,     /**< X86 MMX */
-	Token,        /**< Tokens */
-}
+type LLVMTypeKind= u32;
+var LLVMTypeKind
+	LLVMVoidTypeKind( 0 ),
+	LLVMHalfTypeKind( 1 ),
+	LLVMFloatTypeKind( 2 ),
+	LLVMDoubleTypeKind( 3 ),
+	LLVMX86_FP80TypeKind( 4 ),
+	LLVMFP128TypeKind( 5 ),
+	LLVMPPC_FP128TypeKind( 6 ),
+	LLVMLabelTypeKind( 7 ),
+	LLVMIntegerTypeKind( 8 ),
+	LLVMFunctionTypeKind( 9 ),
+	LLVMStructTypeKind( 10 ),
+	LLVMArrayTypeKind( 11 ),
+	LLVMPointerTypeKind( 12 ),
+	LLVMVectorTypeKind( 13 ),
+	LLVMMetadataTypeKind( 14 ),
+	LLVMX86_MMXTypeKind( 15 ),
+	LLVMTokenTypeKind( 16 ),
+	LLVMScalableVectorTypeKind( 17 ),
+	LLVMBFloatTypeKind( 18 ),
+	LLVMX86_AMXTypeKind( 19 ),
+	LLVMTargetExtTypeKind( 20 );
 
 type LLVMOpcodeType = i32;
 

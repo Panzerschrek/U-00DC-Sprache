@@ -3255,7 +3255,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 	{
 		auto constant_type= LLVMTypeOf( constant );
 		auto constant_type_kind= LLVMGetTypeKind( constant_type );
-		if( constant_type_kind == LLVMTypeKind::Array )
+		if( constant_type_kind == LLVMArrayTypeKind )
 		{
 			var u32 length( LLVMGetArrayLength2( constant_type ) );
 			for( auto mut i= 0u; i < length; ++i )
@@ -3272,7 +3272,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 				MoveConstantToMemory( element_ptr, constant_element, function_context );
 			}
 		}
-		else if( constant_type_kind == LLVMTypeKind::Struct )
+		else if( constant_type_kind == LLVMStructTypeKind )
 		{
 			auto length= LLVMCountStructElementTypes( constant_type );
 			for( auto mut i= 0u; i < length; ++i )
@@ -3307,10 +3307,10 @@ fn CodeBuilder::CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t
 	{
 		var LLVMTypeRef llvm_type= t.GetLLVMType();
 		var LLVMTypeKind type_kind= LLVMGetTypeKind( llvm_type );
-		if( type_kind == LLVMTypeKind::Integer ||
-			type_kind == LLVMTypeKind::Float ||
-			type_kind == LLVMTypeKind::Double ||
-			type_kind == LLVMTypeKind::Pointer )
+		if( type_kind == LLVMIntegerTypeKind ||
+			type_kind == LLVMFloatTypeKind ||
+			type_kind == LLVMDoubleTypeKind ||
+			type_kind == LLVMPointerTypeKind )
 		{
 			// Simple scalar - create load/store.
 			auto value= CreateTypedLoad( function_context, t, src );
@@ -3355,12 +3355,12 @@ fn CodeBuilder::ConstexprCompareEqual(
 
 			var LLVMTypeKind type_kind= LLVMGetTypeKind( t.GetLLVMType() );
 			var bool is_float=
-				type_kind == LLVMTypeKind::Half ||
-				type_kind == LLVMTypeKind::Float ||
-				type_kind == LLVMTypeKind::Double ||
-				type_kind == LLVMTypeKind::X86_FP80 ||
-				type_kind == LLVMTypeKind::P128 ||
-				type_kind == LLVMTypeKind::PPC_FP128;
+				type_kind == LLVMHalfTypeKind||
+				type_kind == LLVMFloatTypeKind ||
+				type_kind == LLVMDoubleTypeKind ||
+				type_kind == LLVMX86_FP80TypeKind ||
+				type_kind == LLVMFP128TypeKind ||
+				type_kind == LLVMPPC_FP128TypeKind;
 
 			return
 				( is_float

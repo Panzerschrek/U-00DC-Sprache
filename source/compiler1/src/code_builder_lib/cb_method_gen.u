@@ -1063,12 +1063,12 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 
 			var LLVMTypeKind type_kind= LLVMGetTypeKind( t.GetLLVMType() );
 			var bool is_float=
-				type_kind == LLVMTypeKind::Half ||
-				type_kind == LLVMTypeKind::Float ||
-				type_kind == LLVMTypeKind::Double ||
-				type_kind == LLVMTypeKind::X86_FP80 ||
-				type_kind == LLVMTypeKind::P128 ||
-				type_kind == LLVMTypeKind::PPC_FP128;
+				type_kind == LLVMHalfTypeKind ||
+				type_kind == LLVMFloatTypeKind ||
+				type_kind == LLVMDoubleTypeKind ||
+				type_kind == LLVMX86_FP80TypeKind ||
+				type_kind == LLVMFP128TypeKind ||
+				type_kind == LLVMPPC_FP128TypeKind;
 
 			var LLVMValueRef eq=
 				( is_float
