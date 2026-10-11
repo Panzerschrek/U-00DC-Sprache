@@ -50,7 +50,7 @@ fn DebugInfoBuilder::constructor(
 			ust::nullptr</char8/>(), 0s, // Flags
 			0u, // Runtime version
 			ust::nullptr</char8/>(), 0s, // SplitName
-			LLVMDWARFEmissionKind::Full,
+			LLVMDWARFEmissionFull,
 			0u, // DWOId
 			LLVMBool::True, // SplitDebugInlining
 			LLVMBool::False, // DebugInfoForProfiling
@@ -63,7 +63,7 @@ fn DebugInfoBuilder::constructor(
 		builder_,
 		stub_type_name.data(), stub_type_name.size(),
 		8u64,
-		LLVMDWARFTypeEncoding::unsigned,
+		LLVMDWARFTypeEncoding_::unsigned,
 		0u ) );
 }
 
@@ -398,13 +398,13 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMeta
 			ust::nullptr</char8/>(), 0s ) );
 	}
 
-	var LLVMDWARFTypeEncoding mut encoding= LLVMDWARFTypeEncoding::unsigned;
-	if( t.fundamental_type == U_FundamentalType::bool_ ){  encoding= LLVMDWARFTypeEncoding::boolean;        }
-	else if( IsFloatingPoint( t.fundamental_type )     ){  encoding= LLVMDWARFTypeEncoding::float;          }
-	else if( IsChar( t.fundamental_type )              ){  encoding= LLVMDWARFTypeEncoding::unsigned_char;  }
-	else if( IsByte( t.fundamental_type )              ){  encoding= LLVMDWARFTypeEncoding::unsigned;       }
-	else if( IsSignedInteger( t.fundamental_type )     ){  encoding= LLVMDWARFTypeEncoding::signed;         }
-	else if( IsUnsignedInteger( t.fundamental_type )   ){  encoding= LLVMDWARFTypeEncoding::unsigned;       }
+	var LLVMDWARFTypeEncoding mut encoding= LLVMDWARFTypeEncoding_::unsigned;
+	if( t.fundamental_type == U_FundamentalType::bool_ ){  encoding= LLVMDWARFTypeEncoding_::boolean;        }
+	else if( IsFloatingPoint( t.fundamental_type )     ){  encoding= LLVMDWARFTypeEncoding_::float;          }
+	else if( IsChar( t.fundamental_type )              ){  encoding= LLVMDWARFTypeEncoding_::unsigned_char;  }
+	else if( IsByte( t.fundamental_type )              ){  encoding= LLVMDWARFTypeEncoding_::unsigned;       }
+	else if( IsSignedInteger( t.fundamental_type )     ){  encoding= LLVMDWARFTypeEncoding_::signed;         }
+	else if( IsUnsignedInteger( t.fundamental_type )   ){  encoding= LLVMDWARFTypeEncoding_::unsigned;       }
 
 	return unsafe( LLVMDIBuilderCreateBasicType(
 		builder_,

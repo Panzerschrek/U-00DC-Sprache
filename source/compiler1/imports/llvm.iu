@@ -271,26 +271,26 @@ namespace LLVMCallConv
 type LLVMDWARFSourceLanguage= u32;
 type LLVMDIFlags= u32;
 
-enum LLVMDWARFTypeEncoding : u32
+type LLVMDWARFTypeEncoding= u32;
+namespace LLVMDWARFTypeEncoding_
 {
-	none,
-	address,
-	boolean,
-	complex_float,
-	float,
-	signed,
-	signed_char,
-	unsigned,
-	unsigned_char,
+	var LLVMDWARFTypeEncoding
+		none= 0x0u,
+		address= 0x1u,
+		boolean= 0x2u,
+		complex_float= 0x3u,
+		float= 0x4u,
+		signed= 0x5u,
+		signed_char= 0x6u,
+		unsigned= 0x7u,
+		unsigned_char= 0x8u;
 }
-static_assert( i32(LLVMDWARFTypeEncoding::unsigned_char) == 0x08 );
 
-enum LLVMDWARFEmissionKind : u32
-{
-	None,
-	Full,
-	LineTablesOnly
-}
+type LLVMDWARFEmissionKind= u32;
+var LLVMDWARFEmissionKind
+	LLVMDWARFEmissionNone= 0u,
+	LLVMDWARFEmissionFull= 1u,
+	LLVMDWARFEmissionLineTablesOnly= 2u;
 
 // Functions
 
