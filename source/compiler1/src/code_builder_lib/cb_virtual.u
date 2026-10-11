@@ -428,7 +428,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 
 			// Create comdat in order to ensure uniquiness of the table across different modules, that import file with declaration of this class.
 			var LLVMComdatRef comdat= LLVMGetOrInsertComdat( module_, name_mangled_null_terminated.front() );
-			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
+			LLVMSetComdatSelectionKind( comdat, LLVMAnyComdatSelectionKind );
 			LLVMSetComdat( global_value, comdat );
 		}
 		else

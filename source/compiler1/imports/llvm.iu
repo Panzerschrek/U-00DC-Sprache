@@ -235,14 +235,13 @@ auto LLVMAttributeReturnIndex= 0u;
 auto LLVMAttributeFunctionIndex= ~0u;
 auto LLVMAttributeFirstParamIndex= 1u;
 
-enum LLVMComdatSelectionKind : u32
-{
-	Any,        ///< The linker may choose any COMDAT.
-	ExactMatch, ///< The data referenced by the COMDAT must  be the same.
-	Largest,    ///< The linker will choose the largest COMDAT.
-	NoDuplicates, ///< No other Module may specify this COMDAT.
-	SameSize ///< The data referenced by the COMDAT must be the same size.
-}
+type LLVMComdatSelectionKind= u32;
+var LLVMComdatSelectionKind
+	LLVMAnyComdatSelectionKind( 0 ),
+	LLVMExactMatchComdatSelectionKind( 1 ),
+	LLVMLargestComdatSelectionKind( 2 ),
+	LLVMNoDeduplicateComdatSelectionKind( 3 ),
+	LLVMSameSizeComdatSelectionKind( 4 );
 
 type LLVMCallConvID = u32;
 

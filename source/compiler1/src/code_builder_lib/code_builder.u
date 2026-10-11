@@ -2519,7 +2519,7 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 			// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
 			LLVMSetLinkage( global_variable, LVMExternalLinkage );
 			auto comdat= LLVMGetOrInsertComdat( module_, name_with_suffix.front() );
-			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
+			LLVMSetComdatSelectionKind( comdat, LLVMAnyComdatSelectionKind );
 			LLVMSetComdat( global_variable, comdat );
 		}
 		else
