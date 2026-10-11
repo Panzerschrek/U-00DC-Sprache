@@ -4578,6 +4578,13 @@ Value CodeBuilder::DoCallFunction(
 		if( really_function == nullptr && function_type.return_value_type != ValueType::Value )
 			call_instruction->addRetAttr( llvm::Attribute::NonNull );
 
+		if( function_type.return_value_type  == ValueType::Value )
+		{
+			// For value-results of enum types add range metadata.
+			if( const Enum* const enum_= function_type.return_type.GetEnumType() )
+				AddRangeMetadata( *call_instruction, *enum_ );
+		}
+
 		switch( call_info.return_value_passing.kind )
 		{
 		case ICallingConventionInfo::ReturnValuePassingKind::Direct:
