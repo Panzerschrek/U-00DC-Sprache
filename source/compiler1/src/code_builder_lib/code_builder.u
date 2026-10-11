@@ -332,7 +332,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 		else
 		{
 			auto mut name= "ust_memory_allocate_impl";
-			unsafe( LLVMSetValueName2( malloc_function_, $<(name[0]), typeinfo</typeof(name)/>.element_count ) );
+			unsafe( LLVMSetValueName2( malloc_function_, $<(name[0]), ust::array_size( name ) ) );
 		}
 
 		var LLVMValueRef ust_memory_free_impl= unsafe( LLVMGetNamedFunction( module_, "ust_memory_free_impl\0"[0] ) );
@@ -343,7 +343,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 		else
 		{
 			auto mut name= "ust_memory_free_impl";
-			unsafe( LLVMSetValueName2( free_function_, $<(name[0]), typeinfo</typeof(name)/>.element_count ) );
+			unsafe( LLVMSetValueName2( free_function_, $<(name[0]), ust::array_size( name ) ) );
 		}
 	}
 
@@ -2831,7 +2831,7 @@ fn CodeBuilder::MarkInstructionWithTBAAMetadata( this, LLVMValueRef instruction,
 	auto& name= "tbaa";
 	unsafe( LLVMSetMetadata(
 		instruction,
-		LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( typeinfo</typeof(name)/>.element_count ) ),
+		LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( ust::array_size( name ) ) ),
 		LLVMMetadataAsValue( llvm_context_, metadata ) ) );
 }
 
@@ -2845,7 +2845,7 @@ fn CodeBuilder::MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_
 	auto& name= "nonnull";
 	unsafe( LLVMSetMetadata(
 		load_instruction,
-		LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( typeinfo</typeof(name)/>.element_count ) ),
+		LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( ust::array_size( name ) ) ),
 		LLVMMetadataAsValue( llvm_context_, LLVMMDNodeInContext2( llvm_context_, ust::nullptr</LLVMMetadataRef/>(), 0s ) ) ) );
 }
 
