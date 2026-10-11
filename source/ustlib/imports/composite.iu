@@ -3,6 +3,15 @@ import "mixin_utils.iu"
 namespace ust
 {
 
+// A helper function for getting size of an array variable.
+template</ type T, size_type S />
+fn array_size( [ T, S ]& arr ) : size_type
+{
+	static_if( same_type</ typeof(arr), void /> ) {} // Force use unused variable in "typeof" context.
+
+	return S;
+}
+
 // Create a zeroed value of given type.
 // Works not only for composites, but for scalars too.
 // It doesn't work for types, which don't support zero initializer.

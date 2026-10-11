@@ -32,6 +32,22 @@ struct SomeComplexStruct
 fn nomangle main() call_conv( "C" ) : i32
 {
 	//
+	// array_size test
+	//
+	{
+		var [ i32, 0 ] a0= zero_init;
+		static_assert( ust::array_size( a0 ) == 0s );
+		var [ f64, 1 ] a1= zero_init;
+		static_assert( ust::array_size( a1 ) == 1s );
+		var [ u8, 3 ] a3= zero_init;
+		static_assert( ust::array_size( a3 ) == 3s );
+		var [ [ f32, 4 ], 16 ] a16= zero_init;
+		static_assert( ust::array_size( a16 ) == 16s );
+		var [ u16, 256 ] a256= zero_init;
+		static_assert( ust::array_size( a256 ) == 256s );
+	}
+
+	//
 	// make_zeroed test
 	//
 
