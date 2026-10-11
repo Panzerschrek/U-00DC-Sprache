@@ -632,7 +632,7 @@ fn remove_directory_recursive( filesystem_path_view path ) : io_result</void/>
 		}
 
 		var size_type mut name_size= 0s;
-		while( name_size < typeinfo</ typeof( entry.d_name ) />.size_of )
+		while( name_size < array_size( entry.d_name ) )
 		{
 			if( entry.d_name[name_size] == '\0' )
 			{
@@ -782,7 +782,7 @@ fn nodiscard directory_raw_iterator::impl_unix::next( mut this ) : optional</ io
 		}
 
 		var size_type mut name_size= 0s;
-		while( name_size < typeinfo</ typeof( entry.d_name ) />.size_of )
+		while( name_size < array_size( entry.d_name ) )
 		{
 			if( entry.d_name[name_size] == '\0' )
 			{
