@@ -46,26 +46,25 @@ auto& g_null_string= "\0"[0];
 type LLVMBool = i32;
 namespace LLVMBool_ { var LLVMBool False= 0, True= 1; }
 
-enum LLVMLinkage : u32
-{
-	External,    /**< Externally visible function */
-	AvailableExternally,
-	LinkOnceAny, /**< Keep one copy of function when linking (inline)*/
-	LinkOnceODR, /**< Same, but only replaced by something equivalent. */
-	LinkOnceODRAutoHide, /**< Obsolete */
-	WeakAny,     /**< Keep one copy of function when linking (weak) */
-	WeakODR,     /**< Same, but only replaced by something equivalent. */
-	Appending,   /**< Special purpose, only applies to global arrays */
-	Internal,    /**< Rename collisions when linking (static functions) */
-	Private,     /**< Like Internal, but omit from symbol table */
-	DLLImport,   /**< Obsolete */
-	DLLExport,   /**< Obsolete */
-	ExternalWeak,/**< ExternalWeak linkage description */
-	Ghost,       /**< Obsolete */
-	Common,      /**< Tentative definitions */
-	LinkerPrivate, /**< Like Private, but linker removes. */
-	LinkerPrivateWeak /**< Like LinkerPrivate, but is weak. */
-}
+type LLVMLinkage= u32;
+var LLVMLinkage
+	LVMExternalLinkage( 0 ),
+	LLVMAvailableExternallyLinkage( 1 ),
+	LLVMLinkOnceAnyLinkage( 2 ),
+	LLVMLinkOnceODRLinkage( 3 ),
+	LLVMLinkOnceODRAutoHideLinkage( 4 ),
+	LLVMWeakAnyLinkage( 5 ),
+	LLVMWeakODRLinkage( 6 ),
+	LLVMAppendingLinkage( 7 ),
+	LLVMInternalLinkage( 8 ),
+	LLVMPrivateLinkage( 9 ),
+	LLVMDLLImportLinkage( 10 ),
+	LLVMDLLExportLinkage( 11 ),
+	LLVMExternalWeakLinkage( 12 ),
+	LLVMGhostLinkage( 13 ),
+	LLVMCommonLinkage( 14 ),
+	LLVMLinkerPrivateLinkage( 15 ),
+	LLVMLinkerPrivateWeakLinkage( 16 );
 
 enum LLVMVisibility : u32
 {

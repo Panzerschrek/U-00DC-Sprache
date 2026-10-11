@@ -424,7 +424,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 
 		if( comdats_supported_ )
 		{
-			LLVMSetLinkage( global_value, LLVMLinkage::External );
+			LLVMSetLinkage( global_value, LVMExternalLinkage );
 
 			// Create comdat in order to ensure uniquiness of the table across different modules, that import file with declaration of this class.
 			var LLVMComdatRef comdat= LLVMGetOrInsertComdat( module_, name_mangled_null_terminated.front() );
@@ -433,7 +433,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 		}
 		else
 		{
-			LLVMSetLinkage( global_value, LLVMLinkage::LinkOnceODR );
+			LLVMSetLinkage( global_value, LLVMLinkOnceODRLinkage );
 		}
 
 		// Make type id table hidden in order to avoid exporting it.

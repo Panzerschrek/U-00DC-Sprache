@@ -469,7 +469,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 							unsafe
 							{
 								var LLVMValueRef global_value= LLVMAddGlobal( module_, llvm_type, g_null_string );
-								LLVMSetLinkage( global_value, LLVMLinkage::Private );
+								LLVMSetLinkage( global_value, LLVMPrivateLinkage );
 								LLVMSetUnnamedAddress( global_value, LLVMUnnamedAddr::GlobalUnnamedAddr );
 								LLVMSetInitializer( global_value, LLVMGetUndef( llvm_type ) );
 								llvm_value= global_value;

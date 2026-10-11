@@ -1257,30 +1257,30 @@ fn CodeBuilder::BuildFuncCode(
 	{
 		// Set private visibility for functions inside templates.
 		// There is no need to use external linkage, since each user of the template must import file with source template.
-		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMPrivateLinkage ) );
 	}
 	else if( !IsSrcLocFromMainFile( body_syntax_element.src_loc ) )
 	{
 		// This function is defined inside imported file - no need to use private linkage for it.
-		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMPrivateLinkage ) );
 	}
 	else if( func_variable.no_mangle )
 	{
 		// The only reason to use "nomangle" functions is to interact with external code.
 		// For such purposes  external linkage is essential.
-		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::External ) );
+		unsafe( LLVMSetLinkage( llvm_function, LVMExternalLinkage ) );
 		unsafe( LLVMSetVisibility( llvm_function, visibility ) );
 	}
 	else if( func_variable.prototype_syntax_element.empty() || IsSrcLocFromMainFile( func_variable.prototype_syntax_element.try_deref().src_loc ) )
 	{
 		// This function has no portotype in imported files.
 		// There is no reason to use external linkage for it.
-		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMPrivateLinkage ) );
 	}
 	else
 	{
 		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
-		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::External ) );
+		unsafe( LLVMSetLinkage( llvm_function, LVMExternalLinkage ) );
 		unsafe( LLVMSetVisibility( llvm_function, visibility ) );
 	}
 
@@ -2476,7 +2476,7 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string_view8 name_null_ter
 		}
 
 		var LLVMValueRef global_value= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front() );
-		LLVMSetLinkage( global_value, LLVMLinkage::Private );
+		LLVMSetLinkage( global_value, LLVMPrivateLinkage );
 		LLVMSetUnnamedAddress( global_value, LLVMUnnamedAddr::GlobalUnnamedAddr );
 		LLVMSetGlobalConstant( global_value, LLVMBool_::True );
 		if( initializer != Null::LLVMValueRef )
@@ -2517,14 +2517,14 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 		if( comdats_supported_ )
 		{
 			// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
-			LLVMSetLinkage( global_variable, LLVMLinkage::External );
+			LLVMSetLinkage( global_variable, LVMExternalLinkage );
 			auto comdat= LLVMGetOrInsertComdat( module_, name_with_suffix.front() );
 			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
 			LLVMSetComdat( global_variable, comdat );
 		}
 		else
 		{
-			LLVMSetLinkage( global_variable, LLVMLinkage::LinkOnceODR );
+			LLVMSetLinkage( global_variable, LLVMLinkOnceODRLinkage );
 		}
 
 		// Use hidden visibility - in order to avoid exporting variables from shared libraries (we don't support it).
@@ -2601,7 +2601,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
 	if( function_variable.is_generated )
 	{
-		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMPrivateLinkage ) );
 	}
 
 	if( function_variable.IsCoroutine() )
