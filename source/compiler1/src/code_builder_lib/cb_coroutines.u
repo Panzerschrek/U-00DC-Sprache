@@ -240,7 +240,7 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 	var ust::string8 class_name= mangler_.deref().MangleType( class_type_ptr );
 	var LLVMTypeRef llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, class_name.front() ) );
 	var LLVMTypeRef mut coroutine_handle_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
-	unsafe( LLVMStructSetBody( llvm_type, $<(coroutine_handle_type), 1u, LLVMBool::False ) );
+	unsafe( LLVMStructSetBody( llvm_type, $<(coroutine_handle_type), 1u, LLVMBool_::False ) );
 	with( mut lock : class_type_ptr.lock_mut() )
 	{
 		lock.deref().llvm_type= llvm_type;
@@ -360,7 +360,7 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 
 		var LLVMValueRef null= LLVMConstNull( pointer_type );
 
-		var [ LLVMValueRef, 4 ] mut coro_id_args[ LLVMConstInt( fundamental_llvm_types_.u32_, 0u64, LLVMBool::False ), promise, null, null ];
+		var [ LLVMValueRef, 4 ] mut coro_id_args[ LLVMConstInt( fundamental_llvm_types_.u32_, 0u64, LLVMBool_::False ), promise, null, null ];
 		var LLVMValueRef mut coro_id= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.id), coro_.id, $<(coro_id_args[0]), 4u, "coro_id\0"[0] );
 		MarkInstructionWithEmptyMetadata( coro_id, "u_coro_block_prepare" );
 
@@ -430,7 +430,7 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, function_context.coro_suspend_bb );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, function_context.coro_suspend_bb );
 
-		var [ LLVMValueRef, 2 ] mut coro_end_args[ coro_handle, LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) ];
+		var [ LLVMValueRef, 2 ] mut coro_end_args[ coro_handle, LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool_::False ) ];
 		var LLVMValueRef end_call= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.end ), coro_.end, $<(coro_end_args[0]), 2u, g_null_string );
 		MarkInstructionWithEmptyMetadata( end_call, "u_coro_block_suspend" );
 
@@ -441,15 +441,15 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, function_context.coro_final_suspend_bb );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, function_context.coro_final_suspend_bb );
 
-		var [ LLVMValueRef, 2 ] mut final_suspend_args[ U1_ConstantTokenNone( llvm_context_ ), LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False ) ];
+		var [ LLVMValueRef, 2 ] mut final_suspend_args[ U1_ConstantTokenNone( llvm_context_ ), LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool_::False ) ];
 		var LLVMValueRef final_suspend_value= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.suspend ), coro_.suspend, $<(final_suspend_args[0]), 2u, "final_suspend_value\0"[0] );
 		MarkInstructionWithEmptyMetadata( final_suspend_value, "u_coro_block_suspend_final" );
 
 		var LLVMBasicBlockRef unreachable_block= LLVMCreateBasicBlockInContext( llvm_context_, "coro_final_suspend_unreachable\0"[0] );
 
 		var LLVMValueRef switch_instr= LLVMBuildSwitch( function_context.llvm_ir_builder, final_suspend_value, function_context.coro_suspend_bb, 2u );
-		LLVMAddCase( switch_instr, LLVMConstInt( fundamental_llvm_types_.i8_, 0u64, LLVMBool::False ), unreachable_block );
-		LLVMAddCase( switch_instr, LLVMConstInt( fundamental_llvm_types_.i8_, 1u64, LLVMBool::False ), function_context.coro_cleanup_bb );
+		LLVMAddCase( switch_instr, LLVMConstInt( fundamental_llvm_types_.i8_, 0u64, LLVMBool_::False ), unreachable_block );
+		LLVMAddCase( switch_instr, LLVMConstInt( fundamental_llvm_types_.i8_, 1u64, LLVMBool_::False ), function_context.coro_cleanup_bb );
 
 		// Final suspend unreachable block.
 		// It's undefined behaviour to resume coroutine in final suspention state. So, just add unreachable instruction here.
@@ -898,8 +898,8 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 		var [ LLVMValueRef, 3 ] mut promise_args
 		[
 			coro_handle,
-			unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(LLVMABIAlignmentOfType( data_layout_, promise_llvm_type )), LLVMBool::False ) ),
-			unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) ),
+			unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(LLVMABIAlignmentOfType( data_layout_, promise_llvm_type )), LLVMBool_::False ) ),
+			unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool_::False ) ),
 		];
 		var LLVMValueRef promise= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.promise), coro_.promise, $<(promise_args[0]), 3u, "await_promise\0"[0] ) );
 
@@ -995,15 +995,15 @@ fn CodeBuilder::CoroutineSuspend( mut this, NamesScopePtr& names_scope, Function
 {
 	unsafe
 	{
-		var [ LLVMValueRef, 2 ] mut suspend_args[ U1_ConstantTokenNone( llvm_context_ ), LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) ];
+		var [ LLVMValueRef, 2 ] mut suspend_args[ U1_ConstantTokenNone( llvm_context_ ), LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool_::False ) ];
 		var LLVMValueRef suspend_value= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.suspend ), coro_.suspend, $<(suspend_args[0]), 2u, "suspend_value\0"[0] );
 
 		var LLVMBasicBlockRef next_block= LLVMCreateBasicBlockInContext( llvm_context_, "suspend_normal\0"[0] );
 		var LLVMBasicBlockRef destroy_block= LLVMCreateBasicBlockInContext( llvm_context_, "suspend_destroy\0"[0] );
 
 		var LLVMValueRef switch_instr= LLVMBuildSwitch( function_context.llvm_ir_builder, suspend_value, function_context.coro_suspend_bb, 2u );
-		LLVMAddCase( switch_instr, LLVMConstInt( fundamental_llvm_types_.i8_, 0u64, LLVMBool::False ), next_block );
-		LLVMAddCase( switch_instr, LLVMConstInt( fundamental_llvm_types_.i8_, 1u64, LLVMBool::False ), destroy_block );
+		LLVMAddCase( switch_instr, LLVMConstInt( fundamental_llvm_types_.i8_, 0u64, LLVMBool_::False ), next_block );
+		LLVMAddCase( switch_instr, LLVMConstInt( fundamental_llvm_types_.i8_, 1u64, LLVMBool_::False ), destroy_block );
 
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, destroy_block );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, destroy_block );

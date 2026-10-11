@@ -46,14 +46,14 @@ fn DebugInfoBuilder::constructor(
 			c_dwarf_language_id,
 			source_file_entries_.front(),
 			ust::nullptr</char8/>(), 0s, // TODO - set producer
-			LLVMBool::False, // TODO - pass "optimized' flag
+			LLVMBool_::False, // TODO - pass "optimized' flag
 			ust::nullptr</char8/>(), 0s, // Flags
 			0u, // Runtime version
 			ust::nullptr</char8/>(), 0s, // SplitName
 			LLVMDWARFEmissionFull,
 			0u, // DWOId
-			LLVMBool::True, // SplitDebugInlining
-			LLVMBool::False, // DebugInfoForProfiling
+			LLVMBool_::True, // SplitDebugInlining
+			LLVMBool_::False, // DebugInfoForProfiling
 			ust::nullptr</char8/>(), 0s, // SysRoot
 			ust::nullptr</char8/>(), 0s  // SDK
 		) );
@@ -118,11 +118,11 @@ fn DebugInfoBuilder::CreateFunctionInfo(
 				file,
 				src_loc.GetLine(),
 				CreateFunctionDIType( func_variable.t ),
-				LLVMBool::False, // IsLocalToUnit
-				LLVMBool::True, // IsDefinition
+				LLVMBool_::False, // IsLocalToUnit
+				LLVMBool_::True, // IsDefinition
 				src_loc.GetLine(),
 				LLVMDIFlags(0),
-				LLVMBool::False /* TODO - pass optimized flag*/ );
+				LLVMBool_::False /* TODO - pass optimized flag*/ );
 
 			LLVMSetSubprogram( lazy_function.function, di_function );
 		}
@@ -192,7 +192,7 @@ fn DebugInfoBuilder::CreateVariableInfo( mut this, FunctionContext& function_con
 			source_file_entries_[ size_type(src_loc.GetFileIndex()) ],
 			src_loc.GetLine(),
 			CreateDIType( variable.t ),
-			LLVMBool::False, // AlwaysPreserve
+			LLVMBool_::False, // AlwaysPreserve
 			LLVMDIFlags(0),
 			LLVMABIAlignmentOfType( data_layout_, variable.t.GetLLVMType() ) * 8u32 );
 
@@ -237,7 +237,7 @@ fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& fun
 			source_file_entries_[ size_type(src_loc.GetFileIndex()) ],
 			src_loc.GetLine(),
 			di_type,
-			LLVMBool::False, // AlwaysPreserve
+			LLVMBool_::False, // AlwaysPreserve
 			LLVMDIFlags(0),
 			LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32 );
 
@@ -290,7 +290,7 @@ fn DebugInfoBuilder::CreateGlobalVariableInfo( mut this, NamesScopePtr& parent_s
 
 			var LLVMMetadataRef type_debug_info= CreateDIType( variable.t );
 
-			var LLVMBool is_local_to_unit= LLVMBool::False; // Consider global variables non-local, since global mutable variables may be deduplicated.
+			var LLVMBool is_local_to_unit= LLVMBool_::False; // Consider global variables non-local, since global mutable variables may be deduplicated.
 
 			var LLVMMetadataRef var_info=
 				LLVMDIBuilderCreateGlobalVariableExpression(
@@ -331,7 +331,7 @@ fn DebugInfoBuilder::GetOrCreateNamespaceScope( mut this, NamesScopePtr& names_s
 		var ust::string_view8 name= s.GetThisNamespaceName();
 
 		var LLVMMetadataRef scope_debug_info=
-			unsafe( LLVMDIBuilderCreateNameSpace( builder_, parent_scope_debug_info, name.data(), name.size(), LLVMBool::True ) );
+			unsafe( LLVMDIBuilderCreateNameSpace( builder_, parent_scope_debug_info, name.data(), name.size(), LLVMBool_::True ) );
 
 		namespace_scopes_.insert_new( names_scope, scope_debug_info );
 
@@ -416,7 +416,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMeta
 
 fn DebugInfoBuilder::CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef
 {
-	if( unsafe( LLVMTypeIsSized( t.llvm_type ) ) == LLVMBool::False )
+	if( unsafe( LLVMTypeIsSized( t.llvm_type ) ) == LLVMBool_::False )
 	{
 		return stub_type_;
 	}
@@ -435,7 +435,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRe
 
 fn DebugInfoBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 {
-	if( unsafe( LLVMTypeIsSized( t.llvm_type ) ) == LLVMBool::False )
+	if( unsafe( LLVMTypeIsSized( t.llvm_type ) ) == LLVMBool_::False )
 	{
 		return stub_type_;
 	}
@@ -576,7 +576,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadata
 				builder_,
 				cast_mut(pair.first[0]).data(), pair.first[0].size(),
 				i64(pair.first[1]),
-				LLVMBool::False ) );
+				LLVMBool_::False ) );
 	}
 
 	var SrcLoc& src_loc= enum_.syntax_element.deref().src_loc;

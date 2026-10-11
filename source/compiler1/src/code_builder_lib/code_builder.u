@@ -120,11 +120,11 @@ fn CodeBuilder::constructor(
 				.element_count(2),
 				.llvm_type= unsafe( LLVMArrayType2( LLVMArrayType2( fundamental_llvm_types_.char8_, 2u64 ), 2u64 ) ),
 			},
-		virtual_function_pointer_type_= unsafe(LLVMPointerType( LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::True ), 0u )),
+		virtual_function_pointer_type_= unsafe(LLVMPointerType( LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool_::True ), 0u )),
 		polymorph_type_id_table_element_type_= unsafe( LLVMStructCreateNamed( llvm_context, "__U_polymorph_type_id_table_element\0"[0] ) ),
 	)
 {
-	unsafe( LLVMStructSetBody( fundamental_llvm_types_.void_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False ) );
+	unsafe( LLVMStructSetBody( fundamental_llvm_types_.void_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool_::False ) );
 
 	unsafe
 	{
@@ -133,7 +133,7 @@ fn CodeBuilder::constructor(
 			fundamental_llvm_types_.size_type_,
 			LLVMPointerType( polymorph_type_id_table_element_type_, 0u ),
 		];
-		LLVMStructSetBody( polymorph_type_id_table_element_type_, $<(elements[0]), 2u, LLVMBool::False );
+		LLVMStructSetBody( polymorph_type_id_table_element_type_, $<(elements[0]), 2u, LLVMBool_::False );
 	}
 }
 
@@ -153,13 +153,13 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 
 	unsafe // Prepare dummy function.
 	{
-		auto global_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
+		auto global_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool_::False );
 		global_llvm_function_= LLVMAddFunction( module_, g_null_string, global_function_llvm_type );
 	}
 
 	unsafe // Prepare halt function.
 	{
-		auto halt_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
+		auto halt_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool_::False );
 		halt_function_= LLVMAddFunction( module_, "__U_halt\0"[0], halt_function_llvm_type );
 	}
 	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "noreturn" );
@@ -175,13 +175,13 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 		malloc_function_= LLVMAddFunction(
 			module_,
 			"__U_ust_memory_allocate_impl\0"[0],
-			LLVMFunctionType( malloc_result_type, $<(malloc_size_type), 1u, LLVMBool::False ) );
+			LLVMFunctionType( malloc_result_type, $<(malloc_size_type), 1u, LLVMBool_::False ) );
 		LLVMSetFunctionCallConv( malloc_function_, GetLLVMCallingConvention( CallingConvention::Default ) );
 
 		free_function_= LLVMAddFunction(
 			module_,
 			"__U_ust_memory_free_impl\0"[0],
-			LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, $<(malloc_result_type), 1u, LLVMBool::False ) );
+			LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, $<(malloc_result_type), 1u, LLVMBool_::False ) );
 		LLVMSetFunctionCallConv( free_function_, GetLLVMCallingConvention( CallingConvention::Default ) );
 	}
 
@@ -202,7 +202,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 			{
 				var LLVMTypeRef mut arg_type= lifetime_function_arg_type_;
 				var LLVMTypeRef ret_type= fundamental_llvm_types_.void_for_ret_;
-				var LLVMTypeRef function_type= LLVMFunctionType( ret_type, $<(arg_type), 1u, LLVMBool::False );
+				var LLVMTypeRef function_type= LLVMFunctionType( ret_type, $<(arg_type), 1u, LLVMBool_::False );
 
 				lifetime_start_debug_func_= LLVMAddFunction( module_, "__U_debug_lifetime_start\0"[0], function_type );
 				lifetime_end_debug_func_= LLVMAddFunction( module_, "__U_debug_lifetime_end\0"[0], function_type );
@@ -278,9 +278,9 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 			auto llvm_type= v.t.GetLLVMType();
 			unsafe
 			{
-				if( LLVMIsOpaqueStruct( llvm_type ) == LLVMBool::True )
+				if( LLVMIsOpaqueStruct( llvm_type ) == LLVMBool_::True )
 				{
-					LLVMStructSetBody( llvm_type, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
+					LLVMStructSetBody( llvm_type, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool_::False );
 
 					auto initializer= LLVMConstNamedStruct( llvm_type, ust::nullptr</LLVMValueRef/>(), 0u );
 					LLVMSetInitializer( v.llvm_value, initializer );
@@ -2478,7 +2478,7 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string_view8 name_null_ter
 		var LLVMValueRef global_value= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front() );
 		LLVMSetLinkage( global_value, LLVMLinkage::Private );
 		LLVMSetUnnamedAddress( global_value, LLVMUnnamedAddr::GlobalUnnamedAddr );
-		LLVMSetGlobalConstant( global_value, LLVMBool::True );
+		LLVMSetGlobalConstant( global_value, LLVMBool_::True );
 		if( initializer != Null::LLVMValueRef )
 		{
 			LLVMSetInitializer( global_value, initializer );
@@ -2512,7 +2512,7 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 	unsafe
 	{
 		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_with_suffix.front() );
-		LLVMSetGlobalConstant( global_variable, LLVMBool::False );
+		LLVMSetGlobalConstant( global_variable, LLVMBool_::False );
 
 		if( comdats_supported_ )
 		{
@@ -2746,7 +2746,7 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, Functi
 			var LLVMTypeRef llvm_type= param.t.GetLLVMType();
 			unsafe
 			{
-				if( LLVMTypeIsSized( llvm_type ) != LLVMBool::True )
+				if( LLVMTypeIsSized( llvm_type ) != LLVMBool_::True )
 				{
 					continue; // May be in case of error.
 				}
@@ -2759,7 +2759,7 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, Functi
 	unsafe
 	{
 		var LLVMTypeRef llvm_type= function_type.return_type.GetLLVMType();
-		if( LLVMTypeIsSized( llvm_type ) != LLVMBool::True )
+		if( LLVMTypeIsSized( llvm_type ) != LLVMBool_::True )
 		{
 			return; // May be in case of error.
 		}
@@ -2806,7 +2806,7 @@ fn CodeBuilder::IsGlobalVariable( VariablePtr& variable ) : bool
 		return
 			v.location == Variable::Location::Pointer &&
 			v.llvm_value != Null::LLVMValueRef &&
-			unsafe( LLVMIsConstant( v.llvm_value ) ) == LLVMBool::True;
+			unsafe( LLVMIsConstant( v.llvm_value ) ) == LLVMBool_::True;
 	}
 }
 
@@ -2903,14 +2903,14 @@ fn CodeBuilder::CreateTypedReferenceLoad( mut this, FunctionContext& function_co
 	// Set "dereferenceable" metadata to tell LLVM passes that we can read bytes of the underlying object.
 	unsafe
 	{
-		if( LLVMTypeIsSized( llvm_type ) == LLVMBool::True )
+		if( LLVMTypeIsSized( llvm_type ) == LLVMBool_::True )
 		{
 			var LLVMMetadataRef mut operand=
 				LLVMValueAsMetadata(
 					LLVMConstInt(
 						fundamental_llvm_types_.i64_, // LLVM requires i64 as type for "dereferenceable" metadata size.
 						LLVMABISizeOfType( data_layout_, llvm_type ),
-						LLVMBool::False ) );
+						LLVMBool_::False ) );
 
 			var ust::string_view8 metadata_name= "dereferenceable";
 			LLVMSetMetadata(
@@ -3050,7 +3050,7 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 		return Null::LLVMValueRef;
 	}
 
-	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(ref)) == LLVMBool::False )
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(ref)) == LLVMBool_::False )
 	{
 		return Null::LLVMValueRef;
 	}
@@ -3083,7 +3083,7 @@ fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, Cl
 	{
 		return Null::LLVMValueRef;
 	}
-	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool_::False )
 	{
 		return Null::LLVMValueRef;
 	}
@@ -3107,7 +3107,7 @@ fn CodeBuilder::CreateClassParentFieldGEP( this, FunctionContext& function_conte
 	{
 		return Null::LLVMValueRef;
 	}
-	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool_::False )
 	{
 		return Null::LLVMValueRef;
 	}
@@ -3130,7 +3130,7 @@ fn CodeBuilder::CreateBaseClassFieldGEP( this, FunctionContext& function_context
 	{
 		return Null::LLVMValueRef;
 	}
-	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool_::False )
 	{
 		return Null::LLVMValueRef;
 	}
@@ -3155,7 +3155,7 @@ fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, 
 	{
 		return Null::LLVMValueRef;
 	}
-	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool_::False )
 	{
 		return Null::LLVMValueRef;
 	}
@@ -3185,7 +3185,7 @@ fn CodeBuilder::CreateArrayElementGEP( this, FunctionContext& function_context, 
 		return Null::LLVMValueRef;
 	}
 	if( function_context.is_functionless_context &&
-		( unsafe(LLVMIsConstant(value)) == LLVMBool::False || unsafe(LLVMIsConstant(index)) == LLVMBool::False ) )
+		( unsafe(LLVMIsConstant(value)) == LLVMBool_::False || unsafe(LLVMIsConstant(index)) == LLVMBool_::False ) )
 	{
 		return Null::LLVMValueRef;
 	}
@@ -3199,7 +3199,7 @@ fn CodeBuilder::CreateArrayElementGEP( this, FunctionContext& function_context, 
 
 fn CodeBuilder::CreateIndexValue( this, u32 index ) : LLVMValueRef
 {
-	return unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(index), LLVMBool::False ) );
+	return unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(index), LLVMBool_::False ) );
 }
 
 fn CodeBuilder::ForceCreateConstantIndexGEP( this, FunctionContext& function_context, LLVMTypeRef t, LLVMValueRef value, u32 index ) : LLVMValueRef
@@ -3209,7 +3209,7 @@ fn CodeBuilder::ForceCreateConstantIndexGEP( this, FunctionContext& function_con
 		return Null::LLVMValueRef;
 	}
 
-	if( unsafe( LLVMIsConstant(value) ) == LLVMBool::True )
+	if( unsafe( LLVMIsConstant(value) ) == LLVMBool_::True )
 	{
 		// Constant will be folded properly and no instruction will be actiually inserted.
 		var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), CreateIndexValue( index ) ];
@@ -3326,7 +3326,7 @@ fn CodeBuilder::CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t
 				function_context.llvm_ir_builder,
 				dst, alignment,
 				src, alignment,
-				LLVMConstInt( fundamental_llvm_types_.u64_, size, LLVMBool::False ) );
+				LLVMConstInt( fundamental_llvm_types_.u64_, size, LLVMBool_::False ) );
 		}
 	}
 }
@@ -3350,7 +3350,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 		{
 			if( t == void_type_ )
 			{
-				return LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+				return LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool_::False );
 			}
 
 			var LLVMTypeKind type_kind= LLVMGetTypeKind( t.GetLLVMType() );
@@ -3372,7 +3372,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 	{
 		unsafe
 		{
-			var LLVMValueRef mut res= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+			var LLVMValueRef mut res= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool_::False );
 			for( auto mut i= 0u64; i < array_type.element_count; ++i )
 			{
 				var u32 index(i);
@@ -3389,7 +3389,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 	{
 		unsafe
 		{
-			var LLVMValueRef mut res= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+			var LLVMValueRef mut res= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool_::False );
 			for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 			{
 				var u32 index(i);
@@ -3407,7 +3407,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 		if( !class_type.lock_imut().deref().is_equality_comparable )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, Type(class_type) )
-			return unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) );
+			return unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool_::False ) );
 		}
 
 		// Search for "==" operator.
@@ -3445,7 +3445,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 						}
 					}
 
-					return unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) );
+					return unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool_::False ) );
 				}
 			}
 		}
@@ -3476,13 +3476,13 @@ fn CodeBuilder::CreateLifetimeStart( this,  FunctionContext &mut function_contex
 		}
 
 		var LLVMTypeRef t= LLVMGetAllocatedType( alloca_inst );
-		if( LLVMTypeIsSized( t ) == LLVMBool::False ) // May be in case of error.
+		if( LLVMTypeIsSized( t ) == LLVMBool_::False ) // May be in case of error.
 		{
 			return;
 		}
 
 		var u64 size_of= LLVMABISizeOfType( data_layout_, t );
-		var LLVMValueRef size_of_value= LLVMConstInt( fundamental_llvm_types_.u64_, size_of, LLVMBool::False );
+		var LLVMValueRef size_of_value= LLVMConstInt( fundamental_llvm_types_.u64_, size_of, LLVMBool_::False );
 		var LLVMValueRef mut ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, g_null_string );
 
 		var [ LLVMValueRef, 2 ] mut args[ size_of_value, ptr_converted ];
@@ -3515,13 +3515,13 @@ fn CodeBuilder::CreateLifetimeEnd( this, FunctionContext &mut function_context, 
 		}
 
 		var LLVMTypeRef t= LLVMGetAllocatedType( alloca_inst );
-		if( LLVMTypeIsSized( t ) == LLVMBool::False ) // May be in case of error.
+		if( LLVMTypeIsSized( t ) == LLVMBool_::False ) // May be in case of error.
 		{
 			return;
 		}
 
 		var u64 size_of= LLVMABISizeOfType( data_layout_, t );
-		var LLVMValueRef size_of_value= LLVMConstInt( fundamental_llvm_types_.u64_, size_of, LLVMBool::False );
+		var LLVMValueRef size_of_value= LLVMConstInt( fundamental_llvm_types_.u64_, size_of, LLVMBool_::False );
 		var LLVMValueRef mut ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, g_null_string );
 
 		var [ LLVMValueRef, 2 ] mut args[ size_of_value, ptr_converted ];

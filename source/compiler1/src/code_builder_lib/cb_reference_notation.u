@@ -297,11 +297,11 @@ fn CodeBuilder::GetReturnInnerReferencesConstant( this, FunctionType::ReturnInne
 		constant_initializers[i]= return_references_constant[1];
 	}
 
-	tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, elements_llvm_types.data(), u32(elements_llvm_types.size()), LLVMBool::False ) );
+	tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, elements_llvm_types.data(), u32(elements_llvm_types.size()), LLVMBool_::False ) );
 
 	return ust::make_tuple(
 		Type( move(tuple_type) ),
-		unsafe( LLVMConstStructInContext( llvm_context_, constant_initializers.data(), u32(constant_initializers.size()), LLVMBool::False ) ) );
+		unsafe( LLVMConstStructInContext( llvm_context_, constant_initializers.data(), u32(constant_initializers.size()), LLVMBool_::False ) ) );
 }
 
 fn CodeBuilder::GetReferencesPollutionConstant( this, FunctionType::ReferencesPollution& references_pollution ) : ReferenceNotationConstant

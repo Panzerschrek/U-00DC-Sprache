@@ -643,7 +643,7 @@ fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_sc
 				LLVMConstInt(
 					fundamental_llvm_types_.size_type_,
 					LLVMABISizeOfType( data_layout_, element_llvm_type ),
-					LLVMBool::False ),
+					LLVMBool_::False ),
 				"alloca_num_bytes\0"[0] );
 
 		var LLVMValueRef less_than_limit=
@@ -654,7 +654,7 @@ fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_sc
 				LLVMConstInt(
 					fundamental_llvm_types_.size_type_,
 					c_min_bytes_for_heap_allocation,
-					LLVMBool::False ),
+					LLVMBool_::False ),
 				"alloca_less_than_stack_allocation_limit\0"[0] );
 
 		var LLVMBasicBlockRef stack_allocation_block=LLVMCreateBasicBlockInContext( llvm_context_, "stack_allocation_block\0"[0] );
@@ -1540,8 +1540,8 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 	var [ LLVMValueRef, 3 ] mut promise_args
 	[
 		coro_handle,
-		unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(LLVMABIAlignmentOfType( data_layout_, promise_llvm_type )), LLVMBool::False ) ),
-		unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) ),
+		unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(LLVMABIAlignmentOfType( data_layout_, promise_llvm_type )), LLVMBool_::False ) ),
+		unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool_::False ) ),
 	];
 	var LLVMValueRef promise= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.promise), coro_.promise, $<(promise_args[0]), 3u, "promise\0"[0] ) );
 
@@ -2634,7 +2634,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 						// Add internal (inaccessible) name for current loop index to use it later to encode lambda names.
 						// TODO - maybe make this counter available for a programmer?
 
-						auto index_value= unsafe( LLVMConstInt( self.fundamental_llvm_types_.u32_, u64(i), LLVMBool::False ) );
+						auto index_value= unsafe( LLVMConstInt( self.fundamental_llvm_types_.u32_, u64(i), LLVMBool_::False ) );
 						lock.deref().AddName(
 							" tuple for index",
 							Variable
@@ -3475,7 +3475,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		unsafe
 		{
 			auto operand_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-			auto one_value= LLVMConstInt( variable.t.GetLLVMType(), 1u64, LLVMBool::True );
+			auto one_value= LLVMConstInt( variable.t.GetLLVMType(), 1u64, LLVMBool_::True );
 			auto result_value= ( delta > 0
 				? LLVMBuildAdd( function_context.llvm_ir_builder, operand_value, one_value, "++\0"[0] )
 				: LLVMBuildSub( function_context.llvm_ir_builder, operand_value, one_value, "--\0"[0] ) );
@@ -3503,7 +3503,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		unsafe
 		{
 			var LLVMValueRef
-				mut delta_value= LLVMConstInt( fundamental_llvm_types_.size_type_, u64(i64(delta)), LLVMBool::True ),
+				mut delta_value= LLVMConstInt( fundamental_llvm_types_.size_type_, u64(i64(delta)), LLVMBool_::True ),
 				result_value= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), pointer_value, $<(delta_value), 1u, op_name[0] );
 			CreateTypedStore( function_context, variable.t, result_value, variable.llvm_value );
 		}

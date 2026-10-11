@@ -342,7 +342,7 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 
 		// TODO - maybe create unnamed struct (like a tuple)?
 		class_type.virtual_table_llvm_type= LLVMStructCreateNamed( llvm_context_, virtual_table_type_name.front() );
-		LLVMStructSetBody( class_type.virtual_table_llvm_type, virtual_table_struct_fields.data(), u32(virtual_table_struct_fields.size()), LLVMBool::False );
+		LLVMStructSetBody( class_type.virtual_table_llvm_type, virtual_table_struct_fields.data(), u32(virtual_table_struct_fields.size()), LLVMBool_::False );
 	}
 }
 
@@ -402,7 +402,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 			var u64 offset= LLVMOffsetOfElement( data_layout_, class_.llvm_type, parent.field_number );
 			var [ LLVMValueRef, 2 ] mut element_initializers
 			[
-				LLVMConstInt( fundamental_llvm_types_.size_type_, offset, LLVMBool::False ),
+				LLVMConstInt( fundamental_llvm_types_.size_type_, offset, LLVMBool_::False ),
 				first_element_address,
 			];
 
@@ -420,7 +420,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 
 		var LLVMValueRef global_value= LLVMAddGlobal( module_, type_id_table_type, name_mangled_null_terminated.front() );
 		LLVMSetInitializer( global_value, initializer );
-		LLVMSetGlobalConstant( global_value, LLVMBool::True );
+		LLVMSetGlobalConstant( global_value, LLVMBool_::True );
 
 		if( comdats_supported_ )
 		{
@@ -470,7 +470,7 @@ fn CodeBuilder::BuildClassVirtualTable_r( mut this, ClassType& ancestor_class, C
 		if( initializer_values.empty() )
 		{
 			// offset
-			initializer_values.push_back( LLVMConstInt( fundamental_llvm_types_.size_type_, offset, LLVMBool::False ) );
+			initializer_values.push_back( LLVMConstInt( fundamental_llvm_types_.size_type_, offset, LLVMBool_::False ) );
 
 			// Type id
 			auto dummy_function_context= CreateGlobalFunctionContext();

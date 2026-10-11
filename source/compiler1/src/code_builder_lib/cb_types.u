@@ -96,7 +96,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 
 	scoped_array LLVMTypeRef mut element_llvm_types[ out_tuple_type.element_types.size() ]( out_tuple_type.element_types.iter().map( Type::GetLLVMType ) );
 
-	out_tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
+	out_tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool_::False ) );
 
 	return out_tuple_type;
 }
@@ -337,7 +337,7 @@ fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type, ICal
 		llvm_param_types.push_back( argument_passing.llvm_type );
 	}
 
-	return unsafe( LLVMFunctionType( ret_llvm_type, llvm_param_types.data(), u32(llvm_param_types.size()), LLVMBool::False ) );
+	return unsafe( LLVMFunctionType( ret_llvm_type, llvm_param_types.data(), u32(llvm_param_types.size()), LLVMBool_::False ) );
 }
 
 fn CodeBuilder::FunctionTypeToPointer( mut this, FunctionType mut function_type ) : FunctionPointerType

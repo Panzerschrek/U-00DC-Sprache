@@ -266,7 +266,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 			var SrcLoc filler_initializer_src_loc= Synt::GetSrcLoc( filler_initializer );
 
 			var LLVMValueRef first_index_value=
-				unsafe( LLVMConstInt( fundamental_llvm_types_.size_type_, first_index, LLVMBool::False ) );
+				unsafe( LLVMConstInt( fundamental_llvm_types_.size_type_, first_index, LLVMBool_::False ) );
 
 			var ReferencesGraph references_graph_before_loop= function_context.references_graph;
 
@@ -462,7 +462,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 		if( is_constant )
 		{
 			halt if( elements_constants.size() != tuple_type.element_types.size() ); // TODO - replace with assert
-			return unsafe( LLVMConstStructInContext( llvm_context_, elements_constants.data(), u32(elements_constants.size()), LLVMBool::False ) );
+			return unsafe( LLVMConstStructInContext( llvm_context_, elements_constants.data(), u32(elements_constants.size()), LLVMBool_::False ) );
 		}
 		return Null::LLVMValueRef;
 	}
@@ -937,7 +937,7 @@ fn CodeBuilder::ApplyEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 
 		if( constant_initializers.size() == tuple_type.element_types.size() )
 		{
-			return unsafe( LLVMConstStructInContext( llvm_context_, constant_initializers.data(), u32(constant_initializers.size()), LLVMBool::False ) );
+			return unsafe( LLVMConstStructInContext( llvm_context_, constant_initializers.data(), u32(constant_initializers.size()), LLVMBool_::False ) );
 		}
 		return Null::LLVMValueRef;
 	}
@@ -1141,7 +1141,7 @@ fn CodeBuilder::ApplyConstructorInitializer( mut this, NamesScopePtr& names_scop
 			}
 		}
 
-		if( llvm_value != Null::LLVMValueRef && unsafe( LLVMIsConstant( llvm_value ) ) == LLVMBool::True ){ return llvm_value; }
+		if( llvm_value != Null::LLVMValueRef && unsafe( LLVMIsConstant( llvm_value ) ) == LLVMBool_::True ){ return llvm_value; }
 
 		return Null::LLVMValueRef;
 	}

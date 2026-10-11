@@ -1154,9 +1154,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		unsafe
 		{
 			// Check opaque before set body for cases of errors (class body duplication).
-			if( LLVMIsOpaqueStruct( class_.llvm_type ) == LLVMBool::True )
+			if( LLVMIsOpaqueStruct( class_.llvm_type ) == LLVMBool_::True )
 			{
-				LLVMStructSetBody( class_.llvm_type, fields_llvm_types.data(), u32(fields_llvm_types.size()), LLVMBool::False );
+				LLVMStructSetBody( class_.llvm_type, fields_llvm_types.data(), u32(fields_llvm_types.size()), LLVMBool_::False );
 			}
 		}
 	}
@@ -1598,7 +1598,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		var Enum::Element mut out_element;
 
 		auto name_mangled= mangler_.deref().MangleGlobalVariable( enum_inernal_names_scope.lock_imut().deref(), element.name, enum_type, true );
-		out_element.constexpr_value= unsafe( LLVMConstInt( underlying_type.llvm_type, u64(enum_elements.size()), LLVMBool::False ) );
+		out_element.constexpr_value= unsafe( LLVMConstInt( underlying_type.llvm_type, u64(enum_elements.size()), LLVMBool_::False ) );
 		out_element.llvm_value= AddGlobalConstantVariable( name_mangled, underlying_type.llvm_type, out_element.constexpr_value );
 
 		if( !enum_elements.insert_new( element.name, move(out_element) ) )
@@ -1706,7 +1706,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		if( variable_declaration.is_thread_local )
 		{
 			debug_assert( is_mutable ); // All thread-local variables should be mutable.
-			unsafe( LLVMSetThreadLocal( llvm_value, LLVMBool::True ) );
+			unsafe( LLVMSetThreadLocal( llvm_value, LLVMBool_::True ) );
 		}
 
 		with( mut lock : variable_ptr.lock_mut() )

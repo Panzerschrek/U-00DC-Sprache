@@ -484,7 +484,7 @@ fn CallingConventionInfoSystemV_X86_64::CalculateReturnValuePassingInfo( this, T
 
 			// Create a tuple for two parts.
 			// TODO - set zext/sext?
-			result_llvm_type= unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool::False ) );
+			result_llvm_type= unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool_::False ) );
 		}
 		else{ halt; }
 
@@ -709,7 +709,7 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 							argument_passing=
 								ArgumentPassing(
 									ArgumentPassingKind::Direct,
-									unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool::False ) ) );
+									unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool_::False ) ) );
 
 							num_integer_registers_left-= num_integer_registers_needed;
 							num_floating_point_registers_left-= num_floating_point_registers_needed;
@@ -1340,7 +1340,7 @@ fn CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( this
 		return
 			ArgumentPassing(
 				ArgumentPassingKind::Direct,
-				unsafe( LLVMStructTypeInContext( llvm_context, $<(elements[0]), 2u, LLVMBool::False ) ) );
+				unsafe( LLVMStructTypeInContext( llvm_context, $<(elements[0]), 2u, LLVMBool_::False ) ) );
 	}
 }
 

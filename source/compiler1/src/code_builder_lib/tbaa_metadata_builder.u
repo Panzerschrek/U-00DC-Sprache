@@ -232,7 +232,7 @@ fn MakeTBAATypeDescriptor( LLVMContextRef llvm_context, LLVMMetadataRef base_des
 
 fn CreateI64ZeroMetadata( LLVMContextRef llvm_context ) unsafe : LLVMMetadataRef
 {
-	return unsafe( LLVMValueAsMetadata( LLVMConstInt( LLVMInt64TypeInContext( llvm_context ), 0u64, LLVMBool::False ) ) );
+	return unsafe( LLVMValueAsMetadata( LLVMConstInt( LLVMInt64TypeInContext( llvm_context ), 0u64, LLVMBool_::False ) ) );
 }
 
 fn CreateMetadataString( LLVMContextRef llvm_context, ust::string_view8 s ) unsafe : LLVMMetadataRef

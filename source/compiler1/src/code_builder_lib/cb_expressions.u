@@ -409,7 +409,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
-		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, ( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ) ),
+		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, ( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool_::True ) ),
 		.name= KeywordToString( ( boolean_constant.value ? Keyword::true_ : Keyword::false_ ) ),
 	};
 	result.llvm_value= result.constexpr_value;
@@ -461,7 +461,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	{
 		if( char_type == U_FundamentalType::char8_ )
 		{
-			constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal_value.data(), u32(string_literal_value.size()), LLVMBool::True );
+			constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal_value.data(), u32(string_literal_value.size()), LLVMBool_::True );
 			array_size= string_literal_value.size();
 
 			if( !string_literals_cache_[0].exists( string_literal_value ) )
@@ -593,7 +593,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	auto element_llvm_type= GetFundamentalLLVMType(char_type);
 
-	auto constexpr_value= unsafe( LLVMConstInt( element_llvm_type, u64(char_literal.code_point), LLVMBool::False ) );
+	auto constexpr_value= unsafe( LLVMConstInt( element_llvm_type, u64(char_literal.code_point), LLVMBool_::False ) );
 
 	var VariablePtr result_ptr=
 		Variable
@@ -728,7 +728,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
-		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, ( same ? 1u64 : 0u64 ), LLVMBool::True ) ),
+		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, ( same ? 1u64 : 0u64 ), LLVMBool_::True ) ),
 		.name= KeywordToString( Keyword::same_type_ ),
 	};
 	result.llvm_value= result.constexpr_value;
@@ -750,7 +750,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
-		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, ( is_non_sync ? 1u64 : 0u64 ), LLVMBool::True ) ),
+		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, ( is_non_sync ? 1u64 : 0u64 ), LLVMBool_::True ) ),
 		.name= KeywordToString( Keyword::non_sync_ ),
 	};
 	result.llvm_value= result.constexpr_value;
@@ -955,7 +955,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	var ust::string8 mut name= "_embed_array_" + CalculateLongStableHash( loaded_file );
 	name.push_back( '\0' );
 
-	var LLVMValueRef constexpr_value= unsafe( LLVMConstStringInContext( llvm_context_, cast_mut(loaded_file).data(), u32(array_size), LLVMBool::True ) );
+	var LLVMValueRef constexpr_value= unsafe( LLVMConstStringInContext( llvm_context_, cast_mut(loaded_file).data(), u32(array_size), LLVMBool_::True ) );
 	var LLVMValueRef global_value= unsafe( AddGlobalConstantVariable( name, LLVMTypeOf( constexpr_value ), constexpr_value ) );
 
 	name.drop_back();
@@ -1753,7 +1753,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 					unsafe
 					{
 						result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] );
-						if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
+						if( LLVMIsConstant( result.llvm_value ) == LLVMBool_::True ){ result.constexpr_value= result.llvm_value; }
 					}
 				}
 
@@ -1778,7 +1778,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				var LLVMValueRef value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 				if( value_in_register != Null::LLVMValueRef )
 				{
-					auto zero= unsafe( LLVMConstInt( variable.t.GetLLVMType(), 0u64, LLVMBool::False ) );
+					auto zero= unsafe( LLVMConstInt( variable.t.GetLLVMType(), 0u64, LLVMBool_::False ) );
 					switch( binary_operator.operator )
 					{
 						BinaryOperatorType::Less ->
@@ -1801,7 +1801,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 					}
 				}
 
-				if( result.llvm_value != Null::LLVMValueRef && unsafe(LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+				if( result.llvm_value != Null::LLVMValueRef && unsafe(LLVMIsConstant( result.llvm_value ) ) == LLVMBool_::True )
 				{
 					result.constexpr_value= result.llvm_value;
 				}
@@ -1938,7 +1938,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				// Dynamically check index.
 				unsafe
 				{
-					auto size_value= LLVMConstInt( fundamental_llvm_types_.size_type_, variable_array_type.element_count, LLVMBool::False );
+					auto size_value= LLVMConstInt( fundamental_llvm_types_.size_type_, variable_array_type.element_count, LLVMBool_::False );
 					auto condition= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, index_value, size_value, g_null_string );
 					auto halt_block = LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 					auto ok_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
@@ -2498,7 +2498,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		return ErrorValue();
 	}
 
-	if( result.llvm_value != Null::LLVMValueRef && unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+	if( result.llvm_value != Null::LLVMValueRef && unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool_::True )
 	{
 		result.constexpr_value= result.llvm_value;
 	}
@@ -2542,7 +2542,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	if( value_in_register != Null::LLVMValueRef )
 	{
 		result.llvm_value= unsafe( LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] ) );
-		if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+		if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool_::True )
 		{
 			result.constexpr_value= result.llvm_value;
 		}
@@ -2588,7 +2588,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	if( value_in_register != Null::LLVMValueRef )
 	{
 		result.llvm_value= unsafe( LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] ) );
-		if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+		if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool_::True )
 		{
 			result.constexpr_value= result.llvm_value;
 		}
@@ -3103,7 +3103,7 @@ fn CodeBuilder::BuildBinaryOperator(
 					l_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, l_in_register, diff_llvm_type, g_null_string ),
 					r_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, r_in_register, diff_llvm_type, g_null_string ),
 					diff= LLVMBuildSub( function_context.llvm_ir_builder, l_as_int, r_as_int, "-\0"[0] ),
-					element_size_constant= LLVMConstInt( diff_llvm_type, element_size, LLVMBool::False ),
+					element_size_constant= LLVMConstInt( diff_llvm_type, element_size, LLVMBool_::False ),
 					diff_divided= LLVMBuildExactSDiv( function_context.llvm_ir_builder, diff, element_size_constant, "/\0"[0] );
 				result.llvm_value= diff_divided;
 			}
@@ -3269,11 +3269,11 @@ fn CodeBuilder::BuildBinaryOperator(
 				default -> { halt; },
 			}
 
-			if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+			if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool_::True )
 			{
 				result.constexpr_value= result.llvm_value;
 
-				if( unsafe( LLVMIsUndef( result.constexpr_value ) ) == LLVMBool::True )
+				if( unsafe( LLVMIsUndef( result.constexpr_value ) ) == LLVMBool_::True )
 				{
 					result.constexpr_value= Null::LLVMValueRef;
 					REPORT_ERROR( ConstantExpressionResultIsUndefined, names_scope, src_loc )
@@ -3384,7 +3384,7 @@ fn CodeBuilder::BuildBinaryOperator(
 						LLVMConstInt(
 							l_type.GetLLVMType(),
 							u64(l_size) * 8u64 - 1u64,
-							LLVMBool::False ),
+							LLVMBool_::False ),
 						g_null_string );
 
 				if( operator == BinaryOperatorType::ShiftLeft )
@@ -3435,7 +3435,7 @@ fn CodeBuilder::BuildBinaryOperator(
 				{
 					if( is_void )
 					{
-						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False ); // Two "void" values are always equal.
+						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool_::False ); // Two "void" values are always equal.
 					}
 					else if( is_float )
 					{
@@ -3443,7 +3443,7 @@ fn CodeBuilder::BuildBinaryOperator(
 					}
 					else if( l_function != Null::LLVMValueRef && r_function != Null::LLVMValueRef )
 					{
-						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, ( l_function == r_function ? 1u64 : 0u64 ), LLVMBool::False );
+						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, ( l_function == r_function ? 1u64 : 0u64 ), LLVMBool_::False );
 					}
 					else
 					{
@@ -3454,7 +3454,7 @@ fn CodeBuilder::BuildBinaryOperator(
 				{
 					if( is_void )
 					{
-						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
+						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool_::False );
 					}
 					else if( is_float )
 					{
@@ -3462,7 +3462,7 @@ fn CodeBuilder::BuildBinaryOperator(
 					}
 					else if( l_function != Null::LLVMValueRef && r_function != Null::LLVMValueRef )
 					{
-						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, ( l_function != r_function ? 1u64 : 0u64 ), LLVMBool::False );
+						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, ( l_function != r_function ? 1u64 : 0u64 ), LLVMBool_::False );
 					}
 					else
 					{
@@ -3608,9 +3608,9 @@ fn CodeBuilder::BuildBinaryOperator(
 					greater= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] );
 				}
 
-				var LLVMValueRef zero= LLVMConstInt( result_llvm_type, 0u64, LLVMBool::True );
-				var LLVMValueRef plus_one= LLVMConstInt( result_llvm_type, 1u64, LLVMBool::True );
-				var LLVMValueRef minus_one= LLVMConstInt( result_llvm_type, ~0u64, LLVMBool::True );
+				var LLVMValueRef zero= LLVMConstInt( result_llvm_type, 0u64, LLVMBool_::True );
+				var LLVMValueRef plus_one= LLVMConstInt( result_llvm_type, 1u64, LLVMBool_::True );
+				var LLVMValueRef minus_one= LLVMConstInt( result_llvm_type, ~0u64, LLVMBool_::True );
 
 				result.llvm_value=
 					LLVMBuildSelect(
@@ -3627,7 +3627,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 	if( l_var.constexpr_value != Null::LLVMValueRef &&
 		r_var.constexpr_value != Null::LLVMValueRef &&
-		unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+		unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool_::True )
 	{
 		result.constexpr_value= result.llvm_value;
 	}
@@ -3736,8 +3736,8 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 
 	unsafe
 	{
-		if( l_var_in_register != Null::LLVMValueRef && LLVMIsConstant( l_var_in_register ) == LLVMBool::True &&
-			r_var_in_register != Null::LLVMValueRef && LLVMIsConstant( r_var_in_register ) == LLVMBool::True )
+		if( l_var_in_register != Null::LLVMValueRef && LLVMIsConstant( l_var_in_register ) == LLVMBool_::True &&
+			r_var_in_register != Null::LLVMValueRef && LLVMIsConstant( r_var_in_register ) == LLVMBool_::True )
 		{
 			if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd )
 			{
@@ -4180,8 +4180,8 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 					var LLVMValueRef phi= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, g_null_string );
 
-					var LLVMValueRef false_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
-					var LLVMValueRef true_value = LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+					var LLVMValueRef false_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool_::False );
+					var LLVMValueRef true_value = LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool_::False );
 
 					var [ LLVMValueRef, 2 ] mut values[ false_value, true_value ];
 					var [ LLVMBasicBlockRef, 2 ] mut blocks[ false_basic_block, true_basic_block ];
@@ -4199,7 +4199,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 					LLVMAppendExistingBasicBlock( function_context.llvm_function, end_basic_block );
 					LLVMDeleteBasicBlock( end_basic_block );
 
-					result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+					result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool_::False );
 				}
 			}
 		}
@@ -4299,17 +4299,17 @@ fn CodeBuilder::ConcatenateCharArrays(
 					function_context.llvm_ir_builder,
 					result.llvm_value, alignment,
 					l_var.llvm_value , alignment,
-					LLVMConstInt( fundamental_llvm_types_.u64_, size_l, LLVMBool::False ) );
+					LLVMConstInt( fundamental_llvm_types_.u64_, size_l, LLVMBool_::False ) );
 
 				// Copy r_var bytes into destination.
-				var LLVMValueRef mut one_value= LLVMConstInt( fundamental_llvm_types_.size_type_, 1u64, LLVMBool::False );
+				var LLVMValueRef mut one_value= LLVMConstInt( fundamental_llvm_types_.size_type_, 1u64, LLVMBool_::False );
 				var LLVMValueRef dst_r= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, l_array_type.llvm_type, result.llvm_value, $<(one_value), 1u, g_null_string );
 
 				LLVMBuildMemCpy(
 					function_context.llvm_ir_builder,
 					dst_r, alignment,
 					r_var.llvm_value, alignment,
-					LLVMConstInt( fundamental_llvm_types_.u64_, size_r, LLVMBool::False ) );
+					LLVMConstInt( fundamental_llvm_types_.u64_, size_r, LLVMBool_::False ) );
 			}
 		}
 	}
