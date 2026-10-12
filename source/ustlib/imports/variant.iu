@@ -23,6 +23,46 @@ import "ustlib_macros.iu"
 	}
 ?>
 
+?macro
+<? variant_visit2:block
+	( ?variant_expression_mutability_modifier:opt<? mut ?> ?variant_expression:expr )
+	{
+		?subvariant:rep
+		<?
+			( ?subvariant_type:ty ?subvariant_reference_modifier:opt<? & ?> ?subvariant_mutability_modifier:opt<? mut ?> ?subvariant_name:ident ) ->
+			?subvariant_block:block
+		?> <? , ?>
+	}
+?>
+->
+<?
+	with( & ?variant_expression_mutability_modifier<? mut ?> ??variant : ?variant_expression )
+	{
+		// Enumerate all types of variant via "for" for typeinfo tuple.
+		// Create a chain of "static_if"/"else" in and add an assert in last "else".
+		// Doing so allows ensuring all variant types are handled.
+
+		for( & ??element_type_typeinfo : typeinfo</ typeof(??variant)::elements_tuple />.elements_list )
+		{
+			type ??ElementT= typeof(??element_type_typeinfo.type)::src_type;
+
+			?subvariant
+			<?
+				static_if( same_type</ ??ElementT, ?subvariant_type /> )
+				{
+					if( ??variant.has</ ??ElementT />() )
+					{
+						with( ?subvariant_reference_modifier<? & ?> ?subvariant_mutability_modifier<? mut ?> ?subvariant_name : ??variant.try_get</??ElementT/>() )
+						?subvariant_block
+					}
+				}
+			?>
+			<? else ?>
+			else { static_assert( false, "Unhandled variant kind" ); }
+		}
+	}
+?>
+
 namespace ust
 {
 
