@@ -3,7 +3,7 @@ import "../imports/variant.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
-	{
+	{ // Basic "variant_switch" with values observing.
 		var ust::variant</ tup[ f32, char8, i32 ] /> v0= 0.25f, v1= 'G', v2= 784;
 
 		{
@@ -41,6 +41,49 @@ fn nomangle main() call_conv( "C" ) : i32
 			halt if( f_visited );
 			halt if( c_visited );
 			halt if( !i_visited );
+		}
+	}
+	{ // "variant_switch" with values modification
+		var ust::variant</ tup[ f32, char8, i32 ] /> mut v0= 5436.125f, mut v1= 'q', mut v2= -636;
+
+		{
+			var bool mut f_visited= false, mut c_visited= false, mut i_visited= false;
+			variant_switch( mut v0 )
+			{
+				( f32 &mut f ) -> { halt if( f != 5436.125f ); f= 77.8f; f_visited= true; },
+				( char8 &mut c ) -> { c_visited= true; },
+				( i32 &mut i ) ->{ i_visited= true; }
+			}
+			halt if( !f_visited );
+			halt if( c_visited );
+			halt if( i_visited );
+			halt if( v0.try_get</f32/>() != 77.8f );
+		}
+		{
+			var bool mut f_visited= false, mut c_visited= false, mut i_visited= false;
+			variant_switch( mut v1 )
+			{
+				( f32 &mut f ) -> { f_visited= true; },
+				( char8 &mut c ) -> { halt if( c != 'q' ); c= 'J'; c_visited= true; },
+				( i32 &mut i ) ->{ i_visited= true; }
+			}
+			halt if( f_visited );
+			halt if( !c_visited );
+			halt if( i_visited );
+			halt if( v1.try_get</char8/>() != 'J' );
+		}
+		{
+			var bool mut f_visited= false, mut c_visited= false, mut i_visited= false;
+			variant_switch( mut v2 )
+			{
+				( f32 &mut f ) -> { f_visited= true; },
+				( char8 &mut c ) -> { c_visited= true; },
+				( i32 &mut i ) ->{ halt if( i != -636 ); i= 999978; i_visited= true; }
+			}
+			halt if( f_visited );
+			halt if( c_visited );
+			halt if( !i_visited );
+			halt if( v2.try_get</i32/>() != 999978 );
 		}
 	}
 
