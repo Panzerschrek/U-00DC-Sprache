@@ -88,6 +88,31 @@ fn nomangle main() call_conv( "C" ) : i32
 			halt if( v2.try_get</i32/>() != 999978 );
 		}
 	}
+	{ // Specifying mutable values (not references) in "variant_visit" should not change underlying value.
+		var ust::variant</ tup[ f32, i32 ] /> mut v0= 123545, v1= 25.5f;
+		{
+			var bool mut f_visited= false, mut i_visited= false;
+			variant_switch( mut v0 )
+			{
+				( f32 mut f ) -> { f= 0.0f; f_visited= true; },
+				( i32 mut i ) -> { i= 0; i_visited= true; }
+			}
+			halt if( v0.try_get</i32/>() != 123545 );
+			halt if( f_visited );
+			halt if( !i_visited );
+		}
+		{
+			var bool mut f_visited= false, mut i_visited= false;
+			variant_switch( v1 )
+			{
+				( f32 mut f ) -> { f= 0.0f; f_visited= true; },
+				( i32 mut i ) -> { i= 0; i_visited= true; }
+			}
+			halt if( v0.try_get</i32/>() != 123545 );
+			halt if( !f_visited );
+			halt if( i_visited );
+		}
+	}
 	{ // "variant_visit" with stored variants processed as imutable references.
 		var ust::variant</ tup[ NonCopyableStruct, f32 ] /> v0= NonCopyableStruct{ .x= 7474 }, v1= 78.5f;
 
