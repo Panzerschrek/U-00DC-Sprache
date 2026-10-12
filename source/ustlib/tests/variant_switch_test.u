@@ -112,6 +112,11 @@ fn nomangle main() call_conv( "C" ) : i32
 			halt if( !f_visited );
 		}
 	}
+	{
+		halt if( GetVariantKindOneBasedIndexSquared( 7564i64 ) != 1u );
+		halt if( GetVariantKindOneBasedIndexSquared( -2644.2637f ) != 4u );
+		halt if( GetVariantKindOneBasedIndexSquared( "Nero" ) != 9u );
+	}
 
 	return 0;
 }
@@ -121,4 +126,15 @@ struct NonCopyableStruct
 	i32 x;
 	fn constructor( mut this, NonCopyableStruct& other )= delete;
 	op=( mut this, NonCopyableStruct& other )= delete;
+}
+
+fn GetVariantKindOneBasedIndexSquared( ust::variant</ tup[ i64, f32, [ char8, 4 ] ] />& v ) : u32
+{
+	variant_switch( v )
+	{
+		( i64 i ) -> { return 1u * 1u; },
+		( f32 f ) -> { return 2u * 2u; },
+		( [ char8, 4 ] c ) -> { return 3u * 3u; }
+	}
+	// No need to specify "return" here, since "variant_switch" above returns in all branches.
 }
