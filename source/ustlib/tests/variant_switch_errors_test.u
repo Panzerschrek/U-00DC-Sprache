@@ -1,0 +1,71 @@
+//##fail_test
+import "../imports/variant.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	{ // Missing variants.
+		var ust::variant</ tup[ i32, f32, bool, char8 ] /> v= 0.0f;
+		variant_switch( v ) //##expect_error MacroExpansionContext
+		{
+			( f32 x ) -> {},
+			( bool x ) -> {},
+			( char8 x ) -> {}
+			// i32 is missing.
+		}
+		variant_switch( v ) //##expect_error MacroExpansionContext
+		{
+			( i32 x ) -> {},
+			( bool x ) -> {},
+			( char8 x ) -> {}
+			// f32 is missing.
+		}
+		variant_switch( v ) //##expect_error MacroExpansionContext
+		{
+			( i32 x ) -> {},
+			( f32 x ) -> {},
+			( char8 x ) -> {}
+			// bool is missing.
+		}
+		variant_switch( v ) //##expect_error MacroExpansionContext
+		{
+			( i32 x ) -> {},
+			( f32 x ) -> {},
+			( bool x ) -> {}
+			// char8 is missing.
+		}
+		variant_switch( v ) //##expect_error MacroExpansionContext
+		{
+			( i32 x ) -> {},
+			( bool x ) -> {}
+			// f32 and char8 are missing.
+		}
+	}
+	{ // Duplicated branch.
+		var ust::variant</ tup[ i32, f32 ] /> v= 0;
+		variant_switch( v ) //##expect_error MacroExpansionContext
+		{
+			( i32 x ) -> {},
+			( f32 x ) -> {},
+			( i32 x ) -> {} // Duplicated here.
+		}
+	}
+	{ // Type not in variants.
+		var ust::variant</ tup[ i32, f32 ] /> v= 0;
+		variant_switch( v ) //##expect_error MacroExpansionContext
+		{
+			( i32 x ) -> {},
+			( char32 x ) -> {}, // "char32" is not an element types of the given variant.
+			( f32 x ) -> {}
+		}
+	}
+	{ // Mutable reference requires variant variable to be mutable.
+		var ust::variant</ tup[ i32, f32 ] /> mut v= 0;
+		variant_switch( /* Need to use "mut" here in order to be able to use "&mut" in branches. */ v ) //##expect_error MacroExpansionContext
+		{
+			( i32 &mut x ) -> {},
+			( f32 x ) -> {}
+		}
+	}
+
+	return 0;
+}
