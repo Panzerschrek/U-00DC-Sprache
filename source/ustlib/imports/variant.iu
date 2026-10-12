@@ -55,28 +55,22 @@ import "ustlib_macros.iu"
 			::ust::variant_impl::get_tuple_type_properties</ ??given_types_tuple />().all_elements_are_unique,
 			"There are duplicates in the given types!" );
 
-		// Enumerate all types of variant via "for" for typeinfo tuple.
-		// Create a chain of "static_if"/"else" in and add an assert in last "else".
-		// Doing so allows ensuring all variant types are handled.
+		// Check if all variant types are in given types list (there is no unhandled variant).
+		static_assert(
+			::ust::variant_impl::all_tuple_types_are_in_other_tuple_types</ ??elements_tuple, ??given_types_tuple />(),
+			"There are unhandled variant types!" );
 
-		for( & ??element_type_typeinfo : typeinfo</ ??elements_tuple />.elements_list )
-		{
-			type ??ElementT= typeof(??element_type_typeinfo.type)::src_type;
-
-			?subvariant
-			<?
-				static_if( same_type</ ??ElementT, ?subvariant_type /> )
-				{
-					if( ??variant.has</ ??ElementT />() )
-					{
-						with( ?subvariant_reference_modifier<? & ?> ?subvariant_mutability_modifier<? mut ?> ?subvariant_name : ??variant.try_get</??ElementT/>() )
-						?subvariant_block
-					}
-				}
-			?>
-			<? else ?>
-			else { static_assert( false, "Unhandled variant kind" ); }
-		}
+		// Create a chain of " if/else if/else if " constructions.
+		?subvariant
+		<?
+			if( ??variant.has</ ?subvariant_type />() )
+			{
+				with( ?subvariant_reference_modifier<? & ?> ?subvariant_mutability_modifier<? mut ?> ?subvariant_name : ??variant.try_get</ ?subvariant_type />() )
+				?subvariant_block
+			}
+			else
+		?>
+		{ halt; } // Put last "else" branch. Since all variants are handled, we can use "halt" in it.
 	}
 ?>
 
@@ -484,6 +478,28 @@ fn constexpr type_is_one_of_tuple_elements() : bool
 		}
 	}
 	return false;
+}
+
+template</ type TupA, type TupB />
+fn constexpr all_tuple_types_are_in_other_tuple_types() : bool
+{
+	for( & element_a : typeinfo</TupA/>.elements_list )
+	{
+		type type_a= typeof(element_a.type)::src_type;
+
+		var bool mut is_present= false;
+		for( & element_b : typeinfo</TupB/>.elements_list )
+		{
+			is_present |= same_type</ type_a, typeof(element_b.type)::src_type />;
+		}
+
+		if( !is_present )
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 } // namespace variant_impl
