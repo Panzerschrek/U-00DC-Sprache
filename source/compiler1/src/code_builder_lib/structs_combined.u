@@ -1120,55 +1120,17 @@ fn FunctionVariable::IsCoroutine( this ) : bool
 	}
 }
 
-namespace ValueKindHelper
-{
-
-fn GetValueKind( VariablePtr& v ) : ust::string_view8
-{
-	ust::ignore_unused(v);
-	return "variable";
-}
-
-fn GetValueKind( Type& v ) : ust::string_view8
-{
-	ust::ignore_unused(v);
-	return "type";
-}
-
-fn GetValueKind( FunctionsSetPtr& v ) : ust::string_view8
-{
-	ust::ignore_unused(v);
-	return "functions set";
-}
-
-fn GetValueKind( ThisMethodsSet& v ) : ust::string_view8
-{
-	ust::ignore_unused(v);
-	return "this + methods set";
-}
-
-fn GetValueKind( ust::shared_ptr_imut</TypeTemplatesSet/>& v ) : ust::string_view8
-{
-	ust::ignore_unused(v);
-	return "type templates set";
-}
-
-fn GetValueKind( ErrorValue& v ) : ust::string_view8
-{
-	ust::ignore_unused( v );
-	return "error value";
-}
-
-} // namespace ValueKindHelper
-
 fn GetValueKindName( Value& v ) : ust::string_view8
 {
-	variant_visit( &el : v )
+	variant_switch( v )
 	{
-		return ValueKindHelper::GetValueKind( el );
+		( ErrorValue& v ) -> { ust::ignore_unused(v); return "error value"; },
+		( VariablePtr& v ) -> { ust::ignore_unused(v); return "variable"; },
+		( Type& t ) -> { ust::ignore_unused(t); return "type"; },
+		( FunctionsSetPtr& fs ) -> { ust::ignore_unused(fs); return "functions set"; },
+		( ThisMethodsSet& ms ) -> { ust::ignore_unused(ms); return "this + methods set"; },
+		( ust::shared_ptr_imut</TypeTemplatesSet/>& tts ) -> { ust::ignore_unused(tts); return "type templates set"; }
 	}
-
-	halt;
 }
 
 fn Enum::stringify( this, ust::default_stringifier8 &mut stringifier )
