@@ -38,11 +38,21 @@ import "ustlib_macros.iu"
 <?
 	with( & ?variant_expression_mutability_modifier<? mut ?> ??variant : ?variant_expression )
 	{
+		type ??elements_tuple= typeof(??variant)::elements_tuple;
+
+		// Check here if all given types are element types of the given variant.
+		?subvariant
+		<?
+			static_assert(
+				::ust::variant_impl::type_is_one_of_tuple_elements</ ?subvariant_type, ??elements_tuple />(),
+				"Type specified is not in variant alternatives!" );
+		?>
+
 		// Enumerate all types of variant via "for" for typeinfo tuple.
 		// Create a chain of "static_if"/"else" in and add an assert in last "else".
 		// Doing so allows ensuring all variant types are handled.
 
-		for( & ??element_type_typeinfo : typeinfo</ typeof(??variant)::elements_tuple />.elements_list )
+		for( & ??element_type_typeinfo : typeinfo</ ??elements_tuple />.elements_list )
 		{
 			type ??ElementT= typeof(??element_type_typeinfo.type)::src_type;
 
