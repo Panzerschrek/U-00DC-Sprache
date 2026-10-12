@@ -22,9 +22,10 @@ fn nomangle main() call_conv( "C" ) : i32
 			var bool mut f_visited= false, mut c_visited= false, mut i_visited= false;
 			variant_switch( v1 )
 			{
+				// Order of specified cases should be irrelevant. It's only important to enumerate all types.
 				( f32 f ) -> { f_visited= true; },
-				( char8 c ) -> { halt if( c != 'G' ); c_visited= true; },
-				( i32 i ) ->{ i_visited= true; }
+				( i32 i ) ->{ i_visited= true; },
+				( char8 c ) -> { halt if( c != 'G' ); c_visited= true; }
 			}
 			halt if( f_visited );
 			halt if( !c_visited );
@@ -34,9 +35,10 @@ fn nomangle main() call_conv( "C" ) : i32
 			var bool mut f_visited= false, mut c_visited= false, mut i_visited= false;
 			variant_switch( v2 )
 			{
-				( f32 f ) -> { f_visited= true; },
+				// Order of specified cases should be irrelevant. It's only important to enumerate all types.
+				( i32 i ) ->{ halt if( i != 784 ); i_visited= true; },
 				( char8 c ) -> { c_visited= true; },
-				( i32 i ) ->{ halt if( i != 784 ); i_visited= true; }
+				( f32 f ) -> { f_visited= true; }
 			}
 			halt if( f_visited );
 			halt if( c_visited );
@@ -86,6 +88,37 @@ fn nomangle main() call_conv( "C" ) : i32
 			halt if( v2.try_get</i32/>() != 999978 );
 		}
 	}
+	{ // "variant_visit" with stored variants processed as imutable references.
+		var ust::variant</ tup[ NonCopyableStruct, f32 ] /> v0= NonCopyableStruct{ .x= 7474 }, v1= 78.5f;
+
+		{
+			var bool mut s_visited= false, mut f_visited= false;
+			variant_switch( v0 )
+			{
+				( NonCopyableStruct& s ) -> { halt if( s.x != 7474 ); s_visited= true; },
+				( f32& f ) -> { f_visited= true; }
+			}
+			halt if( !s_visited );
+			halt if( f_visited );
+		}
+		{
+			var bool mut s_visited= false, mut f_visited= false;
+			variant_switch( v1 )
+			{
+				( NonCopyableStruct& s ) -> { s_visited= true; },
+				( f32& f ) -> { halt if( f != 78.5f ); f_visited= true; }
+			}
+			halt if( s_visited );
+			halt if( !f_visited );
+		}
+	}
 
 	return 0;
+}
+
+struct NonCopyableStruct
+{
+	i32 x;
+	fn constructor( mut this, NonCopyableStruct& other )= delete;
+	op=( mut this, NonCopyableStruct& other )= delete;
 }
