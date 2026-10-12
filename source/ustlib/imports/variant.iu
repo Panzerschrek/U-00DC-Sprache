@@ -48,6 +48,13 @@ import "ustlib_macros.iu"
 				"Type specified is not in variant alternatives!" );
 		?>
 
+		// Check if given types are not duplicated.
+		type ??given_types_tuple= tup[ ?subvariant <? ?subvariant_type ?> <? , ?> ];
+
+		static_assert(
+			::ust::variant_impl::get_tuple_type_properties</ ??given_types_tuple />().all_elements_are_unique,
+			"There are duplicates in the given types!" );
+
 		// Enumerate all types of variant via "for" for typeinfo tuple.
 		// Create a chain of "static_if"/"else" in and add an assert in last "else".
 		// Doing so allows ensuring all variant types are handled.
