@@ -24,7 +24,7 @@ import "ustlib_macros.iu"
 ?>
 
 ?macro
-<? variant_visit2:block
+<? variant_switch:block
 	( ?variant_expression_mutability_modifier:opt<? mut ?> ?variant_expression:expr )
 	{
 		?subvariant:rep

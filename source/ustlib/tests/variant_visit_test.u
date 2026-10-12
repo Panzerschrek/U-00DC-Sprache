@@ -46,7 +46,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		{
 			var bool mut f_visited= false, mut c_visited= false, mut i_visited= false;
-			variant_visit2( v0 )
+			variant_switch( v0 )
 			{
 				( f32 f ) -> { halt if( f != 0.25f ); f_visited= true; },
 				( char8 c ) -> { c_visited= true; },
@@ -58,7 +58,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 		{
 			var bool mut f_visited= false, mut c_visited= false, mut i_visited= false;
-			variant_visit2( v1 )
+			variant_switch( v1 )
 			{
 				( f32 f ) -> { f_visited= true; },
 				( char8 c ) -> { halt if( c != 'G' ); c_visited= true; },
@@ -70,7 +70,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 		{
 			var bool mut f_visited= false, mut c_visited= false, mut i_visited= false;
-			variant_visit2( v2 )
+			variant_switch( v2 )
 			{
 				( f32 f ) -> { f_visited= true; },
 				( char8 c ) -> { c_visited= true; },
