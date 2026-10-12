@@ -762,8 +762,8 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 			BuildEqualityCompareOperatorPart( class_members_ptr, function_context, l_member, r_member, class_field.t, false_basic_block, src_loc );
 		}
 
-		var LLVMValueRef false_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
-		var LLVMValueRef true_value = LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+		var LLVMValueRef false_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool_::False );
+		var LLVMValueRef true_value = LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool_::False );
 
 		// True branch.
 		LLVMBuildRet( function_context.llvm_ir_builder, true_value );
@@ -1063,17 +1063,17 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 
 			var LLVMTypeKind type_kind= LLVMGetTypeKind( t.GetLLVMType() );
 			var bool is_float=
-				type_kind == LLVMTypeKind::Half ||
-				type_kind == LLVMTypeKind::Float ||
-				type_kind == LLVMTypeKind::Double ||
-				type_kind == LLVMTypeKind::X86_FP80 ||
-				type_kind == LLVMTypeKind::P128 ||
-				type_kind == LLVMTypeKind::PPC_FP128;
+				type_kind == LLVMHalfTypeKind ||
+				type_kind == LLVMFloatTypeKind ||
+				type_kind == LLVMDoubleTypeKind ||
+				type_kind == LLVMX86_FP80TypeKind ||
+				type_kind == LLVMFP128TypeKind ||
+				type_kind == LLVMPPC_FP128TypeKind;
 
 			var LLVMValueRef eq=
 				( is_float
-					? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l, r, g_null_string )
-					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l, r, g_null_string ) );
+					? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealOEQ, l, r, g_null_string )
+					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntEQ, l, r, g_null_string ) );
 
 			var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 

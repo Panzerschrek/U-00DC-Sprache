@@ -383,7 +383,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Writing and reading.
 	{
 		auto &constexpr file_data= "Handschuhe aus Menschenhaut";
-		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+		auto constexpr file_data_size= ust::array_size( file_data );
 
 		auto& file_path= "test_file_to_write.txt";
 
@@ -496,7 +496,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	{
 		auto &constexpr file_data= "Es is egal, ob die Grünen oder AfD";
 		auto &constexpr file_data_tweaked= "Es is toll, ob die Grünen oder AfD";
-		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+		auto constexpr file_data_size= ust::array_size( file_data );
 
 		auto& file_path= "test_file_to_read_and_write.txt";
 
@@ -596,7 +596,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 
 		auto &constexpr file_data= "Was kann das sein?\nDas gibt's doch nie!\nNun ist mir klar: das wäre wahre Anarchie!\n";
-		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+		auto constexpr file_data_size= ust::array_size( file_data );
 
 		// Write a file and close it.
 		result_match( ust::file_writeable::create( file_path ) )
@@ -671,7 +671,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Writing and reading for a newly-created file.
 	{
 		auto &constexpr file_data= "Du bist das Produkt!";
-		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+		auto constexpr file_data_size= ust::array_size( file_data );
 
 		auto& file_path= "new_test_file_for_write.txt";
 
@@ -827,7 +827,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Writing and reading with flush.
 	{
 		auto &constexpr file_data= "Sehr treue Anhänger staatlicher Institutionen";
-		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+		auto constexpr file_data_size= ust::array_size( file_data );
 
 		auto& file_path= "S.T.A.S.I";
 
@@ -868,7 +868,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Writing and reading with flushing all.
 	{
 		auto &constexpr file_data= "Die Hoffnung stirbt zuletzt";
-		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+		auto constexpr file_data_size= ust::array_size( file_data );
 
 		auto& file_path= "Aber sie stirbt";
 
@@ -1567,7 +1567,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Explicit code.
 	{
 		auto &constexpr file_data= "Мчать по звёздной магистрали, а не гнить в холодной яме";
-		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+		auto constexpr file_data_size= ust::array_size( file_data );
 
 		auto& file_path= "test_file_to_write_and_close.txt";
 

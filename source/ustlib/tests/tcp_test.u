@@ -49,10 +49,10 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
 
 		auto& client_message= "Wer hat Angs vorm schwarzen Mann?";
-		var size_type client_message_size= typeinfo</ typeof(client_message) />.size_of;
+		var size_type client_message_size= ust::array_size( client_message );
 
 		auto& server_message= "Niemand hat Angst vor ihm!";
-		var size_type server_message_size= typeinfo</ typeof(server_message) />.size_of;
+		var size_type server_message_size= ust::array_size( server_message );
 
 		// Perform accept/read/write on a background thread.
 		auto mut server_thread= ust::make_thread(
@@ -591,7 +591,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto [ mut server_stream, client_address ]= listener.accept().try_take();
 
 		auto& message= "Testing peek";
-		var size_type message_size= typeinfo</ typeof(message) />.element_count;
+		var size_type message_size= ust::array_size( message );
 
 		assert( server_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
 
@@ -805,7 +805,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		else{ assert( false, "Unexpected client address, expected ip v6!" ); }
 
 		auto& message= "Testing TCP with IP v6 sockets.";
-		var size_type message_size= typeinfo</ typeof(message) />.element_count;
+		var size_type message_size= ust::array_size( message );
 
 		assert( server_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
 
@@ -826,7 +826,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		{
 			auto& message= "Testing explicit socket close - server to client.";
-			var size_type message_size= typeinfo</ typeof(message) />.element_count;
+			var size_type message_size= ust::array_size( message );
 
 			assert( server_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
 
@@ -836,7 +836,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 		{
 			auto& message= "Testing explicit socket close - client to server.";
-			var size_type message_size= typeinfo</ typeof(message) />.element_count;
+			var size_type message_size= ust::array_size( message );
 
 			assert( client_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
 
@@ -920,10 +920,10 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
 
 		auto& client_message= "Mauer? Welche Mauer?";
-		var size_type client_message_size= typeinfo</ typeof(client_message) />.size_of;
+		var size_type client_message_size= ust::array_size( client_message );
 
 		auto& server_message= "Niemand hat die Absicht, eine Mauer zu errichten!";
-		var size_type server_message_size= typeinfo</ typeof(server_message) />.size_of;
+		var size_type server_message_size= ust::array_size( server_message );
 
 		// Perform accept/read/write on a background thread.
 		auto mut server_thread= ust::make_thread(
@@ -986,10 +986,10 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
 
 		auto& client_message= "Pepe";
-		var size_type client_message_size= typeinfo</ typeof(client_message) />.size_of;
+		var size_type client_message_size= ust::array_size( client_message );
 
 		auto& server_message= "Kek";
-		var size_type server_message_size= typeinfo</ typeof(server_message) />.size_of;
+		var size_type server_message_size= ust::array_size( server_message );
 
 		// Perform accept/read/write on a background thread.
 		auto mut server_thread= ust::make_thread(

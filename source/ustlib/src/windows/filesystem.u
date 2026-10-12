@@ -744,7 +744,7 @@ fn directory_entry_should_be_ignored( string_view8 entry_name ) : bool
 fn extract_file_name_from_find_data( WIN32_FIND_DATAW& find_data ) : filesystem_path
 {
 	var size_type mut s= 0s;
-	while( s < typeinfo</ typeof(find_data.cFileName) />.element_count )
+	while( s < array_size( find_data.cFileName ) )
 	{
 		if( find_data.cFileName[s] == WCHAR(0) )
 		{

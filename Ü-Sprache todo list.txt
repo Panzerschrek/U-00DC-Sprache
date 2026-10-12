@@ -90,7 +90,6 @@ Standart library:
 *) Time library - request monotonic time, perform time difference calculations, perform conversions from/to calendar
 	time, perform conversions to human-readable format
 *) Support casting "shared_ptr_final</A/>" to "shared_ptr_final</B/>" if A and B are polymorph related types
-*) Formatted console output functions
 *) More type traits
 *) More math functions
 *) "ref" container - like "optional_ref", but always containing a reference
@@ -164,7 +163,6 @@ Compiler:
 *) Built-in compiler optimization hints ("assume", "likely", "unlikely", etc.)
 *) Alloca declaration - allow to specify heap fallback size limit -
 	even zero (always use heap) or infinity (always use stack)
-*) Consider using range metadata for values of enum types (arguments, load results, call results)
 *) Consider generating "noalias" metadata, where language rules allow it
 *) Consider generating "lifetime.end" calls for value args passed by hidden pointer
 *) Support profile-guided optimization

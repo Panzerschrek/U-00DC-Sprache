@@ -17,7 +17,7 @@ public:
 	fn Evaluate( mut this, LLVMValueRef function, ust::array_view_imut</LLVMValueRef/> args, LLVMTypeRef return_type ) : Result;
 
 private:
-	ConstexprFunctionEvaluatorRef impl_= zero_init;
+	ConstexprFunctionEvaluatorPtr impl_= zero_init;
 }
 
 } // namespace U1

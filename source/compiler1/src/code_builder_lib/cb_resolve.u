@@ -247,7 +247,7 @@ fn CodeBuilder::ContextualizeGlobalVariable( mut this, NamesScopePtr& names_scop
 				if( variable.llvm_value != Null::LLVMValueRef &&
 					variable.location == Variable::Location::Pointer &&
 					unsafe( LLVMIsAGlobalVariable( variable.llvm_value ) ) != Null::LLVMValueRef &&
-					unsafe( LLVMIsThreadLocal( variable.llvm_value ) ) == LLVMBool::True )
+					unsafe( LLVMIsThreadLocal( variable.llvm_value ) ) == LLVMBool_::True )
 				{
 					var LLVMValueRef call_result=
 						unsafe( LLVMBuildCall2(

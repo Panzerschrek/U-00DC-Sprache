@@ -877,7 +877,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 				var ust::string_view8 type_suffix_str= it_.front().text;
 				NextLexem();
 
-				if( type_suffix_str.size() >= typeinfo</ typeof( numeric_constant.type_suffix ) />.element_count )
+				if( type_suffix_str.size() >= ust::array_size( numeric_constant.type_suffix ) )
 				{
 					errors_.push_back(
 						LexSyntError(
@@ -915,7 +915,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 				var ust::string_view8 type_suffix_str= it_.front().text;
 				NextLexem();
 
-				if( type_suffix_str.size() >= typeinfo</ typeof( numeric_constant.type_suffix ) />.element_count )
+				if( type_suffix_str.size() >= ust::array_size( numeric_constant.type_suffix ) )
 				{
 					errors_.push_back(
 						LexSyntError(
@@ -939,7 +939,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 			if( it_.front().lexem_type == Lexem::Type::LiteralSuffix )
 			{
 				var ust::string8& text= it_.front().text;
-				if( text.size() > typeinfo</ typeof( string_literal.type_suffix )/>.element_count )
+				if( text.size() > ust::array_size( string_literal.type_suffix ) )
 				{
 					errors_.push_back( LexSyntError( it_.front().src_loc, "String literal type suffix overflow" ) );
 				}
@@ -968,7 +968,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 			if( it_.front().lexem_type == Lexem::Type::LiteralSuffix )
 			{
 				var ust::string8& text= it_.front().text;
-				if( text.size() > typeinfo</ typeof( char_literal.type_suffix )/>.element_count )
+				if( text.size() > ust::array_size( char_literal.type_suffix ) )
 				{
 					errors_.push_back( LexSyntError( it_.front().src_loc, "Char literal type suffix overflow" ) );
 				}

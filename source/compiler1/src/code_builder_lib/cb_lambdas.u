@@ -469,8 +469,8 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 							unsafe
 							{
 								var LLVMValueRef global_value= LLVMAddGlobal( module_, llvm_type, g_null_string );
-								LLVMSetLinkage( global_value, LLVMLinkage::Private );
-								LLVMSetUnnamedAddress( global_value, LLVMUnnamedAddr::GlobalUnnamedAddr );
+								LLVMSetLinkage( global_value, LLVMPrivateLinkage );
+								LLVMSetUnnamedAddress( global_value, LLVMGlobalUnnamedAddr );
 								LLVMSetInitializer( global_value, LLVMGetUndef( llvm_type ) );
 								llvm_value= global_value;
 							}
@@ -829,7 +829,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					}
 				} ) );
 
-		unsafe( LLVMStructSetBody( class_type.llvm_type, fields_llvm_types.data(), u32( fields_llvm_types.size() ), LLVMBool::False ) );
+		unsafe( LLVMStructSetBody( class_type.llvm_type, fields_llvm_types.data(), u32( fields_llvm_types.size() ), LLVMBool_::False ) );
 
 		class_type.is_complete= true;
 	}
@@ -949,7 +949,7 @@ fn CodeBuilder::GetLambdaPreprocessingDummyClass( mut this, NamesScopePtr& names
 		with( mut class_lock : class_type_ptr.lock_mut() )
 		{
 			auto llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, mangled_name.front() ) );
-			unsafe( LLVMStructSetBody( llvm_type, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False ) );
+			unsafe( LLVMStructSetBody( llvm_type, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool_::False ) );
 			class_lock.deref().llvm_type= llvm_type;
 		}
 	}

@@ -59,8 +59,8 @@ private:
 			unsafe
 			{
 				auto zero_value= LLVMConstNull( fundamental_llvm_types_.size_type_ );
-				auto one_value= LLVMConstInt( fundamental_llvm_types_.size_type_, 1u64, LLVMBool::False );
-				auto loop_count_value= LLVMConstInt( fundamental_llvm_types_.size_type_, iteration_count, LLVMBool::False );
+				auto one_value= LLVMConstInt( fundamental_llvm_types_.size_type_, 1u64, LLVMBool_::False );
+				auto loop_count_value= LLVMConstInt( fundamental_llvm_types_.size_type_, iteration_count, LLVMBool_::False );
 
 				auto block_before_loop= LLVMGetInsertBlock( function_context.llvm_ir_builder ) ;
 				auto loop_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
@@ -76,7 +76,7 @@ private:
 
 				safe( move(func)( this, function_context, counter_value ) );
 
-				auto counter_test= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, counter_value_plus_one, loop_count_value, g_null_string );
+				auto counter_test= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntULT, counter_value_plus_one, loop_count_value, g_null_string );
 				LLVMBuildCondBr( function_context.llvm_ir_builder, counter_test, loop_block, block_after_loop );
 
 				var [ LLVMValueRef, 2 ] mut incoming_values[ zero_value, counter_value_plus_one ];
@@ -1267,6 +1267,9 @@ private:
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
 	fn CreateMoveToLLVMRegisterInstruction( mut this, VariableLite& variable, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
+
+	// Given value should be "load" or "call" instruction!
+	fn AddRangeMetadata( this, LLVMValueRef value, Enum& enum_type );
 
 	fn CreateClassFieldGEP( this, FunctionContext& function_context, VariableLite& class_variable, ClassField& field ) : LLVMValueRef;
 	fn CreateClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassField& field ) : LLVMValueRef;

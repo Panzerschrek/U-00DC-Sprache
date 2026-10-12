@@ -252,9 +252,9 @@ fn CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( this, Type& 
 		{
 			var LLVMTypeRef t= first_scalars[i];
 			var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( t ) );
-			if( t_kind == LLVMTypeKind::Float || t_kind == LLVMTypeKind::Double ) { } // It's fine to pass f32/f64 values in registers.
-			else if( t_kind == LLVMTypeKind::Pointer ) { } // Assume passing pointer scalars doesn't waste register space.
-			else if( t_kind == LLVMTypeKind::Integer )
+			if( t_kind == LLVMFloatTypeKind || t_kind == LLVMDoubleTypeKind ) { } // It's fine to pass f32/f64 values in registers.
+			else if( t_kind == LLVMPointerTypeKind ) { } // Assume passing pointer scalars doesn't waste register space.
+			else if( t_kind == LLVMIntegerTypeKind )
 			{
 				// Avoid passing integers smaller than pointer size directly.
 				// We use here pointer size as estimation for register size, which isn't true on some platforms, but is mostly fine.
@@ -484,7 +484,7 @@ fn CallingConventionInfoSystemV_X86_64::CalculateReturnValuePassingInfo( this, T
 
 			// Create a tuple for two parts.
 			// TODO - set zext/sext?
-			result_llvm_type= unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool::False ) );
+			result_llvm_type= unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool_::False ) );
 		}
 		else{ halt; }
 
@@ -709,7 +709,7 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 							argument_passing=
 								ArgumentPassing(
 									ArgumentPassingKind::Direct,
-									unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool::False ) ) );
+									unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool_::False ) ) );
 
 							num_integer_registers_left-= num_integer_registers_needed;
 							num_floating_point_registers_left-= num_floating_point_registers_needed;
@@ -750,11 +750,11 @@ fn CallingConventionInfoSystemV_X86_64::ClassifyType_r( this, LLVMTypeRef llvm_t
 {
 	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( llvm_type ) );
 
-	if( t_kind == LLVMTypeKind::Pointer )
+	if( t_kind == LLVMPointerTypeKind )
 	{
 		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
 	}
-	else if( t_kind == LLVMTypeKind::Integer )
+	else if( t_kind == LLVMIntegerTypeKind )
 	{
 		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
 		var u32 bit_size= unsafe( LLVMGetIntTypeWidth( llvm_type ) );
@@ -763,11 +763,11 @@ fn CallingConventionInfoSystemV_X86_64::ClassifyType_r( this, LLVMTypeRef llvm_t
 			MergeArgumentClasses( out_classes[ ( offset + 8u ) >> 3 ], ArgumentClass::Integer );
 		}
 	}
-	else if( t_kind == LLVMTypeKind::Float || t_kind == LLVMTypeKind::Double )
+	else if( t_kind == LLVMFloatTypeKind || t_kind == LLVMDoubleTypeKind )
 	{
 		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::SSE );
 	}
-	else if( t_kind == LLVMTypeKind::Array )
+	else if( t_kind == LLVMArrayTypeKind )
 	{
 		var LLVMTypeRef element_type= unsafe( LLVMGetElementType( llvm_type ) );
 		var u64 element_size= unsafe( LLVMABISizeOfType( data_layout_, element_type ) );
@@ -777,7 +777,7 @@ fn CallingConventionInfoSystemV_X86_64::ClassifyType_r( this, LLVMTypeRef llvm_t
 			ClassifyType_r( element_type, out_classes, offset + u32( element_index * element_size ) );
 		}
 	}
-	else if( t_kind == LLVMTypeKind::Struct )
+	else if( t_kind == LLVMStructTypeKind )
 	{
 		var u32 num_elements= unsafe( LLVMCountStructElementTypes( llvm_type ) );
 		for( var u32 mut element_index= 0u; element_index < num_elements; ++element_index )
@@ -1160,7 +1160,7 @@ fn CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( this, 
 		var LLVMTypeRef first_scalar= scalar_types.front();
 
 		var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( scalar_types.front() ) );
-		if( t_kind == LLVMTypeKind::Float || t_kind == LLVMTypeKind::Double )
+		if( t_kind == LLVMFloatTypeKind || t_kind == LLVMDoubleTypeKind )
 		{
 			var bool mut all_scalar_elements_are_same= true;
 			foreach( t : scalar_types )
@@ -1294,7 +1294,7 @@ fn CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( this
 		var LLVMTypeRef first_scalar= scalar_types.front();
 
 		var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( scalar_types.front() ) );
-		if( t_kind == LLVMTypeKind::Float || t_kind == LLVMTypeKind::Double )
+		if( t_kind == LLVMFloatTypeKind || t_kind == LLVMDoubleTypeKind )
 		{
 			var bool mut all_scalar_elements_are_same= true;
 			foreach( t : scalar_types )
@@ -1340,7 +1340,7 @@ fn CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( this
 		return
 			ArgumentPassing(
 				ArgumentPassingKind::Direct,
-				unsafe( LLVMStructTypeInContext( llvm_context, $<(elements[0]), 2u, LLVMBool::False ) ) );
+				unsafe( LLVMStructTypeInContext( llvm_context, $<(elements[0]), 2u, LLVMBool_::False ) ) );
 	}
 }
 
@@ -1351,14 +1351,14 @@ fn CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( this
 fn nodiscard CollectFirstSeveralScalars_r( LLVMTypeRef llvm_type, ust::array_view_mut</LLVMTypeRef/> out_types ) : size_type
 {
 	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( llvm_type ) );
-	if( t_kind == LLVMTypeKind::Half ||
-		t_kind == LLVMTypeKind::Float ||
-		t_kind == LLVMTypeKind::Double ||
-		t_kind == LLVMTypeKind::X86_FP80 ||
-		t_kind == LLVMTypeKind::P128 ||
-		t_kind == LLVMTypeKind::PPC_FP128 ||
-		t_kind == LLVMTypeKind::Integer ||
-		t_kind == LLVMTypeKind::Pointer )
+	if( t_kind == LLVMHalfTypeKind ||
+		t_kind == LLVMFloatTypeKind ||
+		t_kind == LLVMDoubleTypeKind ||
+		t_kind == LLVMX86_FP80TypeKind ||
+		t_kind == LLVMFP128TypeKind ||
+		t_kind == LLVMPPC_FP128TypeKind ||
+		t_kind == LLVMIntegerTypeKind ||
+		t_kind == LLVMPointerTypeKind )
 	{
 		if( !out_types.empty() )
 		{
@@ -1366,7 +1366,7 @@ fn nodiscard CollectFirstSeveralScalars_r( LLVMTypeRef llvm_type, ust::array_vie
 		}
 		return 1s;
 	}
-	else if( t_kind == LLVMTypeKind::Array )
+	else if( t_kind == LLVMArrayTypeKind )
 	{
 		var size_type mut num_scalars= 0s;
 		var LLVMTypeRef element_type= unsafe( LLVMGetElementType( llvm_type ) );
@@ -1381,7 +1381,7 @@ fn nodiscard CollectFirstSeveralScalars_r( LLVMTypeRef llvm_type, ust::array_vie
 		}
 		return num_scalars;
 	}
-	else if( t_kind == LLVMTypeKind::Struct )
+	else if( t_kind == LLVMStructTypeKind )
 	{
 		var size_type mut num_scalars= 0s;
 		var u32 num_elements= unsafe( LLVMCountStructElementTypes( llvm_type ) );
@@ -1404,18 +1404,18 @@ fn nodiscard CollectFirstSeveralScalars_r( LLVMTypeRef llvm_type, ust::array_vie
 fn CollectScalarTypes_r( LLVMTypeRef llvm_type, ust::vector</LLVMTypeRef/> &mut out_types )
 {
 	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( llvm_type ) );
-	if( t_kind == LLVMTypeKind::Half ||
-		t_kind == LLVMTypeKind::Float ||
-		t_kind == LLVMTypeKind::Double ||
-		t_kind == LLVMTypeKind::X86_FP80 ||
-		t_kind == LLVMTypeKind::P128 ||
-		t_kind == LLVMTypeKind::PPC_FP128 ||
-		t_kind == LLVMTypeKind::Integer ||
-		t_kind == LLVMTypeKind::Pointer )
+	if( t_kind == LLVMHalfTypeKind ||
+		t_kind == LLVMFloatTypeKind||
+		t_kind == LLVMDoubleTypeKind ||
+		t_kind == LLVMX86_FP80TypeKind ||
+		t_kind == LLVMFP128TypeKind ||
+		t_kind == LLVMPPC_FP128TypeKind ||
+		t_kind == LLVMIntegerTypeKind ||
+		t_kind == LLVMPointerTypeKind )
 	{
 		out_types.push_back( llvm_type );
 	}
-	else if( t_kind == LLVMTypeKind::Array )
+	else if( t_kind == LLVMArrayTypeKind )
 	{
 		var LLVMTypeRef element_type= unsafe( LLVMGetElementType( llvm_type ) );
 		var u64 num_elements= unsafe( LLVMGetArrayLength2( llvm_type ) );
@@ -1424,7 +1424,7 @@ fn CollectScalarTypes_r( LLVMTypeRef llvm_type, ust::vector</LLVMTypeRef/> &mut 
 			CollectScalarTypes_r( element_type, out_types );
 		}
 	}
-	else if( t_kind == LLVMTypeKind::Struct )
+	else if( t_kind == LLVMStructTypeKind )
 	{
 		var u32 num_elements= unsafe( LLVMCountStructElementTypes( llvm_type ) );
 		for( var u32 mut element_index= 0u; element_index < num_elements; ++element_index )

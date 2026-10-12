@@ -1432,6 +1432,9 @@ private:
 
 	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context );
 
+	// Given value should be "load" or "call" instruction!
+	void AddRangeMetadata( llvm::Instruction& value, const Enum& enum_type );
+
 	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, std::string_view mangled_name, llvm::Constant* initializer= nullptr );
 	llvm::GlobalVariable* CreateGlobalMutableVariable( const Type& type, std::string_view mangled_name, const SrcLoc& src_loc );
 

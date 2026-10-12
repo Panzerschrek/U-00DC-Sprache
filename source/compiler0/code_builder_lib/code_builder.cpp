@@ -2263,6 +2263,10 @@ llvm::Value* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, co
 	if( generate_tbaa_metadata_ )
 		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( type ) );
 
+	// For "load" instructions created for enum values create range metadata.
+	if( const auto enum_= type.GetEnumType() )
+		AddRangeMetadata( *result, *enum_ );
+
 	return result;
 }
 
@@ -2471,6 +2475,37 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 
 	U_ASSERT(false);
 	return nullptr;
+}
+
+void CodeBuilder::AddRangeMetadata( llvm::Instruction& value, const Enum& enum_type )
+{
+	if( enum_type.syntax_element != nullptr )
+		return; // Some incomplete enum. May be in case of error.
+
+	if( enum_type.element_count == 0u )
+		return; // Some error?
+
+	const uint32_t num_bits= 8u * uint32_t( GetFundamentalTypeSize( enum_type.underlying_type.fundamental_type ) );
+
+	if( num_bits <= 32u )
+	{
+		// Since signed numbers are used in ranges, we can represent range bounds only to maxumum signed values.
+		// For example if an enum has 150 values,  it should have range [ 0, 150 ),
+		// but we can't represent 150, since its signed representation is -106.
+		//
+		// It may be possible to use two ranges - for signed and unsigned parts,
+		// but for now just don't care and avoid emitting range metadata in such complicated cases.
+		//
+		const uint32_t max_signed_value_of_given_bit_width= ( 1u << ( num_bits - 1u ) ) - 1u;
+		if( enum_type.element_count > max_signed_value_of_given_bit_width )
+			return;
+	}
+
+	llvm::MDBuilder builder( llvm_context_ );
+	value.setMetadata(
+		llvm::LLVMContext::MD_range,
+		builder.createRange(
+			llvm::APInt( num_bits, uint64_t(0) ), llvm::APInt( num_bits, uint64_t( enum_type.element_count ) ) ) );
 }
 
 llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(

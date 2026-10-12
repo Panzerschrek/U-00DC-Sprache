@@ -120,11 +120,11 @@ fn CodeBuilder::constructor(
 				.element_count(2),
 				.llvm_type= unsafe( LLVMArrayType2( LLVMArrayType2( fundamental_llvm_types_.char8_, 2u64 ), 2u64 ) ),
 			},
-		virtual_function_pointer_type_= unsafe(LLVMPointerType( LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::True ), 0u )),
+		virtual_function_pointer_type_= unsafe(LLVMPointerType( LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool_::True ), 0u )),
 		polymorph_type_id_table_element_type_= unsafe( LLVMStructCreateNamed( llvm_context, "__U_polymorph_type_id_table_element\0"[0] ) ),
 	)
 {
-	unsafe( LLVMStructSetBody( fundamental_llvm_types_.void_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False ) );
+	unsafe( LLVMStructSetBody( fundamental_llvm_types_.void_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool_::False ) );
 
 	unsafe
 	{
@@ -133,7 +133,7 @@ fn CodeBuilder::constructor(
 			fundamental_llvm_types_.size_type_,
 			LLVMPointerType( polymorph_type_id_table_element_type_, 0u ),
 		];
-		LLVMStructSetBody( polymorph_type_id_table_element_type_, $<(elements[0]), 2u, LLVMBool::False );
+		LLVMStructSetBody( polymorph_type_id_table_element_type_, $<(elements[0]), 2u, LLVMBool_::False );
 	}
 }
 
@@ -153,13 +153,13 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 
 	unsafe // Prepare dummy function.
 	{
-		auto global_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
+		auto global_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool_::False );
 		global_llvm_function_= LLVMAddFunction( module_, g_null_string, global_function_llvm_type );
 	}
 
 	unsafe // Prepare halt function.
 	{
-		auto halt_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
+		auto halt_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool_::False );
 		halt_function_= LLVMAddFunction( module_, "__U_halt\0"[0], halt_function_llvm_type );
 	}
 	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "noreturn" );
@@ -175,13 +175,13 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 		malloc_function_= LLVMAddFunction(
 			module_,
 			"__U_ust_memory_allocate_impl\0"[0],
-			LLVMFunctionType( malloc_result_type, $<(malloc_size_type), 1u, LLVMBool::False ) );
+			LLVMFunctionType( malloc_result_type, $<(malloc_size_type), 1u, LLVMBool_::False ) );
 		LLVMSetFunctionCallConv( malloc_function_, GetLLVMCallingConvention( CallingConvention::Default ) );
 
 		free_function_= LLVMAddFunction(
 			module_,
 			"__U_ust_memory_free_impl\0"[0],
-			LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, $<(malloc_result_type), 1u, LLVMBool::False ) );
+			LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, $<(malloc_result_type), 1u, LLVMBool_::False ) );
 		LLVMSetFunctionCallConv( free_function_, GetLLVMCallingConvention( CallingConvention::Default ) );
 	}
 
@@ -202,7 +202,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 			{
 				var LLVMTypeRef mut arg_type= lifetime_function_arg_type_;
 				var LLVMTypeRef ret_type= fundamental_llvm_types_.void_for_ret_;
-				var LLVMTypeRef function_type= LLVMFunctionType( ret_type, $<(arg_type), 1u, LLVMBool::False );
+				var LLVMTypeRef function_type= LLVMFunctionType( ret_type, $<(arg_type), 1u, LLVMBool_::False );
 
 				lifetime_start_debug_func_= LLVMAddFunction( module_, "__U_debug_lifetime_start\0"[0], function_type );
 				lifetime_end_debug_func_= LLVMAddFunction( module_, "__U_debug_lifetime_end\0"[0], function_type );
@@ -278,9 +278,9 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 			auto llvm_type= v.t.GetLLVMType();
 			unsafe
 			{
-				if( LLVMIsOpaqueStruct( llvm_type ) == LLVMBool::True )
+				if( LLVMIsOpaqueStruct( llvm_type ) == LLVMBool_::True )
 				{
-					LLVMStructSetBody( llvm_type, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
+					LLVMStructSetBody( llvm_type, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool_::False );
 
 					auto initializer= LLVMConstNamedStruct( llvm_type, ust::nullptr</LLVMValueRef/>(), 0u );
 					LLVMSetInitializer( v.llvm_value, initializer );
@@ -332,7 +332,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 		else
 		{
 			auto mut name= "ust_memory_allocate_impl";
-			unsafe( LLVMSetValueName2( malloc_function_, $<(name[0]), typeinfo</typeof(name)/>.element_count ) );
+			unsafe( LLVMSetValueName2( malloc_function_, $<(name[0]), ust::array_size( name ) ) );
 		}
 
 		var LLVMValueRef ust_memory_free_impl= unsafe( LLVMGetNamedFunction( module_, "ust_memory_free_impl\0"[0] ) );
@@ -343,7 +343,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 		else
 		{
 			auto mut name= "ust_memory_free_impl";
-			unsafe( LLVMSetValueName2( free_function_, $<(name[0]), typeinfo</typeof(name)/>.element_count ) );
+			unsafe( LLVMSetValueName2( free_function_, $<(name[0]), ust::array_size( name ) ) );
 		}
 	}
 
@@ -1239,48 +1239,48 @@ fn CodeBuilder::BuildFuncCode(
 	auto body_syntax_element_ptr= func_variable.body_syntax_element.try_to_non_nullable();
 	var Synt::Function& body_syntax_element= body_syntax_element_ptr.deref();
 
-	var LLVMVisibility mut visibility= LLVMVisibility::Hidden;
+	var LLVMVisibility mut visibility= LLVMHiddenVisibility;
 	if( !func_variable.prototype_syntax_element.empty() &&
 		IsSrcLocFromOtherImportedFile( func_variable.prototype_syntax_element.try_deref().src_loc ) )
 	{
 		// This function is declared within an imported file,
 		// which means that is should be acessible outside current build target.
 		// Mark such functions with default visibility. Other functions should have hidden visibility.
-		visibility= LLVMVisibility::Default;
+		visibility= LLVMDefaultVisibility;
 	}
 	else
 	{
-		visibility= LLVMVisibility::Hidden;
+		visibility= LLVMHiddenVisibility;
 	}
 
 	if( names_scope.lock_imut().deref().IsInsideTemplate() )
 	{
 		// Set private visibility for functions inside templates.
 		// There is no need to use external linkage, since each user of the template must import file with source template.
-		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMPrivateLinkage ) );
 	}
 	else if( !IsSrcLocFromMainFile( body_syntax_element.src_loc ) )
 	{
 		// This function is defined inside imported file - no need to use private linkage for it.
-		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMPrivateLinkage ) );
 	}
 	else if( func_variable.no_mangle )
 	{
 		// The only reason to use "nomangle" functions is to interact with external code.
 		// For such purposes  external linkage is essential.
-		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::External ) );
+		unsafe( LLVMSetLinkage( llvm_function, LVMExternalLinkage ) );
 		unsafe( LLVMSetVisibility( llvm_function, visibility ) );
 	}
 	else if( func_variable.prototype_syntax_element.empty() || IsSrcLocFromMainFile( func_variable.prototype_syntax_element.try_deref().src_loc ) )
 	{
 		// This function has no portotype in imported files.
 		// There is no reason to use external linkage for it.
-		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMPrivateLinkage ) );
 	}
 	else
 	{
 		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
-		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::External ) );
+		unsafe( LLVMSetLinkage( llvm_function, LVMExternalLinkage ) );
 		unsafe( LLVMSetVisibility( llvm_function, visibility ) );
 	}
 
@@ -2476,9 +2476,9 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string_view8 name_null_ter
 		}
 
 		var LLVMValueRef global_value= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front() );
-		LLVMSetLinkage( global_value, LLVMLinkage::Private );
-		LLVMSetUnnamedAddress( global_value, LLVMUnnamedAddr::GlobalUnnamedAddr );
-		LLVMSetGlobalConstant( global_value, LLVMBool::True );
+		LLVMSetLinkage( global_value, LLVMPrivateLinkage );
+		LLVMSetUnnamedAddress( global_value, LLVMGlobalUnnamedAddr );
+		LLVMSetGlobalConstant( global_value, LLVMBool_::True );
 		if( initializer != Null::LLVMValueRef )
 		{
 			LLVMSetInitializer( global_value, initializer );
@@ -2512,23 +2512,23 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 	unsafe
 	{
 		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_with_suffix.front() );
-		LLVMSetGlobalConstant( global_variable, LLVMBool::False );
+		LLVMSetGlobalConstant( global_variable, LLVMBool_::False );
 
 		if( comdats_supported_ )
 		{
 			// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
-			LLVMSetLinkage( global_variable, LLVMLinkage::External );
+			LLVMSetLinkage( global_variable, LVMExternalLinkage );
 			auto comdat= LLVMGetOrInsertComdat( module_, name_with_suffix.front() );
-			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
+			LLVMSetComdatSelectionKind( comdat, LLVMAnyComdatSelectionKind );
 			LLVMSetComdat( global_variable, comdat );
 		}
 		else
 		{
-			LLVMSetLinkage( global_variable, LLVMLinkage::LinkOnceODR );
+			LLVMSetLinkage( global_variable, LLVMLinkOnceODRLinkage );
 		}
 
 		// Use hidden visibility - in order to avoid exporting variables from shared libraries (we don't support it).
-		LLVMSetVisibility( global_variable, LLVMVisibility::Hidden );
+		LLVMSetVisibility( global_variable, LLVMHiddenVisibility );
 
 		return global_variable;
 	}
@@ -2601,7 +2601,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
 	if( function_variable.is_generated )
 	{
-		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMPrivateLinkage ) );
 	}
 
 	if( function_variable.IsCoroutine() )
@@ -2611,7 +2611,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 
 	// Merge functions with identical code.
 	// We doesn't need different addresses for different functions.
-	unsafe( LLVMSetUnnamedAddress( llvm_function, LLVMUnnamedAddr::GlobalUnnamedAddr ) );
+	unsafe( LLVMSetUnnamedAddress( llvm_function, LLVMGlobalUnnamedAddr ) );
 
 	// We do not support exceptions. So, mark all functions as "nounwind".
 	AddFunctionAttribute( llvm_function, LLVMAttributeFunctionIndex, "nounwind" );
@@ -2746,7 +2746,7 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, Functi
 			var LLVMTypeRef llvm_type= param.t.GetLLVMType();
 			unsafe
 			{
-				if( LLVMTypeIsSized( llvm_type ) != LLVMBool::True )
+				if( LLVMTypeIsSized( llvm_type ) != LLVMBool_::True )
 				{
 					continue; // May be in case of error.
 				}
@@ -2759,7 +2759,7 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, Functi
 	unsafe
 	{
 		var LLVMTypeRef llvm_type= function_type.return_type.GetLLVMType();
-		if( LLVMTypeIsSized( llvm_type ) != LLVMBool::True )
+		if( LLVMTypeIsSized( llvm_type ) != LLVMBool_::True )
 		{
 			return; // May be in case of error.
 		}
@@ -2806,7 +2806,7 @@ fn CodeBuilder::IsGlobalVariable( VariablePtr& variable ) : bool
 		return
 			v.location == Variable::Location::Pointer &&
 			v.llvm_value != Null::LLVMValueRef &&
-			unsafe( LLVMIsConstant( v.llvm_value ) ) == LLVMBool::True;
+			unsafe( LLVMIsConstant( v.llvm_value ) ) == LLVMBool_::True;
 	}
 }
 
@@ -2831,7 +2831,7 @@ fn CodeBuilder::MarkInstructionWithTBAAMetadata( this, LLVMValueRef instruction,
 	auto& name= "tbaa";
 	unsafe( LLVMSetMetadata(
 		instruction,
-		LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( typeinfo</typeof(name)/>.element_count ) ),
+		LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( ust::array_size( name ) ) ),
 		LLVMMetadataAsValue( llvm_context_, metadata ) ) );
 }
 
@@ -2845,7 +2845,7 @@ fn CodeBuilder::MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_
 	auto& name= "nonnull";
 	unsafe( LLVMSetMetadata(
 		load_instruction,
-		LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( typeinfo</typeof(name)/>.element_count ) ),
+		LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( ust::array_size( name ) ) ),
 		LLVMMetadataAsValue( llvm_context_, LLVMMDNodeInContext2( llvm_context_, ust::nullptr</LLVMMetadataRef/>(), 0s ) ) ) );
 }
 
@@ -2877,6 +2877,11 @@ fn CodeBuilder::CreateTypedLoad( mut this, FunctionContext& function_context, Ty
 		MarkInstructionWithTBAAMetadata( result, access_tag );
 	}
 
+	if_var( &enum_ : t.GetEnumType() )
+	{
+		AddRangeMetadata( result, enum_.lock_imut().deref() );
+	}
+
 	return result;
 }
 
@@ -2903,14 +2908,14 @@ fn CodeBuilder::CreateTypedReferenceLoad( mut this, FunctionContext& function_co
 	// Set "dereferenceable" metadata to tell LLVM passes that we can read bytes of the underlying object.
 	unsafe
 	{
-		if( LLVMTypeIsSized( llvm_type ) == LLVMBool::True )
+		if( LLVMTypeIsSized( llvm_type ) == LLVMBool_::True )
 		{
 			var LLVMMetadataRef mut operand=
 				LLVMValueAsMetadata(
 					LLVMConstInt(
 						fundamental_llvm_types_.i64_, // LLVM requires i64 as type for "dereferenceable" metadata size.
 						LLVMABISizeOfType( data_layout_, llvm_type ),
-						LLVMBool::False ) );
+						LLVMBool_::False ) );
 
 			var ust::string_view8 metadata_name= "dereferenceable";
 			LLVMSetMetadata(
@@ -3050,7 +3055,7 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 		return Null::LLVMValueRef;
 	}
 
-	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(ref)) == LLVMBool::False )
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(ref)) == LLVMBool_::False )
 	{
 		return Null::LLVMValueRef;
 	}
@@ -3072,6 +3077,56 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 	halt;
 }
 
+fn CodeBuilder::AddRangeMetadata( this, LLVMValueRef value, Enum& enum_type )
+{
+	if( enum_type.underlying_type.llvm_type == Null::LLVMTypeRef )
+	{
+		return; // Some incomplete enum. May be in case of error.
+	}
+
+	var u32 element_count( enum_type.elements.size() );
+
+	if( element_count == 0u )
+	{
+		return; // Some error?
+	}
+
+	var u32 num_bits= 8u * GetFundamentalTypeSize( enum_type.underlying_type.fundamental_type );
+
+	if( num_bits <= 32u )
+	{
+		// Since signed numbers are used in ranges, we can represent range bounds only to maxumum signed values.
+		// For example if an enum has 150 values,  it should have range [ 0, 150 ),
+		// but we can't represent 150, since its signed representation is -106.
+		//
+		// It may be possible to use two ranges - for signed and unsigned parts,
+		// but for now just don't care and avoid emitting range metadata in such complicated cases.
+		//
+		var u32 max_signed_value_of_given_bit_width= ( 1u << ( num_bits - 1u ) ) - 1u;
+		if( element_count > max_signed_value_of_given_bit_width )
+		{
+			return;
+		}
+	}
+
+	unsafe
+	{
+		var [ LLVMMetadataRef, 2 ] mut range_values
+		[
+			LLVMValueAsMetadata( LLVMConstInt( enum_type.underlying_type.llvm_type, u64(0), LLVMBool_::False ) ),
+			LLVMValueAsMetadata( LLVMConstInt( enum_type.underlying_type.llvm_type, u64(element_count), LLVMBool_::False ) ),
+		];
+
+		var ust::string_view8 name= "range";
+
+		LLVMSetMetadata(
+			value,
+			LLVMGetMDKindIDInContext( llvm_context_, name.data(), u32( name.size() ) ),
+			LLVMMetadataAsValue( llvm_context_,
+				LLVMMDNodeInContext2( llvm_context_, $<(range_values[0]), 2s ) ) );
+	}
+}
+
 fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, VariableLite& class_variable, ClassField& field ) : LLVMValueRef
 {
 	return CreateClassFieldGEP( function_context, class_variable.t.GetClassType().try_deref(), class_variable.llvm_value, field );
@@ -3083,7 +3138,7 @@ fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, Cl
 	{
 		return Null::LLVMValueRef;
 	}
-	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool_::False )
 	{
 		return Null::LLVMValueRef;
 	}
@@ -3107,7 +3162,7 @@ fn CodeBuilder::CreateClassParentFieldGEP( this, FunctionContext& function_conte
 	{
 		return Null::LLVMValueRef;
 	}
-	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool_::False )
 	{
 		return Null::LLVMValueRef;
 	}
@@ -3130,7 +3185,7 @@ fn CodeBuilder::CreateBaseClassFieldGEP( this, FunctionContext& function_context
 	{
 		return Null::LLVMValueRef;
 	}
-	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool_::False )
 	{
 		return Null::LLVMValueRef;
 	}
@@ -3155,7 +3210,7 @@ fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, 
 	{
 		return Null::LLVMValueRef;
 	}
-	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool_::False )
 	{
 		return Null::LLVMValueRef;
 	}
@@ -3185,7 +3240,7 @@ fn CodeBuilder::CreateArrayElementGEP( this, FunctionContext& function_context, 
 		return Null::LLVMValueRef;
 	}
 	if( function_context.is_functionless_context &&
-		( unsafe(LLVMIsConstant(value)) == LLVMBool::False || unsafe(LLVMIsConstant(index)) == LLVMBool::False ) )
+		( unsafe(LLVMIsConstant(value)) == LLVMBool_::False || unsafe(LLVMIsConstant(index)) == LLVMBool_::False ) )
 	{
 		return Null::LLVMValueRef;
 	}
@@ -3199,7 +3254,7 @@ fn CodeBuilder::CreateArrayElementGEP( this, FunctionContext& function_context, 
 
 fn CodeBuilder::CreateIndexValue( this, u32 index ) : LLVMValueRef
 {
-	return unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(index), LLVMBool::False ) );
+	return unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(index), LLVMBool_::False ) );
 }
 
 fn CodeBuilder::ForceCreateConstantIndexGEP( this, FunctionContext& function_context, LLVMTypeRef t, LLVMValueRef value, u32 index ) : LLVMValueRef
@@ -3209,7 +3264,7 @@ fn CodeBuilder::ForceCreateConstantIndexGEP( this, FunctionContext& function_con
 		return Null::LLVMValueRef;
 	}
 
-	if( unsafe( LLVMIsConstant(value) ) == LLVMBool::True )
+	if( unsafe( LLVMIsConstant(value) ) == LLVMBool_::True )
 	{
 		// Constant will be folded properly and no instruction will be actiually inserted.
 		var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), CreateIndexValue( index ) ];
@@ -3255,7 +3310,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 	{
 		auto constant_type= LLVMTypeOf( constant );
 		auto constant_type_kind= LLVMGetTypeKind( constant_type );
-		if( constant_type_kind == LLVMTypeKind::Array )
+		if( constant_type_kind == LLVMArrayTypeKind )
 		{
 			var u32 length( LLVMGetArrayLength2( constant_type ) );
 			for( auto mut i= 0u; i < length; ++i )
@@ -3272,7 +3327,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 				MoveConstantToMemory( element_ptr, constant_element, function_context );
 			}
 		}
-		else if( constant_type_kind == LLVMTypeKind::Struct )
+		else if( constant_type_kind == LLVMStructTypeKind )
 		{
 			auto length= LLVMCountStructElementTypes( constant_type );
 			for( auto mut i= 0u; i < length; ++i )
@@ -3307,10 +3362,10 @@ fn CodeBuilder::CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t
 	{
 		var LLVMTypeRef llvm_type= t.GetLLVMType();
 		var LLVMTypeKind type_kind= LLVMGetTypeKind( llvm_type );
-		if( type_kind == LLVMTypeKind::Integer ||
-			type_kind == LLVMTypeKind::Float ||
-			type_kind == LLVMTypeKind::Double ||
-			type_kind == LLVMTypeKind::Pointer )
+		if( type_kind == LLVMIntegerTypeKind ||
+			type_kind == LLVMFloatTypeKind ||
+			type_kind == LLVMDoubleTypeKind ||
+			type_kind == LLVMPointerTypeKind )
 		{
 			// Simple scalar - create load/store.
 			auto value= CreateTypedLoad( function_context, t, src );
@@ -3326,7 +3381,7 @@ fn CodeBuilder::CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t
 				function_context.llvm_ir_builder,
 				dst, alignment,
 				src, alignment,
-				LLVMConstInt( fundamental_llvm_types_.u64_, size, LLVMBool::False ) );
+				LLVMConstInt( fundamental_llvm_types_.u64_, size, LLVMBool_::False ) );
 		}
 	}
 }
@@ -3350,29 +3405,29 @@ fn CodeBuilder::ConstexprCompareEqual(
 		{
 			if( t == void_type_ )
 			{
-				return LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+				return LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool_::False );
 			}
 
 			var LLVMTypeKind type_kind= LLVMGetTypeKind( t.GetLLVMType() );
 			var bool is_float=
-				type_kind == LLVMTypeKind::Half ||
-				type_kind == LLVMTypeKind::Float ||
-				type_kind == LLVMTypeKind::Double ||
-				type_kind == LLVMTypeKind::X86_FP80 ||
-				type_kind == LLVMTypeKind::P128 ||
-				type_kind == LLVMTypeKind::PPC_FP128;
+				type_kind == LLVMHalfTypeKind||
+				type_kind == LLVMFloatTypeKind ||
+				type_kind == LLVMDoubleTypeKind ||
+				type_kind == LLVMX86_FP80TypeKind ||
+				type_kind == LLVMFP128TypeKind ||
+				type_kind == LLVMPPC_FP128TypeKind;
 
 			return
 				( is_float
-					? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l, r, g_null_string )
-					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l, r, g_null_string ) );
+					? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealOEQ, l, r, g_null_string )
+					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntEQ, l, r, g_null_string ) );
 		}
 	}
 	else if_var( &array_type : t.GetArrayType() )
 	{
 		unsafe
 		{
-			var LLVMValueRef mut res= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+			var LLVMValueRef mut res= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool_::False );
 			for( auto mut i= 0u64; i < array_type.element_count; ++i )
 			{
 				var u32 index(i);
@@ -3389,7 +3444,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 	{
 		unsafe
 		{
-			var LLVMValueRef mut res= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+			var LLVMValueRef mut res= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool_::False );
 			for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 			{
 				var u32 index(i);
@@ -3407,7 +3462,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 		if( !class_type.lock_imut().deref().is_equality_comparable )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, Type(class_type) )
-			return unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) );
+			return unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool_::False ) );
 		}
 
 		// Search for "==" operator.
@@ -3445,7 +3500,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 						}
 					}
 
-					return unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) );
+					return unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool_::False ) );
 				}
 			}
 		}
@@ -3476,13 +3531,13 @@ fn CodeBuilder::CreateLifetimeStart( this,  FunctionContext &mut function_contex
 		}
 
 		var LLVMTypeRef t= LLVMGetAllocatedType( alloca_inst );
-		if( LLVMTypeIsSized( t ) == LLVMBool::False ) // May be in case of error.
+		if( LLVMTypeIsSized( t ) == LLVMBool_::False ) // May be in case of error.
 		{
 			return;
 		}
 
 		var u64 size_of= LLVMABISizeOfType( data_layout_, t );
-		var LLVMValueRef size_of_value= LLVMConstInt( fundamental_llvm_types_.u64_, size_of, LLVMBool::False );
+		var LLVMValueRef size_of_value= LLVMConstInt( fundamental_llvm_types_.u64_, size_of, LLVMBool_::False );
 		var LLVMValueRef mut ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, g_null_string );
 
 		var [ LLVMValueRef, 2 ] mut args[ size_of_value, ptr_converted ];
@@ -3515,13 +3570,13 @@ fn CodeBuilder::CreateLifetimeEnd( this, FunctionContext &mut function_context, 
 		}
 
 		var LLVMTypeRef t= LLVMGetAllocatedType( alloca_inst );
-		if( LLVMTypeIsSized( t ) == LLVMBool::False ) // May be in case of error.
+		if( LLVMTypeIsSized( t ) == LLVMBool_::False ) // May be in case of error.
 		{
 			return;
 		}
 
 		var u64 size_of= LLVMABISizeOfType( data_layout_, t );
-		var LLVMValueRef size_of_value= LLVMConstInt( fundamental_llvm_types_.u64_, size_of, LLVMBool::False );
+		var LLVMValueRef size_of_value= LLVMConstInt( fundamental_llvm_types_.u64_, size_of, LLVMBool_::False );
 		var LLVMValueRef mut ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, g_null_string );
 
 		var [ LLVMValueRef, 2 ] mut args[ size_of_value, ptr_converted ];
