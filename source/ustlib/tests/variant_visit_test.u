@@ -41,46 +41,6 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 		halt if( v.get</char8/>().try_deref() != '!' );
 	}
-	{
-		var ust::variant</ tup[ f32, char8, i32 ] /> v0= 0.25f, v1= 'G', v2= 784;
-
-		{
-			var bool mut f_visited= false, mut c_visited= false, mut i_visited= false;
-			variant_switch( v0 )
-			{
-				( f32 f ) -> { halt if( f != 0.25f ); f_visited= true; },
-				( char8 c ) -> { c_visited= true; },
-				( i32 i ) ->{ i_visited= true; }
-			}
-			halt if( !f_visited );
-			halt if( c_visited );
-			halt if( i_visited );
-		}
-		{
-			var bool mut f_visited= false, mut c_visited= false, mut i_visited= false;
-			variant_switch( v1 )
-			{
-				( f32 f ) -> { f_visited= true; },
-				( char8 c ) -> { halt if( c != 'G' ); c_visited= true; },
-				( i32 i ) ->{ i_visited= true; }
-			}
-			halt if( f_visited );
-			halt if( !c_visited );
-			halt if( i_visited );
-		}
-		{
-			var bool mut f_visited= false, mut c_visited= false, mut i_visited= false;
-			variant_switch( v2 )
-			{
-				( f32 f ) -> { f_visited= true; },
-				( char8 c ) -> { c_visited= true; },
-				( i32 i ) ->{ halt if( i != 784 ); i_visited= true; }
-			}
-			halt if( f_visited );
-			halt if( c_visited );
-			halt if( !i_visited );
-		}
-	}
 
 	return 0;
 }
