@@ -547,13 +547,12 @@ fn EncodeReturnInnerReferencesAsType( ManglerState& mut mangler_state, FunctionT
 	}
 }
 
-fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_type )
+fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType::BaseTemplate& base_template, NamesScope& members )
 {
-	auto& base_template= class_type.generated_class_data.try_get</ ClassType::BaseTemplate />();
 	ADD_NODE( mangler_state )
 	{
 		// Skip template parameters namespace.
-		auto parent= class_type.members.lock_imut().deref().GetParent().try_lock_imut().deref().GetParent();
+		auto parent= members.GetParent().try_lock_imut().deref().GetParent();
 		if( !parent.try_lock_imut().deref().GetThisNamespaceName().empty() )
 		{
 			EncodeNamespacePrefix_r( mangler_state, parent.try_lock_imut().deref() );
@@ -565,17 +564,35 @@ fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_ty
 	EncodeTemplateArgs( mangler_state, base_template.signature_args );
 }
 
-fn EncodeLambdaClassName( ManglerState &mut mangler_state, ClassType& class_type )
+fn EncodeLambdaClassName( ManglerState &mut mangler_state, LambdaClassData& lambda_class_data, NamesScope& members )
 {
-	auto& lambda_class_data= class_type.generated_class_data.try_get</ LambdaClassData />();
-
-	with( &members : class_type.members.lock_imut().deref() )
+	if( lambda_class_data.template_args.empty() )
 	{
-		if( lambda_class_data.template_args.empty() )
+		ADD_NODE( mangler_state )
+		{
+			auto parent_ptr= members.GetParent();
+			if( !parent_ptr.empty() )
+			{
+				with( &parent : parent_ptr.try_lock_imut().deref() )
+				{
+					if( !parent.GetThisNamespaceName().empty() )
+					{
+						EncodeNamespacePrefix_r( mangler_state, parent );
+					}
+				}
+			}
+
+			mangler_state.PushLengthPrefixed( members.GetThisNamespaceName() );
+		}
+	}
+	else
+	{
+		ADD_NODE( mangler_state )
 		{
 			ADD_NODE( mangler_state )
 			{
-				auto parent_ptr= members.GetParent();
+				// Skip template parameters namespace.
+				auto parent_ptr= members.GetParent().try_lock_imut().deref().GetParent();
 				if( !parent_ptr.empty() )
 				{
 					with( &parent : parent_ptr.try_lock_imut().deref() )
@@ -589,44 +606,22 @@ fn EncodeLambdaClassName( ManglerState &mut mangler_state, ClassType& class_type
 
 				mangler_state.PushLengthPrefixed( members.GetThisNamespaceName() );
 			}
-		}
-		else
-		{
-			ADD_NODE( mangler_state )
-			{
-				ADD_NODE( mangler_state )
-				{
-					// Skip template parameters namespace.
-					auto parent_ptr= members.GetParent().try_lock_imut().deref().GetParent();
-					if( !parent_ptr.empty() )
-					{
-						with( &parent : parent_ptr.try_lock_imut().deref() )
-						{
-							if( !parent.GetThisNamespaceName().empty() )
-							{
-								EncodeNamespacePrefix_r( mangler_state, parent );
-							}
-						}
-					}
 
-					mangler_state.PushLengthPrefixed( members.GetThisNamespaceName() );
-				}
-
-				EncodeTemplateArgs( mangler_state, lambda_class_data.template_args );
-			}
+			EncodeTemplateArgs( mangler_state, lambda_class_data.template_args );
 		}
 	}
 }
 
-fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_type )
+fn EncodeCoroutineClassName(
+	ManglerState &mut mangler_state,
+	CoroutineTypeDescription& coroutine_type_description,
+	NamesScope& members )
 {
-	var CoroutineTypeDescription& coroutine_type_description= class_type.generated_class_data.try_get</ CoroutineTypeDescription />();
-
 	ADD_NODE( mangler_state )
 	{
 		ADD_NODE( mangler_state )
 		{
-			mangler_state.PushLengthPrefixed( class_type.members.lock_imut().deref().GetThisNamespaceName() );
+			mangler_state.PushLengthPrefixed( members.GetThisNamespaceName() );
 		}
 
 		// Encode coroutine type as template with several arguments.
@@ -756,24 +751,22 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 					if( !t_namespace.empty() && !t_namespace.try_lock_imut().deref().GetParent().empty() )
 					{
 						mangler_state.Push( 'N' );
-						EncodeTemplateClassName( mangler_state, class_type );
+						EncodeTemplateClassName( mangler_state, base_template, class_type.members.lock_imut().deref() );
 						mangler_state.Push( 'E' );
 					}
 					else
 					{
-						EncodeTemplateClassName( mangler_state, class_type );
+						EncodeTemplateClassName( mangler_state, base_template, class_type.members.lock_imut().deref() );
 					}
 				}
 			},
 			( CoroutineTypeDescription& coroutine_type_description ) ->
 			{
-				ust::ignore_unused( coroutine_type_description );
-				EncodeCoroutineClassName( mangler_state, class_type );
+				EncodeCoroutineClassName( mangler_state, coroutine_type_description, class_type.members.lock_imut().deref() );
 			},
 			( LambdaClassData& lambda_class_data ) ->
 			{
-				ust::ignore_unused( lambda_class_data );
-				EncodeLambdaClassName( mangler_state, class_type );
+				EncodeLambdaClassName( mangler_state, lambda_class_data, class_type.members.lock_imut().deref() );
 			},
 			( ClassType::NonGeneratedClassTag& ng ) ->
 			{
@@ -878,23 +871,32 @@ fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_s
 	{
 		auto class_lock= class_ptr.try_lock_imut();
 		auto& class_= class_lock.deref();
-		if( class_.generated_class_data.has</ ClassType::BaseTemplate />() )
+
+		variant_switch( class_.generated_class_data )
 		{
-			ADD_NODE( mangler_state )
+			( ClassType::BaseTemplate& base_template ) ->
 			{
-				EncodeTemplateClassName( mangler_state, class_ );
-			}
-			return;
-		}
-		if( class_.generated_class_data.has</ CoroutineTypeDescription />() )
-		{
-			EncodeCoroutineClassName( mangler_state, class_ );
-			return;
-		}
-		if( class_.generated_class_data.has</ LambdaClassData />() )
-		{
-			EncodeLambdaClassName( mangler_state, class_ );
-			return;
+				ADD_NODE( mangler_state )
+				{
+					EncodeTemplateClassName( mangler_state, base_template, class_.members.lock_imut().deref() );
+				}
+				return;
+			},
+			( CoroutineTypeDescription& coroutine_type_description ) ->
+			{
+				EncodeCoroutineClassName( mangler_state, coroutine_type_description, class_.members.lock_imut().deref() );
+				return;
+			},
+			( LambdaClassData& lambda_class_data ) ->
+			{
+				EncodeLambdaClassName( mangler_state, lambda_class_data, class_.members.lock_imut().deref() );
+				return;
+			},
+			( TypeinfoClassDescription& typeinfo_class_description ) ->
+			{
+				ust::ignore_unused( typeinfo_class_description );
+			},
+			( ClassType::NonGeneratedClassTag& ng ) -> { ust::ignore_unused(ng); }
 		}
 	}
 
