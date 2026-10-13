@@ -327,103 +327,102 @@ fn nodiscard TransformAndValidatePackageInfo(
 
 		NormalizeList( out_custom_build_step.output_files );
 
-		if_var( mut exe_command : custom_build_step.command.get</CustomBuildStep::ExeCommand/>() )
+		variant_switch( custom_build_step.command )
 		{
-			if( ust::path::is_absolute( exe_command.exe_path ) )
+			( CustomBuildStep::ExeCommand mut exe_command ) ->
 			{
-				exe_command.exe_path= ust::path::normalize( exe_command.exe_path );
-			}
-			else if_var( &path_resolved : ResolveRelativeExecutablePath( exe_command.exe_path ) )
-			{
-				exe_command.exe_path= ust::path::normalize( path_resolved );
-			}
-			else
-			{
-				logger.LogError( ust::concat( "Error, failed to resolve custom build step executable path \"", exe_command.exe_path, "\"!" ) );
-				ok= false;
-			}
-
-			out_custom_build_step.command= move(exe_command);
-		}
-		else if_var( &host_build_target_exe_command : custom_build_step.command.get</CustomBuildStep::HostBuildTargetExeCommand/>() )
-		{
-			var WorkspaceInfo::CustomBuildStep::HostBuildTargetExeCommand mut out_host_build_target_exe_command
-			{
-				.command_line= host_build_target_exe_command.command_line,
-			};
-
-			auto mut build_target_name_absolute_opt= TransformDependencyName( logger, package_absolute_name, host_build_target_exe_command.name );
-			if( build_target_name_absolute_opt.empty() )
-			{
-				ok= false;
-			}
-			else
-			{
-				out_host_build_target_exe_command.name= build_target_name_absolute_opt.try_take();
-			}
-
-			out_custom_build_step.command= move(out_host_build_target_exe_command);
-		}
-		else if_var( mut copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
-		{
-			if( !ust::path::is_absolute( copy_command.destination_path ) )
-			{
-				logger.LogError( ust::concat( "Error, custom build step copy destination \"", copy_command.destination_path, "\" is not absolute!" ) );
-				ok= false;
-			}
-			else
-			{
-				copy_command.destination_path= ust::path::normalize( copy_command.destination_path );
-				if( !IsInFilesList( out_custom_build_step.output_files, copy_command.destination_path ) )
+				if( ust::path::is_absolute( exe_command.exe_path ) )
 				{
-					logger.LogError( ust::concat( "Error, copy command destination file \"", copy_command.destination_path, "\" is not listed in output files!" ) );
+					exe_command.exe_path= ust::path::normalize( exe_command.exe_path );
+				}
+				else if_var( &path_resolved : ResolveRelativeExecutablePath( exe_command.exe_path ) )
+				{
+					exe_command.exe_path= ust::path::normalize( path_resolved );
+				}
+				else
+				{
+					logger.LogError( ust::concat( "Error, failed to resolve custom build step executable path \"", exe_command.exe_path, "\"!" ) );
 					ok= false;
 				}
-			}
 
-			if( !ust::path::is_absolute( copy_command.source_path ) )
+				out_custom_build_step.command= move(exe_command);
+			},
+			( CustomBuildStep::HostBuildTargetExeCommand& host_build_target_exe_command ) ->
 			{
-				logger.LogError( ust::concat( "Error, custom build step copy source \"", copy_command.source_path, "\" is not absolute!" ) );
-				ok= false;
-			}
-			else
-			{
-				copy_command.source_path= ust::path::normalize( copy_command.source_path );
-				if( !IsInFilesList( out_custom_build_step.input_files, copy_command.source_path ) )
+				var WorkspaceInfo::CustomBuildStep::HostBuildTargetExeCommand mut out_host_build_target_exe_command
 				{
-					logger.LogError( ust::concat( "Error, copy command source file \"", copy_command.source_path, "\" is not listed in input files!" ) );
+					.command_line= host_build_target_exe_command.command_line,
+				};
+
+				auto mut build_target_name_absolute_opt= TransformDependencyName( logger, package_absolute_name, host_build_target_exe_command.name );
+				if( build_target_name_absolute_opt.empty() )
+				{
 					ok= false;
 				}
-			}
-
-			if( copy_command.destination_path == copy_command.source_path )
-			{
-				logger.LogError( ust::concat( "Error, custom build step copy source and destination are same path \"", copy_command.source_path, "\"!" ) );
-				ok= false;
-			}
-			out_custom_build_step.command= move(copy_command);
-		}
-		else if_var( mut generate_command : custom_build_step.command.get</ CustomBuildStep::GenerateFileCommand />() )
-		{
-			if( !ust::path::is_absolute( generate_command.destination_path ) )
-			{
-				logger.LogError( ust::concat( "Error, custom build step generate destination \"", generate_command.destination_path, "\" is not absolute!" ) );
-				ok= false;
-			}
-			else
-			{
-				generate_command.destination_path= ust::path::normalize( generate_command.destination_path );
-				if( !IsInFilesList( out_custom_build_step.output_files, generate_command.destination_path ) )
+				else
 				{
-					logger.LogError( ust::concat( "Error, generate command destination file \"", generate_command.destination_path, "\" is not listed in output files!" ) );
+					out_host_build_target_exe_command.name= build_target_name_absolute_opt.try_take();
+				}
+
+				out_custom_build_step.command= move(out_host_build_target_exe_command);
+			},
+			( CustomBuildStep::CopyCommand mut copy_command ) ->
+			{
+				if( !ust::path::is_absolute( copy_command.destination_path ) )
+				{
+					logger.LogError( ust::concat( "Error, custom build step copy destination \"", copy_command.destination_path, "\" is not absolute!" ) );
 					ok= false;
 				}
+				else
+				{
+					copy_command.destination_path= ust::path::normalize( copy_command.destination_path );
+					if( !IsInFilesList( out_custom_build_step.output_files, copy_command.destination_path ) )
+					{
+						logger.LogError( ust::concat( "Error, copy command destination file \"", copy_command.destination_path, "\" is not listed in output files!" ) );
+						ok= false;
+					}
+				}
+
+				if( !ust::path::is_absolute( copy_command.source_path ) )
+				{
+					logger.LogError( ust::concat( "Error, custom build step copy source \"", copy_command.source_path, "\" is not absolute!" ) );
+					ok= false;
+				}
+				else
+				{
+					copy_command.source_path= ust::path::normalize( copy_command.source_path );
+					if( !IsInFilesList( out_custom_build_step.input_files, copy_command.source_path ) )
+					{
+						logger.LogError( ust::concat( "Error, copy command source file \"", copy_command.source_path, "\" is not listed in input files!" ) );
+						ok= false;
+					}
+				}
+
+				if( copy_command.destination_path == copy_command.source_path )
+				{
+					logger.LogError( ust::concat( "Error, custom build step copy source and destination are same path \"", copy_command.source_path, "\"!" ) );
+					ok= false;
+				}
+				out_custom_build_step.command= move(copy_command);
+			},
+			( CustomBuildStep::GenerateFileCommand mut generate_command ) ->
+			{
+				if( !ust::path::is_absolute( generate_command.destination_path ) )
+				{
+					logger.LogError( ust::concat( "Error, custom build step generate destination \"", generate_command.destination_path, "\" is not absolute!" ) );
+					ok= false;
+				}
+				else
+				{
+					generate_command.destination_path= ust::path::normalize( generate_command.destination_path );
+					if( !IsInFilesList( out_custom_build_step.output_files, generate_command.destination_path ) )
+					{
+						logger.LogError( ust::concat( "Error, generate command destination file \"", generate_command.destination_path, "\" is not listed in output files!" ) );
+						ok= false;
+					}
+				}
+				out_custom_build_step.command= move(generate_command);
 			}
-			out_custom_build_step.command= move(generate_command);
-		}
-		else
-		{
-			halt; // Unhandled kind.
 		}
 
 		workspace.custom_build_steps.push_back( move(out_custom_build_step) );
@@ -434,94 +433,99 @@ fn nodiscard TransformAndValidatePackageInfo(
 	// Check if package directories are correct.
 	foreach( &dependency : package_info.package_dependencies )
 	{
-		if( dependency.name.name_base.has</ PackageName::CurrentPackage />() )
+		variant_switch( dependency.name.name_base )
 		{
-			auto mut relative_path_component_splitted=
-				ust::vector</ust::filesystem_path/>::from_iterator( ust::path::components_iter( dependency.name.path ) );
-
-			var bool mut moves_up= false;
-			foreach( &component : relative_path_component_splitted )
+			( PackageName::CurrentPackage& current_package ) ->
 			{
-				moves_up|= component == "..";
-			}
+				ust::ignore_unused( current_package );
 
-			if( moves_up )
-			{
-				// For now ignore paths with ".." - we can't process them properly.
-				continue;
-			}
+				auto mut relative_path_component_splitted=
+					ust::vector</ust::filesystem_path/>::from_iterator( ust::path::components_iter( dependency.name.path ) );
 
-			if( !relative_path_component_splitted.empty() )
-			{
-				// Forbid using the same name for build targets and subpackages.
-				// It's needed to avoid name conflicts in the package build directory.
-				auto& first_component= relative_path_component_splitted.front();
-				foreach( &build_target : package_info.build_targets )
+				var bool mut moves_up= false;
+				foreach( &component : relative_path_component_splitted )
 				{
-					if( first_component == build_target.name )
+					moves_up|= component == "..";
+				}
+
+				if( moves_up )
+				{
+					// For now ignore paths with ".." - we can't process them properly.
+					continue;
+				}
+
+				if( !relative_path_component_splitted.empty() )
+				{
+					// Forbid using the same name for build targets and subpackages.
+					// It's needed to avoid name conflicts in the package build directory.
+					auto& first_component= relative_path_component_splitted.front();
+					foreach( &build_target : package_info.build_targets )
 					{
-						logger.LogError( ust::concat( "Package dependency directory \"", dependency.name.path, "\" conflicts with build target name \"", build_target.name, "\"!" ) );
+						if( first_component == build_target.name )
+						{
+							logger.LogError( ust::concat( "Package dependency directory \"", dependency.name.path, "\" conflicts with build target name \"", build_target.name, "\"!" ) );
+							ok= false;
+						}
+					}
+				}
+
+				// Do not allow some package names - to avoid conflicts in the build directory.
+				foreach( &component : relative_path_component_splitted )
+				{
+					// TODO - check other reserved names.
+					if( component == BuildConfigurationToString( BuildConfiguration::Debug ) ||
+						component == BuildConfigurationToString( BuildConfiguration::Release ) )
+					{
+						logger.LogError( ust::concat( "Package dependency directory \"", dependency.name.path, "\" contains a reserved word!" ) );
+						ok= false;
+					}
+					if( !TargetNameIsValid( component ) ) // Use for package names check identical to target names check.
+					{
+						logger.LogError( ust::concat( "Package dependency directory \"", dependency.name.path, "\" name is invalid!" ) );
 						ok= false;
 					}
 				}
-			}
 
-			// Do not allow some package names - to avoid conflicts in the build directory.
-			foreach( &component : relative_path_component_splitted )
-			{
-				// TODO - check other reserved names.
-				if( component == BuildConfigurationToString( BuildConfiguration::Debug ) ||
-					component == BuildConfigurationToString( BuildConfiguration::Release ) )
+				foreach( &prev_source_directory : prev_targets_directories )
 				{
-					logger.LogError( ust::concat( "Package dependency directory \"", dependency.name.path, "\" contains a reserved word!" ) );
-					ok= false;
+					if( prev_source_directory == relative_path_component_splitted )
+					{
+						logger.LogError( ust::concat( "Package dependency directory \"", dependency.name.path, "\" is already in use." ) );
+						ok= false;
+					}
+					else if( relative_path_component_splitted.size() < prev_source_directory.size() &&
+						relative_path_component_splitted == prev_source_directory.range().subrange_end( relative_path_component_splitted.size() ) )
+					{
+						logger.LogError( ust::concat( "Package dependency directory \"", dependency.name.path, "\" is a prefix of another used directory." ) );
+						ok= false;
+					}
+					else if( relative_path_component_splitted.size() > prev_source_directory.size() &&
+						prev_source_directory == cast_imut(relative_path_component_splitted).range().subrange_end( prev_source_directory.size() ) )
+					{
+						logger.LogError( ust::concat( "Package dependency directory \"", dependency.name.path, "\" is located within another used directory." ) );
+						ok= false;
+					}
 				}
-				if( !TargetNameIsValid( component ) ) // Use for package names check identical to target names check.
-				{
-					logger.LogError( ust::concat( "Package dependency directory \"", dependency.name.path, "\" name is invalid!" ) );
-					ok= false;
-				}
-			}
 
-			foreach( &prev_source_directory : prev_targets_directories )
+				// Do not store directory of this package dependency in "prev_targets_directories" list.
+				// It's allowed to access package dependencies within other package dependencies.
+			},
+			( GlobalVersionedPackageName& global_versioned_package ) ->
 			{
-				if( prev_source_directory == relative_path_component_splitted )
-				{
-					logger.LogError( ust::concat( "Package dependency directory \"", dependency.name.path, "\" is already in use." ) );
-					ok= false;
-				}
-				else if( relative_path_component_splitted.size() < prev_source_directory.size() &&
-					relative_path_component_splitted == prev_source_directory.range().subrange_end( relative_path_component_splitted.size() ) )
-				{
-					logger.LogError( ust::concat( "Package dependency directory \"", dependency.name.path, "\" is a prefix of another used directory." ) );
-					ok= false;
-				}
-				else if( relative_path_component_splitted.size() > prev_source_directory.size() &&
-					prev_source_directory == cast_imut(relative_path_component_splitted).range().subrange_end( prev_source_directory.size() ) )
-				{
-					logger.LogError( ust::concat( "Package dependency directory \"", dependency.name.path, "\" is located within another used directory." ) );
-					ok= false;
-				}
-			}
+				// Check here if package name is valid.
+				// But generally this check isn't so necessary,
+				// since package naming correctnes should be enforced by the authority of a repository.
 
-			// Do not store directory of this package dependency in "prev_targets_directories" list.
-			// It's allowed to access package dependencies within other package dependencies.
-		}
-		else if_var( &global_versioned_package : dependency.name.name_base.get</ GlobalVersionedPackageName />() )
-		{
-			// Check here if package name is valid.
-			// But generally this check isn't so necessary,
-			// since package naming correctnes should be enforced by the authority of a repository.
-
-			if( !TargetNameIsValid( global_versioned_package.name ) ) // For now apply build target naming rules.
-			{
-				logger.LogError( ust::concat( "Global package dependency \"", global_versioned_package.name, "\" is not valid!" ) );
-				ok= false;
-			}
-			if( global_versioned_package.version == SemanticVersion( 0u, 0u ) )
-			{
-				logger.LogError( ust::concat( "Can't specify zero version for global package \"", global_versioned_package.name, "\"!" ) );
-				ok= false;
+				if( !TargetNameIsValid( global_versioned_package.name ) ) // For now apply build target naming rules.
+				{
+					logger.LogError( ust::concat( "Global package dependency \"", global_versioned_package.name, "\" is not valid!" ) );
+					ok= false;
+				}
+				if( global_versioned_package.version == SemanticVersion( 0u, 0u ) )
+				{
+					logger.LogError( ust::concat( "Can't specify zero version for global package \"", global_versioned_package.name, "\"!" ) );
+					ok= false;
+				}
 			}
 		}
 	}
@@ -796,70 +800,70 @@ fn ResolvePackageAbsoluteName(
 	PackageAbsoluteName& parent_package_absolute_name,
 	PackageName& package_name ) : ust::optional</PackageAbsoluteName/>
 {
-	if( package_name.name_base.has</ PackageName::CurrentPackage/>() )
+	variant_switch( package_name.name_base )
 	{
-		if( package_name.path.empty() )
+		( PackageName::CurrentPackage& current_package ) ->
 		{
-			return parent_package_absolute_name;
-		}
+			ust::ignore_unused( current_package );
 
-		var ust::vector</ust::filesystem_path/> mut components;
-		components.append_from_iterator( ust::path::components_iter( parent_package_absolute_name.path ) );
-
-		foreach( &child_component : ust::path::components_iter( package_name.path ) )
-		{
-			if( child_component == "." )
-			{} // Do not push "."
-			else if( child_component == ".." )
+			if( package_name.path.empty() )
 			{
-				if( components.empty() )
+				return parent_package_absolute_name;
+			}
+
+			var ust::vector</ust::filesystem_path/> mut components;
+			components.append_from_iterator( ust::path::components_iter( parent_package_absolute_name.path ) );
+
+			foreach( &child_component : ust::path::components_iter( package_name.path ) )
+			{
+				if( child_component == "." )
+				{} // Do not push "."
+				else if( child_component == ".." )
 				{
-					logger.LogError(
-						ust::concat(
-							"Failed to resolve package dependency \"",
-							package_name.path,
-							"\" relative to \"",
-							parent_package_absolute_name.path,
-							"\" - too many \"..\"!" ) );
+					if( components.empty() )
+					{
+						logger.LogError(
+							ust::concat(
+								"Failed to resolve package dependency \"",
+								package_name.path,
+								"\" relative to \"",
+								parent_package_absolute_name.path,
+								"\" - too many \"..\"!" ) );
+						return ust::null_optional;
+					}
+					components.drop_back();
+				}
+				else
+				{
+					components.push_back( child_component );
+				}
+			}
+
+			var ust::filesystem_path mut path;
+			foreach( &component : components )
+			{
+				if( !path.empty() )
+				{
+					path+= "/";
+				}
+				path+= component;
+			}
+
+			return PackageAbsoluteName{ .path= ust::path::normalize( path ) };
+		},
+		( GlobalVersionedPackageName& global_versioned_package ) ->
+		{
+			foreach( &component : ust::path::components_iter( package_name.path ) )
+			{
+				if( component == "." || component == ".." )
+				{
+					logger.LogError( "Paths with \".\" and \"..\" aren't allowed in global package names!" );
 					return ust::null_optional;
 				}
-				components.drop_back();
 			}
-			else
-			{
-				components.push_back( child_component );
-			}
-		}
 
-		var ust::filesystem_path mut path;
-		foreach( &component : components )
-		{
-			if( !path.empty() )
-			{
-				path+= "/";
-			}
-			path+= component;
+			return PackageAbsoluteName{ .name_base= global_versioned_package, .path= package_name.path };
 		}
-
-		return PackageAbsoluteName{ .path= ust::path::normalize( path ) };
-	}
-	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
-	{
-		foreach( &component : ust::path::components_iter( package_name.path ) )
-		{
-			if( component == "." || component == ".." )
-			{
-				logger.LogError( "Paths with \".\" and \"..\" aren't allowed in global package names!" );
-				return ust::null_optional;
-			}
-		}
-
-		return PackageAbsoluteName{ .name_base= global_versioned_package, .path= package_name.path };
-	}
-	else
-	{
-		logger.LogError( "Non-handled package base name kind!" );
-		return ust::null_optional;
 	}
 }
 

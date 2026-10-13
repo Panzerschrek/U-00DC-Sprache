@@ -9,22 +9,18 @@ fn GetPackageSourceDirectory( BuildSystemPaths& paths, PackageAbsoluteName& pack
 {
 	var ust::filesystem_path mut res;
 
-	if( package_name.name_base.has</ PackageAbsoluteName::RootPackage />() )
+	variant_switch( package_name.name_base )
 	{
-		res= paths.root_package_source_directory;
-	}
-	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
-	{
-		res=
-			ust::path::join(
-				paths.packages_repository_directory,
-				global_versioned_package.name,
-				StringifySemanticVersion( global_versioned_package.version ) );
-	}
-	else
-	{
-		// Unhandled package base name.
-		halt;
+		( PackageAbsoluteName::RootPackage& p ) ->
+		{
+			ust::ignore_unused(p);
+			res= paths.root_package_source_directory;
+		},
+		( GlobalVersionedPackageName& p ) ->
+		{
+			res=
+				ust::path::join( paths.packages_repository_directory, p.name, StringifySemanticVersion( p.version ) );
+		}
 	}
 
 	if( !package_name.path.empty() )
@@ -41,21 +37,20 @@ fn GetPackageBuildDirectory(
 {
 	var ust::filesystem_path mut res= root_package_build_directory;
 
-	if( package_name.name_base.has</ PackageAbsoluteName::RootPackage />() )
+	variant_switch( package_name.name_base )
 	{
-		// Root package - build it in the root directory.
-	}
-	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
-	{
-		// Put build directories of all global packages into a subdirectory.
-		ust::path::append( res, "global.packages" ); // Use directory with dot to avoid name conflicts with subpackages and build targets.
-		ust::path::append( res, global_versioned_package.name );
-		ust::path::append( res, StringifySemanticVersion( global_versioned_package.version ) );
-	}
-	else
-	{
-		// Unhandled package base name.
-		halt;
+		( PackageAbsoluteName::RootPackage& root_package ) ->
+		{
+			// Root package - build it in the root directory.
+			ust::ignore_unused( root_package );
+		},
+		( GlobalVersionedPackageName& global_versioned_package ) ->
+		{
+			// Put build directories of all global packages into a subdirectory.
+			ust::path::append( res, "global.packages" ); // Use directory with dot to avoid name conflicts with subpackages and build targets.
+			ust::path::append( res, global_versioned_package.name );
+			ust::path::append( res, StringifySemanticVersion( global_versioned_package.version ) );
+		}
 	}
 
 	if( !package_name.path.empty() )
