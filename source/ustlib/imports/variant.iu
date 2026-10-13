@@ -19,7 +19,7 @@ import "ustlib_macros.iu"
 // Mutability modifier may be specified after "&", which allows mutating values stored in the given variant.
 //
 // Note that processing code should be able to run on all possible variant types.
-// It may be, for example, a call to set of overloading functions (with overload for each variant type).
+// It may be, for example, a call to a set of overloading functions (with overloads/templates supporting each variant type).
 //
 
 ?macro <? variant_visit:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
@@ -52,6 +52,7 @@ import "ustlib_macros.iu"
 //      ( f32 y ) -> { /* processing code here */ },
 //      ( bool& z ) -> { /* processing code here */ },
 //      ( ust::string8& s ) -> { /* processing code here */ }
+//  }
 //
 // "&" and "mut" modifiers can be specified in branch variables.
 // Using "&mut" also requires to specify "mut" prefix before variant expression.
