@@ -676,21 +676,11 @@ fn HandleTaskSubtasksCancellation() unsafe
 
 fn GetTaskRawHandle( ust::variant</ tup[ root_task_type, ust::raw_coro_handle ] /> & t ) : ust::raw_coro_handle
 {
-	variant_visit( &v : t )
+	variant_switch( t )
 	{
-		return GetTaskRawHandleImpl( v );
+		( root_task_type& t ) -> { return ust::get_raw_coro_handle( t ); },
+		( ust::raw_coro_handle h ) -> { return h; }
 	}
-	halt;
-}
-
-fn GetTaskRawHandleImpl( root_task_type& t ) : ust::raw_coro_handle
-{
-	return ust::get_raw_coro_handle( t );
-}
-
-fn GetTaskRawHandleImpl( ust::raw_coro_handle h ) : ust::raw_coro_handle
-{
-	return h;
 }
 
 fn add_task( root_task_type mut t )

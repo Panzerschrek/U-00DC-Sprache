@@ -6,6 +6,22 @@ import "optional_ref.iu"
 import "stringifier_apply.iu"
 import "ustlib_macros.iu"
 
+//
+// Use this macro to process all possible values, which can be stored in the given variant instance.
+//
+// Basic usage:
+//
+//  variant_visit( &x )
+//  {
+//      // processing code here
+//  }
+//
+// Mutability modifier may be specified after "&", which allows mutating values stored in the given variant.
+//
+// Note that processing code should be able to run on all possible variant types.
+// It may be, for example, a call to a set of overloading functions (with overloads/templates supporting each variant type).
+//
+
 ?macro <? variant_visit:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
 ->
 <?
@@ -20,6 +36,76 @@ import "ustlib_macros.iu"
 				?b
 			}
 		}
+	}
+?>
+
+//
+// Use this macro to process all possible values, which can be stored in the given variant instance.
+// A branch for each variant type should be specified.
+// It's checked, that there is no duplicates, all given types are types of the given variant and that all possible types are listed.
+//
+// Basic usage:
+//
+//  variant_switch( v )
+//  {
+//      ( i32 x ) -> { /* processing code here */ },
+//      ( f32 y ) -> { /* processing code here */ },
+//      ( bool& z ) -> { /* processing code here */ },
+//      ( ust::string8& s ) -> { /* processing code here */ }
+//  }
+//
+// "&" and "mut" modifiers can be specified in branch variables.
+// Using "&mut" also requires to specify "mut" prefix before variant expression.
+//
+
+?macro
+<? variant_switch:block
+	( ?variant_expression_mutability_modifier:opt<? mut ?> ?variant_expression:expr )
+	{
+		?subvariant:rep
+		<?
+			( ?subvariant_type:ty ?subvariant_reference_modifier:opt<? & ?> ?subvariant_mutability_modifier:opt<? mut ?> ?subvariant_name:ident ) ->
+			?subvariant_block:block
+		?> <? , ?>
+	}
+?>
+->
+<?
+	with( & ?variant_expression_mutability_modifier<? mut ?> ??variant : ?variant_expression )
+	{
+		type ??elements_tuple= typeof(??variant)::elements_tuple;
+
+		// Check here if all given types are element types of the given variant.
+		?subvariant
+		<?
+			static_assert(
+				::ust::variant_impl::type_is_one_of_tuple_elements</ ?subvariant_type, ??elements_tuple />(),
+				"Type specified is not in variant alternatives!" );
+		?>
+
+		// Check if given types are not duplicated.
+		type ??given_types_tuple= tup[ ?subvariant <? ?subvariant_type ?> <? , ?> ];
+
+		static_assert(
+			::ust::variant_impl::get_tuple_type_properties</ ??given_types_tuple />().all_elements_are_unique,
+			"There are duplicates in the given types!" );
+
+		// Check if all variant types are in given types list (there is no unhandled variant).
+		static_assert(
+			::ust::variant_impl::all_tuple_types_are_in_other_tuple_types</ ??elements_tuple, ??given_types_tuple />(),
+			"There are unhandled variant types!" );
+
+		// Create a chain of " if/else if/else if " constructions.
+		?subvariant
+		<?
+			if( ??variant.has</ ?subvariant_type />() )
+			{
+				with( ?subvariant_reference_modifier<? & ?> ?subvariant_mutability_modifier<? mut ?> ?subvariant_name : ??variant.try_get</ ?subvariant_type />() )
+				?subvariant_block
+			}
+			else
+		?>
+		{ halt; } // Put last "else" branch. Since all variants are handled, we can use "halt" in it.
 	}
 ?>
 
@@ -427,6 +513,28 @@ fn constexpr type_is_one_of_tuple_elements() : bool
 		}
 	}
 	return false;
+}
+
+template</ type TupA, type TupB />
+fn constexpr all_tuple_types_are_in_other_tuple_types() : bool
+{
+	for( & element_a : typeinfo</TupA/>.elements_list )
+	{
+		type type_a= typeof(element_a.type)::src_type;
+
+		var bool mut is_present= false;
+		for( & element_b : typeinfo</TupB/>.elements_list )
+		{
+			is_present |= same_type</ type_a, typeof(element_b.type)::src_type />;
+		}
+
+		if( !is_present )
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 } // namespace variant_impl

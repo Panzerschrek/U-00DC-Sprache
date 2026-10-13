@@ -547,13 +547,12 @@ fn EncodeReturnInnerReferencesAsType( ManglerState& mut mangler_state, FunctionT
 	}
 }
 
-fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_type )
+fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType::BaseTemplate& base_template, NamesScope& members )
 {
-	auto& base_template= class_type.generated_class_data.try_get</ ClassType::BaseTemplate />();
 	ADD_NODE( mangler_state )
 	{
 		// Skip template parameters namespace.
-		auto parent= class_type.members.lock_imut().deref().GetParent().try_lock_imut().deref().GetParent();
+		auto parent= members.GetParent().try_lock_imut().deref().GetParent();
 		if( !parent.try_lock_imut().deref().GetThisNamespaceName().empty() )
 		{
 			EncodeNamespacePrefix_r( mangler_state, parent.try_lock_imut().deref() );
@@ -565,17 +564,35 @@ fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_ty
 	EncodeTemplateArgs( mangler_state, base_template.signature_args );
 }
 
-fn EncodeLambdaClassName( ManglerState &mut mangler_state, ClassType& class_type )
+fn EncodeLambdaClassName( ManglerState &mut mangler_state, LambdaClassData& lambda_class_data, NamesScope& members )
 {
-	auto& lambda_class_data= class_type.generated_class_data.try_get</ LambdaClassData />();
-
-	with( &members : class_type.members.lock_imut().deref() )
+	if( lambda_class_data.template_args.empty() )
 	{
-		if( lambda_class_data.template_args.empty() )
+		ADD_NODE( mangler_state )
+		{
+			auto parent_ptr= members.GetParent();
+			if( !parent_ptr.empty() )
+			{
+				with( &parent : parent_ptr.try_lock_imut().deref() )
+				{
+					if( !parent.GetThisNamespaceName().empty() )
+					{
+						EncodeNamespacePrefix_r( mangler_state, parent );
+					}
+				}
+			}
+
+			mangler_state.PushLengthPrefixed( members.GetThisNamespaceName() );
+		}
+	}
+	else
+	{
+		ADD_NODE( mangler_state )
 		{
 			ADD_NODE( mangler_state )
 			{
-				auto parent_ptr= members.GetParent();
+				// Skip template parameters namespace.
+				auto parent_ptr= members.GetParent().try_lock_imut().deref().GetParent();
 				if( !parent_ptr.empty() )
 				{
 					with( &parent : parent_ptr.try_lock_imut().deref() )
@@ -589,44 +606,22 @@ fn EncodeLambdaClassName( ManglerState &mut mangler_state, ClassType& class_type
 
 				mangler_state.PushLengthPrefixed( members.GetThisNamespaceName() );
 			}
-		}
-		else
-		{
-			ADD_NODE( mangler_state )
-			{
-				ADD_NODE( mangler_state )
-				{
-					// Skip template parameters namespace.
-					auto parent_ptr= members.GetParent().try_lock_imut().deref().GetParent();
-					if( !parent_ptr.empty() )
-					{
-						with( &parent : parent_ptr.try_lock_imut().deref() )
-						{
-							if( !parent.GetThisNamespaceName().empty() )
-							{
-								EncodeNamespacePrefix_r( mangler_state, parent );
-							}
-						}
-					}
 
-					mangler_state.PushLengthPrefixed( members.GetThisNamespaceName() );
-				}
-
-				EncodeTemplateArgs( mangler_state, lambda_class_data.template_args );
-			}
+			EncodeTemplateArgs( mangler_state, lambda_class_data.template_args );
 		}
 	}
 }
 
-fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_type )
+fn EncodeCoroutineClassName(
+	ManglerState &mut mangler_state,
+	CoroutineTypeDescription& coroutine_type_description,
+	NamesScope& members )
 {
-	var CoroutineTypeDescription& coroutine_type_description= class_type.generated_class_data.try_get</ CoroutineTypeDescription />();
-
 	ADD_NODE( mangler_state )
 	{
 		ADD_NODE( mangler_state )
 		{
-			mangler_state.PushLengthPrefixed( class_type.members.lock_imut().deref().GetThisNamespaceName() );
+			mangler_state.PushLengthPrefixed( members.GetThisNamespaceName() );
 		}
 
 		// Encode coroutine type as template with several arguments.
@@ -726,54 +721,57 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 	{
 		auto class_lock= class_type_ptr.lock_imut();
 		auto& class_type= class_lock.deref();
-		auto class_members= class_type.members;
-		auto class_members_lock= class_members.lock_imut();
+		auto class_members_lock= class_type.members.lock_imut();
 		auto& class_members_ref= class_members_lock.deref();
 
-		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ TypeinfoClassDescription />() )
+		variant_switch( class_type.generated_class_data )
 		{
-			ADD_NODE( mangler_state )
+			( TypeinfoClassDescription& typeinfo_class_description ) ->
 			{
 				ADD_NODE( mangler_state )
 				{
-					mangler_state.PushLengthPrefixed( class_type.members.lock_imut().deref().GetThisNamespaceName() );
+					ADD_NODE( mangler_state )
+					{
+						mangler_state.PushLengthPrefixed( class_members_ref.GetThisNamespaceName() );
+					}
+					ADD_NODE( mangler_state )
+					{
+						var TemplateArgsFinished typeinfo_args= ust::make_array( TemplateArgFinished( typeinfo_class_description.source_type ) );
+						EncodeTemplateArgs( mangler_state, typeinfo_args );
+					}
 				}
+			},
+			( ClassType::BaseTemplate& base_template ) ->
+			{
 				ADD_NODE( mangler_state )
 				{
-					var TemplateArgsFinished typeinfo_args= ust::make_array( TemplateArgFinished( typeinfo_class_description.source_type ) );
-					EncodeTemplateArgs( mangler_state, typeinfo_args );
+					auto t= base_template.class_template;
+					auto t_namespace= t.lock_imut().deref().parent_names_scope.upgrade();
+					if( !t_namespace.empty() && !t_namespace.try_lock_imut().deref().GetParent().empty() )
+					{
+						mangler_state.Push( 'N' );
+						EncodeTemplateClassName( mangler_state, base_template, class_members_ref );
+						mangler_state.Push( 'E' );
+					}
+					else
+					{
+						EncodeTemplateClassName( mangler_state, base_template, class_members_ref );
+					}
 				}
-			}
-		}
-		else if_var( &base_template : class_type.generated_class_data.get</ ClassType::BaseTemplate />() )
-		{
-			ADD_NODE( mangler_state )
+			},
+			( CoroutineTypeDescription& coroutine_type_description ) ->
 			{
-				auto t= base_template.class_template;
-				auto t_namespace= t.lock_imut().deref().parent_names_scope.upgrade();
-				if( !t_namespace.empty() && !t_namespace.try_lock_imut().deref().GetParent().empty() )
-				{
-					mangler_state.Push( 'N' );
-					EncodeTemplateClassName( mangler_state, class_type );
-					mangler_state.Push( 'E' );
-				}
-				else
-				{
-					EncodeTemplateClassName( mangler_state, class_type );
-				}
+				EncodeCoroutineClassName( mangler_state, coroutine_type_description, class_members_ref );
+			},
+			( LambdaClassData& lambda_class_data ) ->
+			{
+				EncodeLambdaClassName( mangler_state, lambda_class_data, class_members_ref );
+			},
+			( ClassType::NonGeneratedClassTag& ng ) ->
+			{
+				ust::ignore_unused( ng );
+				EncodeNestedName( mangler_state, class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().try_lock_imut().deref() );
 			}
-		}
-		else if( class_type.generated_class_data.has</ CoroutineTypeDescription />() )
-		{
-			EncodeCoroutineClassName( mangler_state, class_type );
-		}
-		else if( class_type.generated_class_data.has</ LambdaClassData />() )
-		{
-			EncodeLambdaClassName( mangler_state, class_type );
-		}
-		else
-		{
-			EncodeNestedName( mangler_state, class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().try_lock_imut().deref() );
 		}
 	}
 	else if_var( &enum_type : t.GetEnumType() )
@@ -872,23 +870,32 @@ fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_s
 	{
 		auto class_lock= class_ptr.try_lock_imut();
 		auto& class_= class_lock.deref();
-		if( class_.generated_class_data.has</ ClassType::BaseTemplate />() )
+
+		variant_switch( class_.generated_class_data )
 		{
-			ADD_NODE( mangler_state )
+			( ClassType::BaseTemplate& base_template ) ->
 			{
-				EncodeTemplateClassName( mangler_state, class_ );
-			}
-			return;
-		}
-		if( class_.generated_class_data.has</ CoroutineTypeDescription />() )
-		{
-			EncodeCoroutineClassName( mangler_state, class_ );
-			return;
-		}
-		if( class_.generated_class_data.has</ LambdaClassData />() )
-		{
-			EncodeLambdaClassName( mangler_state, class_ );
-			return;
+				ADD_NODE( mangler_state )
+				{
+					EncodeTemplateClassName( mangler_state, base_template, class_.members.lock_imut().deref() );
+				}
+				return;
+			},
+			( CoroutineTypeDescription& coroutine_type_description ) ->
+			{
+				EncodeCoroutineClassName( mangler_state, coroutine_type_description, class_.members.lock_imut().deref() );
+				return;
+			},
+			( LambdaClassData& lambda_class_data ) ->
+			{
+				EncodeLambdaClassName( mangler_state, lambda_class_data, class_.members.lock_imut().deref() );
+				return;
+			},
+			( TypeinfoClassDescription& typeinfo_class_description ) ->
+			{
+				ust::ignore_unused( typeinfo_class_description );
+			},
+			( ClassType::NonGeneratedClassTag& ng ) -> { ust::ignore_unused(ng); }
 		}
 	}
 
@@ -915,48 +922,41 @@ fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& te
 
 	foreach( &arg : template_args )
 	{
-		variant_visit( &el : arg )
+		variant_switch( arg )
 		{
-			EncodeTemplateArgImpl( mangler_state, el );
+			( Type& t ) -> { EncodeTypeName( mangler_state, t ); },
+			( VariablePtr& v_ptr ) ->
+			{
+				with( &v : v_ptr.lock_imut().deref() )
+				{
+					if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
+					{
+						// Encode composite template args as expressions.
+						mangler_state.Push( 'X' );
+						EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
+						mangler_state.Push( 'E' );
+					}
+					else
+					{
+						EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
+					}
+				}
+			},
+			( TypeTemplatePtr& type_template ) ->
+			{
+				with( &t : type_template.lock_imut().deref() )
+				{
+					EncodeNestedName( mangler_state, t.syntax_element.deref().name, t.parent_names_scope.upgrade().try_lock_imut().deref() );
+
+					// Do not mangle template signature params to distinguish between different overloaded type templates.
+					// it's not required, since only sets with one type template may be used as template arguments.
+					// Merging different type templates imported from different files into the same type templates set isn't possible too.
+				}
+			}
 		}
 	}
 
 	mangler_state.Push( 'E' );
-}
-
-fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, Type& t )
-{
-	EncodeTypeName( mangler_state, t );
-}
-
-fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, VariablePtr& v_ptr )
-{
-	with( &v : v_ptr.lock_imut().deref() )
-	{
-		if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
-		{
-			// Encode composite template args as expressions.
-			mangler_state.Push( 'X' );
-			EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
-			mangler_state.Push( 'E' );
-		}
-		else
-		{
-			EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
-		}
-	}
-}
-
-fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, TypeTemplatePtr& type_template )
-{
-	with( &t : type_template.lock_imut().deref() )
-	{
-		EncodeNestedName( mangler_state, t.syntax_element.deref().name, t.parent_names_scope.upgrade().try_lock_imut().deref() );
-
-		// Do not mangle template signature params to distinguish between different overloaded type templates.
-		// it's not required, since only sets with one type template may be used as template arguments.
-		// Merging different type templates imported from different files into the same type templates set isn't possible too.
-	}
 }
 
 fn EncodeConstexprValue( ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value )

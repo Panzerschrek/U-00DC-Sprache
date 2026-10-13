@@ -314,13 +314,21 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				{
 					with( &template_arg : template_arg_ptr.try_lock_imut().deref() )
 					{
-						if_var( &t : template_arg.something.get</Type/>() )
+						variant_switch( template_arg.something )
 						{
-							named_template_args.push_back( ust::make_tuple( v.key(), TemplateArgFinished(t) ) );
-						}
-						else if_var( &v_ptr : template_arg.something.get</VariablePtr/>() )
-						{
-							named_template_args.push_back( ust::make_tuple( v.key(), TemplateArgFinished(v_ptr) ) );
+							( Type& t ) ->
+							{
+								named_template_args.push_back( ust::make_tuple( v.key(), TemplateArgFinished(t) ) );
+							},
+							( VariablePtr& v_ptr ) ->
+							{
+								named_template_args.push_back( ust::make_tuple( v.key(), TemplateArgFinished(v_ptr) ) );
+							},
+							( TypeTemplatePtr& type_template_ptr ) ->
+							{
+								named_template_args.push_back( ust::make_tuple( v.key(), TemplateArgFinished(type_template_ptr) ) );
+							},
+							( TemplateArg::NotKnownYet& nc ) -> { ust::ignore_unused( nc ); }
 						}
 					}
 				}
@@ -763,49 +771,47 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		{
 			var FunctionType::ReferencePollution mut result_pollution= zero_init;
 
-			if_var( &dst_param_reference : pollution.dst.get</ FunctionType::ParamReference />() )
+			variant_switch( pollution.dst )
 			{
-				result_pollution.dst= dst_param_reference;
-			}
-			else if_var( &dst_variable : pollution.dst.get</ VariablePtr />() )
-			{
-				var bool is_byval_this_lambda= lambda_.function.deref().function_type.params.front().reference_modifier == Synt::ReferenceModifier::None;
-				if( is_byval_this_lambda )
+				( FunctionType::ParamReference& dst_param_reference ) -> { result_pollution.dst= dst_param_reference; },
+				( VariablePtr& dst_variable ) ->
 				{
-					// Ignore reference pollution for destination being a captured variable in "byval this" lambdas.
-					// For variables captured by value this basically means pollution for value argument, which means no pollution in lambda signature.
-					// For variables captured by reference this means pollution of a second order inner reference,
-					// which is not allowed and shold be checked prior to this place.
-					continue;
-				}
+					var bool is_byval_this_lambda= lambda_.function.deref().function_type.params.front().reference_modifier == Synt::ReferenceModifier::None;
+					if( is_byval_this_lambda )
+					{
+						// Ignore reference pollution for destination being a captured variable in "byval this" lambdas.
+						// For variables captured by value this basically means pollution for value argument, which means no pollution in lambda signature.
+						// For variables captured by reference this means pollution of a second order inner reference,
+						// which is not allowed and shold be checked prior to this place.
+						continue;
+					}
 
-				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(dst_variable) )
-				{
-					result_pollution.dst= FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag };
-				}
-				else
-				{
-					continue;
+					if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(dst_variable) )
+					{
+						result_pollution.dst= FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag };
+					}
+					else
+					{
+						continue;
+					}
 				}
 			}
-			else { halt; }
 
-			if_var( &src_param_reference : pollution.src.get</ FunctionType::ParamReference />() )
+			variant_switch( pollution.src )
 			{
-				result_pollution.src= src_param_reference;
-			}
-			else if_var( &src_variable : pollution.src.get</ VariablePtr />() )
-			{
-				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(src_variable) )
+				( FunctionType::ParamReference& src_param_reference ) -> { result_pollution.src= src_param_reference; },
+				( VariablePtr& src_variable ) ->
 				{
-					result_pollution.src= FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag };
-				}
-				else
-				{
-					continue;
+					if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(src_variable) )
+					{
+						result_pollution.src= FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag };
+					}
+					else
+					{
+						continue;
+					}
 				}
 			}
-			else { halt; }
 
 			references_pollution.push_back( move(result_pollution) );
 		}
