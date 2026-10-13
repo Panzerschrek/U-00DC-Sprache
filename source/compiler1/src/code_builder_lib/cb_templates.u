@@ -48,10 +48,8 @@ fn CreateTemplateErrorsContext(
 			ust::apply_value_to_stringifier( stringifier, " = " );
 
 			auto arg_ptr= args_names_scope.GetThisScopeValue( param.name ).try_deref().Get</TemplateArg/>();
-			auto arg_lock= arg_ptr.try_lock_imut();
-			var TemplateArg& arg= arg_lock.deref();
 
-			variant_switch( arg.something )
+			variant_switch( arg_ptr.try_lock_imut().deref().something )
 			{
 				( Type& t ) ->
 				{
@@ -1146,12 +1144,8 @@ fn CodeBuilder::PrepareTemplateFunction(
 		{
 			auto& param_name= function_template.params[ size_type(template_param.index) ].name;
 			auto template_arg_value= result_names_scope.lock_imut().deref().GetThisScopeValue( param_name ).try_deref();
-			auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
 
-			auto template_arg_lock= template_arg_ptr.try_lock_imut();
-			auto& template_arg= template_arg_lock.deref();
-
-			if_var( &t : template_arg.something.get</Type/>() )
+			if_var( &t : template_arg_value.Get</TemplateArg/>().try_lock_imut().deref().something.get</Type/>() )
 			{
 				all_ok&=
 					arg.t.ReferenceIsConvertibleTo( t ) ||
