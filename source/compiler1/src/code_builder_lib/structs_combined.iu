@@ -1039,13 +1039,10 @@ fn ApplyTemplateArgToHasher( Hasher &mut hasher, TemplateArgFinished& arg )
 		( Type& t ) -> { ust::apply_value_to_hasher( hasher, t ); },
 		( VariablePtr& variable_ptr ) ->
 		{
-			with( & variable : variable_ptr.lock_imut().deref() )
-			{
-				ust::apply_value_to_hasher(
-					hasher,
-					// LLVM constants are deduplicated, so, hashing pointers should work.
-					unsafe( cast_ref_unsafe</size_type/>( variable.constexpr_value ) ) );
-			}
+			ust::apply_value_to_hasher(
+				hasher,
+				// LLVM constants are deduplicated, so, hashing pointers should work.
+				variable_ptr.lock_imut().deref().constexpr_value );
 		},
 		( TypeTemplatePtr& type_template ) ->
 		{

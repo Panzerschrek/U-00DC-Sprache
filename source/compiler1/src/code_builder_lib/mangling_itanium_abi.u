@@ -721,8 +721,7 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 	{
 		auto class_lock= class_type_ptr.lock_imut();
 		auto& class_type= class_lock.deref();
-		auto class_members= class_type.members;
-		auto class_members_lock= class_members.lock_imut();
+		auto class_members_lock= class_type.members.lock_imut();
 		auto& class_members_ref= class_members_lock.deref();
 
 		variant_switch( class_type.generated_class_data )
@@ -733,7 +732,7 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 				{
 					ADD_NODE( mangler_state )
 					{
-						mangler_state.PushLengthPrefixed( class_type.members.lock_imut().deref().GetThisNamespaceName() );
+						mangler_state.PushLengthPrefixed( class_members_ref.GetThisNamespaceName() );
 					}
 					ADD_NODE( mangler_state )
 					{
@@ -751,22 +750,22 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 					if( !t_namespace.empty() && !t_namespace.try_lock_imut().deref().GetParent().empty() )
 					{
 						mangler_state.Push( 'N' );
-						EncodeTemplateClassName( mangler_state, base_template, class_type.members.lock_imut().deref() );
+						EncodeTemplateClassName( mangler_state, base_template, class_members_ref );
 						mangler_state.Push( 'E' );
 					}
 					else
 					{
-						EncodeTemplateClassName( mangler_state, base_template, class_type.members.lock_imut().deref() );
+						EncodeTemplateClassName( mangler_state, base_template, class_members_ref );
 					}
 				}
 			},
 			( CoroutineTypeDescription& coroutine_type_description ) ->
 			{
-				EncodeCoroutineClassName( mangler_state, coroutine_type_description, class_type.members.lock_imut().deref() );
+				EncodeCoroutineClassName( mangler_state, coroutine_type_description, class_members_ref );
 			},
 			( LambdaClassData& lambda_class_data ) ->
 			{
-				EncodeLambdaClassName( mangler_state, lambda_class_data, class_type.members.lock_imut().deref() );
+				EncodeLambdaClassName( mangler_state, lambda_class_data, class_members_ref );
 			},
 			( ClassType::NonGeneratedClassTag& ng ) ->
 			{

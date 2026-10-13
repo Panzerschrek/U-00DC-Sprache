@@ -248,8 +248,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 	{
 		auto class_lock= class_type_ptr.lock_imut();
 		auto& class_type= class_lock.deref();
-		auto class_members= class_type.members;
-		auto class_members_lock= class_members.lock_imut();
+		auto class_members_lock= class_type.members.lock_imut();
 		auto& class_members_ref= class_members_lock.deref();
 
 		mangler_state.PushElement( g_class_type_prefix );
@@ -283,13 +282,13 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 			},
 			( CoroutineTypeDescription& coroutine_type_description ) ->
 			{
-				EncodeCoroutineClassName( mangler_state, coroutine_type_description, class_type.members.lock_imut().deref() );
+				EncodeCoroutineClassName( mangler_state, coroutine_type_description, class_members_ref );
 				// Finish list of name components.
 				mangler_state.PushElement( g_terminator );
 			},
 			( LambdaClassData& lambda_class_data ) ->
 			{
-				EncodeLambdaClassName( mangler_state, lambda_class_data, class_type.members.lock_imut().deref() );
+				EncodeLambdaClassName( mangler_state, lambda_class_data, class_members_ref );
 				// Finish list of name components.
 				mangler_state.PushElement( g_terminator );
 			},
