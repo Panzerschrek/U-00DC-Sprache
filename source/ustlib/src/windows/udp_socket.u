@@ -42,57 +42,59 @@ fn udp_socket::create_and_bind( socket_address& a ) : io_result</udp_socket/>
 
 	unsafe
 	{
-		if_var( &a_v4 : a.get</socket_address_v4/>() )
+		variant_switch( a )
 		{
-			var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
-			if( s == native_socket_fd(-1) )
+			( socket_address_v4& a_v4 ) ->
 			{
-				return translate_wsa_error( WSAGetLastError() );
-			}
+				var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
+				if( s == native_socket_fd(-1) )
+				{
+					return translate_wsa_error( WSAGetLastError() );
+				}
 
-			var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
+				var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
 
-			var i32 res=
-				::bind(
-					s,
-					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-					socklen_t( typeinfo</sockaddr_in/>.size_of ) );
+				var i32 res=
+					::bind(
+						s,
+						$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+						socklen_t( typeinfo</sockaddr_in/>.size_of ) );
 
-			if( res != 0 )
+				if( res != 0 )
+				{
+					var i32 e= WSAGetLastError();
+					::closesocket( s );
+					return translate_wsa_error( e );
+				}
+
+				return udp_socket( s );
+			},
+			( socket_address_v6& a_v6 ) ->
 			{
-				var i32 e= WSAGetLastError();
-				::closesocket( s );
-				return translate_wsa_error( e );
-			}
+				var native_socket_fd s= ::socket( PF_INET6, i32(SOCK_DGRAM), 0 );
+				if( s == native_socket_fd(-1) )
+				{
+					return translate_wsa_error( WSAGetLastError() );
+				}
 
-			return udp_socket( s );
+				var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+
+				var i32 res=
+					::bind(
+						s,
+						$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+						socklen_t( typeinfo</sockaddr_in6/>.size_of ) );
+
+				if( res != 0 )
+				{
+					var i32 e= WSAGetLastError();
+					::closesocket( s );
+					return translate_wsa_error( e );
+				}
+
+				return udp_socket( s );
+			}
 		}
-		else if_var( &a_v6 : a.get</socket_address_v6/>() )
-		{
-			var native_socket_fd s= ::socket( PF_INET6, i32(SOCK_DGRAM), 0 );
-			if( s == native_socket_fd(-1) )
-			{
-				return translate_wsa_error( WSAGetLastError() );
-			}
-
-			var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
-
-			var i32 res=
-				::bind(
-					s,
-					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-					socklen_t( typeinfo</sockaddr_in6/>.size_of ) );
-
-			if( res != 0 )
-			{
-				var i32 e= WSAGetLastError();
-				::closesocket( s );
-				return translate_wsa_error( e );
-			}
-
-			return udp_socket( s );
-		}
-		else { halt; }
 	}
 }
 
@@ -119,47 +121,49 @@ fn udp_socket::send( mut this, array_view_imut</byte8/> data ) : io_result</size
 
 fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> data ) : io_result</size_type/>
 {
-	if_var( &a_v4 : a.get</socket_address_v4/>() )
+	variant_switch( a )
 	{
-		var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
-
-		var i32 bytes_written=
-			unsafe( ::sendto(
-				socket_,
-				byte_ptr_cast</char8/>( data.data() ),
-				i32( data.size() ),
-				0,
-				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-				i32( socklen_t( typeinfo</sockaddr_in/>.size_of ) ) ) );
-
-		if( bytes_written < 0 )
+		( socket_address_v4& a_v4 ) ->
 		{
-			return translate_wsa_error( unsafe( WSAGetLastError() ) );
-		}
+			var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
 
-		return size_type(bytes_written);
-	}
-	else if_var( &a_v6 : a.get</socket_address_v6/>() )
-	{
-		var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+			var i32 bytes_written=
+				unsafe( ::sendto(
+					socket_,
+					byte_ptr_cast</char8/>( data.data() ),
+					i32( data.size() ),
+					0,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					i32( socklen_t( typeinfo</sockaddr_in/>.size_of ) ) ) );
 
-		var i32 bytes_written=
-			unsafe( ::sendto(
-				socket_,
-				byte_ptr_cast</char8/>( data.data() ),
-				i32( data.size() ),
-				0,
-				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-				i32( socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) ) );
+			if( bytes_written < 0 )
+			{
+				return translate_wsa_error( unsafe( WSAGetLastError() ) );
+			}
 
-		if( bytes_written < 0 )
+			return size_type(bytes_written);
+		},
+		( socket_address_v6& a_v6 ) ->
 		{
-			return translate_wsa_error( unsafe( WSAGetLastError() ) );
-		}
+			var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
 
-		return size_type(bytes_written);
+			var i32 bytes_written=
+				unsafe( ::sendto(
+					socket_,
+					byte_ptr_cast</char8/>( data.data() ),
+					i32( data.size() ),
+					0,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					i32( socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) ) );
+
+			if( bytes_written < 0 )
+			{
+				return translate_wsa_error( unsafe( WSAGetLastError() ) );
+			}
+
+			return size_type(bytes_written);
+		}
 	}
-	else { halt; }
 }
 
 fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : io_result</ tup[ socket_address, size_type ] />
@@ -290,37 +294,39 @@ fn udp_socket::peek( mut this, array_view_mut</byte8/> data ) : io_result</ size
 
 fn udp_socket::connect( mut this, socket_address& a ) : io_result</void/>
 {
-	if_var( &a_v4 : a.get</socket_address_v4/>() )
+	variant_switch( a )
 	{
-		var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
-
-		var i32 res=
-			unsafe( ::connect(
-				socket_,
-				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-				socklen_t( typeinfo</sockaddr_in/>.size_of ) ) );
-
-		if( res != 0 )
+		( socket_address_v4& a_v4 ) ->
 		{
-			return translate_wsa_error( unsafe( WSAGetLastError() ) );
+			var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
+
+			var i32 res=
+				unsafe( ::connect(
+					socket_,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in/>.size_of ) ) );
+
+			if( res != 0 )
+			{
+				return translate_wsa_error( unsafe( WSAGetLastError() ) );
+			}
+		},
+		( socket_address_v6& a_v6 ) ->
+		{
+			var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+
+			var i32 res=
+				unsafe( ::connect(
+					socket_,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) );
+
+			if( res != 0 )
+			{
+				return translate_wsa_error( unsafe( WSAGetLastError() ) );
+			}
 		}
 	}
-	else if_var( &a_v6 : a.get</socket_address_v6/>() )
-	{
-		var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
-
-		var i32 res=
-			unsafe( ::connect(
-				socket_,
-				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-				socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) );
-
-		if( res != 0 )
-		{
-			return translate_wsa_error( unsafe( WSAGetLastError() ) );
-		}
-	}
-	else{ halt; }
 
 	return void();
 }

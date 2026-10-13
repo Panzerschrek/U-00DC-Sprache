@@ -37,57 +37,59 @@ fn udp_socket::create_and_bind( socket_address& a ) : io_result</udp_socket/>
 {
 	unsafe
 	{
-		if_var( &a_v4 : a.get</socket_address_v4/>() )
+		variant_switch( a )
 		{
-			var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
-			if( s == -1 )
+			( socket_address_v4& a_v4 ) ->
 			{
-				return translate_errno( get_errno() );
-			}
+				var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
+				if( s == -1 )
+				{
+					return translate_errno( get_errno() );
+				}
 
-			var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
+				var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
 
-			var i32 res=
-				::bind(
-					s,
-					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-					socklen_t( typeinfo</sockaddr_in/>.size_of ) );
+				var i32 res=
+					::bind(
+						s,
+						$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+						socklen_t( typeinfo</sockaddr_in/>.size_of ) );
 
-			if( res != 0 )
+				if( res != 0 )
+				{
+					var i32 e= get_errno();
+					::close( s );
+					return translate_errno( e );
+				}
+
+				return udp_socket( s );
+			},
+			( socket_address_v6& a_v6 ) ->
 			{
-				var i32 e= get_errno();
-				::close( s );
-				return translate_errno( e );
-			}
+				var native_socket_fd s= ::socket( PF_INET6, i32(SOCK_DGRAM), 0 );
+				if( s == -1 )
+				{
+					return translate_errno( get_errno() );
+				}
 
-			return udp_socket( s );
+				var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+
+				var i32 res=
+					::bind(
+						s,
+						$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+						socklen_t( typeinfo</sockaddr_in6/>.size_of ) );
+
+				if( res != 0 )
+				{
+					var i32 e= get_errno();
+					::close( s );
+					return translate_errno( e );
+				}
+
+				return udp_socket( s );
+			}
 		}
-		else if_var( &a_v6 : a.get</socket_address_v6/>() )
-		{
-			var native_socket_fd s= ::socket( PF_INET6, i32(SOCK_DGRAM), 0 );
-			if( s == -1 )
-			{
-				return translate_errno( get_errno() );
-			}
-
-			var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
-
-			var i32 res=
-				::bind(
-					s,
-					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-					socklen_t( typeinfo</sockaddr_in6/>.size_of ) );
-
-			if( res != 0 )
-			{
-				var i32 e= get_errno();
-				::close( s );
-				return translate_errno( e );
-			}
-
-			return udp_socket( s );
-		}
-		else { halt; }
 	}
 }
 
@@ -114,47 +116,49 @@ fn udp_socket::send( mut this, array_view_imut</byte8/> data ) : io_result</size
 
 fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> data ) : io_result</size_type/>
 {
-	if_var( &a_v4 : a.get</socket_address_v4/>() )
+	variant_switch( a )
 	{
-		var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
-
-		var ssize_type bytes_written=
-			unsafe( ::sendto(
-				socket_,
-				data.data(),
-				data.size(),
-				0,
-				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-				socklen_t( typeinfo</sockaddr_in/>.size_of ) ) );
-
-		if( bytes_written < ssize_type(0) )
+		( socket_address_v4& a_v4 ) ->
 		{
-			return translate_errno( get_errno() );
-		}
+			var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
 
-		return size_type(bytes_written);
-	}
-	else if_var( &a_v6 : a.get</socket_address_v6/>() )
-	{
-		var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+			var ssize_type bytes_written=
+				unsafe( ::sendto(
+					socket_,
+					data.data(),
+					data.size(),
+					0,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in/>.size_of ) ) );
 
-		var ssize_type bytes_written=
-			unsafe( ::sendto(
-				socket_,
-				data.data(),
-				data.size(),
-				0,
-				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-				socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) );
+			if( bytes_written < ssize_type(0) )
+			{
+				return translate_errno( get_errno() );
+			}
 
-		if( bytes_written < ssize_type(0) )
+			return size_type(bytes_written);
+		},
+		( socket_address_v6& a_v6 ) ->
 		{
-			return translate_errno( get_errno() );
-		}
+			var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
 
-		return size_type(bytes_written);
+			var ssize_type bytes_written=
+				unsafe( ::sendto(
+					socket_,
+					data.data(),
+					data.size(),
+					0,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) );
+
+			if( bytes_written < ssize_type(0) )
+			{
+				return translate_errno( get_errno() );
+			}
+
+			return size_type(bytes_written);
+		}
 	}
-	else { halt; }
 }
 
 fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : io_result</ tup[ socket_address, size_type ] />
@@ -259,37 +263,39 @@ fn udp_socket::peek( mut this, array_view_mut</byte8/> data ) : io_result</size_
 
 fn udp_socket::connect( mut this, socket_address& a ) : io_result</void/>
 {
-	if_var( &a_v4 : a.get</socket_address_v4/>() )
+	variant_switch( a )
 	{
-		var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
-
-		var i32 res=
-			unsafe( ::connect(
-				socket_,
-				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-				socklen_t( typeinfo</sockaddr_in/>.size_of ) ) );
-
-		if( res != 0 )
+		( socket_address_v4& a_v4 ) ->
 		{
-			return translate_errno( get_errno() );
+			var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
+
+			var i32 res=
+				unsafe( ::connect(
+					socket_,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in/>.size_of ) ) );
+
+			if( res != 0 )
+			{
+				return translate_errno( get_errno() );
+		}
+		},
+		( socket_address_v6& a_v6 ) ->
+		{
+			var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+
+			var i32 res=
+				unsafe( ::connect(
+					socket_,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) );
+
+			if( res != 0 )
+			{
+				return translate_errno( get_errno() );
+			}
 		}
 	}
-	else if_var( &a_v6 : a.get</socket_address_v6/>() )
-	{
-		var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
-
-		var i32 res=
-			unsafe( ::connect(
-				socket_,
-				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-				socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) );
-
-		if( res != 0 )
-		{
-			return translate_errno( get_errno() );
-		}
-	}
-	else { halt; }
 
 	return void();
 }
