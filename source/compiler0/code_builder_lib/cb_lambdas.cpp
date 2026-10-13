@@ -275,6 +275,12 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 				}
 				else if( const auto v= value.value.GetVariable() )
 					named_template_args.emplace_back( name, TemplateVariableArg( *v ) );
+				else if( const auto tts= value.value.GetTypeTemplatesSet() )
+				{
+					// Process type template used as template argument. Normally we should have here single type template.
+					for( const TypeTemplatePtr& tt : tts->type_templates )
+						named_template_args.emplace_back( name, tt );
+				}
 			} );
 
 		// Sort template args by name in order to obtain some stable order.
