@@ -256,46 +256,56 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 
 		mangler_state.PushElement( g_class_type_prefix );
 
-		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ TypeinfoClassDescription />() )
+		variant_switch( class_type.generated_class_data )
 		{
-			// Encode typeinfo, like type template.
-
-			// Use separate backreferences table.
+			( TypeinfoClassDescription& typeinfo_class_description ) ->
 			{
-				var ManglerState mut template_mangler_state;
+				// Encode typeinfo, like type template.
 
-				template_mangler_state.PushElement( g_template_prefix );
-				template_mangler_state.EncodeName( class_members_ref.GetThisNamespaceName() );
-				EncodeType( template_mangler_state, typeinfo_class_description.source_type );
-				// Finish list of template arguments.
-				template_mangler_state.PushElement( g_terminator );
+				// Use separate backreferences table.
+				{
+					var ManglerState mut template_mangler_state;
 
-				mangler_state.EncodeChildState( move(template_mangler_state) );
+					template_mangler_state.PushElement( g_template_prefix );
+					template_mangler_state.EncodeName( class_members_ref.GetThisNamespaceName() );
+					EncodeType( template_mangler_state, typeinfo_class_description.source_type );
+					// Finish list of template arguments.
+					template_mangler_state.PushElement( g_terminator );
+
+					mangler_state.EncodeChildState( move(template_mangler_state) );
+				}
+				// Finish class name.
+				mangler_state.PushElement( g_terminator );
+			},
+			( ClassType::BaseTemplate& base_template ) ->
+			{
+				ust::ignore_unused( base_template );
+
+				EncodeTemplateClassName( mangler_state, class_type );
+				// Finish list of name components.
+				mangler_state.PushElement( g_terminator );
+			},
+			( CoroutineTypeDescription& coroutine_type_description ) ->
+			{
+				ust::ignore_unused( coroutine_type_description );
+
+				EncodeCoroutineClassName( mangler_state, class_type );
+				// Finish list of name components.
+				mangler_state.PushElement( g_terminator );
+			},
+			( LambdaClassData& lambda_class_data ) ->
+			{
+				ust::ignore_unused( lambda_class_data );
+
+				EncodeLambdaClassName( mangler_state, class_type );
+				// Finish list of name components.
+				mangler_state.PushElement( g_terminator );
+			},
+			( ClassType::NonGeneratedClassTag& ng ) ->
+			{
+				ust::ignore_unused( ng );
+				EncodeFullName( mangler_state, class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().try_lock_imut().deref() );
 			}
-			// Finish class name.
-			mangler_state.PushElement( g_terminator );
-		}
-		else if( class_type.generated_class_data.has</ ClassType::BaseTemplate />() )
-		{
-			EncodeTemplateClassName( mangler_state, class_type );
-			// Finish list of name components.
-			mangler_state.PushElement( g_terminator );
-		}
-		else if( class_type.generated_class_data.has</ CoroutineTypeDescription />() )
-		{
-			EncodeCoroutineClassName( mangler_state, class_type );
-			// Finish list of name components.
-			mangler_state.PushElement( g_terminator );
-		}
-		else if( class_type.generated_class_data.has</ LambdaClassData />() )
-		{
-			EncodeLambdaClassName( mangler_state, class_type );
-			// Finish list of name components.
-			mangler_state.PushElement( g_terminator );
-		}
-		else
-		{
-			EncodeFullName( mangler_state, class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().try_lock_imut().deref() );
 		}
 	}
 	else if_var( &enum_type : t.GetEnumType() )

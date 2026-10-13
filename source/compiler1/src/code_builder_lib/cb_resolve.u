@@ -192,23 +192,25 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 	auto template_arg_ptr= names_scope_value.Get</TemplateArg/>();
 	if( !template_arg_ptr.empty() )
-	{
-		auto template_arg_lock= template_arg_ptr.try_lock_imut();
-		auto& template_arg= template_arg_lock.deref();
-		if_var( &t : template_arg.something.get</Type/>() )
+	{		
+		variant_switch( template_arg_ptr.try_lock_imut().deref().something )
 		{
-			return t;
+			( Type& t ) -> { return t; },
+			( VariablePtr& v_ptr ) ->
+			{
+				function_context.references_graph.AddNodeIfNotExists( v_ptr );
+				return v_ptr;
+			},
+			( TypeTemplatePtr& type_template ) ->
+			{
+				return ust::shared_ptr_imut</TypeTemplatesSet/>( TypeTemplatesSet{ .type_templates= ust::make_array(type_template) } );
+			},
+			( TemplateArg::NotKnownYet& nc ) ->
+			{
+				ust::ignore_unused( nc );
+				REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, src_loc, "" )
+			}
 		}
-		if_var( &v_ptr : template_arg.something.get</VariablePtr/>() )
-		{
-			function_context.references_graph.AddNodeIfNotExists( v_ptr );
-			return v_ptr;
-		}
-		if_var( &type_template : template_arg.something.get</TypeTemplatePtr/>() )
-		{
-			return ust::shared_ptr_imut</TypeTemplatesSet/>( TypeTemplatesSet{ .type_templates= ust::make_array(type_template) } );
-		}
-		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, src_loc, "" )
 	}
 
 	auto type_templates_set_ptr= names_scope_value.Get</TypeTemplatesSet/>();

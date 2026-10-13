@@ -544,88 +544,88 @@ fn CodeBuilder::ApplyOverloadedFunction(
 
 fn CodeBuilder::OverloadingResolutionItemGetParamExtendedType( mut this, OverloadingResolutionItem& item, size_type param_index ) : VariableTypeExtended
 {
-	if_var( &variable : item.get</FunctionVariable/>() )
+	variant_switch( item )
 	{
-		return variable.t.params[param_index];
-	}
-	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
-	{
-		auto function_template_lock= template_function.function_template.lock_imut();
-		var FunctionTemplate& function_template= function_template_lock.deref();
-
-		auto& params= function_template.syntax_element.deref().function.deref().function_type.params;
-		var Synt::FunctionType::Param& param= params[param_index];
-
-		var ValueType mut value_type= ValueType::Value;
-		if( param.reference_modifier == Synt::ReferenceModifier::Reference )
+		( FunctionVariable& function_variable ) -> { return function_variable.t.params[param_index]; },
+		( TemplateFunctionPreparationResult& template_function ) ->
 		{
-			value_type= ( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-		}
+			auto function_template_lock= template_function.function_template.lock_imut();
+			var FunctionTemplate& function_template= function_template_lock.deref();
 
-		var Type mut t;
-		if( param.name == KeywordToString( Keyword::this_ ) )
-		{
-			auto& class_type_opt= function_template.class_;
-			if( !class_type_opt.empty() )
+			auto& params= function_template.syntax_element.deref().function.deref().function_type.params;
+			var Synt::FunctionType::Param& param= params[param_index];
+
+			var ValueType mut value_type= ValueType::Value;
+			if( param.reference_modifier == Synt::ReferenceModifier::Reference )
 			{
-				t= class_type_opt.try_to_non_nullable();
+				value_type= ( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+			}
+
+			var Type mut t;
+			if( param.name == KeywordToString( Keyword::this_ ) )
+			{
+				auto& class_type_opt= function_template.class_;
+				if( !class_type_opt.empty() )
+				{
+					t= class_type_opt.try_to_non_nullable();
+				}
+				else
+				{
+					t= invalid_type_; // May be in case of error.
+				}
 			}
 			else
 			{
-				t= invalid_type_; // May be in case of error.
+				var FunctionContext mut global_function_context= CreateGlobalFunctionContext();
+				t= PrepareType( template_function.args_names_scope, global_function_context, param.t );
 			}
-		}
-		else
-		{
-			var FunctionContext mut global_function_context= CreateGlobalFunctionContext();
-			t= PrepareType( template_function.args_names_scope, global_function_context, param.t );
-		}
 
-		return VariableTypeExtended{ .value_type= value_type, .t= move(t) };
+			return VariableTypeExtended{ .value_type= value_type, .t= move(t) };
+		}
 	}
-	halt;
 }
 
 fn CodeBuilder::OverloadingResolutionItemGetTemplateSignatureParam( mut this, OverloadingResolutionItem& item, size_type param_index ) : TemplateSignatureParam
 {
-	if( item.has</FunctionVariable/>() )
+	variant_switch( item )
 	{
-		return TemplateSignatureParam::Type();
+		( FunctionVariable& function_variable ) ->
+		{
+			ust::ignore_unused( function_variable );
+			return TemplateSignatureParam::Type();
+		},
+		( TemplateFunctionPreparationResult& template_function ) ->
+		{
+			return template_function.function_template.lock_imut().deref().signature_params[param_index];
+		}
 	}
-	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
-	{
-		return template_function.function_template.lock_imut().deref().signature_params[param_index];
-	}
-	halt;
 }
 
 fn CodeBuilder::OverloadingResolutionItemIsThisCall( mut this, OverloadingResolutionItem& item ) : bool
 {
-	if_var( &variable : item.get</FunctionVariable/>() )
+	variant_switch( item )
 	{
-		return variable.is_this_call;
-	}
-	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
-	{
-		with( & params : template_function.function_template.lock_imut().deref().syntax_element.deref().function.deref().function_type.params )
+		( FunctionVariable& function_variable ) -> { return function_variable.is_this_call; },
+		( TemplateFunctionPreparationResult& template_function ) ->
 		{
-			return !params.empty() && params.front().name == KeywordToString( Keyword::this_ );
+			with( & params : template_function.function_template.lock_imut().deref().syntax_element.deref().function.deref().function_type.params )
+			{
+				return !params.empty() && params.front().name == KeywordToString( Keyword::this_ );
+			}
 		}
 	}
-	halt;
 }
 
 fn CodeBuilder::OverloadingResolutionItemIsConversionConstructor( mut this, OverloadingResolutionItem& item ) : bool
 {
-	if_var( &variable : item.get</FunctionVariable/>() )
+	variant_switch( item )
 	{
-		return variable.is_conversion_constructor;
+		( FunctionVariable& function_variable ) -> { return function_variable.is_conversion_constructor; },
+		( TemplateFunctionPreparationResult& template_function ) ->
+		{
+			return template_function.function_template.lock_imut().deref().syntax_element.deref().function.deref().is_conversion_constructor;
+		}
 	}
-	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
-	{
-		return template_function.function_template.lock_imut().deref().syntax_element.deref().function.deref().is_conversion_constructor;
-	}
-	halt;
 }
 
 fn CodeBuilder::FinalizeSelectedFunction(
@@ -634,15 +634,14 @@ fn CodeBuilder::FinalizeSelectedFunction(
 	NamesScopePtr& names_scope, // Needed only for errors reporting
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
-	if_var( &variable : item.get</FunctionVariable/>() )
+	variant_switch( item )
 	{
-		return variable;
+		( FunctionVariable& function_variable ) -> { return function_variable; },
+		( TemplateFunctionPreparationResult& template_function ) ->
+		{
+			return FinishTemplateFunctionGeneration( template_function.function_template, template_function.args_names_scope, names_scope, src_loc );
+		}
 	}
-	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
-	{
-		return FinishTemplateFunctionGeneration( template_function.function_template, template_function.args_names_scope, names_scope, src_loc );
-	}
-	halt;
 }
 
 fn CodeBuilder::FetchMatchedOverloadedFunctions(

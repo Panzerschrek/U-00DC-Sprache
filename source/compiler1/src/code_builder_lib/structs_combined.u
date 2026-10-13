@@ -812,37 +812,37 @@ fn Type::ReferenceIsConvertibleTo( this, Type& dst ) : bool
 
 fn Type::stringify( this, ust::default_stringifier8 &mut stringifier )
 {
-	if_var( &fundamental_type : GetFundamentalType() )
+	variant_switch( something_ )
 	{
-		return ust::apply_value_to_stringifier( stringifier, fundamental_type );
+		( FundamentalType& fundamental_type ) ->
+		{
+			ust::apply_value_to_stringifier( stringifier, fundamental_type );
+		},
+		( ust::shared_ptr_final</ArrayType/>& array_type_ptr ) ->
+		{
+			ust::apply_value_to_stringifier( stringifier, array_type_ptr.deref() );
+		},
+		( ust::shared_ptr_final</TupleType/>& tuple_type_ptr ) ->
+		{
+			ust::apply_value_to_stringifier( stringifier, tuple_type_ptr.deref() );
+		},
+		( ust::shared_ptr_final</RawPointerType/>& raw_pointer_type_ptr ) ->
+		{
+			ust::apply_value_to_stringifier( stringifier, raw_pointer_type_ptr.deref() );
+		},
+		( ust::shared_ptr_final</FunctionPointerType/>& function_pointer_type_ptr ) ->
+		{
+			ust::apply_value_to_stringifier( stringifier, function_pointer_type_ptr.deref() );
+		},
+		( ClassTypePtr& class_type_ptr ) ->
+		{
+			ust::apply_value_to_stringifier( stringifier, class_type_ptr.lock_imut().deref() );
+		},
+		( EnumTypePtr& enum_type_ptr ) ->
+		{
+			ust::apply_value_to_stringifier( stringifier, enum_type_ptr.lock_imut().deref() );
+		}
 	}
-	if_var( &array_type : GetArrayType() )
-	{
-		return ust::apply_value_to_stringifier( stringifier, array_type );
-	}
-	if_var( &tuple_type : GetTupleType() )
-	{
-		return ust::apply_value_to_stringifier( stringifier, tuple_type );
-	}
-	if_var( &raw_pointer_type : GetRawPointerType() )
-	{
-		return ust::apply_value_to_stringifier( stringifier, raw_pointer_type );
-	}
-	if_var( &function_pointer_type : GetFunctionPointerType() )
-	{
-		return ust::apply_value_to_stringifier( stringifier, function_pointer_type );
-	}
-	if_var( &class_type : GetClassType() )
-	{
-		return ust::apply_value_to_stringifier( stringifier, class_type.lock_imut().deref() );
-	}
-	if_var( &enum_type : GetEnumType() )
-	{
-		return ust::apply_value_to_stringifier( stringifier, enum_type.lock_imut().deref() );
-	}
-
-	// Unhandled type kind.
-	halt;
 }
 
 template</type T/>
@@ -1640,99 +1640,105 @@ fn NamesScope::stringify( this, ust::default_stringifier8 &mut stringifier )
 	{
 		auto class_lock= class_.try_lock_imut();
 		auto& class_type= class_lock.deref();
-		if_var( &base_template : class_type.generated_class_data.get</ ClassType::BaseTemplate />() )
-		{
-			// This is class template. So, parent namespace is arguments names scope.
-			with( &type_template : base_template.class_template.lock_imut().deref() )
-			{
-				auto parent= type_template.parent_names_scope.upgrade();
-				if( !parent.empty() )
-				{
-					auto parent_lock= parent.try_lock_imut();
-					if( !parent_lock.deref().GetParent().empty() )
-					{
-						ust::apply_value_to_stringifier( stringifier, parent.try_lock_imut().deref() );
-						ust::apply_value_to_stringifier( stringifier, "::" );
-					}
-					ust::apply_value_to_stringifier( stringifier, type_template.syntax_element.deref().name );
 
-					ust::apply_value_to_stringifier( stringifier, "</" );
-					foreach( &arg : base_template.signature_args )
+		variant_switch( class_type.generated_class_data )
+		{
+			( ClassType::BaseTemplate& base_template ) ->
+			{
+				// This is class template. So, parent namespace is arguments names scope.
+				with( &type_template : base_template.class_template.lock_imut().deref() )
+				{
+					auto parent= type_template.parent_names_scope.upgrade();
+					if( !parent.empty() )
 					{
-						if_var( &t : arg.get</Type/>() )
+						auto parent_lock= parent.try_lock_imut();
+						if( !parent_lock.deref().GetParent().empty() )
 						{
-							ust::apply_value_to_stringifier( stringifier, t );
+							ust::apply_value_to_stringifier( stringifier, parent.try_lock_imut().deref() );
+							ust::apply_value_to_stringifier( stringifier, "::" );
 						}
-						else if_var( &v_ptr : arg.get</VariablePtr/>() )
+						ust::apply_value_to_stringifier( stringifier, type_template.syntax_element.deref().name );
+
+						ust::apply_value_to_stringifier( stringifier, "</" );
+						foreach( &arg : base_template.signature_args )
 						{
-							with( &v : v_ptr.lock_imut().deref() )
+							variant_switch( arg )
 							{
-								StringifyConstantVariable( stringifier, v.t, v.constexpr_value );
+								( Type& t ) -> { ust::apply_value_to_stringifier( stringifier, t ); },
+								( VariablePtr& v_ptr ) ->
+								{
+									with( &v : v_ptr.lock_imut().deref() )
+									{
+										StringifyConstantVariable( stringifier, v.t, v.constexpr_value );
+									}
+								},
+								( TypeTemplatePtr& type_template ) ->
+								{
+									ust::apply_value_to_stringifier( stringifier, type_template.lock_imut().deref() );
+								}
+							}
+
+							if( ust::ref_cmp_ne( arg, base_template.signature_args.back() ) )
+							{
+								ust::apply_value_to_stringifier( stringifier, ", " );
 							}
 						}
-						else if_var( &type_template : arg.get</TypeTemplatePtr/>() )
-						{
-							ust::apply_value_to_stringifier( stringifier, type_template.lock_imut().deref() );
-						}
+						ust::apply_value_to_stringifier( stringifier, "/>" );
 
-						if( ust::ref_cmp_ne( arg, base_template.signature_args.back() ) )
-						{
-							ust::apply_value_to_stringifier( stringifier, ", " );
-						}
+						return;
 					}
-					ust::apply_value_to_stringifier( stringifier, "/>" );
-
-					return;
 				}
-			}
-		}
-		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ TypeinfoClassDescription />() )
-		{
-			ust::apply_value_to_stringifier( stringifier, KeywordToString(Keyword::typeof_) );
-			ust::apply_value_to_stringifier( stringifier, "(" );
-			ust::apply_value_to_stringifier( stringifier, KeywordToString(Keyword::typeinfo_) );
-			ust::apply_value_to_stringifier( stringifier, "</" );
-			ust::apply_value_to_stringifier( stringifier, typeinfo_class_description.source_type );
-			ust::apply_value_to_stringifier( stringifier, "/>" );
-			ust::apply_value_to_stringifier( stringifier, ")" );
-			return;
-		}
-		if_var( &coroutine_type_description : class_type.generated_class_data.get</ CoroutineTypeDescription />() )
-		{
-			switch( coroutine_type_description.kind )
+			},
+			( TypeinfoClassDescription& typeinfo_class_description ) ->
 			{
-			CoroutineKind::Generator -> { ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::generator_ ) ); },
-			CoroutineKind::AsyncFunc -> { ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::async_ ) ); },
-			}
-
-			// TODO - print inner refernces.
-
-			ust::apply_value_to_stringifier( stringifier, " " );
-
-			if( coroutine_type_description.non_sync_ )
+				ust::apply_value_to_stringifier( stringifier, KeywordToString(Keyword::typeof_) );
+				ust::apply_value_to_stringifier( stringifier, "(" );
+				ust::apply_value_to_stringifier( stringifier, KeywordToString(Keyword::typeinfo_) );
+				ust::apply_value_to_stringifier( stringifier, "</" );
+				ust::apply_value_to_stringifier( stringifier, typeinfo_class_description.source_type );
+				ust::apply_value_to_stringifier( stringifier, "/>" );
+				ust::apply_value_to_stringifier( stringifier, ")" );
+				return;
+			},
+			( CoroutineTypeDescription& coroutine_type_description ) ->
 			{
-				ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::non_sync_ ) );
-			}
+				switch( coroutine_type_description.kind )
+				{
+				CoroutineKind::Generator -> { ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::generator_ ) ); },
+				CoroutineKind::AsyncFunc -> { ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::async_ ) ); },
+				}
 
-			ust::apply_value_to_stringifier( stringifier, ": " );
+				// TODO - print inner refernces.
 
-			ust::apply_value_to_stringifier( stringifier, coroutine_type_description.return_type );
+				ust::apply_value_to_stringifier( stringifier, " " );
 
-			if( coroutine_type_description.return_value_type == ValueType::Value )
-			{}
-			else if( coroutine_type_description.return_value_type == ValueType::ReferenceImut )
-			{
-				ust::apply_value_to_stringifier( stringifier, " &" );
-				ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::imut_ ) );
-			}
-			else if( coroutine_type_description.return_value_type == ValueType::ReferenceMut )
-			{
-				ust::apply_value_to_stringifier( stringifier, " &" );
-				ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::mut_ ) );
-			}
-			else { halt; }
+				if( coroutine_type_description.non_sync_ )
+				{
+					ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::non_sync_ ) );
+				}
 
-			return;
+				ust::apply_value_to_stringifier( stringifier, ": " );
+
+				ust::apply_value_to_stringifier( stringifier, coroutine_type_description.return_type );
+
+				if( coroutine_type_description.return_value_type == ValueType::Value )
+				{}
+				else if( coroutine_type_description.return_value_type == ValueType::ReferenceImut )
+				{
+					ust::apply_value_to_stringifier( stringifier, " &" );
+					ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::imut_ ) );
+				}
+				else if( coroutine_type_description.return_value_type == ValueType::ReferenceMut )
+				{
+					ust::apply_value_to_stringifier( stringifier, " &" );
+					ust::apply_value_to_stringifier( stringifier, KeywordToString( Keyword::mut_ ) );
+				}
+				else { halt; }
+
+				return;
+			},
+			( LambdaClassData& l ) -> { ust::ignore_unused(l); },
+			( ClassType::NonGeneratedClassTag& ng ) -> { ust::ignore_unused(ng); }
 		}
 	}
 

@@ -730,50 +730,56 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 		auto class_members_lock= class_members.lock_imut();
 		auto& class_members_ref= class_members_lock.deref();
 
-		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ TypeinfoClassDescription />() )
+		variant_switch( class_type.generated_class_data )
 		{
-			ADD_NODE( mangler_state )
+			( TypeinfoClassDescription& typeinfo_class_description ) ->
 			{
 				ADD_NODE( mangler_state )
 				{
-					mangler_state.PushLengthPrefixed( class_type.members.lock_imut().deref().GetThisNamespaceName() );
+					ADD_NODE( mangler_state )
+					{
+						mangler_state.PushLengthPrefixed( class_type.members.lock_imut().deref().GetThisNamespaceName() );
+					}
+					ADD_NODE( mangler_state )
+					{
+						var TemplateArgsFinished typeinfo_args= ust::make_array( TemplateArgFinished( typeinfo_class_description.source_type ) );
+						EncodeTemplateArgs( mangler_state, typeinfo_args );
+					}
 				}
+			},
+			( ClassType::BaseTemplate& base_template ) ->
+			{
 				ADD_NODE( mangler_state )
 				{
-					var TemplateArgsFinished typeinfo_args= ust::make_array( TemplateArgFinished( typeinfo_class_description.source_type ) );
-					EncodeTemplateArgs( mangler_state, typeinfo_args );
+					auto t= base_template.class_template;
+					auto t_namespace= t.lock_imut().deref().parent_names_scope.upgrade();
+					if( !t_namespace.empty() && !t_namespace.try_lock_imut().deref().GetParent().empty() )
+					{
+						mangler_state.Push( 'N' );
+						EncodeTemplateClassName( mangler_state, class_type );
+						mangler_state.Push( 'E' );
+					}
+					else
+					{
+						EncodeTemplateClassName( mangler_state, class_type );
+					}
 				}
-			}
-		}
-		else if_var( &base_template : class_type.generated_class_data.get</ ClassType::BaseTemplate />() )
-		{
-			ADD_NODE( mangler_state )
+			},
+			( CoroutineTypeDescription& coroutine_type_description ) ->
 			{
-				auto t= base_template.class_template;
-				auto t_namespace= t.lock_imut().deref().parent_names_scope.upgrade();
-				if( !t_namespace.empty() && !t_namespace.try_lock_imut().deref().GetParent().empty() )
-				{
-					mangler_state.Push( 'N' );
-					EncodeTemplateClassName( mangler_state, class_type );
-					mangler_state.Push( 'E' );
-				}
-				else
-				{
-					EncodeTemplateClassName( mangler_state, class_type );
-				}
+				ust::ignore_unused( coroutine_type_description );
+				EncodeCoroutineClassName( mangler_state, class_type );
+			},
+			( LambdaClassData& lambda_class_data ) ->
+			{
+				ust::ignore_unused( lambda_class_data );
+				EncodeLambdaClassName( mangler_state, class_type );
+			},
+			( ClassType::NonGeneratedClassTag& ng ) ->
+			{
+				ust::ignore_unused( ng );
+				EncodeNestedName( mangler_state, class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().try_lock_imut().deref() );
 			}
-		}
-		else if( class_type.generated_class_data.has</ CoroutineTypeDescription />() )
-		{
-			EncodeCoroutineClassName( mangler_state, class_type );
-		}
-		else if( class_type.generated_class_data.has</ LambdaClassData />() )
-		{
-			EncodeLambdaClassName( mangler_state, class_type );
-		}
-		else
-		{
-			EncodeNestedName( mangler_state, class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().try_lock_imut().deref() );
 		}
 	}
 	else if_var( &enum_type : t.GetEnumType() )
