@@ -3967,70 +3967,64 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 // "useless" meant that expression root is useless, not whole expression.
 fn SingleExpressionIsUseless( Synt::Expression& expression ) : bool
 {
-	variant_visit( &el : expression )
+	variant_switch( expression )
 	{
-		return SingleExpressionIsUselessImpl(el);
+		( Synt::EmptyVariant& e ) -> { ust::ignore_unused( e ); return false; },
+		// Calls generally are not useless. Useless may be constexpr calls.
+		// But sometimes constexpr/non-constepxr call result may depend on template context.
+		// So, in order to avoid generating too many errors, assume, that all calls are not useless.
+		( Synt::CallOperator& e ) -> { ust::ignore_unused(e); return false; },
+		// It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
+		( Synt::SubscriptOperator& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::MemberAccessOperator/>& e ) -> { ust::ignore_unused(e); return true; },
+		// It's useless to initialize new variable and not using it.
+		( ust::box</Synt::VariableInitialization/>& e ) -> { ust::ignore_unused(e); return true; },
+		// Await operator is basically an operator for an async call.
+		( ust::box</Synt::AwaitOperator/>& e ) -> { ust::ignore_unused(e); return false; },
+		( ust::box</Synt::UnaryMinus/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::LogicalNot/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::BitwiseNot/>& e ) -> { ust::ignore_unused(e); return true; },
+		( Synt::BinaryOperator& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::TernaryOperator/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::ReferenceToRawPointerOperator/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::RawPointerToReferenceOperator/>& e ) -> { ust::ignore_unused(e); return true; },
+		// Name resolving itself has no side effects.
+		( Synt::ComplexName& e ) -> { ust::ignore_unused(e); return true; },
+		// Simple constant expressions have no side effects.
+		( Synt::IntegerNumericConstant& e ) -> { ust::ignore_unused(e); return true; },
+		( Synt::FloatingPointNumericConstant& e ) -> { ust::ignore_unused(e); return true; },
+		( Synt::BooleanConstant& e ) -> { ust::ignore_unused(e); return true; },
+		( Synt::StringLiteral& e ) -> { ust::ignore_unused(e); return true; },
+		( Synt::CharLiteral& e ) -> { ust::ignore_unused(e); return true; },
+		// Move and take have side effects.
+		( Synt::MoveOperator& e ) -> { ust::ignore_unused(e); return false; },
+		( ust::box</Synt::TakeOperator/>& e ) -> { ust::ignore_unused(e); return false; },
+		// It's dumm to define lambda and do not use it.
+		( ust::box</Synt::Lambda/>& e ) -> { ust::ignore_unused(e); return true; },
+		// Casts have no side effects.
+		( ust::box</Synt::CastMut/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::CastImut/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::CastRef/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::CastRefUnsafe/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::Embed/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::ExternalFunctionAccess/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::ExternalVariableAccess/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::Typeinfo/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::SameType/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::NonSyncExpression/>& e ) -> { ust::ignore_unused(e); return true; },
+		// safe/unsafe expressions needs to be visited deeply.
+		// safe/unsafe expression can't be discarded, because it has meaning.
+		( ust::box</Synt::SafeExpression/>& e ) -> { return SingleExpressionIsUseless( e.deref().expression ); },
+		( ust::box</Synt::UnsafeExpression/>& e ) -> { return SingleExpressionIsUseless( e.deref().expression ); },
+		// Type names have no side-effects.
+		( ust::box</Synt::ArrayType/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::FunctionType/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::TupleType/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::RawPointerType/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::box</Synt::CoroutineType/>& e ) -> { ust::ignore_unused(e); return true; },
+		( ust::shared_ptr_final</Synt::Mixin/>& e ) -> { ust::ignore_unused(e); return true; }
 	}
-	halt;
 }
-
-template</type T/>
-fn SingleExpressionIsUselessImpl( ust::box</T/>& e ) : bool { return SingleExpressionIsUselessImpl(e.deref()); }
-
-fn SingleExpressionIsUselessImpl( Synt::EmptyVariant& e ) : bool { ust::ignore_unused( e ); return false; }
-// Calls generally are not useless. Useless may be constexpr calls.
-// But sometimes constexpr/non-constepxr call result may depend on template context.
-// So, in order to avoid generating too many errors, assume, that all calls are not useless.
-fn SingleExpressionIsUselessImpl( Synt::CallOperator& e ) : bool { ust::ignore_unused(e); return false; }
-// It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
-fn SingleExpressionIsUselessImpl( Synt::SubscriptOperator& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::MemberAccessOperator& e ) : bool { ust::ignore_unused(e); return true; }
-// It's useless to initialize new variable and not using it.
-fn SingleExpressionIsUselessImpl( Synt::VariableInitialization& e ) : bool { ust::ignore_unused(e); return true; }
-// Await operator is basically an operator for an async call.
-fn SingleExpressionIsUselessImpl( Synt::AwaitOperator& e ) : bool { ust::ignore_unused(e); return false; }
-fn SingleExpressionIsUselessImpl( Synt::UnaryMinus& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::LogicalNot& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::BitwiseNot& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::BinaryOperator& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::TernaryOperator& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::ReferenceToRawPointerOperator& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::RawPointerToReferenceOperator& e ) : bool { ust::ignore_unused(e); return true; }
-// Name resolving itself has no side effects.
-fn SingleExpressionIsUselessImpl( Synt::ComplexName& e ) : bool { ust::ignore_unused(e); return true; }
-// Simple constant expressions have no side effects.
-fn SingleExpressionIsUselessImpl( Synt::IntegerNumericConstant& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::FloatingPointNumericConstant& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::BooleanConstant& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::StringLiteral& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::CharLiteral& e ) : bool { ust::ignore_unused(e); return true; }
-// Move and take have side effects.
-fn SingleExpressionIsUselessImpl( Synt::MoveOperator& e ) : bool { ust::ignore_unused(e); return false; }
-fn SingleExpressionIsUselessImpl( Synt::TakeOperator& e ) : bool { ust::ignore_unused(e); return false; }
-// It's dumm to define lambda and do not use it.
-fn SingleExpressionIsUselessImpl( Synt::Lambda& e ) : bool { ust::ignore_unused(e); return true; }
-// Casts have no side effects.
-fn SingleExpressionIsUselessImpl( Synt::CastMut& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::CastImut& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::CastRef& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::CastRefUnsafe& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::Embed& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::ExternalFunctionAccess& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::ExternalVariableAccess& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::Typeinfo& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::SameType& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::NonSyncExpression& e ) : bool { ust::ignore_unused(e); return true; }
-// safe/unsafe expressions needs to be visited deeply.
-// safe/unsafe expression can't be discarded, because it has meaning.
-fn SingleExpressionIsUselessImpl( Synt::SafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression ); }
-fn SingleExpressionIsUselessImpl( Synt::UnsafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression ); }
-// Type names have no side-effects.
-fn SingleExpressionIsUselessImpl( Synt::ArrayType& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::FunctionType& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::TupleType& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::RawPointerType& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( Synt::CoroutineType& e ) : bool { ust::ignore_unused(e); return true; }
-fn SingleExpressionIsUselessImpl( ust::shared_ptr_final</Synt::Mixin/>& e ) : bool { ust::ignore_unused(e); return true; }
 
 type SwitchCaseValues= ust::vector</SwitchCaseRange/>;
 
