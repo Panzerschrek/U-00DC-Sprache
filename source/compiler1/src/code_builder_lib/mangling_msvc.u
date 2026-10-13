@@ -43,9 +43,7 @@ private:
 	fn EncodeFunctionType( this, ManglerState &mut mangler_state, FunctionType& function_type, bool encode_full_type );
 	fn EncodeFunctionParams( this, ManglerState &mut mangler_state, ust::array_view_imut</FunctionType::Param/> params );
 	fn EncodeTemplateArgs( this, ManglerState &mut mangler_state, TemplateArgsFinished& template_args );
-	fn EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Type& t );
-	fn EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, VariablePtr& v_ptr );
-	fn EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, TypeTemplatePtr& type_template );
+	fn EncodeTemplateTypeArg( this, ManglerState &mut mangler_state, Type& t );
 	fn EncodeConstexprValue( this, ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value );
 	fn EncodeFullName( this, ManglerState &mut mangler_state, ust::string_view8 name, NamesScope& scope );
 	fn EncodeNamespacePostfix_r( this, ManglerState &mut mangler_state, NamesScope& scope );
@@ -235,7 +233,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 
 			foreach( &element_type : tuple_type.element_types )
 			{
-				EncodeTemplateArgImpl( template_mangler_state, element_type );
+				EncodeTemplateTypeArg( template_mangler_state, element_type );
 			}
 
 			// Finish list of template arguments.
@@ -443,9 +441,66 @@ fn ManglerMSVC::EncodeTemplateArgs( this, ManglerState &mut mangler_state, Templ
 {
 	foreach( &template_arg : template_args )
 	{
-		variant_visit( &el : template_arg )
+		variant_switch( template_arg )
 		{
-			EncodeTemplateArgImpl( mangler_state, el );
+			( Type& t ) -> { EncodeTemplateTypeArg( mangler_state, t ); },
+			( VariablePtr& v_ptr ) ->
+			{
+				auto lock= v_ptr.lock_imut();
+				auto& v= lock.deref();
+
+				if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
+				{
+					mangler_state.PushElement( '$' );
+					EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
+				}
+				else
+				{
+					// HACK!
+					// This is not how C++ compiler encodes value template args.
+					// In C++ this is just numbers.
+					// In Ü it's possible to create several type templates with same name and single value template param
+					// but with different param type.
+					// And it's possible to use same numeric value with diffirent types for instantiation of different type templates.
+					// So, we need to distinguish between such template types.
+					// Because of that prefix each numeric arg with type, like this is just hidden type param for each value param.
+					EncodeType( mangler_state, v.t );
+
+					mangler_state.PushElement( g_numeric_template_arg_prefix );
+
+					auto mut is_signed= false;
+					if_var( fundamental_type : v.t.GetFundamentalType() )
+					{
+						is_signed= IsSignedInteger( fundamental_type.fundamental_type );
+					}
+					else if_var( enum_type : v.t.GetEnumType() )
+					{
+						is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
+					}
+					else{ halt; }
+
+					if( is_signed )
+					{
+						EncodeNumber( mangler_state, unsafe( LLVMConstIntGetSExtValue( v.constexpr_value ) ) );
+					}
+					else
+					{
+						EncodeNumber( mangler_state, unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) );
+					}
+				}
+			},
+			( TypeTemplatePtr& type_template ) ->
+			{
+				with( &t : type_template.lock_imut().deref() )
+				{
+					mangler_state.PushElement( g_class_type_prefix ); // Use here class prefix instead of template prefix - as MSVC does.
+					EncodeFullName( mangler_state, t.syntax_element.deref().name, t.parent_names_scope.upgrade().try_lock_imut().deref() );
+
+					// Do not mangle template signature params to distinguish between different overloaded type templates.
+					// it's not required, since only sets with one type template may be used as template arguments.
+					// Merging different type templates imported from different files into the same type templates set isn't possible too.
+				}
+			}
 		}
 	}
 
@@ -453,7 +508,7 @@ fn ManglerMSVC::EncodeTemplateArgs( this, ManglerState &mut mangler_state, Templ
 	mangler_state.PushElement( g_terminator );
 }
 
-fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Type& t )
+fn ManglerMSVC::EncodeTemplateTypeArg( this, ManglerState &mut mangler_state, Type& t )
 {
 	if( !t.GetArrayType().empty() )
 	{
@@ -461,66 +516,6 @@ fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Ty
 	}
 
 	EncodeType( mangler_state, t );
-}
-
-fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, VariablePtr& v_ptr )
-{
-	auto lock= v_ptr.lock_imut();
-	auto& v= lock.deref();
-
-	if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
-	{
-		mangler_state.PushElement( '$' );
-		EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
-	}
-	else
-	{
-
-		// HACK!
-		// This is not how C++ compiler encodes value template args.
-		// In C++ this is just numbers.
-		// In Ü it's possible to create several type templates with same name and single value template param
-		// but with different param type.
-		// And it's possible to use same numeric value with diffirent types for instantiation of different type templates.
-		// So, we need to distinguish between such template types.
-		// Because of that prefix each numeric arg with type, like this is just hidden type param for each value param.
-		EncodeType( mangler_state, v.t );
-
-		mangler_state.PushElement( g_numeric_template_arg_prefix );
-
-		auto mut is_signed= false;
-		if_var( fundamental_type : v.t.GetFundamentalType() )
-		{
-			is_signed= IsSignedInteger( fundamental_type.fundamental_type );
-		}
-		else if_var( enum_type : v.t.GetEnumType() )
-		{
-			is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
-		}
-		else{ halt; }
-
-		if( is_signed )
-		{
-			EncodeNumber( mangler_state, unsafe( LLVMConstIntGetSExtValue( v.constexpr_value ) ) );
-		}
-		else
-		{
-			EncodeNumber( mangler_state, unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) );
-		}
-	}
-}
-
-fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, TypeTemplatePtr& type_template )
-{
-	with( &t : type_template.lock_imut().deref() )
-	{
-		mangler_state.PushElement( g_class_type_prefix ); // Use here class prefix instead of template prefix - as MSVC does.
-		EncodeFullName( mangler_state, t.syntax_element.deref().name, t.parent_names_scope.upgrade().try_lock_imut().deref() );
-
-		// Do not mangle template signature params to distinguish between different overloaded type templates.
-		// it's not required, since only sets with one type template may be used as template arguments.
-		// Merging different type templates imported from different files into the same type templates set isn't possible too.
-	}
 }
 
 fn ManglerMSVC::EncodeConstexprValue( this, ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value )

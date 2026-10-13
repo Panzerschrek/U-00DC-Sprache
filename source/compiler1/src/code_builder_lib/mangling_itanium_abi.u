@@ -923,48 +923,41 @@ fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& te
 
 	foreach( &arg : template_args )
 	{
-		variant_visit( &el : arg )
+		variant_switch( arg )
 		{
-			EncodeTemplateArgImpl( mangler_state, el );
+			( Type& t ) -> { EncodeTypeName( mangler_state, t ); },
+			( VariablePtr& v_ptr ) ->
+			{
+				with( &v : v_ptr.lock_imut().deref() )
+				{
+					if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
+					{
+						// Encode composite template args as expressions.
+						mangler_state.Push( 'X' );
+						EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
+						mangler_state.Push( 'E' );
+					}
+					else
+					{
+						EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
+					}
+				}
+			},
+			( TypeTemplatePtr& type_template ) ->
+			{
+				with( &t : type_template.lock_imut().deref() )
+				{
+					EncodeNestedName( mangler_state, t.syntax_element.deref().name, t.parent_names_scope.upgrade().try_lock_imut().deref() );
+
+					// Do not mangle template signature params to distinguish between different overloaded type templates.
+					// it's not required, since only sets with one type template may be used as template arguments.
+					// Merging different type templates imported from different files into the same type templates set isn't possible too.
+				}
+			}
 		}
 	}
 
 	mangler_state.Push( 'E' );
-}
-
-fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, Type& t )
-{
-	EncodeTypeName( mangler_state, t );
-}
-
-fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, VariablePtr& v_ptr )
-{
-	with( &v : v_ptr.lock_imut().deref() )
-	{
-		if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
-		{
-			// Encode composite template args as expressions.
-			mangler_state.Push( 'X' );
-			EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
-			mangler_state.Push( 'E' );
-		}
-		else
-		{
-			EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
-		}
-	}
-}
-
-fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, TypeTemplatePtr& type_template )
-{
-	with( &t : type_template.lock_imut().deref() )
-	{
-		EncodeNestedName( mangler_state, t.syntax_element.deref().name, t.parent_names_scope.upgrade().try_lock_imut().deref() );
-
-		// Do not mangle template signature params to distinguish between different overloaded type templates.
-		// it's not required, since only sets with one type template may be used as template arguments.
-		// Merging different type templates imported from different files into the same type templates set isn't possible too.
-	}
 }
 
 fn EncodeConstexprValue( ManglerState &mut mangler_state, Type& t, LLVMValueRef constexpr_value )
