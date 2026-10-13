@@ -6,6 +6,22 @@ import "optional_ref.iu"
 import "stringifier_apply.iu"
 import "ustlib_macros.iu"
 
+//
+// Use this macro to process all possible values, which can be stored in the given variant instance.
+//
+// Basic usage:
+//
+//  variant_visit( &x )
+//  {
+//      // processing code here
+//  }
+//
+// Mutability modifier may be specified after "&", which allows mutating values stored in the given variant.
+//
+// Note that processing code should be able to run on all possible variant types.
+// It may be, for example, a call to set of overloading functions (with overload for each variant type).
+//
+
 ?macro <? variant_visit:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
 ->
 <?
@@ -22,6 +38,24 @@ import "ustlib_macros.iu"
 		}
 	}
 ?>
+
+//
+// Use this macro to process all possible values, which can be stored in the given variant instance.
+// A branch for each variant type should be specified.
+// It's checked, that there is no duplicates, all given types are types of the given variant and that all possible types are listed.
+//
+// Basic usage:
+//
+//  variant_switch( v )
+//  {
+//      ( i32 x ) -> { /* processing code here */ },
+//      ( f32 y ) -> { /* processing code here */ },
+//      ( bool& z ) -> { /* processing code here */ },
+//      ( ust::string8& s ) -> { /* processing code here */ }
+//
+// "&" and "mut" modifiers can be specified in branch variables.
+// Using "&mut" also requires to specify "mut" prefix before variant expression.
+//
 
 ?macro
 <? variant_switch:block
