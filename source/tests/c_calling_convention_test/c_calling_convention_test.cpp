@@ -1470,6 +1470,60 @@ void PassVariadic_u64_Test2( const size_t s, ... )
 	TEST_ASSERT( arg0 == 18446744073709551615ull );
 }
 
+void PassVariadic_f32_Test0( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const double arg0= va_arg( args, double );
+	va_end( args );
+	TEST_ASSERT( arg0 == double( 0.56f ) );
+}
+
+void PassVariadic_f32_Test1( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const double arg0= va_arg( args, double );
+	va_end( args );
+	TEST_ASSERT( arg0 == double( -12466.2636f ) );
+}
+
+void PassVariadic_f32_Test2( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const double arg0= va_arg( args, double );
+	va_end( args );
+	TEST_ASSERT( arg0 == double( 53624734734734734747e5f ) );
+}
+
+void PassVariadic_f64_Test0( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const double arg0= va_arg( args, double );
+	va_end( args );
+	TEST_ASSERT( arg0 == 0.0222526 );
+}
+
+void PassVariadic_f64_Test1( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const double arg0= va_arg( args, double );
+	va_end( args );
+	TEST_ASSERT( arg0 == -12274667.26336 );
+}
+
+void PassVariadic_f64_Test2( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const double arg0= va_arg( args, double );
+	va_end( args );
+	TEST_ASSERT( arg0 == 1536247343377347347e51 );
+}
+
 void U_Pass_bool_Test0( bool x );
 void U_Pass_bool_Test1( bool x );
 void U_Pass_i8_Test0( int8_t x );

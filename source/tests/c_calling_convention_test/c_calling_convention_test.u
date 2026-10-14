@@ -966,6 +966,12 @@ fn nomangle main() call_conv( "C" ) : i32
 	PassVariadic_u64_Test0( 0s, u64( 167854567 ) );
 	PassVariadic_u64_Test1( 0s, u64( 98678987675645 ) );
 	PassVariadic_u64_Test2( 0s, u64( 18446744073709551615 ) );
+	PassVariadic_f32_Test0( 0s, 0.56f );
+	PassVariadic_f32_Test1( 0s, -12466.2636f );
+	PassVariadic_f32_Test2( 0s, 53624734734734734747e5f );
+	PassVariadic_f64_Test0( 0s, 0.0222526 );
+	PassVariadic_f64_Test1( 0s, -12274667.26336 );
+	PassVariadic_f64_Test2( 0s, 1536247343377347347e51 );
 
 	halt if( Get_i8_Test0() != 117i8 );
 	halt if( Get_i8_Test1() != -24i8 );
@@ -1914,6 +1920,12 @@ fn nomangle PassVariadic_i64_Test4( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadic_u64_Test0( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadic_u64_Test1( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadic_u64_Test2( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadic_f32_Test0( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadic_f32_Test1( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadic_f32_Test2( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadic_f64_Test0( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadic_f64_Test1( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadic_f64_Test2( size_type s, ... ) call_conv( "C" );
 
 fn nomangle Get_i8_Test0() call_conv( "C" ) : i8;
 fn nomangle Get_i8_Test1() call_conv( "C" ) : i8;

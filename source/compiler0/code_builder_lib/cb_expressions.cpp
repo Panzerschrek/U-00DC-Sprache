@@ -4517,6 +4517,10 @@ Value CodeBuilder::DoCallFunction(
 					variadic_arg_attributes.emplace_back( i, llvm::Attribute::ZExt );
 
 				llvm_args[i]= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+
+				// "f32" variadic args are promoted to "f64".
+				if( fundamental_type->fundamental_type == U_FundamentalType::f32_ && !function_context.is_functionless_context )
+					llvm_args[i]= function_context.llvm_ir_builder.CreateFPExt( llvm_args[i], fundamental_llvm_types_.f64_ );
 			}
 		}
 	}
