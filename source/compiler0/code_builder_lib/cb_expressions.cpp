@@ -4498,15 +4498,19 @@ Value CodeBuilder::DoCallFunction(
 	for( size_t i= function_type.params.size(); i < arg_count; ++i )
 	{
 		const VariablePtr expr= BuildExpressionCodeEnsureVariable( *args[i], names_scope, function_context );
+
+		llvm::Value*& out_arg= llvm_args[i];
+
 		if( const auto fundamental_type= expr->type.GetFundamentalType() )
 		{
-
 			if( fundamental_type->fundamental_type == U_FundamentalType::void_ )
 			{
-				// TODO - error here.
+				// TODO - use separate error code here.
+				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), call_src_loc, "void-type variadic args" );
 			}
 			else
 			{
+				// Require "sext"/"zext" for args based on integer types.
 				if( IsSignedInteger( fundamental_type->fundamental_type ) )
 					variadic_arg_attributes.emplace_back( i, llvm::Attribute::SExt );
 				else if(
@@ -4516,17 +4520,29 @@ Value CodeBuilder::DoCallFunction(
 					fundamental_type->fundamental_type == U_FundamentalType::bool_ )
 					variadic_arg_attributes.emplace_back( i, llvm::Attribute::ZExt );
 
-				llvm_args[i]= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+				out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
 
 				// "f32" variadic args are promoted to "f64".
 				if( fundamental_type->fundamental_type == U_FundamentalType::f32_ && !function_context.is_functionless_context )
-					llvm_args[i]= function_context.llvm_ir_builder.CreateFPExt( llvm_args[i], fundamental_llvm_types_.f64_ );
+					out_arg= function_context.llvm_ir_builder.CreateFPExt( out_arg, fundamental_llvm_types_.f64_ );
 			}
 		}
-		else if(
-			expr->type.GetRawPointerType() != nullptr ||
-			expr->type.GetFunctionPointerType() != nullptr )
-			llvm_args[i]= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+		else if( expr->type.GetRawPointerType() != nullptr || expr->type.GetFunctionPointerType() != nullptr )
+		{
+			// Require no "sext"/"zext" for pointer args.
+			out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+		}
+		else if( expr->type.GetEnumType() != nullptr )
+		{
+			// Require "zext" for enum args.
+			variadic_arg_attributes.emplace_back( i, llvm::Attribute::ZExt );
+			out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+		}
+		else
+		{
+			// TODO - use separate error code here.
+			REPORT_ERROR( NotImplemented, names_scope.GetErrors(), call_src_loc, "Composite variadic args" );
+		}
 	}
 
 	if( !EnsureTypeComplete( function_type.return_type ) )
