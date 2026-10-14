@@ -205,6 +205,8 @@ void CodeBuilder::PrepareFunctionTemplate(
 		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope.GetErrors(), function_template_declaration.src_loc, function_template_name );
 	if( function_template_declaration.function->virtual_function_kind != Synt::VirtualFunctionKind::None )
 		REPORT_ERROR( VirtualForFunctionTemplate, names_scope.GetErrors(), function_template_declaration.src_loc, function_template_name );
+	if( function_template_declaration.function->type.is_variadic )
+		REPORT_ERROR( VariadicFunctionTemplate, names_scope.GetErrors(), function_template_declaration.src_loc );
 
 	const auto function_template= std::make_shared<FunctionTemplate>();
 	function_template->syntax_element= &function_template_declaration;

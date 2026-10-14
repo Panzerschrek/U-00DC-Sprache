@@ -250,6 +250,9 @@ PROCESS_ERROR( NonDefaultCallingConventionForClassMethod, "Only default calling 
 PROCESS_ERROR( InvalidCallingConventionForVariadicFunction, "Calling convention \"{0}\" can't be used for variadic functions. Only \"C\" calling convention is supported." )
 PROCESS_ERROR( InvalidSafetyForVariadicFunction, "Variadic function isn't marked with \"unsafe\". Only \"unsafe\" functions can be variadic." )
 PROCESS_ERROR( UnsupportedVariadicArgumentType, "Unsupported variadic argument type! Only scalars are supported." )
+PROCESS_ERROR( VariadicFunctionTemplate, "Variadic function templates are not allowed." )
+PROCESS_ERROR( VariadicLambda, "Variadic lambdas are not allowed." )
+PROCESS_ERROR( VariadicCoroutine, "Variadic coroutines are not allowed." )
 
 // Unsafe
 PROCESS_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, "Calling unsafe function outside unsafe block or unsafe expression." )

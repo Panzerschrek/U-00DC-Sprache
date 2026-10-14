@@ -227,3 +227,43 @@ def CouldNotOverloadFunction_ForVariadicFunction_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "CouldNotOverloadFunction", 2 ) or HasError( errors_list, "CouldNotOverloadFunction", 3 ) )
+
+
+def VariadicFunctionTemplate_Test0():
+	c_program_text= """
+		template</ type T />
+		fn Foo( T t, ... ) unsafe call_conv( "C" ) {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariadicFunctionTemplate", 3 ) )
+
+
+def VariadicLambda_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto l= lambda( ... ) unsafe call_conv( "C" ) {};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariadicLambda", 4 ) )
+
+
+def VariadicCoroutine_Test0():
+	c_program_text= """
+		fn generator Foo( ... ) unsafe call_conv( "C" );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariadicCoroutine", 2 ) )
+
+
+def VariadicCoroutine_Test1():
+	c_program_text= """
+		fn async Foo( ... ) unsafe call_conv( "C" );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariadicCoroutine", 2 ) )
