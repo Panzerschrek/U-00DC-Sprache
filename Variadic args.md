@@ -66,12 +66,20 @@ This is mostly useless, but this seems to break nothing.
 Defining variadic functions (having body) may be allowed.
 But adding functionality to access variadic arguments isn't necessary.
 
+It should be required to mark variadic functions as *unsafe*.
+It's necessary, since one should make sure, that the number of variadic args provided matches what is expected.
+Like in *printf* one should specify an arg for each `%` in the format string.
+
 Code in the compiler building function calls should be modified to support variadic functions.
 The easiest way of doing this is to pass and process extra (variadic) arguments in a separate loop.
 They should not require things like creation of references graph lock nodes (since no references are supported).
 
 The order of variadic args evaluation should be the same as for normal ones.
 C does it differently, but it doesn't matter, since order of evaluation has no effect on ABI.
+
+Variadic function pointers should work properly.
+Variadic flag should add distinction to function type.
+Casting non-variadic function to variadic and back shouldn't be allowed.
 
 C++ header converter should be modified to support creating bindings for variadic functions.
 This seems to be pretty easy.
