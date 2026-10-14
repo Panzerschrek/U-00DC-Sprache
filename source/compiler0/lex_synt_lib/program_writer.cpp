@@ -1080,7 +1080,12 @@ void WriteFunctionDeclaration( const Function& function ) const
 void WriteFunctionParamsList( const FunctionType& function_type ) const
 {
 	if( function_type.params.empty() )
-		stream_ << "()";
+	{
+		if( function_type.is_variadic )
+			stream_ << "( ... )";
+		else
+			stream_ << "()";
+	}
 	else
 	{
 		stream_ << "( ";
@@ -1090,6 +1095,10 @@ void WriteFunctionParamsList( const FunctionType& function_type ) const
 			if( &param != &function_type.params.back() )
 				stream_ << ", ";
 		}
+
+		if( function_type.is_variadic )
+			stream_ << ", ...";
+
 		stream_ << " )";
 	}
 	stream_ << " ";

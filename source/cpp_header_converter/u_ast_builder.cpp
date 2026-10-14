@@ -879,6 +879,8 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionP
 		++i;
 	}
 
+	function_type.is_variadic= in_type.isVariadic();
+
 	return function_type;
 }
 
@@ -1202,6 +1204,8 @@ Synt::Function CppAstConsumer::EmitItemImpl(
 		func.type.params.push_back(std::move(out_param));
 		++i;
 	}
+
+	func.type.is_variadic= function_decl.isVariadic();
 
 	return func;
 }
