@@ -946,6 +946,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	PassVariadinc_i8_Test0( 0s, i8(13) );
 	PassVariadinc_i8_Test1( 0s, i8(121) );
 	PassVariadinc_i8_Test2( 0s, i8(-105) );
+	PassVariadinc_u8_Test0( 0s, u8(87) );
+	PassVariadinc_u8_Test1( 0s, u8(234) );
 	PassVariadinc_i32_Test0( 0s, 7i32 );
 	PassVariadinc_i32_Test1( 0s, 108i32 );
 	PassVariadinc_i32_Test2( 0s, -5356237i32 );
@@ -956,6 +958,14 @@ fn nomangle main() call_conv( "C" ) : i32
 	PassVariadinc_u32_Test1( 1s, u32(2521) );
 	PassVariadinc_u32_Test2( 2s, u32(1373474149) );
 	PassVariadinc_u32_Test3( 3s, u32(4294967295) );
+	PassVariadinc_i64_Test0( 0s, i64( 263234 ) );
+	PassVariadinc_i64_Test1( 0s, i64( -145677874 ) );
+	PassVariadinc_i64_Test2( 0s, i64( 78435685435467 ) );
+	PassVariadinc_i64_Test3( 0s, i64( -9223372036854775808 ) );
+	PassVariadinc_i64_Test4( 0s, i64( 9223372036854775807 ) );
+	PassVariadinc_u64_Test0( 0s, u64( 167854567 ) );
+	PassVariadinc_u64_Test1( 0s, u64( 98678987675645 ) );
+	PassVariadinc_u64_Test2( 0s, u64( 18446744073709551615 ) );
 
 	halt if( Get_i8_Test0() != 117i8 );
 	halt if( Get_i8_Test1() != -24i8 );
@@ -1884,6 +1894,8 @@ fn nomangle PassVariadic_Test0( ... ) call_conv( "C" );
 fn nomangle PassVariadinc_i8_Test0( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadinc_i8_Test1( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadinc_i8_Test2( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadinc_u8_Test0( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadinc_u8_Test1( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadinc_i32_Test0( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadinc_i32_Test1( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadinc_i32_Test2( size_type s, ... ) call_conv( "C" );
@@ -1894,6 +1906,14 @@ fn nomangle PassVariadinc_u32_Test0( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadinc_u32_Test1( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadinc_u32_Test2( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadinc_u32_Test3( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadinc_i64_Test0( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadinc_i64_Test1( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadinc_i64_Test2( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadinc_i64_Test3( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadinc_i64_Test4( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadinc_u64_Test0( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadinc_u64_Test1( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadinc_u64_Test2( size_type s, ... ) call_conv( "C" );
 
 fn nomangle Get_i8_Test0() call_conv( "C" ) : i8;
 fn nomangle Get_i8_Test1() call_conv( "C" ) : i8;
