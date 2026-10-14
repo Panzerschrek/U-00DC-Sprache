@@ -1263,6 +1263,34 @@ void Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( const double a, const double 
 
 void PassVariadic_Test0( ... ){}
 
+
+void PassVariadinc_i8_Test0( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const int32_t arg0= va_arg( args, int32_t );
+	va_end( args );
+	TEST_ASSERT( arg0 == 13 );
+}
+
+void PassVariadinc_i8_Test1( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const int32_t arg0= va_arg( args, int32_t );
+	va_end( args );
+	TEST_ASSERT( arg0 == 121 );
+}
+
+void PassVariadinc_i8_Test2( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const int32_t arg0= va_arg( args, int32_t );
+	va_end( args );
+	TEST_ASSERT( arg0 == -105 );
+}
+
 void PassVariadinc_i32_Test0( const size_t s, ... )
 {
 	va_list args;
@@ -1315,6 +1343,42 @@ void PassVariadinc_i32_Test5( const size_t s, ... )
 	const int32_t arg0= va_arg( args, int32_t );
 	va_end( args );
 	TEST_ASSERT( arg0 == 2147483647 );
+}
+
+void PassVariadinc_u32_Test0( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const uint32_t arg0= va_arg( args, uint32_t );
+	va_end( args );
+	TEST_ASSERT( arg0 == 0 );
+}
+
+void PassVariadinc_u32_Test1( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const uint32_t arg0= va_arg( args, uint32_t );
+	va_end( args );
+	TEST_ASSERT( arg0 == 2521 );
+}
+
+void PassVariadinc_u32_Test2( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const uint32_t arg0= va_arg( args, uint32_t );
+	va_end( args );
+	TEST_ASSERT( arg0 == 1373474149 );
+}
+
+void PassVariadinc_u32_Test3( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const uint32_t arg0= va_arg( args, uint32_t );
+	va_end( args );
+	TEST_ASSERT( arg0 == 4294967295 );
 }
 
 void U_Pass_bool_Test0( bool x );
