@@ -1575,6 +1575,14 @@ FunctionType SyntaxAnalyzer::ParseFunctionType()
 			break;
 		}
 
+		if( it_->type == Lexem::Type::Ellipsis )
+		{
+			result.is_variadic= true;
+			NextLexem();
+			ExpectLexem( Lexem::Type::BracketRight );
+			break;
+		}
+
 		result.params.push_back( ParseFunctionParam() );
 
 		if( it_->type == Lexem::Type::Comma )
@@ -1723,6 +1731,14 @@ Lambda SyntaxAnalyzer::ParseLambda()
 		if( it_->type == Lexem::Type::BracketRight )
 		{
 			NextLexem();
+			break;
+		}
+
+		if( it_->type == Lexem::Type::Ellipsis )
+		{
+			result.function.type.is_variadic= true;
+			NextLexem();
+			ExpectLexem( Lexem::Type::BracketRight );
 			break;
 		}
 
@@ -3916,6 +3932,14 @@ Function SyntaxAnalyzer::ParseFunction()
 		if( it_->type == Lexem::Type::BracketRight )
 		{
 			NextLexem();
+			break;
+		}
+
+		if( it_->type == Lexem::Type::Ellipsis )
+		{
+			result.type.is_variadic= true;
+			NextLexem();
+			ExpectLexem( Lexem::Type::BracketRight );
 			break;
 		}
 
