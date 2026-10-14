@@ -4523,6 +4523,10 @@ Value CodeBuilder::DoCallFunction(
 					llvm_args[i]= function_context.llvm_ir_builder.CreateFPExt( llvm_args[i], fundamental_llvm_types_.f64_ );
 			}
 		}
+		else if(
+			expr->type.GetRawPointerType() != nullptr ||
+			expr->type.GetFunctionPointerType() != nullptr )
+			llvm_args[i]= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
 	}
 
 	if( !EnsureTypeComplete( function_type.return_type ) )

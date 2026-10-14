@@ -1524,6 +1524,33 @@ void PassVariadic_f64_Test2( const size_t s, ... )
 	TEST_ASSERT( arg0 == 1536247343377347347e51 );
 }
 
+void PassVariadic_i32_ptr_Test0( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const int* const arg0= va_arg( args, int* );
+	va_end( args );
+	TEST_ASSERT( *arg0 == 75788524 );
+}
+
+void PassVariadic_f64_ptr_Test0( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const double* const arg0= va_arg( args, double* );
+	va_end( args );
+	TEST_ASSERT( *arg0 == -675578.3475483 );
+}
+
+void PassVariadic_u64_ptr_Test0( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	const uint64_t* const arg0= va_arg( args, uint64_t* );
+	va_end( args );
+	TEST_ASSERT( *arg0 == 65678904565678923ull );
+}
+
 void U_Pass_bool_Test0( bool x );
 void U_Pass_bool_Test1( bool x );
 void U_Pass_i8_Test0( int8_t x );

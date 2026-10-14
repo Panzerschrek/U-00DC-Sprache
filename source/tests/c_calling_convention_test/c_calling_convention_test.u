@@ -973,6 +973,19 @@ fn nomangle main() call_conv( "C" ) : i32
 	PassVariadic_f64_Test1( 0s, -12274667.26336 );
 	PassVariadic_f64_Test2( 0s, 1536247343377347347e51 );
 
+	{
+		var i32 mut x= 75788524;
+		PassVariadic_i32_ptr_Test0( 0s, $<(x) );
+	}
+	{
+		var f64 mut x= -675578.3475483;
+		PassVariadic_f64_ptr_Test0( 0s, $<(x) );
+	}
+	{
+		var u64 mut x= 65678904565678923u;
+		PassVariadic_u64_ptr_Test0( 0s, $<(x) );
+	}
+
 	halt if( Get_i8_Test0() != 117i8 );
 	halt if( Get_i8_Test1() != -24i8 );
 	halt if( Get_u8_Test0() != 104u8 );
@@ -1926,6 +1939,9 @@ fn nomangle PassVariadic_f32_Test2( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadic_f64_Test0( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadic_f64_Test1( size_type s, ... ) call_conv( "C" );
 fn nomangle PassVariadic_f64_Test2( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadic_i32_ptr_Test0( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadic_f64_ptr_Test0( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadic_u64_ptr_Test0( size_type s, ... ) call_conv( "C" );
 
 fn nomangle Get_i8_Test0() call_conv( "C" ) : i8;
 fn nomangle Get_i8_Test1() call_conv( "C" ) : i8;
