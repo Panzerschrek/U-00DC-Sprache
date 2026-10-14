@@ -4494,17 +4494,30 @@ Value CodeBuilder::DoCallFunction(
 	} // for args
 
 	// Process variadic args.
+	llvm::SmallVector< std::pair< size_t, llvm::Attribute::AttrKind >, 6> variadic_arg_attributes;
 	for( size_t i= function_type.params.size(); i < arg_count; ++i )
 	{
 		const VariablePtr expr= BuildExpressionCodeEnsureVariable( *args[i], names_scope, function_context );
 		if( const auto fundamental_type= expr->type.GetFundamentalType() )
 		{
+
 			if( fundamental_type->fundamental_type == U_FundamentalType::void_ )
 			{
 				// TODO - error here.
 			}
 			else
+			{
+				if( IsSignedInteger( fundamental_type->fundamental_type ) )
+					variadic_arg_attributes.emplace_back( i, llvm::Attribute::SExt );
+				else if(
+					IsUnsignedInteger( fundamental_type->fundamental_type ) ||
+					IsChar( fundamental_type->fundamental_type ) ||
+					IsByte( fundamental_type->fundamental_type ) ||
+					fundamental_type->fundamental_type == U_FundamentalType::bool_ )
+					variadic_arg_attributes.emplace_back( i, llvm::Attribute::ZExt );
+
 				llvm_args[i]= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+			}
 		}
 	}
 
@@ -4645,6 +4658,12 @@ Value CodeBuilder::DoCallFunction(
 				// TODO - add other attributes?
 				call_instruction->addParamAttr( param_attr_index, llvm::Attribute::getWithByValType( llvm_context_, param.type.GetLLVMType() ) );
 			};
+		}
+
+		for( const auto& arg_and_attribute : variadic_arg_attributes )
+		{
+			const auto param_attr_index= uint32_t( arg_and_attribute.first + (return_value_is_sret ? 1u : 0u ) );
+			call_instruction->addParamAttr( param_attr_index, arg_and_attribute.second );
 		}
 
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
