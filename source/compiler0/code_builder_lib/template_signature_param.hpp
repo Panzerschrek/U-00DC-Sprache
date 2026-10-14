@@ -74,6 +74,7 @@ public:
 		ValueType return_value_type= ValueType::Value;
 
 		bool is_unsafe= false;
+		bool is_variadic= false;
 		CallingConvention calling_convention= CallingConvention::Default;
 
 		struct Param

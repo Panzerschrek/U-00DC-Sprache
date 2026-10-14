@@ -271,6 +271,7 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 	}
 
 	function_type.unsafe= function_type_name.unsafe;
+	function_type.is_variadic= function_type_name.is_variadic;
 	function_type.calling_convention= PrepareCallingConvention( names_scope, function_context, function_type_name.calling_convention );
 
 	const size_t num_params= function_type.params.size();

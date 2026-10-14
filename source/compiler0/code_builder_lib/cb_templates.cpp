@@ -366,6 +366,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 		function_param.return_value_type= function_pointer_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 	function_param.is_unsafe= function_pointer_type_name.unsafe;
+	function_param.is_variadic= function_pointer_type_name.is_variadic;
 	function_param.calling_convention= PrepareCallingConvention( names_scope, function_context, function_pointer_type_name.calling_convention );
 
 	// TODO - maybe check also reference tags?

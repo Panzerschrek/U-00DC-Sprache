@@ -62,6 +62,7 @@ bool TemplateSignatureParam::Function::operator==( const Function& other ) const
 		*this->return_type == *other.return_type &&
 		this->return_value_type == other.return_value_type &&
 		this->is_unsafe == other.is_unsafe &&
+		this->is_variadic == other.is_variadic &&
 		this->calling_convention == other.calling_convention;
 }
 

@@ -552,6 +552,12 @@ void CodeBuilder::FetchMatchedOverloadedFunctions(
 			actual_args_begin= actual_args.data() + 1u;
 			actial_arg_count= actual_args.size() - 1u;
 		}
+		else if( function_type.is_variadic )
+		{
+			actual_args_begin= actual_args.data();
+			// Ignore variadic args abowe the total number of args in this function candidate.
+			actial_arg_count= std::min( actual_args.size(), function.type.params.size() );
+		}
 		else
 		{
 			actual_args_begin= actual_args.data();
