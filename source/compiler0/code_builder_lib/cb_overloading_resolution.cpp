@@ -393,6 +393,13 @@ bool CodeBuilder::ApplyOverloadedFunction(
 	{
 		const FunctionType& set_function_type= set_function.type;
 
+		if( function_type.is_variadic | set_function_type.is_variadic )
+		{
+			// Don't allow overloading variadic functions, since this may create mess in overloading resolution.
+			REPORT_ERROR( CouldNotOverloadFunction, errors_container, src_loc );
+			return false;
+		}
+
 		// If argument count differs - allow overloading.
 		// SPRACHE_TODO - handle default arguments.
 		if( function_type.params.size() != set_function_type.params.size() )

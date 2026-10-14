@@ -197,3 +197,33 @@ def UnsupportedVariadicArgumentType_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "UnsupportedVariadicArgumentType", 6 ) )
+
+
+def CouldNotOverloadFunction_ForVariadicFunction_Test0():
+	c_program_text= """
+		fn Foo( i32 x, ... ) unsafe call_conv( "C" );
+		fn Foo( f32 x );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CouldNotOverloadFunction", 2 ) or HasError( errors_list, "CouldNotOverloadFunction", 3 ) )
+
+
+def CouldNotOverloadFunction_ForVariadicFunction_Test1():
+	c_program_text= """
+		fn Foo( f32 x, i32 y, f64 z );
+		fn Foo( ... ) unsafe call_conv( "C" );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CouldNotOverloadFunction", 2 ) or HasError( errors_list, "CouldNotOverloadFunction", 3 ) )
+
+
+def CouldNotOverloadFunction_ForVariadicFunction_Test2():
+	c_program_text= """
+		fn Foo();
+		fn Foo( f32 x, i32 y, f64 z, ... ) unsafe call_conv( "C" );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CouldNotOverloadFunction", 2 ) or HasError( errors_list, "CouldNotOverloadFunction", 3 ) )
