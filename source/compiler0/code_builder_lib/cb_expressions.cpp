@@ -4169,7 +4169,14 @@ Value CodeBuilder::DoCallFunction(
 		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope.GetErrors(), call_src_loc );
 
 	const size_t arg_count= preevaluated_args.size() + args.size();
-	U_ASSERT( arg_count == function_type.params.size() );
+	if( function_type.is_variadic )
+	{
+		U_ASSERT( arg_count >= function_type.params.size() );
+	}
+	else
+	{
+		U_ASSERT( arg_count == function_type.params.size() );
+	}
 
 	// Ensure return type/param types completeness before performing the call.
 	{
@@ -4198,7 +4205,7 @@ Value CodeBuilder::DoCallFunction(
 
 	llvm::SmallVector<llvm::Value*, 16> value_args_for_lifetime_end_call;
 
-	for( size_t i= 0u; i < arg_count; ++i )
+	for( size_t i= 0u; i < function_type.params.size(); ++i )
 	{
 		const size_t arg_number= evaluate_args_in_reverse_order ? arg_count - i - 1u : i;
 
@@ -4485,6 +4492,21 @@ Value CodeBuilder::DoCallFunction(
 		// Destroy unused temporary variables after each argument evaluation.
 		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), call_src_loc );
 	} // for args
+
+	// Process variadic args.
+	for( size_t i= function_type.params.size(); i < arg_count; ++i )
+	{
+		const VariablePtr expr= BuildExpressionCodeEnsureVariable( *args[i], names_scope, function_context );
+		if( const auto fundamental_type= expr->type.GetFundamentalType() )
+		{
+			if( fundamental_type->fundamental_type == U_FundamentalType::void_ )
+			{
+				// TODO - error here.
+			}
+			else
+				llvm_args[i]= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+		}
+	}
 
 	if( !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), call_src_loc, function_type.return_type );
