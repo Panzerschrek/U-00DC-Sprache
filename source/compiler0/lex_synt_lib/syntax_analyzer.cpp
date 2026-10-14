@@ -1588,7 +1588,7 @@ FunctionType SyntaxAnalyzer::ParseFunctionType()
 		if( it_->type == Lexem::Type::Comma )
 		{
 			NextLexem();
-			// Disallov constructions, like "fn f( a : int, ){}"
+			// Forbid constructions like "fn f( a : int, ){}".
 			if( it_->type == Lexem::Type::BracketRight )
 				PushErrorMessage();
 		}
@@ -1747,7 +1747,7 @@ Lambda SyntaxAnalyzer::ParseLambda()
 		if( it_->type == Lexem::Type::Comma )
 		{
 			NextLexem();
-			// Disallov constructions, like "( i32 a, ){}"
+			// Forbid constructions like "( i32 a, ){}".
 			if( it_->type == Lexem::Type::BracketRight )
 				PushErrorMessage();
 		}
@@ -3912,7 +3912,7 @@ Function SyntaxAnalyzer::ParseFunction()
 		if( it_->type == Lexem::Type::Comma )
 		{
 			NextLexem();
-			// Disallov constructions, like "fn f( mut this, ){}"
+			// Forbid constructions like "fn f( mut this, ){}".
 			if( it_->type == Lexem::Type::BracketRight )
 				PushErrorMessage();
 		}
@@ -3948,7 +3948,7 @@ Function SyntaxAnalyzer::ParseFunction()
 		if( it_->type == Lexem::Type::Comma )
 		{
 			NextLexem();
-			// Disallov constructions, like "fn f( a : int, ){}"
+			// Forbid constructions like "fn f( a : int, ){}".
 			if( it_->type == Lexem::Type::BracketRight )
 				PushErrorMessage();
 		}

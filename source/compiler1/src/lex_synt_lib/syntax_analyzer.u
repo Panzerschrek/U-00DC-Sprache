@@ -1999,7 +1999,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		if( it_.front().lexem_type == Lexem::Type::Comma )
 		{
 			NextLexem();
-			// Disallov constructions, like "fn f( mut this, ){}"
+			// Forbid constructions like "fn f( mut this, ){}".
 			if( it_.front().lexem_type == Lexem::Type::BracketRight )
 			{
 				PushErrorMessage();
