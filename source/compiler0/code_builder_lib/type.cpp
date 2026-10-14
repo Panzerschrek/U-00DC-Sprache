@@ -657,6 +657,10 @@ std::string Type::ToString() const
 			{
 				result+= "( ";
 				result+= FunctionParamsToString( function.params );
+
+				if( function.is_variadic )
+					result+= ", ...";
+
 				result+= " )";
 			}
 			if( function.unsafe )
@@ -746,6 +750,7 @@ size_t Type::Hash() const
 					function.return_type.Hash(),
 					function.return_value_type,
 					function.unsafe,
+					function.is_variadic,
 					function.calling_convention );
 
 			for( const FunctionType::ParamReference& param_reference : function.return_references )
@@ -907,6 +912,9 @@ bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 	if( src_function_type.unsafe && !dst_function_type.unsafe )
 		return false; // Conversion from unsafe to safe function is forbidden.
 
+	if( src_function_type.is_variadic != dst_function_type.is_variadic )
+		return false; // Changing variadic flag is forbiden.
+
 	if( src_function_type.calling_convention != dst_function_type.calling_convention )
 		return false;
 
@@ -949,6 +957,7 @@ bool operator==( const FunctionType& l, const FunctionType& r )
 		l.return_inner_references == r.return_inner_references &&
 		l.references_pollution == r.references_pollution &&
 		l.unsafe == r.unsafe &&
+		l.is_variadic == r.is_variadic &&
 		l.calling_convention == r.calling_convention;
 }
 

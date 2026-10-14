@@ -362,7 +362,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType(
 	for( size_t i= 0; i < function_type.params.size(); ++i )
 		params_llvm_types.push_back( call_info.arguments_passing[i].llvm_type );
 
-	return llvm::FunctionType::get( llvm_function_return_type, params_llvm_types, false );
+	return llvm::FunctionType::get( llvm_function_return_type, params_llvm_types, function_type.is_variadic );
 }
 
 CallingConvention CodeBuilder::PrepareCallingConvention(
