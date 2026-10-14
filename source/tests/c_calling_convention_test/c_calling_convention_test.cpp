@@ -1563,6 +1563,21 @@ void PassVariadic_fn_ptr_Test0( const size_t s, ... )
 	TEST_ASSERT( arg0( -56374747 ) == ( -56374747 ) * 2 );
 }
 
+void PassVariadinc_u16_i32_u64_f32_f64_size_type_bool_u8( const size_t s, ... )
+{
+	va_list args;
+	va_start( args, s );
+	TEST_ASSERT( va_arg( args, uint32_t ) == 675u );
+	TEST_ASSERT( va_arg( args, int32_t ) == -3643265 );
+	TEST_ASSERT( va_arg( args, uint64_t ) == 678945676593245ull );
+	TEST_ASSERT( va_arg( args, double ) == double( 67.25f ) );
+	TEST_ASSERT( va_arg( args, double ) == 6789435.23474 );
+	TEST_ASSERT( va_arg( args, size_t ) == 4563456 );
+	TEST_ASSERT( va_arg( args, uint32_t ) == uint32_t(true) );
+	TEST_ASSERT( va_arg( args, uint32_t ) == 185 );
+	va_end( args );
+}
+
 void U_Pass_bool_Test0( bool x );
 void U_Pass_bool_Test1( bool x );
 void U_Pass_i8_Test0( int8_t x );
