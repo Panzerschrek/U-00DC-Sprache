@@ -141,3 +141,59 @@ def InvalidSafetyForVariadicFunction_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "InvalidSafetyForVariadicFunction", 2 ) )
+
+
+def UnsupportedVariadicArgumentType_Test0():
+	c_program_text= """
+		fn Bar( ... ) unsafe call_conv( "C" );
+		fn Foo()
+		{
+			unsafe( Bar( void() ) ); // Passing "void" is not supported.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedVariadicArgumentType", 5 ) )
+
+
+def UnsupportedVariadicArgumentType_Test1():
+	c_program_text= """
+		fn Bar( ... ) unsafe call_conv( "C" );
+		fn Foo()
+		{
+			var [ i32, 3 ] arr= zero_init;
+			unsafe( Bar( arr ) ); // Passing arrays is not supported.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedVariadicArgumentType", 6 ) )
+
+
+def UnsupportedVariadicArgumentType_Test2():
+	c_program_text= """
+		fn Bar( ... ) unsafe call_conv( "C" );
+		fn Foo()
+		{
+			var tup[ f32 ] t= zero_init;
+			unsafe( Bar( t ) ); // Passing tuples is not supported.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedVariadicArgumentType", 6 ) )
+
+
+def UnsupportedVariadicArgumentType_Test3():
+	c_program_text= """
+		fn Bar( ... ) unsafe call_conv( "C" );
+		fn Foo()
+		{
+			var S s= zero_init;
+			unsafe( Bar( s ) ); // Passing structs is not supported.
+		}
+		struct S{ i32 x; f32 y; bool z; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedVariadicArgumentType", 6 ) )

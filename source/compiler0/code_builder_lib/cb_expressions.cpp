@@ -4505,8 +4505,8 @@ Value CodeBuilder::DoCallFunction(
 		{
 			if( fundamental_type->fundamental_type == U_FundamentalType::void_ )
 			{
-				// TODO - use separate error code here.
-				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), call_src_loc, "void-type variadic args" );
+				// Don't allow passing "void" as variadic arg. It has zero size and zero-sized types doesn't exist in C.
+				REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope.GetErrors(), call_src_loc );
 			}
 			else
 			{
@@ -4539,10 +4539,7 @@ Value CodeBuilder::DoCallFunction(
 			out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
 		}
 		else
-		{
-			// TODO - use separate error code here.
-			REPORT_ERROR( NotImplemented, names_scope.GetErrors(), call_src_loc, "Composite variadic args" );
-		}
+			REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope.GetErrors(), call_src_loc );
 	}
 
 	if( !EnsureTypeComplete( function_type.return_type ) )
