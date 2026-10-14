@@ -1263,7 +1263,7 @@ void Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( const double a, const double 
 
 void PassVariadic_Test0( ... ){}
 
-void PassVariadinc_i8_Test0( const size_t s, ... )
+void PassVariadic_i8_Test0( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1272,7 +1272,7 @@ void PassVariadinc_i8_Test0( const size_t s, ... )
 	TEST_ASSERT( arg0 == 13 );
 }
 
-void PassVariadinc_i8_Test1( const size_t s, ... )
+void PassVariadic_i8_Test1( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1281,7 +1281,7 @@ void PassVariadinc_i8_Test1( const size_t s, ... )
 	TEST_ASSERT( arg0 == 121 );
 }
 
-void PassVariadinc_i8_Test2( const size_t s, ... )
+void PassVariadic_i8_Test2( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1290,7 +1290,7 @@ void PassVariadinc_i8_Test2( const size_t s, ... )
 	TEST_ASSERT( arg0 == -105 );
 }
 
-void PassVariadinc_u8_Test0( const size_t s, ... )
+void PassVariadic_u8_Test0( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1299,7 +1299,7 @@ void PassVariadinc_u8_Test0( const size_t s, ... )
 	TEST_ASSERT( arg0 == 87 );
 }
 
-void PassVariadinc_u8_Test1( const size_t s, ... )
+void PassVariadic_u8_Test1( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1308,7 +1308,7 @@ void PassVariadinc_u8_Test1( const size_t s, ... )
 	TEST_ASSERT( arg0 == 234 );
 }
 
-void PassVariadinc_i32_Test0( const size_t s, ... )
+void PassVariadic_i32_Test0( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1317,7 +1317,7 @@ void PassVariadinc_i32_Test0( const size_t s, ... )
 	TEST_ASSERT( arg0 == 7 );
 }
 
-void PassVariadinc_i32_Test1( const size_t s, ... )
+void PassVariadic_i32_Test1( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1326,7 +1326,7 @@ void PassVariadinc_i32_Test1( const size_t s, ... )
 	TEST_ASSERT( arg0 == 108 );
 }
 
-void PassVariadinc_i32_Test2( const size_t s, ... )
+void PassVariadic_i32_Test2( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1335,7 +1335,7 @@ void PassVariadinc_i32_Test2( const size_t s, ... )
 	TEST_ASSERT( arg0 == -5356237 );
 }
 
-void PassVariadinc_i32_Test3( const size_t s, ... )
+void PassVariadic_i32_Test3( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1344,7 +1344,7 @@ void PassVariadinc_i32_Test3( const size_t s, ... )
 	TEST_ASSERT( arg0 == 20636743 );
 }
 
-void PassVariadinc_i32_Test4( const size_t s, ... )
+void PassVariadic_i32_Test4( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1353,7 +1353,7 @@ void PassVariadinc_i32_Test4( const size_t s, ... )
 	TEST_ASSERT( arg0 == -2147483648 );
 }
 
-void PassVariadinc_i32_Test5( const size_t s, ... )
+void PassVariadic_i32_Test5( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1362,7 +1362,7 @@ void PassVariadinc_i32_Test5( const size_t s, ... )
 	TEST_ASSERT( arg0 == 2147483647 );
 }
 
-void PassVariadinc_u32_Test0( const size_t s, ... )
+void PassVariadic_u32_Test0( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1371,7 +1371,7 @@ void PassVariadinc_u32_Test0( const size_t s, ... )
 	TEST_ASSERT( arg0 == 0 );
 }
 
-void PassVariadinc_u32_Test1( const size_t s, ... )
+void PassVariadic_u32_Test1( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1380,7 +1380,7 @@ void PassVariadinc_u32_Test1( const size_t s, ... )
 	TEST_ASSERT( arg0 == 2521 );
 }
 
-void PassVariadinc_u32_Test2( const size_t s, ... )
+void PassVariadic_u32_Test2( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1389,7 +1389,7 @@ void PassVariadinc_u32_Test2( const size_t s, ... )
 	TEST_ASSERT( arg0 == 1373474149 );
 }
 
-void PassVariadinc_u32_Test3( const size_t s, ... )
+void PassVariadic_u32_Test3( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1398,7 +1398,7 @@ void PassVariadinc_u32_Test3( const size_t s, ... )
 	TEST_ASSERT( arg0 == 4294967295 );
 }
 
-void PassVariadinc_i64_Test0( const size_t s, ... )
+void PassVariadic_i64_Test0( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1407,7 +1407,7 @@ void PassVariadinc_i64_Test0( const size_t s, ... )
 	TEST_ASSERT( arg0 == 263234 );
 }
 
-void PassVariadinc_i64_Test1( const size_t s, ... )
+void PassVariadic_i64_Test1( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1416,7 +1416,7 @@ void PassVariadinc_i64_Test1( const size_t s, ... )
 	TEST_ASSERT( arg0 == -145677874 );
 }
 
-void PassVariadinc_i64_Test2( const size_t s, ... )
+void PassVariadic_i64_Test2( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1425,7 +1425,7 @@ void PassVariadinc_i64_Test2( const size_t s, ... )
 	TEST_ASSERT( arg0 == 78435685435467 );
 }
 
-void PassVariadinc_i64_Test3( const size_t s, ... )
+void PassVariadic_i64_Test3( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1434,7 +1434,7 @@ void PassVariadinc_i64_Test3( const size_t s, ... )
 	TEST_ASSERT( arg0 == int64_t( 0x8000000000000000ull ) );
 }
 
-void PassVariadinc_i64_Test4( const size_t s, ... )
+void PassVariadic_i64_Test4( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1443,7 +1443,7 @@ void PassVariadinc_i64_Test4( const size_t s, ... )
 	TEST_ASSERT( arg0 == 9223372036854775807ll );
 }
 
-void PassVariadinc_u64_Test0( const size_t s, ... )
+void PassVariadic_u64_Test0( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1452,7 +1452,7 @@ void PassVariadinc_u64_Test0( const size_t s, ... )
 	TEST_ASSERT( arg0 == 167854567ull );
 }
 
-void PassVariadinc_u64_Test1( const size_t s, ... )
+void PassVariadic_u64_Test1( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
@@ -1461,7 +1461,7 @@ void PassVariadinc_u64_Test1( const size_t s, ... )
 	TEST_ASSERT( arg0 == 98678987675645ull );
 }
 
-void PassVariadinc_u64_Test2( const size_t s, ... )
+void PassVariadic_u64_Test2( const size_t s, ... )
 {
 	va_list args;
 	va_start( args, s );
