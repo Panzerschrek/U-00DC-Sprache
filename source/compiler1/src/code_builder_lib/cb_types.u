@@ -181,6 +181,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 				: PrepareType( names_scope, function_context, function_type.return_type.try_deref() ) ) ),
 		.return_value_type= ValueType::Value,
 		.is_unsafe= function_type.is_unsafe,
+		.is_variadic= function_type.is_variadic,
 		.calling_convention= PrepareCallingConvention( names_scope, function_context, function_type.calling_convention ),
 	};
 
@@ -337,7 +338,12 @@ fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type, ICal
 		llvm_param_types.push_back( argument_passing.llvm_type );
 	}
 
-	return unsafe( LLVMFunctionType( ret_llvm_type, llvm_param_types.data(), u32(llvm_param_types.size()), LLVMBool_::False ) );
+	return
+		unsafe( LLVMFunctionType(
+			ret_llvm_type,
+			llvm_param_types.data(),
+			u32(llvm_param_types.size()),
+			( function_type.is_variadic ? LLVMBool_::True : LLVMBool_::False ) ) );
 }
 
 fn CodeBuilder::FunctionTypeToPointer( mut this, FunctionType mut function_type ) : FunctionPointerType

@@ -172,6 +172,7 @@ struct FunctionType
 
 	CallingConvention calling_convention = CallingConvention::Default;
 	bool is_unsafe= false;
+	bool is_variadic= false;
 
 	ParamReferences return_references;
 	ReturnInnerReferences return_inner_references; // References for inner reference tags.
@@ -903,6 +904,7 @@ public:
 		ValueType return_value_type;
 
 		bool is_unsafe;
+		bool is_variadic;
 		CallingConvention calling_convention;
 
 		struct Param

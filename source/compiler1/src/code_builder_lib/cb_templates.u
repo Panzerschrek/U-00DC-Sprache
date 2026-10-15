@@ -687,6 +687,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		.return_type( TemplateSignatureParam::Type() ),
 		.is_unsafe= signature_param.is_unsafe,
+		.is_variadic= signature_param.is_variadic,
 		.calling_convention= PrepareCallingConvention( names_scope, function_context, signature_param.calling_convention ),
 		.return_value_type= ValueType::Value,
 	};
@@ -1739,6 +1740,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 			if( given_function_type.return_value_type != function_type_param.return_value_type ||
 				given_function_type.is_unsafe != function_type_param.is_unsafe ||
+				given_function_type.is_variadic != function_type_param.is_variadic ||
 				given_function_type.calling_convention != function_type_param.calling_convention )
 			{
 				return false;
