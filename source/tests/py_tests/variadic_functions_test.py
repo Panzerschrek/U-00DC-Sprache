@@ -100,6 +100,50 @@ def VariadicFuntionTypeinfoFlag_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def ReferenceProtectionError_InVariadicFunctionCall_Test0():
+	c_program_text= """
+		fn Bar( u32 &mut x, ... ) unsafe call_conv( "C" );
+		fn Foo()
+		{
+			var u32 mut x= 0u;
+			unsafe( Bar( x, x ) ); // Error here. "x" is read for passing it as a variadic arg, but a mutable reference to it already exists (as non-variadic arg).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def ReferenceProtectionError_InVariadicFunctionCall_Test1():
+	c_program_text= """
+		fn Bar( u32 &mut x, ... ) unsafe call_conv( "C" );
+		fn Foo()
+		{
+			var u32 mut x= 0u;
+			unsafe( Bar( x, Inc( x ) ) ); // Error here. "x" is used for calculating a variadic arg, but a mutable reference to it already exists (as non-variadic arg).
+		}
+		fn Inc( u32& mut x ) : u32 { auto res= x; ++x; return res; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def ReferenceProtectionError_InVariadicFunctionCall_Test2():
+	c_program_text= """
+		fn Bar( u32& x, ... ) unsafe call_conv( "C" );
+		fn Foo()
+		{
+			var u32 mut x= 0u;
+			unsafe( Bar( x, Inc( x ) ) ); // Error here. "x" is used for calculating a variadic arg, but an immutable reference to it already exists (as non-variadic arg).
+		}
+		fn Inc( u32& mut x ) : u32 { auto res= x; ++x; return res; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
 def InvalidCallingConventionForVariadicFunction_Test0():
 	c_program_text= """
 		fn Foo( ... ) unsafe; // No calling convention specified - default is used, which is distinct from "C".

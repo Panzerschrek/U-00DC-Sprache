@@ -4498,6 +4498,8 @@ Value CodeBuilder::DoCallFunction(
 	for( size_t i= function_type.params.size(); i < arg_count; ++i )
 	{
 		const VariablePtr expr= BuildExpressionCodeEnsureVariable( *args[i], names_scope, function_context );
+		if( function_context.variables_state.HasOutgoingMutableNodes( expr ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), Synt::GetSrcLoc( *args[i] ), expr->name );
 
 		llvm::Value*& out_arg= llvm_args[i];
 
