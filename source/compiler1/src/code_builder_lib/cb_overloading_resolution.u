@@ -674,7 +674,7 @@ fn CodeBuilder::FetchMatchedOverloadedFunctions(
 		{
 			if( actual_args_corrected.size() > function_type.params.size() )
 			{
-				// Ignore variadic args above the total number of args in this function candidate.
+				// Ignore variadic args above the total number of params in this function candidate.
 				actual_args_corrected= actual_args_corrected.subrange_end(  function_type.params.size() );
 			}
 		}

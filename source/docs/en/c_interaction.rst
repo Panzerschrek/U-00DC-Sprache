@@ -78,7 +78,7 @@ For 32-bit Windows it's equivalent to ``stdcall`` calling convention, that is us
 ********************
 
 Ü allows calling external variadic functions (with variable number of arguments).
-A variadic function is declared with ``...`` at the end of its paramter list.
+A variadic function is declared with ``...`` at the end of its parameter list.
 Only ``unsafe`` functions with ``C`` calling convention can be variadic.
 Member functions, template functions, coroutines, lambdas can't be variadic.
 

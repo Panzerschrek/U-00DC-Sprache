@@ -4510,7 +4510,7 @@ Value CodeBuilder::DoCallFunction(
 			{
 				if( fundamental_type->fundamental_type == U_FundamentalType::void_ )
 				{
-					// Don't allow passing "void" as variadic arg. It has zero size and zero-sized types doesn't exist in C.
+					// Don't allow passing "void" as variadic arg. It has zero size and zero-sized types don't exist in C.
 					REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope.GetErrors(), call_src_loc );
 				}
 				else
