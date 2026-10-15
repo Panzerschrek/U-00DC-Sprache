@@ -4615,8 +4615,8 @@ fn CodeBuilder::DoCallFunction(
 	bool no_discard ) : Value
 {
 	var size_type total_args= preevaluated_args.size() + args.size();
-	if( ( function_type.is_variadic && total_args < function_type.params.size() ) ||
-		( !function_type.is_variadic && total_args != function_type.params.size() ) )
+	if( ( !function_type.is_variadic && total_args != function_type.params.size() ) ||
+		(  function_type.is_variadic && total_args <  function_type.params.size() ) )
 	{
 		REPORT_ERROR( InvalidFunctionArgumentCount, names_scope, src_loc, function_type.params.size(), total_args )
 		return ErrorValue();
@@ -4957,8 +4957,6 @@ fn CodeBuilder::DoCallFunction(
 		{
 			var Synt::Expression& arg_expression= args[i].deref();
 
-			var LLVMValueRef &mut out_arg= llvm_args[i];
-
 			var VariablePtr expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_expression );
 			if( function_context.references_graph.HasOutgoingMutableNodes( expr_ptr ) )
 			{
@@ -4966,6 +4964,8 @@ fn CodeBuilder::DoCallFunction(
 			}
 
 			var VariableLite expr= expr_ptr.lock_imut().deref();
+
+			var LLVMValueRef &mut out_arg= llvm_args[i];
 
 			if_var( &fundamental_type : expr.t.GetFundamentalType() )
 			{

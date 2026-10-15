@@ -3992,8 +3992,8 @@ Value CodeBuilder::CallFunctionValue(
 			function_context.has_non_constexpr_operations_inside= true; // Calling function, using pointer, is not constexpr. We can not garantee, that called function is constexpr.
 
 			// Call function pointer directly.
-			if( (  function_pointer->function_type.is_variadic && synt_args.size() <  function_pointer->function_type.params.size() ) ||
-				( !function_pointer->function_type.is_variadic && synt_args.size() != function_pointer->function_type.params.size() ) )
+			if( ( !function_pointer->function_type.is_variadic && synt_args.size() != function_pointer->function_type.params.size() ) ||
+				(  function_pointer->function_type.is_variadic && synt_args.size() <  function_pointer->function_type.params.size() ) )
 			{
 				REPORT_ERROR( InvalidFunctionArgumentCount, names_scope.GetErrors(), call_src_loc, synt_args.size(), function_pointer->function_type.params.size() );
 				return ErrorValue();
@@ -4498,7 +4498,7 @@ Value CodeBuilder::DoCallFunction(
 	llvm::SmallVector< std::pair< size_t, llvm::Attribute::AttrKind >, 6> variadic_arg_attributes;
 	if( function_type.is_variadic )
 	{
-		for( size_t i= function_type.params.size(); i < arg_count; ++i )
+		for( size_t i= function_type.params.size(); i < args.size(); ++i )
 		{
 			const VariablePtr expr= BuildExpressionCodeEnsureVariable( *args[i], names_scope, function_context );
 			if( function_context.variables_state.HasOutgoingMutableNodes( expr ) )
@@ -4692,7 +4692,7 @@ Value CodeBuilder::DoCallFunction(
 
 		for( const auto& arg_and_attribute : variadic_arg_attributes )
 		{
-			const auto param_attr_index= uint32_t( arg_and_attribute.first + (return_value_is_sret ? 1u : 0u ) );
+			const auto param_attr_index= uint32_t( arg_and_attribute.first + ( return_value_is_sret ? 1u : 0u ) );
 			call_instruction->addParamAttr( param_attr_index, arg_and_attribute.second );
 		}
 
