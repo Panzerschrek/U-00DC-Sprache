@@ -416,6 +416,7 @@ struct FunctionType
 	ust::box_nullable</Expression/> return_value_inner_references_expression;
 	ust::box_nullable</Expression/> calling_convention;
 	bool is_unsafe= false;
+	bool is_variadic= false;
 
 	fn IsAutoReturn( this ) : bool;
 }
