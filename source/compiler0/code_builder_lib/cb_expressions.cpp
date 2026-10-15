@@ -4544,6 +4544,9 @@ Value CodeBuilder::DoCallFunction(
 			}
 			else
 				REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope.GetErrors(), call_src_loc );
+
+			// Destroy unused temporary variables after each argument evaluation.
+			DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), call_src_loc );
 		}
 	}
 
