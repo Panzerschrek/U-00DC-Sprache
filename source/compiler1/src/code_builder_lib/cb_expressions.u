@@ -5014,6 +5014,9 @@ fn CodeBuilder::DoCallFunction(
 			{
 				REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope, Synt::GetSrcLoc( arg_expression ) )
 			}
+
+			// Destroy unused temporary variables after each arg evaluation.
+			DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 		}
 	}
 
