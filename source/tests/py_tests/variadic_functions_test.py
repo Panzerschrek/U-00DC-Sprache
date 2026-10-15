@@ -90,6 +90,16 @@ def VariadicFunctionAsTemplateSignatureParameter_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def VariadicFuntionTypeinfoFlag_Test0():
+	c_program_text= """
+		static_assert( !typeinfo</ ( fn() unsafe call_conv( "C" ) : i32 ) />.variadic );
+		static_assert( typeinfo</ ( fn( ... ) unsafe call_conv( "C" ) : i32 ) />.variadic );
+		static_assert( !typeinfo</ ( fn() unsafe call_conv( "C" ) : [ f32, 4 ] ) />.variadic );
+		static_assert( typeinfo</ ( fn( ... ) unsafe call_conv( "C" ) : [ f32, 4 ] ) />.variadic );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def InvalidCallingConventionForVariadicFunction_Test0():
 	c_program_text= """
 		fn Foo( ... ) unsafe; // No calling convention specified - default is used, which is distinct from "C".

@@ -290,6 +290,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 		add_bool_field( "return_value_is_reference", function_type.return_value_type != ValueType::Value );
 		add_bool_field( "return_value_is_mutable"  , function_type.return_value_type == ValueType::ReferenceMut );
 		add_bool_field( "unsafe"                   , function_type.unsafe );
+		add_bool_field( "variadic"                 , function_type.is_variadic );
 
 		add_reference_notation_field( "return_references", GetReturnReferencesConstant( function_type.return_references ) );
 		add_reference_notation_field( "return_inner_references", GetReturnInnerReferencesConstant( function_type.return_inner_references ) );
