@@ -244,6 +244,21 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		res.params.push_back( move(out_param) );
 	}
 
+	if( function_type.is_variadic )
+	{
+		if( res.calling_convention != CallingConvention::C )
+		{
+			REPORT_ERROR( InvalidCallingConventionForVariadicFunction, names_scope, function_type.src_loc, CallingConventionToString( res.calling_convention ) )
+		}
+
+		// Variadic functions should be unsafe.
+		// Otherwise one may pass incorrect number of arguments or arguments of invalid types.
+		if( !function_type.is_unsafe )
+		{
+			REPORT_ERROR( InvalidSafetyForVariadicFunction, names_scope, function_type.src_loc )
+		}
+	}
+
 	auto num_params= res.params.size();
 	if_var( &references_pollution_expression : function_type.references_pollution_expression )
 	{

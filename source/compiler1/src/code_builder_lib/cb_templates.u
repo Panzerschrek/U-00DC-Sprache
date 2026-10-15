@@ -212,6 +212,10 @@ fn CodeBuilder::PrepareFunctionTemplate(
 	{
 		REPORT_ERROR( VirtualForFunctionTemplate, names_scope, function_template_syntax_element.deref().src_loc, function_template_name )
 	}
+	if( syntax_element.function.deref().function_type.is_variadic )
+	{
+		REPORT_ERROR( VariadicFunctionTemplate, names_scope, function_template_syntax_element.deref().src_loc )
+	}
 
 	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params );
 
