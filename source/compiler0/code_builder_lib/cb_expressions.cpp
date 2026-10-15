@@ -4493,55 +4493,58 @@ Value CodeBuilder::DoCallFunction(
 		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), call_src_loc );
 	} // for args
 
-	// Process variadic args.
+	// Evaluate variadic args.
 	llvm::SmallVector< std::pair< size_t, llvm::Attribute::AttrKind >, 6> variadic_arg_attributes;
-	for( size_t i= function_type.params.size(); i < arg_count; ++i )
+	if( function_type.is_variadic )
 	{
-		const VariablePtr expr= BuildExpressionCodeEnsureVariable( *args[i], names_scope, function_context );
-		if( function_context.variables_state.HasOutgoingMutableNodes( expr ) )
-			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), Synt::GetSrcLoc( *args[i] ), expr->name );
-
-		llvm::Value*& out_arg= llvm_args[i];
-
-		if( const auto fundamental_type= expr->type.GetFundamentalType() )
+		for( size_t i= function_type.params.size(); i < arg_count; ++i )
 		{
-			if( fundamental_type->fundamental_type == U_FundamentalType::void_ )
+			const VariablePtr expr= BuildExpressionCodeEnsureVariable( *args[i], names_scope, function_context );
+			if( function_context.variables_state.HasOutgoingMutableNodes( expr ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), Synt::GetSrcLoc( *args[i] ), expr->name );
+
+			llvm::Value*& out_arg= llvm_args[i];
+
+			if( const auto fundamental_type= expr->type.GetFundamentalType() )
 			{
-				// Don't allow passing "void" as variadic arg. It has zero size and zero-sized types doesn't exist in C.
-				REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope.GetErrors(), call_src_loc );
+				if( fundamental_type->fundamental_type == U_FundamentalType::void_ )
+				{
+					// Don't allow passing "void" as variadic arg. It has zero size and zero-sized types doesn't exist in C.
+					REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope.GetErrors(), call_src_loc );
+				}
+				else
+				{
+					// Require "sext"/"zext" for args based on integer types.
+					if( IsSignedInteger( fundamental_type->fundamental_type ) )
+						variadic_arg_attributes.emplace_back( i, llvm::Attribute::SExt );
+					else if(
+						IsUnsignedInteger( fundamental_type->fundamental_type ) ||
+						IsChar( fundamental_type->fundamental_type ) ||
+						IsByte( fundamental_type->fundamental_type ) ||
+						fundamental_type->fundamental_type == U_FundamentalType::bool_ )
+						variadic_arg_attributes.emplace_back( i, llvm::Attribute::ZExt );
+
+					out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+
+					// "f32" variadic args are promoted to "f64".
+					if( fundamental_type->fundamental_type == U_FundamentalType::f32_ && !function_context.is_functionless_context )
+						out_arg= function_context.llvm_ir_builder.CreateFPExt( out_arg, fundamental_llvm_types_.f64_ );
+				}
+			}
+			else if( expr->type.GetRawPointerType() != nullptr || expr->type.GetFunctionPointerType() != nullptr )
+			{
+				// Require no "sext"/"zext" for pointer args.
+				out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+			}
+			else if( expr->type.GetEnumType() != nullptr )
+			{
+				// Require "zext" for enum args.
+				variadic_arg_attributes.emplace_back( i, llvm::Attribute::ZExt );
+				out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
 			}
 			else
-			{
-				// Require "sext"/"zext" for args based on integer types.
-				if( IsSignedInteger( fundamental_type->fundamental_type ) )
-					variadic_arg_attributes.emplace_back( i, llvm::Attribute::SExt );
-				else if(
-					IsUnsignedInteger( fundamental_type->fundamental_type ) ||
-					IsChar( fundamental_type->fundamental_type ) ||
-					IsByte( fundamental_type->fundamental_type ) ||
-					fundamental_type->fundamental_type == U_FundamentalType::bool_ )
-					variadic_arg_attributes.emplace_back( i, llvm::Attribute::ZExt );
-
-				out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
-
-				// "f32" variadic args are promoted to "f64".
-				if( fundamental_type->fundamental_type == U_FundamentalType::f32_ && !function_context.is_functionless_context )
-					out_arg= function_context.llvm_ir_builder.CreateFPExt( out_arg, fundamental_llvm_types_.f64_ );
-			}
+				REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope.GetErrors(), call_src_loc );
 		}
-		else if( expr->type.GetRawPointerType() != nullptr || expr->type.GetFunctionPointerType() != nullptr )
-		{
-			// Require no "sext"/"zext" for pointer args.
-			out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
-		}
-		else if( expr->type.GetEnumType() != nullptr )
-		{
-			// Require "zext" for enum args.
-			variadic_arg_attributes.emplace_back( i, llvm::Attribute::ZExt );
-			out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
-		}
-		else
-			REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope.GetErrors(), call_src_loc );
 	}
 
 	if( !EnsureTypeComplete( function_type.return_type ) )
