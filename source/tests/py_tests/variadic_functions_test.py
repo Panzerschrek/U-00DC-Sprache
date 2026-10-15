@@ -78,6 +78,18 @@ def VariadicAndNonVariadicFunctionTypesAreNotEqual_Test1():
 	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 5 ) )
 
 
+def VariadicFunctionAsTemplateSignatureParameter_Test0():
+	c_program_text= """
+		template</ type T /> struct IsVariadic</ ( fn() unsafe call_conv( "C" ) : T ) /> { var bool value= false; }
+		template</ type T /> struct IsVariadic</ ( fn( ... ) unsafe call_conv( "C" ) : T ) /> { var bool value= true; }
+		static_assert( !IsVariadic</ ( fn() unsafe call_conv( "C" ) : i32 ) />::value );
+		static_assert( IsVariadic</ ( fn( ... ) unsafe call_conv( "C" ) : i32 ) />::value );
+		static_assert( !IsVariadic</ ( fn() unsafe call_conv( "C" ) : [ f32, 4 ] ) />::value );
+		static_assert( IsVariadic</ ( fn( ... ) unsafe call_conv( "C" ) : [ f32, 4 ] ) />::value );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def InvalidCallingConventionForVariadicFunction_Test0():
 	c_program_text= """
 		fn Foo( ... ) unsafe; // No calling convention specified - default is used, which is distinct from "C".

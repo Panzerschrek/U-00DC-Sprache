@@ -928,6 +928,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 
 			if( !(
 				given_function_type.unsafe == function_param.is_unsafe &&
+				given_function_type.is_variadic == function_param.is_variadic &&
 				given_function_type.calling_convention == function_param.calling_convention &&
 				given_function_type.return_value_type == function_param.return_value_type &&
 				MatchTemplateArg( template_params, args_names_scope, given_function_type.return_type, *function_param.return_type ) &&
