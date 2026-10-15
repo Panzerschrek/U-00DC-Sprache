@@ -29,7 +29,6 @@ The tool has a lot of limitations, since C and Ü are pretty different languages
 
 * Functions with invalid for Ü names are skipped, this includes functions starting with underscore or having name which is a keyword in Ü.
 * Other names (types, variables, fields, etc.) are renamed if their original name isn't a valid identifier in Ü or if it may create a name conflict with some special names used by C++ header converter.
-* Variadic functions aren't fully supported - variadic parameters are removed.
 * Contents of unions is replaced with simple byte arrays - Ü doesn't support C-style unions.
 * Contents of structs having bit-fields is replaced with simple byte arrays - Ü doesn't support bit-fields.
 * `size_t` isn't translated like `size_type` in Ü, since in C it's just a type alias for some fundamental integer type.

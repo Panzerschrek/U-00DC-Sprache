@@ -21,7 +21,6 @@ But there are still a lot of limitations caused by differences between C and Ü:
 * Functions with names matching an Ü keyword are ignored - they can't be used.
   Also functions starting with ``_`` are ignored, since in Ü identifiers can't start with ``_``.
   Some functions (with names conflicting with special names used by C++ header converter) are also ignored.
-* Functions with variadic arguments in Ü aren't supported, C variadic functions become non-variadic in Ü.
 * C built-in types are mapped to Ü types (where it's possible).
 * Structs are translated properly as Ü structs with ``ordered`` marker.
 * C unions and structs with bit-fields are translated as structs with single field - array of ``byte``-type elements, so that this struct matches original union/struct size and alignment.
