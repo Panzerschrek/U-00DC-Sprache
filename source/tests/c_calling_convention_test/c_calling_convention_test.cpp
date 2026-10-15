@@ -1351,7 +1351,7 @@ void PassVariadic_i32_Test4( const size_t s, ... )
 	va_start( args, s );
 	const int32_t arg0= va_arg( args, int32_t );
 	va_end( args );
-	TEST_ASSERT( arg0 == -2147483648 );
+	TEST_ASSERT( arg0 == -2147483648ll );
 }
 
 void PassVariadic_i32_Test5( const size_t s, ... )
