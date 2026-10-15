@@ -253,6 +253,7 @@ PROCESS_ERROR( UnsupportedVariadicArgumentType, "Unsupported variadic argument t
 PROCESS_ERROR( VariadicFunctionTemplate, "Variadic function templates are not allowed." )
 PROCESS_ERROR( VariadicLambda, "Variadic lambdas are not allowed." )
 PROCESS_ERROR( VariadicCoroutine, "Variadic coroutines are not allowed." )
+PROCESS_ERROR( VariadicMemberFunction, "Variadic function within class are not allowed." )
 
 // Unsafe
 PROCESS_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, "Calling unsafe function outside unsafe block or unsafe expression." )

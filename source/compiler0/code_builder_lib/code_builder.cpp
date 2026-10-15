@@ -1338,6 +1338,14 @@ size_t CodeBuilder::PrepareFunction(
 			REPORT_ERROR( UselessNodiscardForMethod, names_scope.GetErrors(), func.src_loc );
 	}
 
+	// Check variadic functions.
+	if( func.type.is_variadic )
+	{
+		// Don't allow member functions to be variadic, since it may create mess in overloading resolution.
+		if( base_class != nullptr )
+			REPORT_ERROR( VariadicMemberFunction, names_scope.GetErrors(), func.src_loc );
+	}
+
 	if( FunctionVariable* const prev_function= GetFunctionWithSameType( func_variable.type, functions_set ) )
 	{
 		if( prev_function->syntax_element != nullptr )

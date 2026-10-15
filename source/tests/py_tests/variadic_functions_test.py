@@ -267,3 +267,51 @@ def VariadicCoroutine_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "VariadicCoroutine", 2 ) )
+
+
+def VariadicMemberFunction_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn Foo( ... ) unsafe call_conv( "C" ); // Variadic non-this-call function.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariadicMemberFunction", 4 ) )
+
+
+def VariadicMemberFunction_Test1():
+	c_program_text= """
+		class S
+		{
+			fn Foo( this, ... ) unsafe call_conv( "C" ); // Variadic this-call function.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariadicMemberFunction", 4 ) )
+
+
+def VariadicMemberFunction_Test2():
+	c_program_text= """
+		class SomeInterface interface
+		{
+			fn virtual pure Foo( this, ... ) unsafe call_conv( "C" ); // Variadic this-call virtual function.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariadicMemberFunction", 4 ) )
+
+
+def VariadicMemberFunction_Test3():
+	c_program_text= """
+		struct S
+		{
+			op()( mut this,  ... ) unsafe call_conv( "C" ); // Variadic operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariadicMemberFunction", 4 ) )
