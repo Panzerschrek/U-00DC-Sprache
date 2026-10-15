@@ -29,6 +29,32 @@ def VariadicFunctionDeclaration_Test3():
 	tests_lib.build_program( c_program_text )
 
 
+def VariadicFunctionDeclaration_Test4():
+	c_program_text= """
+		namespace Some
+		{
+			namespace Deep
+			{
+				namespace Scope
+				{
+					// It's possible to declare a vararg function in a namespace, even if its' useless.
+					fn Foo( ... ) unsafe call_conv( "C" ) : i32;
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariadicFunctionDeclaration_Test5():
+	c_program_text= """
+		// "nomangle" may or may not be used for variadic functions, even if such functions are near to useless without "nomangle".
+		fn Foo( ... ) unsafe call_conv( "C" );
+		fn nomangle Bar( ... ) unsafe call_conv( "C" );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def VariadicFunctionCall_Test0():
 	c_program_text= """
 		fn Bar( ... ) unsafe call_conv( "C" ) : i32 { return 563; }
@@ -88,6 +114,22 @@ def VariadicFunctionAsTemplateSignatureParameter_Test0():
 		static_assert( IsVariadic</ ( fn( ... ) unsafe call_conv( "C" ) : [ f32, 4 ] ) />::value );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def VariadicFunctionAsTemplateSignatureParameter_Test1():
+	c_program_text= """
+		template</ type T /> fn IsVariadic( ( fn() unsafe call_conv( "C" ) : T ) ptr ) : bool { return false; }
+		template</ type T /> fn IsVariadic( ( fn( ... ) unsafe call_conv( "C" ) : T ) ptr ) : bool { return true; }
+		fn Foo()
+		{
+			halt if( IsVariadic( Bar ) );
+			halt if( !IsVariadic( Baz ) );
+		}
+		fn Bar() unsafe call_conv( "C" ) : f64;
+		fn Baz( ... ) unsafe call_conv( "C" ) : f64;
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def VariadicFuntionTypeinfoFlag_Test0():
