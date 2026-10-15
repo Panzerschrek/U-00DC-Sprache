@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <cstdarg>
 #include <iostream>
 
 #ifdef __GNUC__
