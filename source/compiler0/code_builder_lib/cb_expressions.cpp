@@ -3992,7 +3992,8 @@ Value CodeBuilder::CallFunctionValue(
 			function_context.has_non_constexpr_operations_inside= true; // Calling function, using pointer, is not constexpr. We can not garantee, that called function is constexpr.
 
 			// Call function pointer directly.
-			if( function_pointer->function_type.params.size() != synt_args.size() )
+			if( (  function_pointer->function_type.is_variadic && synt_args.size() <  function_pointer->function_type.params.size() ) ||
+				( !function_pointer->function_type.is_variadic && synt_args.size() != function_pointer->function_type.params.size() ) )
 			{
 				REPORT_ERROR( InvalidFunctionArgumentCount, names_scope.GetErrors(), call_src_loc, synt_args.size(), function_pointer->function_type.params.size() );
 				return ErrorValue();

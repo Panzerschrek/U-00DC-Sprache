@@ -81,6 +81,20 @@ def VariadicFunctionCall_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def VariadicFunctionCall_Test2():
+	c_program_text= """
+		fn Bar( ... ) unsafe call_conv( "C" ) : f32 { return 67.56f; }
+		fn Foo()
+		{
+			var ( fn( ... ) unsafe call_conv( "C" ) : f32 ) mut ptr= Bar;
+			var f32 ret= unsafe( ptr() ); // Perform call to a variadic function using function pointer.
+			halt if( ret != 67.56f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def VariadicAndNonVariadicFunctionTypesAreNotEqual_Test0():
 	c_program_text= """
 		fn Foo( ... ) unsafe call_conv( "C" );

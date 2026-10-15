@@ -957,7 +957,11 @@ fn nomangle main() call_conv( "C" ) : i32
 		PassVariadic_i32_Test4( 0s, i32( -2147483648 ) );
 		PassVariadic_i32_Test5( 0s, i32( 2147483647 ) );
 		PassVariadic_u32_Test0( 0s, u32(0) );
-		PassVariadic_u32_Test1( 1s, u32(2521) );
+		{
+			// Test calling a variadic function via a pointer.
+			var ( fn ( size_type s, ... ) unsafe call_conv( "C" ) ) mut ptr= PassVariadic_u32_Test1;
+			ptr( 1s, u32(2521) );
+		}
 		PassVariadic_u32_Test2( 2s, u32(1373474149) );
 		PassVariadic_u32_Test3( 3s, u32(4294967295) );
 		PassVariadic_i64_Test0( 0s, i64( 263234 ) );
