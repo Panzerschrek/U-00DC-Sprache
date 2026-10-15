@@ -31,26 +31,51 @@ def VariadicFunctionDeclaration_Test3():
 
 def VariadicFunctionCall_Test0():
 	c_program_text= """
-		fn Bar( ... ) unsafe call_conv( "C" ) : i32;
+		fn Bar( ... ) unsafe call_conv( "C" ) : i32 { return 563; }
 		fn Foo()
 		{
 			unsafe( Bar() ); // Pass zero variadic args.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def VariadicFunctionCall_Test1():
 	c_program_text= """
-		fn Bar( ... ) unsafe call_conv( "C" ) : i32;
+		fn Bar( ... ) unsafe call_conv( "C" ) : i32 { return 77; }
 		fn Foo()
 		{
 			var f32 mut f= 0.25f;
 			unsafe( Bar( 67u, Baz(), f ) ); // Pass several variadic args.
 		}
-		fn Baz() : u64;
+		fn Baz() : u64 { return 56789034567u; }
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def VariadicAndNonVariadicFunctionTypesAreNotEqual_Test0():
+	c_program_text= """
+		fn Foo( ... ) unsafe call_conv( "C" );
+		fn Bar() unsafe call_conv( "C" );
+		static_assert( !same_type</ typeof( Foo ), typeof( Bar ) /> );
+		static_assert( !same_type</ ( fn( i32 x ) unsafe call_conv( "C" ) : i32 ), ( fn( i32 x, ... ) unsafe call_conv( "C" ) : i32 ) /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariadicAndNonVariadicFunctionTypesAreNotEqual_Test1():
+	c_program_text= """
+		fn Foo( ... ) unsafe call_conv( "C" );
+		fn Bar() unsafe call_conv( "C" );
+		var ( fn() unsafe call_conv( "C" ) ) foo_ptr( Foo );
+		var ( fn( ... ) unsafe call_conv( "C" ) ) bar_ptr( Bar );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) >= 2 )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 4 ) )
+	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 5 ) )
 
 
 def InvalidCallingConventionForVariadicFunction_Test0():

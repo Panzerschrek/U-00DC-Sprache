@@ -39,6 +39,8 @@ U_TEST( BasicFunctionManglingTest )
 
 		fn Int128Func( i128 x ) {}
 		fn Uint128Func( u128 x ) {}
+
+		fn FooVariadic( f32 x, i32 y, ... ) unsafe call_conv( "C" ) {} // Variadic functions are mangled as regular ones.
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
@@ -70,6 +72,8 @@ U_TEST( BasicFunctionManglingTest )
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Int128Func@@YAX_L@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Uint128Func@@YAX_M@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?FooVariadic@@YBXMH@Z" ) != nullptr );
 }
 
 U_TEST( BasicGlobalVariablesManglingTest )
