@@ -942,50 +942,53 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	TestPassingValuesToUCode();
 
-	PassVariadic_Test0();
-	PassVariadic_i8_Test0( 0s, i8(13) );
-	PassVariadic_i8_Test1( 0s, i8(121) );
-	PassVariadic_i8_Test2( 0s, i8(-105) );
-	PassVariadic_u8_Test0( 0s, u8(87) );
-	PassVariadic_u8_Test1( 0s, u8(234) );
-	PassVariadic_i32_Test0( 0s, 7i32 );
-	PassVariadic_i32_Test1( 0s, 108i32 );
-	PassVariadic_i32_Test2( 0s, -5356237i32 );
-	PassVariadic_i32_Test3( 0s, 20636743i32 );
-	PassVariadic_i32_Test4( 0s, i32( -2147483648 ) );
-	PassVariadic_i32_Test5( 0s, i32( 2147483647 ) );
-	PassVariadic_u32_Test0( 0s, u32(0) );
-	PassVariadic_u32_Test1( 1s, u32(2521) );
-	PassVariadic_u32_Test2( 2s, u32(1373474149) );
-	PassVariadic_u32_Test3( 3s, u32(4294967295) );
-	PassVariadic_i64_Test0( 0s, i64( 263234 ) );
-	PassVariadic_i64_Test1( 0s, i64( -145677874 ) );
-	PassVariadic_i64_Test2( 0s, i64( 78435685435467 ) );
-	PassVariadic_i64_Test3( 0s, i64( -9223372036854775808 ) );
-	PassVariadic_i64_Test4( 0s, i64( 9223372036854775807 ) );
-	PassVariadic_u64_Test0( 0s, u64( 167854567 ) );
-	PassVariadic_u64_Test1( 0s, u64( 98678987675645 ) );
-	PassVariadic_u64_Test2( 0s, u64( 18446744073709551615 ) );
-	PassVariadic_f32_Test0( 0s, 0.56f );
-	PassVariadic_f32_Test1( 0s, -12466.2636f );
-	PassVariadic_f32_Test2( 0s, 53624734734734734747e5f );
-	PassVariadic_f64_Test0( 0s, 0.0222526 );
-	PassVariadic_f64_Test1( 0s, -12274667.26336 );
-	PassVariadic_f64_Test2( 0s, 1536247343377347347e51 );
+	unsafe
 	{
-		var i32 mut x= 75788524;
-		PassVariadic_i32_ptr_Test0( 0s, $<(x) );
+		PassVariadic_Test0();
+		PassVariadic_i8_Test0( 0s, i8(13) );
+		PassVariadic_i8_Test1( 0s, i8(121) );
+		PassVariadic_i8_Test2( 0s, i8(-105) );
+		PassVariadic_u8_Test0( 0s, u8(87) );
+		PassVariadic_u8_Test1( 0s, u8(234) );
+		PassVariadic_i32_Test0( 0s, 7i32 );
+		PassVariadic_i32_Test1( 0s, 108i32 );
+		PassVariadic_i32_Test2( 0s, -5356237i32 );
+		PassVariadic_i32_Test3( 0s, 20636743i32 );
+		PassVariadic_i32_Test4( 0s, i32( -2147483648 ) );
+		PassVariadic_i32_Test5( 0s, i32( 2147483647 ) );
+		PassVariadic_u32_Test0( 0s, u32(0) );
+		PassVariadic_u32_Test1( 1s, u32(2521) );
+		PassVariadic_u32_Test2( 2s, u32(1373474149) );
+		PassVariadic_u32_Test3( 3s, u32(4294967295) );
+		PassVariadic_i64_Test0( 0s, i64( 263234 ) );
+		PassVariadic_i64_Test1( 0s, i64( -145677874 ) );
+		PassVariadic_i64_Test2( 0s, i64( 78435685435467 ) );
+		PassVariadic_i64_Test3( 0s, i64( -9223372036854775808 ) );
+		PassVariadic_i64_Test4( 0s, i64( 9223372036854775807 ) );
+		PassVariadic_u64_Test0( 0s, u64( 167854567 ) );
+		PassVariadic_u64_Test1( 0s, u64( 98678987675645 ) );
+		PassVariadic_u64_Test2( 0s, u64( 18446744073709551615 ) );
+		PassVariadic_f32_Test0( 0s, 0.56f );
+		PassVariadic_f32_Test1( 0s, -12466.2636f );
+		PassVariadic_f32_Test2( 0s, 53624734734734734747e5f );
+		PassVariadic_f64_Test0( 0s, 0.0222526 );
+		PassVariadic_f64_Test1( 0s, -12274667.26336 );
+		PassVariadic_f64_Test2( 0s, 1536247343377347347e51 );
+		{
+			var i32 mut x= 75788524;
+			PassVariadic_i32_ptr_Test0( 0s, $<(x) );
+		}
+		{
+			var f64 mut x= -675578.3475483;
+			PassVariadic_f64_ptr_Test0( 0s, $<(x) );
+		}
+		{
+			var u64 mut x= 65678904565678923u;
+			PassVariadic_u64_ptr_Test0( 0s, $<(x) );
+		}
+		PassVariadic_fn_ptr_Test0( 0s, Doubler );
+		PassVariadinc_u16_i32_u64_f32_f64_size_type_bool_u8( 0s, 675u16, -3643265i32, 678945676593245u64, 67.25f, 6789435.23474, 4563456s, true, 185u8 );
 	}
-	{
-		var f64 mut x= -675578.3475483;
-		PassVariadic_f64_ptr_Test0( 0s, $<(x) );
-	}
-	{
-		var u64 mut x= 65678904565678923u;
-		PassVariadic_u64_ptr_Test0( 0s, $<(x) );
-	}
-	PassVariadic_fn_ptr_Test0( 0s, Doubler );
-	PassVariadinc_u16_i32_u64_f32_f64_size_type_bool_u8( 0s, 675u16, -3643265i32, 678945676593245u64, 67.25f, 6789435.23474, 4563456s, true, 185u8 );
 
 	halt if( Get_i8_Test0() != 117i8 );
 	halt if( Get_i8_Test1() != -24i8 );
@@ -1910,41 +1913,41 @@ fn nomangle Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( u32 a, u32 b, u32 c, u32 d
 fn nomangle Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( f64 a, f64 b, f64 c, f64 d, f64 e, f64 f, f64 g, f64 h, tup[ u64, f64 ] i ) call_conv( "C" );
 fn nomangle Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( f64 a, f64 b, f64 c, f64 d, f64 e, f64 f, f64 g, tup[ f64, f64 ] h ) call_conv( "C" );
 
-fn nomangle PassVariadic_Test0( ... ) call_conv( "C" );
-fn nomangle PassVariadic_i8_Test0( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i8_Test1( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i8_Test2( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_u8_Test0( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_u8_Test1( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i32_Test0( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i32_Test1( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i32_Test2( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i32_Test3( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i32_Test4( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i32_Test5( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_u32_Test0( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_u32_Test1( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_u32_Test2( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_u32_Test3( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i64_Test0( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i64_Test1( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i64_Test2( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i64_Test3( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i64_Test4( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_u64_Test0( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_u64_Test1( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_u64_Test2( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_f32_Test0( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_f32_Test1( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_f32_Test2( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_f64_Test0( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_f64_Test1( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_f64_Test2( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_i32_ptr_Test0( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_f64_ptr_Test0( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_u64_ptr_Test0( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadic_fn_ptr_Test0( size_type s, ... ) call_conv( "C" );
-fn nomangle PassVariadinc_u16_i32_u64_f32_f64_size_type_bool_u8( size_type s, ... ) call_conv( "C" );
+fn nomangle PassVariadic_Test0( ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i8_Test0( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i8_Test1( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i8_Test2( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_u8_Test0( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_u8_Test1( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i32_Test0( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i32_Test1( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i32_Test2( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i32_Test3( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i32_Test4( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i32_Test5( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_u32_Test0( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_u32_Test1( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_u32_Test2( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_u32_Test3( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i64_Test0( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i64_Test1( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i64_Test2( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i64_Test3( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i64_Test4( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_u64_Test0( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_u64_Test1( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_u64_Test2( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_f32_Test0( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_f32_Test1( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_f32_Test2( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_f64_Test0( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_f64_Test1( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_f64_Test2( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_i32_ptr_Test0( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_f64_ptr_Test0( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_u64_ptr_Test0( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadic_fn_ptr_Test0( size_type s, ... ) unsafe call_conv( "C" );
+fn nomangle PassVariadinc_u16_i32_u64_f32_f64_size_type_bool_u8( size_type s, ... ) unsafe call_conv( "C" );
 
 fn nomangle Get_i8_Test0() call_conv( "C" ) : i8;
 fn nomangle Get_i8_Test1() call_conv( "C" ) : i8;
