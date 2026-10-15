@@ -312,6 +312,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( same_type</ FunctionTypedefNoProto, fn() unsafe call_conv("C") : i32 /> );
 
 	static_assert( typeinfo</VariadicFuncTypedef/>.is_function_pointer );
+	static_assert( typeinfo</VariadicFuncTypedef/>.variadic );
 	static_assert( same_type</ VariadicFuncTypedef, fn( $(char8) arg0, $(char8) arg1, ... ) unsafe call_conv("C") : f32 /> );
 
 	// void* should be translated as $(byte8)
