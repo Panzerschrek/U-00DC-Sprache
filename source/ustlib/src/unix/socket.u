@@ -142,7 +142,7 @@ fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6
 
 fn is_socket_nonblocking( native_socket_fd s ) : io_result</bool/>
 {
-	var i32 flags= unsafe( ::fcntl( s, F_GETFL, 0 ) );
+	var i32 flags= unsafe( ::fcntl( s, F_GETFL ) );
 
 	if( flags == -1 )
 	{
@@ -156,7 +156,7 @@ fn set_socket_nonblocking( native_socket_fd s, bool nonblocking ) : io_result</v
 {
 	unsafe
 	{
-		var i32 mut flags= ::fcntl( s, F_GETFL, 0 );
+		var i32 mut flags= ::fcntl( s, F_GETFL );
 
 		if( flags == -1 )
 		{

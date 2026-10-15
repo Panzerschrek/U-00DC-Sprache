@@ -76,7 +76,7 @@ fn SetPipeEndNonblocking( ust::native_file_handle h ) unsafe
 {
 	unsafe
 	{
-		var i32 mut flags= ::fcntl( h, F_GETFL, 0 );
+		var i32 mut flags= ::fcntl( h, F_GETFL );
 		halt if( flags == -1 );
 
 		flags |= O_NONBLOCK;
