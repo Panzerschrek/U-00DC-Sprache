@@ -4950,6 +4950,7 @@ fn CodeBuilder::DoCallFunction(
 	}
 
 	// Evaluate variadic args.
+	var ust::vector</ tup[ size_type, u32 ] /> mut variadic_arg_attributes;
 	if( function_type.is_variadic )
 	{
 		for( auto mut i= function_type.params.size(); i < args.size(); ++i )
@@ -4975,6 +4976,20 @@ fn CodeBuilder::DoCallFunction(
 				}
 				else
 				{
+					// Require "sext"/"zext" for args based on integer types.
+					if( IsSignedInteger( fundamental_type.fundamental_type ) )
+					{
+						variadic_arg_attributes.push_back( ust::make_tuple( i, GetAttributeKindByName("signext") ) );
+					}
+					else if(
+						IsUnsignedInteger( fundamental_type.fundamental_type ) ||
+						IsChar( fundamental_type.fundamental_type ) ||
+						IsByte( fundamental_type.fundamental_type ) ||
+						fundamental_type.fundamental_type == U_FundamentalType::bool_ )
+					{
+						variadic_arg_attributes.push_back( ust::make_tuple( i, GetAttributeKindByName("zeroext") ) );
+					}
+
 					out_arg= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 
 					// "f32" variadic args are promoted to "f64".
@@ -4986,10 +5001,13 @@ fn CodeBuilder::DoCallFunction(
 			}
 			else if( !expr.t.GetRawPointerType().empty() || !expr.t.GetFunctionPointerType().empty() )
 			{
+				// Require no "sext"/"zext" for pointer args.
 				out_arg= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 			}
 			else if( !expr.t.GetEnumType().empty() )
 			{
+				// Require "zext" for enum args.
+				variadic_arg_attributes.push_back( ust::make_tuple( i, GetAttributeKindByName("zeroext") ) );
 				out_arg= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 			}
 			else
@@ -5164,6 +5182,13 @@ fn CodeBuilder::DoCallFunction(
 					unsafe( LLVMAddCallSiteAttribute( call_result, llvm_param_n, attr ) );
 				},
 			}
+		}
+
+		foreach( &arg_and_attribute : variadic_arg_attributes )
+		{
+			var u32 llvm_param_n= LLVMAttributeFirstParamIndex + ( return_value_is_sret ? 1u : 0u ) + u32( arg_and_attribute[0] );
+			auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, arg_and_attribute[1], 0u64 ) );
+			unsafe( LLVMAddCallSiteAttribute( call_result, llvm_param_n, attr ) );
 		}
 
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
