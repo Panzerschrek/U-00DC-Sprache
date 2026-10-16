@@ -62,6 +62,8 @@ U_TEST( FunctionsParametersManglingTest )
 		fn Foo( CustomType t ) {}
 		fn Foo( CustomType &mut t ) {}
 		fn Foo( ArrayType &mut a ) {}
+
+		fn FooVariadic( f32 x, i32 y, ... ) unsafe call_conv( "C" ) {} // Variadic functions are mangled as regular ones.
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
@@ -77,6 +79,7 @@ U_TEST( FunctionsParametersManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Foo10CustomType" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooR10CustomType" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooRA55_i" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z11FooVariadicfi" ) != nullptr );
 }
 
 U_TEST( VoidParamManglingTest )

@@ -1165,6 +1165,20 @@ U_TEST( LLVMFunctionAttrs_ForByValThis_Test1 )
 	U_TEST_ASSERT( !bar->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by value.
 }
 
+U_TEST( LLVMFunctionAttrsTest_VariadicFunction )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( ... ) unsafe call_conv( "C" ) {}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const function= module->getFunction( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function->isVarArg() );
+}
+
 } // namespace
 
 } // namespace U

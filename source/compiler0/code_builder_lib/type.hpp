@@ -233,6 +233,7 @@ public:
 	Type return_type;
 	ValueType return_value_type= ValueType::Value;
 	bool unsafe= false;
+	bool is_variadic= false;
 	CallingConvention calling_convention= CallingConvention::Default;
 
 	// Tags of returned reference.

@@ -37,6 +37,11 @@ void Function_UnsizedArrayArg( int arr[] )
 	(void)arr;
 }
 
+void Function_Variadic( int count, ... )
+{
+	(void)count;
+}
+
 int Function_RetVal()
 {
 	return 0;
@@ -133,18 +138,6 @@ __declspec(dllexport) int SomeDllExportedFunction(void)
 	return 34;
 }
 #endif
-
-int VariadicFunc( int x, const char*  s, ...)
-{
-	int len= 0;
-	while(s[0] != '\0')
-	{
-		++s;
-		++len;
-	}
-
-	return x * len;
-}
 
 void ArrayArg( int arg[4] )
 {

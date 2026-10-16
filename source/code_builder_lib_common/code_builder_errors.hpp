@@ -9,7 +9,7 @@
 namespace U
 {
 
-enum class CodeBuilderErrorCode : uint8_t // Make uint16_t if 255 values will be not enough.
+enum class CodeBuilderErrorCode : uint16_t
 {
 	// WARNING! Values of this enum must be equal to same values in Ü compiler1.
 	#define PROCESS_ERROR( Code, Message ) Code,

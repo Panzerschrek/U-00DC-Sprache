@@ -68,6 +68,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		var [ f64, 4 ] mut double_arr= zero_init;
 		Function_SizedArrayArg( $<( double_arr[0] ) ); // Sized array argument should be translated as raw pointer.
 		Function_UnsizedArrayArg( r1 ); // Unsized array argument should be translated as raw pointer.
+		Function_Variadic( 4, 111, 222, 333, 444 );
 		Function_UnnamedArgs( 0, 0.0f, 0.0 );
 		DuplicatedProto(0);
 
@@ -288,11 +289,6 @@ fn nomangle main() call_conv( "C" ) : i32
 		var TypedefStructWithSameNameForwardDeclaration s{ .contents= zero_init };
 	}
 
-	{
-		auto x= unsafe( VariadicFunc( 5, $<( cast_mut( "Some string\0"[0] ) ) ) );
-		halt if( x != 55 );
-	}
-
 	unsafe
 	{
 		var [ i32, 4 ] mut arr= zero_init;
@@ -314,6 +310,10 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Should translate type alias for function pointer with no information about params.
 	static_assert( typeinfo</FunctionTypedefNoProto/>.is_function_pointer );
 	static_assert( same_type</ FunctionTypedefNoProto, fn() unsafe call_conv("C") : i32 /> );
+
+	static_assert( typeinfo</VariadicFuncTypedef/>.is_function_pointer );
+	static_assert( typeinfo</VariadicFuncTypedef/>.variadic );
+	static_assert( same_type</ VariadicFuncTypedef, fn( $(char8) arg0, $(char8) arg1, ... ) unsafe call_conv("C") : f32 /> );
 
 	// void* should be translated as $(byte8)
 	unsafe

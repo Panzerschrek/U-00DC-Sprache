@@ -393,6 +393,13 @@ bool CodeBuilder::ApplyOverloadedFunction(
 	{
 		const FunctionType& set_function_type= set_function.type;
 
+		if( function_type.is_variadic | set_function_type.is_variadic )
+		{
+			// Don't allow overloading variadic functions, since this may create mess in overloading resolution.
+			REPORT_ERROR( CouldNotOverloadFunction, errors_container, src_loc );
+			return false;
+		}
+
 		// If argument count differs - allow overloading.
 		// SPRACHE_TODO - handle default arguments.
 		if( function_type.params.size() != set_function_type.params.size() )
@@ -551,6 +558,12 @@ void CodeBuilder::FetchMatchedOverloadedFunctions(
 			// In case of static function call via "this" compare actual args without "this".
 			actual_args_begin= actual_args.data() + 1u;
 			actial_arg_count= actual_args.size() - 1u;
+		}
+		else if( function_type.is_variadic )
+		{
+			actual_args_begin= actual_args.data();
+			// Ignore variadic args above the total number of params in this function candidate.
+			actial_arg_count= std::min( actual_args.size(), function.type.params.size() );
 		}
 		else
 		{

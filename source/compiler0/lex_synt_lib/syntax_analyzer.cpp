@@ -1575,12 +1575,20 @@ FunctionType SyntaxAnalyzer::ParseFunctionType()
 			break;
 		}
 
+		if( it_->type == Lexem::Type::Ellipsis )
+		{
+			result.is_variadic= true;
+			NextLexem();
+			ExpectLexem( Lexem::Type::BracketRight );
+			break;
+		}
+
 		result.params.push_back( ParseFunctionParam() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
 			NextLexem();
-			// Disallov constructions, like "fn f( a : int, ){}"
+			// Forbid constructions like "fn f( a : int, ){}".
 			if( it_->type == Lexem::Type::BracketRight )
 				PushErrorMessage();
 		}
@@ -1726,12 +1734,20 @@ Lambda SyntaxAnalyzer::ParseLambda()
 			break;
 		}
 
+		if( it_->type == Lexem::Type::Ellipsis )
+		{
+			result.function.type.is_variadic= true;
+			NextLexem();
+			ExpectLexem( Lexem::Type::BracketRight );
+			break;
+		}
+
 		result.function.type.params.push_back( ParseFunctionParam() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
 			NextLexem();
-			// Disallov constructions, like "( i32 a, ){}"
+			// Forbid constructions like "( i32 a, ){}".
 			if( it_->type == Lexem::Type::BracketRight )
 				PushErrorMessage();
 		}
@@ -3896,7 +3912,7 @@ Function SyntaxAnalyzer::ParseFunction()
 		if( it_->type == Lexem::Type::Comma )
 		{
 			NextLexem();
-			// Disallov constructions, like "fn f( mut this, ){}"
+			// Forbid constructions like "fn f( mut this, ){}".
 			if( it_->type == Lexem::Type::BracketRight )
 				PushErrorMessage();
 		}
@@ -3919,12 +3935,20 @@ Function SyntaxAnalyzer::ParseFunction()
 			break;
 		}
 
+		if( it_->type == Lexem::Type::Ellipsis )
+		{
+			result.type.is_variadic= true;
+			NextLexem();
+			ExpectLexem( Lexem::Type::BracketRight );
+			break;
+		}
+
 		params.push_back( ParseFunctionParam() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
 			NextLexem();
-			// Disallov constructions, like "fn f( a : int, ){}"
+			// Forbid constructions like "fn f( a : int, ){}".
 			if( it_->type == Lexem::Type::BracketRight )
 				PushErrorMessage();
 		}

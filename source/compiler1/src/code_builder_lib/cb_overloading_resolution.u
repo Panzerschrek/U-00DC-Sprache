@@ -511,6 +511,13 @@ fn CodeBuilder::ApplyOverloadedFunction(
 
 			auto& set_function_type= set_function.t;
 
+			if( function_type.is_variadic | set_function_type.is_variadic )
+			{
+				// Don't allow overloading variadic functions, since this may create mess in overloading resolution.
+				REPORT_ERROR( CouldNotOverloadFunction, names_scope, src_loc )
+				return false;
+			}
+
 			// If argument count differs - allow overloading.
 			// SPRACHE_TODO - handle default arguments.
 			if( function_type.params.size() != set_function_type.params.size() )
@@ -663,6 +670,14 @@ fn CodeBuilder::FetchMatchedOverloadedFunctions(
 		{
 			actual_args_corrected.drop_front();
 		}
+		else if( function_type.is_variadic )
+		{
+			if( actual_args_corrected.size() > function_type.params.size() )
+			{
+				// Ignore variadic args above the total number of params in this function candidate.
+				actual_args_corrected= actual_args_corrected.subrange_end(  function_type.params.size() );
+			}
+		}
 
 		if( function_type.params.size() != actual_args_corrected.size() )
 		{
@@ -752,6 +767,11 @@ fn CodeBuilder::SelectOverloadedFunction(
 	{
 		REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
 		return ~0s;
+	}
+
+	if( matched_functions.size() == 1s )
+	{
+		return 0s;
 	}
 
 	scoped_array bool mut best_functions[ matched_functions.size() ]( true );

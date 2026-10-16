@@ -5,7 +5,7 @@ fn nomangle close( i32 fd__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle dlerror() unsafe call_conv( "C" ) : $(char8);
 fn nomangle dlopen( $(char8) file__, i32 mode__ ) unsafe call_conv( "C" ) : $(byte8);
 fn nomangle dlsym( $(byte8) handle__, $(char8) name__ ) unsafe call_conv( "C" ) : $(byte8);
-fn nomangle fcntl( i32 fd__, i32 cmd__, i32 flags ) unsafe call_conv( "C" ) : i32;
+fn nomangle fcntl( i32 fd__, i32 cmd__, ... ) unsafe call_conv( "C" ) : i32;
 fn nomangle pipe( $(i32) pipedes__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle poll( $(pollfd) fd__s, nfds_t nfds__, i32 timeout__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle posix_spawn( $(pid_t) pid__, $(char8) path__, $(posix_spawn_file_actions_t) file_actions__, $(posix_spawnattr_t) attrp__, $($(char8)) argv__, $($(char8)) envp__ ) unsafe call_conv( "C" ) : i32;

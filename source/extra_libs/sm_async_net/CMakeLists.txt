@@ -56,10 +56,8 @@ add_custom_command(
 	USES_TERMINAL
 		)
 
-if(APPLE)
-	# For now disable running tests on MacOS - they hang for unknown reason and it's hard to find why exactly.
-elseif( ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" )
-	# Also disable it on FreeBSD - for some reason tests fail on this OS (but only in CI builds).
+if( ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" )
+	# For now disable running tests on FreeBSD - for some reason tests fail on this OS (but only in CI builds).
 else()
 
 	set( TIMESTAMP_FILE ${CMAKE_CURRENT_BINARY_DIR}/tests_timestamp )

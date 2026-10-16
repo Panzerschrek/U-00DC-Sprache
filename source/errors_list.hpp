@@ -246,6 +246,15 @@ PROCESS_ERROR( UselessNodiscardForMethod, "\"nodiscard\" specifier for this meth
 PROCESS_ERROR( UnknownCallingConvention, "Unknown calling convention \"{0}\"." )
 PROCESS_ERROR( NonDefaultCallingConventionForClassMethod, "Only default calling convention allowed for this method." )
 
+// Variadic functions.
+PROCESS_ERROR( InvalidCallingConventionForVariadicFunction, "Calling convention \"{0}\" can't be used for variadic functions. Only \"C\" calling convention is supported." )
+PROCESS_ERROR( InvalidSafetyForVariadicFunction, "Variadic function isn't marked with \"unsafe\". Only \"unsafe\" functions can be variadic." )
+PROCESS_ERROR( UnsupportedVariadicArgumentType, "Unsupported variadic argument type! Only scalars are supported." )
+PROCESS_ERROR( VariadicFunctionTemplate, "Variadic function templates are not allowed." )
+PROCESS_ERROR( VariadicLambda, "Variadic lambdas are not allowed." )
+PROCESS_ERROR( VariadicCoroutine, "Variadic coroutines are not allowed." )
+PROCESS_ERROR( VariadicMemberFunction, "Variadic function within class are not allowed." )
+
 // Unsafe
 PROCESS_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, "Calling unsafe function outside unsafe block or unsafe expression." )
 PROCESS_ERROR( ExplicitAccessToThisMethodIsUnsafe, "Explicit access to method \"{0}\" is unsafe." )

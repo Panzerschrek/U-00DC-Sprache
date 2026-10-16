@@ -34,6 +34,7 @@ void Function_ArgConstPtr( const int* x );
 void Function_ArgPtrToPtr( float** f );
 void Function_SizedArrayArg( double arr[4] );
 void Function_UnsizedArrayArg( int arr[] );
+void Function_Variadic( int count, ... );
 int Function_RetVal();
 int* Function_RetPtr();
 const int* Function_RetConstPtr();
@@ -356,9 +357,6 @@ struct TypedefStructWithSameNameForwardDeclaration
 	__declspec(dllexport) int SomeDllExportedFunction(void);
 #endif
 
-// Should convert function with variadic params, but skip them - Ü doesn't support C-style variadic params.
-int VariadicFunc( int x, const char* s, ...);
-
 // Should translate array params as raw pointers.
 void ArrayArg( int arg[4] );
 void IncompleteArrayArg( int arg[] );
@@ -373,6 +371,8 @@ struct StructWithFunctionTypePtrField
 
 // Should translate this into type alias for function pointer with no params.
 typedef int (*FunctionTypedefNoProto)();
+
+typedef float (*VariadicFuncTypedef)( char*, const char*, ... );
 
 void* VoidPtrRetFunc();
 const void* ConstVoidPtrRetFunc();

@@ -205,6 +205,8 @@ void CodeBuilder::PrepareFunctionTemplate(
 		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope.GetErrors(), function_template_declaration.src_loc, function_template_name );
 	if( function_template_declaration.function->virtual_function_kind != Synt::VirtualFunctionKind::None )
 		REPORT_ERROR( VirtualForFunctionTemplate, names_scope.GetErrors(), function_template_declaration.src_loc, function_template_name );
+	if( function_template_declaration.function->type.is_variadic )
+		REPORT_ERROR( VariadicFunctionTemplate, names_scope.GetErrors(), function_template_declaration.src_loc );
 
 	const auto function_template= std::make_shared<FunctionTemplate>();
 	function_template->syntax_element= &function_template_declaration;
@@ -366,6 +368,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 		function_param.return_value_type= function_pointer_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 	function_param.is_unsafe= function_pointer_type_name.unsafe;
+	function_param.is_variadic= function_pointer_type_name.is_variadic;
 	function_param.calling_convention= PrepareCallingConvention( names_scope, function_context, function_pointer_type_name.calling_convention );
 
 	// TODO - maybe check also reference tags?
@@ -925,6 +928,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 
 			if( !(
 				given_function_type.unsafe == function_param.is_unsafe &&
+				given_function_type.is_variadic == function_param.is_variadic &&
 				given_function_type.calling_convention == function_param.calling_convention &&
 				given_function_type.return_value_type == function_param.return_value_type &&
 				MatchTemplateArg( template_params, args_names_scope, given_function_type.return_type, *function_param.return_type ) &&

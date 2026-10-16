@@ -146,6 +146,7 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 		( this.return_value_type == ValueType::Value ) != ( dst.return_value_type == ValueType::Value ) ||
 		( this.return_value_type == ValueType::ReferenceImut && dst.return_value_type == ValueType::ReferenceMut ) || // Allow mutability conversions, except mut->imut
 		( this.is_unsafe && !dst.is_unsafe ) || // Disable unsafe function to safe function conversion
+		( this.is_variadic != dst.is_variadic ) || // Changing variadic flag is forbiden.
 		this.calling_convention != dst.calling_convention ||
 		this.params.size() != dst.params.size() )
 	{
@@ -216,12 +217,25 @@ fn FunctionType::stringify( this, ust::default_stringifier8 &mut stringifier )
 
 	if( params.empty() )
 	{
-		ust::apply_value_to_stringifier( stringifier, "()" );
+		if( is_variadic )
+		{
+			ust::apply_value_to_stringifier( stringifier, "( ... )" );
+		}
+		else
+		{
+			ust::apply_value_to_stringifier( stringifier, "()" );
+		}
 	}
 	else
 	{
 		ust::apply_value_to_stringifier( stringifier, "( " );
 		StringifyFunctionParams( stringifier, params );
+
+		if( is_variadic )
+		{
+			ust::apply_value_to_stringifier( stringifier, ", ..." );
+		}
+
 		ust::apply_value_to_stringifier( stringifier, " )" );
 	}
 
@@ -1068,6 +1082,7 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 		tl.return_type == tr.return_type &&
 		tl.return_value_type == tr.return_value_type &&
 		tl.is_unsafe == tr.is_unsafe &&
+		tl.is_variadic == tr.is_variadic &&
 		tl.calling_convention == tr.calling_convention &&
 		tl.params.size() == tr.params.size() &&
 		tl.params.size() > 0s &&

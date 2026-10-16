@@ -920,6 +920,16 @@ fn CodeBuilder::PrepareFunction(
 		}
 	}
 
+	// Check variadic functions.
+	if( function_variable.t.is_variadic )
+	{
+		// Don't allow member functions to be variadic, since it may create mess in overloading resolution.
+		if( !class_type.empty() )
+		{
+			REPORT_ERROR( VariadicMemberFunction, names_scope_ptr, function_declaration.src_loc )
+		}
+	}
+
 	if_var( &mut prev_function : GetFunctionWithSameType( functions_set, function_variable.t ) )
 	{
 		{

@@ -73,6 +73,29 @@ They are not compatible with similar calling conventions in other languages and 
 For most of the platforms it's equivalent to ``C`` calling convention (but doesn't equal to it).
 For 32-bit Windows it's equivalent to ``stdcall`` calling convention, that is used in WinAPI.
 
+********************
+*Variadic functions*
+********************
+
+Ü allows calling external variadic functions (with variable number of arguments).
+A variadic function is declared with ``...`` at the end of its parameter list.
+Only ``unsafe`` functions with ``C`` calling convention can be variadic.
+Member functions, template functions, coroutines, lambdas can't be variadic.
+
+.. code-block:: u_spr
+
+   fn nomangle printf( $(char8) fmt, ... ) unsafe call_conv( "C" ) : i32;
+
+   fn Foo()
+   {
+       // Call an external variadic function.
+       unsafe( printf( $<( cast_mut( "Numbers are %d and %f\n\0"[0] ) ), 78, 0.784 ) );
+   }
+
+All variadic arguments are passed by-value.
+Only simple scalars are allowed as variadic arguments, this includes fundamental types (except ``void``), raw pointers, function pointers, enums.
+Structs/classes, arrays, tuples can't be passed as variadic arguments.
+
 *****************************
 *Structs with ordered fields*
 *****************************

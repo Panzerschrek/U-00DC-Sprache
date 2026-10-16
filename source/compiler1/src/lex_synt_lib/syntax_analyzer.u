@@ -1393,6 +1393,14 @@ fn SyntaxAnalyzer::ParseFunctionType( mut this ) : FunctionType
 			break;
 		}
 
+		if( it_.front().lexem_type == Lexem::Type::Ellipsis )
+		{
+			function_type.is_variadic= true;
+			NextLexem();
+			ExpectLexem( Lexem::Type::BracketRight );
+			break;
+		}
+
 		function_type.params.push_back( ParseFunctionParam() );
 
 		if( it_.front().lexem_type == Lexem::Type::BracketRight )
@@ -1648,6 +1656,14 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 		if( it_.front().lexem_type == Lexem::Type::BracketRight )
 		{
 			NextLexem();
+			break;
+		}
+
+		if( it_.front().lexem_type == Lexem::Type::Ellipsis )
+		{
+			lambda_function.function_type.is_variadic= true;
+			NextLexem();
+			ExpectLexem( Lexem::Type::BracketRight );
 			break;
 		}
 
@@ -1999,7 +2015,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		if( it_.front().lexem_type == Lexem::Type::Comma )
 		{
 			NextLexem();
-			// Disallov constructions, like "fn f( mut this, ){}"
+			// Forbid constructions like "fn f( mut this, ){}".
 			if( it_.front().lexem_type == Lexem::Type::BracketRight )
 			{
 				PushErrorMessage();
@@ -2026,6 +2042,14 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		if( it_.front().lexem_type == Lexem::Type::BracketRight )
 		{
 			NextLexem();
+			break;
+		}
+
+		if( it_.front().lexem_type == Lexem::Type::Ellipsis )
+		{
+			res.function_type.is_variadic= true;
+			NextLexem();
+			ExpectLexem( Lexem::Type::BracketRight );
 			break;
 		}
 

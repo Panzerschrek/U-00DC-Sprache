@@ -563,6 +563,7 @@ public:
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 	bool unsafe= false;
+	bool is_variadic= false;
 };
 
 struct CoroutineType

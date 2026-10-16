@@ -271,7 +271,19 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 	}
 
 	function_type.unsafe= function_type_name.unsafe;
+	function_type.is_variadic= function_type_name.is_variadic;
 	function_type.calling_convention= PrepareCallingConvention( names_scope, function_context, function_type_name.calling_convention );
+
+	if( function_type.is_variadic )
+	{
+		if( function_type.calling_convention != CallingConvention::C )
+			REPORT_ERROR( InvalidCallingConventionForVariadicFunction, names_scope.GetErrors(), function_type_name.src_loc, CallingConventionToString( function_type.calling_convention ) );
+
+		// Variadic functions should be unsafe.
+		// Otherwise one may pass incorrect number of arguments or arguments of invalid types.
+		if( !function_type.unsafe )
+			REPORT_ERROR( InvalidSafetyForVariadicFunction, names_scope.GetErrors(), function_type_name.src_loc );
+	}
 
 	const size_t num_params= function_type.params.size();
 	if( function_type_name.references_pollution_expression != nullptr )
@@ -362,7 +374,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType(
 	for( size_t i= 0; i < function_type.params.size(); ++i )
 		params_llvm_types.push_back( call_info.arguments_passing[i].llvm_type );
 
-	return llvm::FunctionType::get( llvm_function_return_type, params_llvm_types, false );
+	return llvm::FunctionType::get( llvm_function_return_type, params_llvm_types, function_type.is_variadic );
 }
 
 CallingConvention CodeBuilder::PrepareCallingConvention(

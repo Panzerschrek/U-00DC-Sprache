@@ -120,6 +120,7 @@ def run_tests():
 		"unsafe_test",
 		"useless_expression_root_errors_test",
 		"unused_name_errors_test",
+		"variadic_functions_test",
 		"virtual_functions_test",
 		"void_test",
 		"with_operator_test"

@@ -212,6 +212,10 @@ fn CodeBuilder::PrepareFunctionTemplate(
 	{
 		REPORT_ERROR( VirtualForFunctionTemplate, names_scope, function_template_syntax_element.deref().src_loc, function_template_name )
 	}
+	if( syntax_element.function.deref().function_type.is_variadic )
+	{
+		REPORT_ERROR( VariadicFunctionTemplate, names_scope, function_template_syntax_element.deref().src_loc )
+	}
 
 	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params );
 
@@ -687,6 +691,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		.return_type( TemplateSignatureParam::Type() ),
 		.is_unsafe= signature_param.is_unsafe,
+		.is_variadic= signature_param.is_variadic,
 		.calling_convention= PrepareCallingConvention( names_scope, function_context, signature_param.calling_convention ),
 		.return_value_type= ValueType::Value,
 	};
@@ -1739,6 +1744,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 			if( given_function_type.return_value_type != function_type_param.return_value_type ||
 				given_function_type.is_unsafe != function_type_param.is_unsafe ||
+				given_function_type.is_variadic != function_type_param.is_variadic ||
 				given_function_type.calling_convention != function_type_param.calling_convention )
 			{
 				return false;

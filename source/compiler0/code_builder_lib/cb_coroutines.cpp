@@ -26,6 +26,9 @@ void CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( const Functio
 void CodeBuilder::TransformCoroutineFunctionType(
 	FunctionType& coroutine_function_type, FunctionVariable::Kind kind, const bool non_sync, NamesScope& names_scope, const SrcLoc& src_loc )
 {
+	if( coroutine_function_type.is_variadic )
+		REPORT_ERROR( VariadicCoroutine, names_scope.GetErrors(), src_loc );
+
 	CoroutineTypeDescription coroutine_type_description;
 	coroutine_type_description.return_type= coroutine_function_type.return_type;
 	coroutine_type_description.return_value_type= coroutine_function_type.return_value_type;

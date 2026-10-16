@@ -3992,7 +3992,8 @@ Value CodeBuilder::CallFunctionValue(
 			function_context.has_non_constexpr_operations_inside= true; // Calling function, using pointer, is not constexpr. We can not garantee, that called function is constexpr.
 
 			// Call function pointer directly.
-			if( function_pointer->function_type.params.size() != synt_args.size() )
+			if( ( !function_pointer->function_type.is_variadic && synt_args.size() != function_pointer->function_type.params.size() ) ||
+				(  function_pointer->function_type.is_variadic && synt_args.size() <  function_pointer->function_type.params.size() ) )
 			{
 				REPORT_ERROR( InvalidFunctionArgumentCount, names_scope.GetErrors(), call_src_loc, synt_args.size(), function_pointer->function_type.params.size() );
 				return ErrorValue();
@@ -4169,7 +4170,14 @@ Value CodeBuilder::DoCallFunction(
 		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope.GetErrors(), call_src_loc );
 
 	const size_t arg_count= preevaluated_args.size() + args.size();
-	U_ASSERT( arg_count == function_type.params.size() );
+	if( function_type.is_variadic )
+	{
+		U_ASSERT( arg_count >= function_type.params.size() );
+	}
+	else
+	{
+		U_ASSERT( arg_count == function_type.params.size() );
+	}
 
 	// Ensure return type/param types completeness before performing the call.
 	{
@@ -4198,7 +4206,7 @@ Value CodeBuilder::DoCallFunction(
 
 	llvm::SmallVector<llvm::Value*, 16> value_args_for_lifetime_end_call;
 
-	for( size_t i= 0u; i < arg_count; ++i )
+	for( size_t i= 0u; i < function_type.params.size(); ++i )
 	{
 		const size_t arg_number= evaluate_args_in_reverse_order ? arg_count - i - 1u : i;
 
@@ -4486,6 +4494,89 @@ Value CodeBuilder::DoCallFunction(
 		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), call_src_loc );
 	} // for args
 
+	// Evaluate variadic args.
+	llvm::SmallVector< std::pair< size_t, llvm::Attribute::AttrKind >, 6> variadic_arg_attributes;
+	if( function_type.is_variadic )
+	{
+		const uint64_t int_size= 4; // For now hardcode size of "int" in C.
+		llvm::Type* const int_type= fundamental_llvm_types_.i32_;
+
+		for( size_t i= function_type.params.size(); i < args.size(); ++i )
+		{
+			const VariablePtr expr= BuildExpressionCodeEnsureVariable( *args[i], names_scope, function_context );
+			if( function_context.variables_state.HasOutgoingMutableNodes( expr ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), Synt::GetSrcLoc( *args[i] ), expr->name );
+
+			llvm::Value*& out_arg= llvm_args[i];
+
+			if( const auto fundamental_type= expr->type.GetFundamentalType() )
+			{
+				if( fundamental_type->fundamental_type == U_FundamentalType::void_ )
+				{
+					// Don't allow passing "void" as variadic arg. It has zero size and zero-sized types don't exist in C.
+					REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope.GetErrors(), call_src_loc );
+				}
+				else
+				{
+					out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+
+					// Require "sext"/"zext" for args based on integer types.
+					// Also require promotion to "int" for types smaller than "int".
+
+					if( IsSignedInteger( fundamental_type->fundamental_type ) )
+					{
+						variadic_arg_attributes.emplace_back( i, llvm::Attribute::SExt );
+
+						if( out_arg != nullptr &&
+							!function_context.is_functionless_context &&
+							GetFundamentalTypeSize( fundamental_type->fundamental_type ) < int_size )
+							out_arg= function_context.llvm_ir_builder.CreateSExt( out_arg, int_type );
+					}
+					else if(
+						IsUnsignedInteger( fundamental_type->fundamental_type ) ||
+						IsChar( fundamental_type->fundamental_type ) ||
+						IsByte( fundamental_type->fundamental_type ) ||
+						fundamental_type->fundamental_type == U_FundamentalType::bool_ )
+					{
+						variadic_arg_attributes.emplace_back( i, llvm::Attribute::ZExt );
+
+						if( out_arg != nullptr &&
+							!function_context.is_functionless_context &&
+							GetFundamentalTypeSize( fundamental_type->fundamental_type ) < int_size )
+							out_arg= function_context.llvm_ir_builder.CreateZExt( out_arg, int_type );
+					}
+					else if( fundamental_type->fundamental_type == U_FundamentalType::f32_ )
+					{
+						// "f32" variadic args are promoted to "f64".
+						if( out_arg != nullptr && !function_context.is_functionless_context )
+							out_arg= function_context.llvm_ir_builder.CreateFPExt( out_arg, fundamental_llvm_types_.f64_ );
+					}
+				}
+			}
+			else if( expr->type.GetRawPointerType() != nullptr || expr->type.GetFunctionPointerType() != nullptr )
+			{
+				// Require no "sext"/"zext" for pointer args.
+				out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+			}
+			else if( const Enum* const enum_= expr->type.GetEnumType() )
+			{
+				// Require "zext" for enum args.
+				variadic_arg_attributes.emplace_back( i, llvm::Attribute::ZExt );
+				out_arg= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+
+				if( out_arg != nullptr &&
+					!function_context.is_functionless_context &&
+					GetFundamentalTypeSize( enum_->underlying_type.fundamental_type ) < int_size )
+					out_arg= function_context.llvm_ir_builder.CreateZExt( out_arg, int_type );
+			}
+			else
+				REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope.GetErrors(), call_src_loc );
+
+			// Destroy unused temporary variables after each argument evaluation.
+			DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), call_src_loc );
+		}
+	}
+
 	if( !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), call_src_loc, function_type.return_type );
 
@@ -4623,6 +4714,12 @@ Value CodeBuilder::DoCallFunction(
 				// TODO - add other attributes?
 				call_instruction->addParamAttr( param_attr_index, llvm::Attribute::getWithByValType( llvm_context_, param.type.GetLLVMType() ) );
 			};
+		}
+
+		for( const auto& arg_and_attribute : variadic_arg_attributes )
+		{
+			const auto param_attr_index= uint32_t( arg_and_attribute.first + ( return_value_is_sret ? 1u : 0u ) );
+			call_instruction->addParamAttr( param_attr_index, arg_and_attribute.second );
 		}
 
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )

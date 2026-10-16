@@ -229,7 +229,8 @@ Type information for  coroutines also contains following fields:
 * ``typeinfo & return_type`` - type information for return type
 * ``bool return_value_is_reference`` -  does function return reference
 * ``bool return_value_is_mutable`` - does function return mutable value
-* ``bool unsafe`` - is function marked as ``unsafe``
+* ``bool unsafe`` - function marked as ``unsafe``
+* ``bool variadic`` - function suports variadic arguments
 * ``tup[] params_list`` - a tuple, each element of which contains information about a function parameter
 * ``return_references`` - an array with return references description (as in notation with ``@``)
 * ``return_inner_references`` - a tuple with return inner references description (as in notation with ``@``)

@@ -8,6 +8,9 @@ namespace U
 
 Value CodeBuilder::BuildLambda( NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda )
 {
+	if( lambda.function.type.is_variadic )
+		REPORT_ERROR( VariadicLambda, names_scope.GetErrors(), lambda.src_loc );
+
 	const ClassPtr lambda_class= PrepareLambdaClass( names_scope, function_context, lambda );
 
 	const VariableMutPtr result=

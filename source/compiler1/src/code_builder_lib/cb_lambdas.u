@@ -10,6 +10,11 @@ namespace U1
 
 fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value
 {
+	if( lambda_.function.deref().function_type.is_variadic )
+	{
+		REPORT_ERROR( VariadicLambda, names_scope, lambda_.src_loc )
+	}
+
 	var ClassTypePtr lambda_class= PrepareLambdaClass( names_scope, function_context, lambda_ );
 
 	var Variable mut result_value

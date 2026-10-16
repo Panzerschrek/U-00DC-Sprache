@@ -1,5 +1,5 @@
 fn nomangle close( i32 fd__ ) unsafe call_conv( "C" ) : i32;
-fn nomangle fcntl( i32 fd__, i32 cmd__, i32 flags ) unsafe call_conv( "C" ) : i32;
+fn nomangle fcntl( i32 fd__, i32 cmd__, ... ) unsafe call_conv( "C" ) : i32;
 fn nomangle poll( $(pollfd) fds__, nfds_t nfds__, i32 timeout__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle pipe( $(i32) ü__pipedes ) unsafe call_conv( "C") : i32;
 fn nomangle read( i32 fd__, $(byte8) buf__, size_t nbytes__ ) unsafe call_conv( "C" ) : ssize_t;

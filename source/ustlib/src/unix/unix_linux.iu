@@ -10,7 +10,7 @@ fn nomangle close( i32 fd__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle closedir( $(DIR) dirp__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle connect( i32 fd__, $(sockaddr) addr__, socklen_t len__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle fchmod( i32 fd__, mode_t__ mode__ ) unsafe call_conv( "C" ) : i32;
-fn nomangle fcntl( i32 fd__, i32 cmd__, i32 flags ) unsafe call_conv( "C" ) : i32;
+fn nomangle fcntl( i32 fd__, i32 cmd__, ... ) unsafe call_conv( "C" ) : i32;
 fn nomangle fdatasync( i32 fildes__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle freeaddrinfo( $(addrinfo) ai__ ) unsafe call_conv( "C" ) : void;
 fn nomangle fstat64( i32 fd__, $(stat64_) buf__ ) unsafe call_conv( "C") : i32;
@@ -28,7 +28,7 @@ fn nomangle lseek64( i32 fd__, off64_t__ offset__, i32 whence__ ) unsafe call_co
 fn nomangle lstat64( $(char8) file__, $(stat64_) buf__ ) unsafe call_conv( "C") : i32;
 fn nomangle nanosleep( $(timespec) requested_time__, $(timespec) remaining__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle mkdir( $(char8) path__, mode_t__ mode__ ) unsafe call_conv( "C" ) : i32;
-fn nomangle open( $(char8) file__, i32 oflag__, mode_t__ mode__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle open( $(char8) file__, i32 oflag__, ... ) unsafe call_conv( "C" ) : i32;
 fn nomangle opendir( $(char8) name__ ) unsafe call_conv( "C" ) : $(DIR);
 fn nomangle read( i32 fd__, $(byte8) buf__, size_t nbytes__ ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle readdir64( $(DIR) dirp__ ) unsafe call_conv( "C" ) : $(dirent64);

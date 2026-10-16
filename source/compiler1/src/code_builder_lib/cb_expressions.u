@@ -4615,9 +4615,10 @@ fn CodeBuilder::DoCallFunction(
 	bool no_discard ) : Value
 {
 	var size_type total_args= preevaluated_args.size() + args.size();
-	if( total_args != function_type.params.size() )
+	if( ( !function_type.is_variadic && total_args != function_type.params.size() ) ||
+		(  function_type.is_variadic && total_args <  function_type.params.size() ) )
 	{
-		REPORT_ERROR( InvalidFunctionArgumentCount, names_scope, src_loc, total_args, function_type.params.size() )
+		REPORT_ERROR( InvalidFunctionArgumentCount, names_scope, src_loc, function_type.params.size(), total_args )
 		return ErrorValue();
 	}
 
@@ -4680,7 +4681,7 @@ fn CodeBuilder::DoCallFunction(
 
 	var ust::vector</LLVMValueRef/> mut value_args_for_lifetime_end_call;
 
-	for( var size_type mut i= 0s; i < total_args; ++i )
+	for( var size_type mut i= 0s; i < function_type.params.size(); ++i )
 	{
 		auto arg_n= ( args_evaluation_order == ArgsEvaluationOrder::Direct ? i : total_args - i - 1s );
 		auto &mut llvm_arg= llvm_args[ first_llvm_arg_number + arg_n ];
@@ -4948,6 +4949,105 @@ fn CodeBuilder::DoCallFunction(
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 	}
 
+	// Evaluate variadic args.
+	var ust::vector</ tup[ size_type, u32 ] /> mut variadic_arg_attributes;
+	if( function_type.is_variadic )
+	{
+		var u32 int_size= 4u; // For now hardcode size of "int" in C.
+		var LLVMTypeRef int_type= fundamental_llvm_types_.i32_;
+
+		for( auto mut i= function_type.params.size(); i < args.size(); ++i )
+		{
+			var Synt::Expression& arg_expression= args[i].deref();
+
+			var VariablePtr expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_expression );
+			if( function_context.references_graph.HasOutgoingMutableNodes( expr_ptr ) )
+			{
+				REPORT_ERROR( ReferenceProtectionError, names_scope, Synt::GetSrcLoc( arg_expression ), expr_ptr.lock_imut().deref().name )
+			}
+
+			var VariableLite expr= expr_ptr.lock_imut().deref();
+
+			var LLVMValueRef &mut out_arg= llvm_args[i];
+
+			if_var( &fundamental_type : expr.t.GetFundamentalType() )
+			{
+				if( fundamental_type.fundamental_type == U_FundamentalType::void_ )
+				{
+					// Don't allow passing "void" as variadic arg. It has zero size and zero-sized types don't exist in C.
+					REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope, Synt::GetSrcLoc( arg_expression ) )
+				}
+				else
+				{
+					out_arg= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+
+					// Require "sext"/"zext" for args based on integer types.
+					// Also require promotion to "int" for types smaller than "int".
+
+					if( IsSignedInteger( fundamental_type.fundamental_type ) )
+					{
+						variadic_arg_attributes.push_back( ust::make_tuple( i, GetAttributeKindByName("signext") ) );
+
+						if( out_arg != Null::LLVMValueRef &&
+							!function_context.is_functionless_context &&
+							GetFundamentalTypeSize( fundamental_type.fundamental_type ) < int_size )
+						{
+							out_arg= unsafe( LLVMBuildSExt( function_context.llvm_ir_builder, out_arg, int_type, g_null_string ) );
+						}
+					}
+					else if(
+						IsUnsignedInteger( fundamental_type.fundamental_type ) ||
+						IsChar( fundamental_type.fundamental_type ) ||
+						IsByte( fundamental_type.fundamental_type ) ||
+						fundamental_type.fundamental_type == U_FundamentalType::bool_ )
+					{
+						variadic_arg_attributes.push_back( ust::make_tuple( i, GetAttributeKindByName("zeroext") ) );
+
+						if( out_arg != Null::LLVMValueRef &&
+							!function_context.is_functionless_context &&
+							GetFundamentalTypeSize( fundamental_type.fundamental_type ) < int_size )
+						{
+							out_arg= unsafe( LLVMBuildZExt( function_context.llvm_ir_builder, out_arg, int_type, g_null_string ) );
+						}
+					}
+					else if( fundamental_type.fundamental_type == U_FundamentalType::f32_ )
+					{
+						// "f32" variadic args are promoted to "f64".
+						if( out_arg != Null::LLVMValueRef && !function_context.is_functionless_context )
+						{
+							out_arg= unsafe( LLVMBuildFPExt( function_context.llvm_ir_builder, out_arg, fundamental_llvm_types_.f64_, g_null_string ) );
+						}
+					}
+				}
+			}
+			else if( !expr.t.GetRawPointerType().empty() || !expr.t.GetFunctionPointerType().empty() )
+			{
+				// Require no "sext"/"zext" for pointer args.
+				out_arg= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+			}
+			else if_var( &enum_ : expr.t.GetEnumType() )
+			{
+				// Require "zext" for enum args.
+				variadic_arg_attributes.push_back( ust::make_tuple( i, GetAttributeKindByName("zeroext") ) );
+				out_arg= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+
+				if( out_arg != Null::LLVMValueRef &&
+					!function_context.is_functionless_context &&
+					GetFundamentalTypeSize( enum_.lock_imut().deref().underlying_type.fundamental_type ) < int_size )
+				{
+					out_arg= unsafe( LLVMBuildZExt( function_context.llvm_ir_builder, out_arg, int_type, g_null_string ) );
+				}
+			}
+			else
+			{
+				REPORT_ERROR( UnsupportedVariadicArgumentType, names_scope, Synt::GetSrcLoc( arg_expression ) )
+			}
+
+			// Destroy unused temporary variables after each arg evaluation.
+			DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+		}
+	}
+
 	var Variable mut result
 	{
 		.t= function_type.return_type,
@@ -5113,6 +5213,13 @@ fn CodeBuilder::DoCallFunction(
 					unsafe( LLVMAddCallSiteAttribute( call_result, llvm_param_n, attr ) );
 				},
 			}
+		}
+
+		foreach( &arg_and_attribute : variadic_arg_attributes )
+		{
+			var u32 llvm_param_n= LLVMAttributeFirstParamIndex + ( return_value_is_sret ? 1u : 0u ) + u32( arg_and_attribute[0] );
+			auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, arg_and_attribute[1], 0u64 ) );
+			unsafe( LLVMAddCallSiteAttribute( call_result, llvm_param_n, attr ) );
 		}
 
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )

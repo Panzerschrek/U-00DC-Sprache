@@ -37,6 +37,11 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 	NamesScopePtr& names_scope,
 	SrcLoc& src_loc )
 {
+	if( coroutine_function_type.is_variadic )
+	{
+		REPORT_ERROR( VariadicCoroutine, names_scope, src_loc )
+	}
+
 	var CoroutineTypeDescription mut coroutine_type_description
 	{
 		.kind= CoroutineKind::Generator, // Set later.
