@@ -4953,6 +4953,9 @@ fn CodeBuilder::DoCallFunction(
 	var ust::vector</ tup[ size_type, u32 ] /> mut variadic_arg_attributes;
 	if( function_type.is_variadic )
 	{
+		var u32 int_size= 4u; // For now hardcode size of "int" in C.
+		var LLVMTypeRef int_type= fundamental_llvm_types_.i32_;
+
 		for( auto mut i= function_type.params.size(); i < args.size(); ++i )
 		{
 			var Synt::Expression& arg_expression= args[i].deref();
@@ -4976,10 +4979,21 @@ fn CodeBuilder::DoCallFunction(
 				}
 				else
 				{
+					out_arg= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+
 					// Require "sext"/"zext" for args based on integer types.
+					// Also require promotion to "int" for types smaller than "int".
+
 					if( IsSignedInteger( fundamental_type.fundamental_type ) )
 					{
 						variadic_arg_attributes.push_back( ust::make_tuple( i, GetAttributeKindByName("signext") ) );
+
+						if( out_arg != Null::LLVMValueRef &&
+							!function_context.is_functionless_context &&
+							GetFundamentalTypeSize( fundamental_type.fundamental_type ) < int_size )
+						{
+							out_arg= unsafe( LLVMBuildSExt( function_context.llvm_ir_builder, out_arg, int_type, g_null_string ) );
+						}
 					}
 					else if(
 						IsUnsignedInteger( fundamental_type.fundamental_type ) ||
@@ -4988,14 +5002,21 @@ fn CodeBuilder::DoCallFunction(
 						fundamental_type.fundamental_type == U_FundamentalType::bool_ )
 					{
 						variadic_arg_attributes.push_back( ust::make_tuple( i, GetAttributeKindByName("zeroext") ) );
+
+						if( out_arg != Null::LLVMValueRef &&
+							!function_context.is_functionless_context &&
+							GetFundamentalTypeSize( fundamental_type.fundamental_type ) < int_size )
+						{
+							out_arg= unsafe( LLVMBuildZExt( function_context.llvm_ir_builder, out_arg, int_type, g_null_string ) );
+						}
 					}
-
-					out_arg= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-
-					// "f32" variadic args are promoted to "f64".
-					if( fundamental_type.fundamental_type == U_FundamentalType::f32_ && !function_context.is_functionless_context )
+					else if( fundamental_type.fundamental_type == U_FundamentalType::f32_ )
 					{
-						out_arg= unsafe( LLVMBuildFPExt( function_context.llvm_ir_builder, out_arg, fundamental_llvm_types_.f64_, g_null_string ) );
+						// "f32" variadic args are promoted to "f64".
+						if( out_arg != Null::LLVMValueRef && !function_context.is_functionless_context )
+						{
+							out_arg= unsafe( LLVMBuildFPExt( function_context.llvm_ir_builder, out_arg, fundamental_llvm_types_.f64_, g_null_string ) );
+						}
 					}
 				}
 			}
@@ -5004,11 +5025,18 @@ fn CodeBuilder::DoCallFunction(
 				// Require no "sext"/"zext" for pointer args.
 				out_arg= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 			}
-			else if( !expr.t.GetEnumType().empty() )
+			else if_var( &enum_ : expr.t.GetEnumType() )
 			{
 				// Require "zext" for enum args.
 				variadic_arg_attributes.push_back( ust::make_tuple( i, GetAttributeKindByName("zeroext") ) );
 				out_arg= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+
+				if( out_arg != Null::LLVMValueRef &&
+					!function_context.is_functionless_context &&
+					GetFundamentalTypeSize( enum_.lock_imut().deref().underlying_type.fundamental_type ) < int_size )
+				{
+					out_arg= unsafe( LLVMBuildZExt( function_context.llvm_ir_builder, out_arg, int_type, g_null_string ) );
+				}
 			}
 			else
 			{
