@@ -31,7 +31,6 @@ General:
 	name, line, column. This may be useful in macros, like in "assert".
 *) Allow default constructors for interfaces
 *) Allow zero-sized fields for interfaces (to create inner reference tags, for example)
-*) Add a possibility to call external C functions with variadic number of arguments
 *) Generate order compare operators (<=>) where it can be done easily (for arrays, tuples, structs with single field).
 	Support operator <=> generation for ustlib types (if can do so).
 *) Alias for a namespace
