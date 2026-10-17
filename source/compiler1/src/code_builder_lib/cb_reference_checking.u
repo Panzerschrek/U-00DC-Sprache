@@ -375,7 +375,7 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 				{
 					if( accessible_variable_node == function_context.args_nodes[param_i][1][tag_i] )
 					{
-						continue;
+						continue label accessible_nodes_loop;
 					}
 
 					var ust::optional</FunctionType::ParamReference/> mut param_reference;

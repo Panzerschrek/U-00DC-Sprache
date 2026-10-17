@@ -1363,7 +1363,7 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 
 		if( function_template.params.size() < template_args_finished.size() )
 		{
-			continue;
+			continue label function_templates_loop;
 		}
 
 		var NamesScopeMutPtr result_names_scope(
