@@ -129,7 +129,7 @@ def UnconditionalLoop_Test7():
 			{
 				if( x >= 24 )
 				{
-					break;
+					break label some;
 				}
 				for( auto mut i= 0s; i < 7s; ++i )
 				{
