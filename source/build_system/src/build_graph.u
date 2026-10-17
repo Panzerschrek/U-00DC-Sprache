@@ -419,7 +419,7 @@ fn nodiscard PerformGraphBuild(
 			if( build_steps_finished >= num_nodes_to_rebuild )
 			{
 				// Nothing left.
-				break;
+				break label build_loop;
 			}
 		}
 
