@@ -2887,6 +2887,13 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 {
 	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
 
+	if( break_operator.label_.empty() && !function_context.loops_stack.empty() && !function_context.loops_stack.back().name.empty() )
+	{
+		// Don't allow using "break" for loops marked with a label in order to prevent possible mistakes.
+		// Require specifying a label in such case.
+		REPORT_ERROR( UnlabeledBreakForLabeledLoop, names_scope, break_operator.src_loc )
+	}
+
 	var size_type frame_index= FetchLoopFrame( names_scope, function_context, break_operator.label_ );
 	if( frame_index >= function_context.loops_stack.size() )
 	{
@@ -2907,6 +2914,13 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo
 {
 	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
+
+	if( continue_operator.label_.empty() && !function_context.loops_stack.empty() && !function_context.loops_stack.back().name.empty() )
+	{
+		// Don't allow using "continue" for loops marked with a label in order to prevent possible mistakes.
+		// Require specifying a label in such case.
+		REPORT_ERROR( UnlabeledContinueForLabeledLoop, names_scope, continue_operator.src_loc )
+	}
 
 	var size_type frame_index= FetchLoopFrame( names_scope, function_context, continue_operator.label_ );
 	if( frame_index >= function_context.loops_stack.size() )
