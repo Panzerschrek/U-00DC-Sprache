@@ -450,3 +450,176 @@ def VariablesStateMerge_ForBreakContinueToOuterLoop_Test3():
 		fn Bar() : bool;
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def UnlabeledBreakForLabeledLoop_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			loop label some
+			{
+				break;
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnlabeledBreakForLabeledLoop", 6 ) )
+
+
+def UnlabeledBreakForLabeledLoop_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			while(true) label some
+			{
+				if( false ) { break; }
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnlabeledBreakForLabeledLoop", 6 ) )
+
+
+def UnlabeledBreakForLabeledLoop_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			for( auto mut i= 0u; i < 10u; ++i ) label some
+			{
+				if( i == 5u ) { break; }
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnlabeledBreakForLabeledLoop", 6 ) )
+
+
+def UnlabeledBreakForLabeledLoop_Test3():
+	c_program_text= """
+		fn Foo( tup[ i32, f32, bool, char8 ]& t )
+		{
+			for( &el : t ) label some
+			{
+				if( f32(i) == 5.0f ) { break; }
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnlabeledBreakForLabeledLoop", 6 ) )
+
+
+def UnlabeledBreakForLabeledLoop_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			loop label outer_loop
+			{
+				while(true) label inner_loop
+				{
+					if( false ) { break; }
+				}
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnlabeledBreakForLabeledLoop", 8 ) )
+
+
+def UnlabeledBreakForLabeledLoop_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			loop
+			{
+				{
+					break; // If there is a labeled block, "break" inside it should be labeled.
+				} label some
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnlabeledBreakForLabeledLoop", 7 ) )
+
+
+def UnlabeledContinueForLabeledLoop_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			loop label some
+			{
+				continue;
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnlabeledContinueForLabeledLoop", 6 ) )
+
+
+def UnlabeledContinueForLabeledLoop_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			while(true) label some
+			{
+				if( false ) { continue; }
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnlabeledContinueForLabeledLoop", 6 ) )
+
+
+def UnlabeledContinueForLabeledLoop_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			for( auto mut i= 0u; i < 10u; ++i ) label some
+			{
+				if( i == 5u ) { continue; }
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnlabeledContinueForLabeledLoop", 6 ) )
+
+
+def UnlabeledContinueForLabeledLoop_Test3():
+	c_program_text= """
+		fn Foo( tup[ i32, f32, bool, char8 ]& t )
+		{
+			for( &el : t ) label some
+			{
+				if( f32(i) == 5.0f ) { continue; }
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnlabeledContinueForLabeledLoop", 6 ) )
+
+
+def UnlabeledContinueForLabeledLoop_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			loop label outer_loop
+			{
+				while(true) label inner_loop
+				{
+					if( false ) { continue; }
+				}
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnlabeledContinueForLabeledLoop", 8 ) )

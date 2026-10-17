@@ -1524,6 +1524,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	BlockBuildInfo block_info;
 	block_info.has_terminal_instruction_inside= true;
 
+	if( break_operator.label == std::nullopt &&
+		!function_context.loops_stack.empty() &&
+		!function_context.loops_stack.back().name.empty() )
+	{
+		// Don't allow using "break" for loops marked with a label in order to prevent possible mistakes.
+		// Require specifying a label in such case.
+		REPORT_ERROR( UnlabeledBreakForLabeledLoop, names_scope.GetErrors(), break_operator.src_loc );
+	}
+
 	LoopFrame* const loop_frame= FetchLoopFrame( names_scope, function_context, break_operator.label );
 	if( loop_frame == nullptr )
 	{
@@ -1547,6 +1556,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 {
 	BlockBuildInfo block_info;
 	block_info.has_terminal_instruction_inside= true;
+
+	if( continue_operator.label == std::nullopt &&
+		!function_context.loops_stack.empty() &&
+		!function_context.loops_stack.back().name.empty() )
+	{
+		// Don't allow using "continue" for loops marked with a label in order to prevent possible mistakes.
+		// Require specifying a label in such case.
+		REPORT_ERROR( UnlabeledContinueForLabeledLoop, names_scope.GetErrors(), continue_operator.src_loc );
+	}
 
 	LoopFrame* const loop_frame= FetchLoopFrame( names_scope, function_context, continue_operator.label );
 	if( loop_frame == nullptr )

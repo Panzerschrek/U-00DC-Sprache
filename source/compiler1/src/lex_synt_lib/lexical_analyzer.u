@@ -730,7 +730,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 					auto s= typeinfo</ typeof(lexem_size_group) />.element_type.elements_list[0s].type.element_count;
 					if( s > it.size() )
 					{
-						continue;
+						continue label size_groups_loop;
 					}
 					auto check_range= it.subrange_end( s );
 
@@ -749,7 +749,6 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 				// This code is reachable only if we failed to process a fixed lexem.
 				result.errors.push_back( LexSyntError( src_loc, ust::stringify8( "Lexical error: unrecognized character: ", u32(c) ) ) );
 				it.drop_front();
-				continue;
 
 			} label fixed_lexem_processing
 		}

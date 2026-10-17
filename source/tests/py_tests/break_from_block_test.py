@@ -84,7 +84,7 @@ def BreakFromBlock_Test1():
 				auto mut breaked= false;
 				for( auto mut i= 0; i < 100; ++i ) label outer_loop
 				{
-					while(true)
+					while(true) label inner_loop
 					{
 						{
 							if( i == 13 )
@@ -94,7 +94,7 @@ def BreakFromBlock_Test1():
 							}
 							else
 							{
-								break; // Break from loop, not from labeled block.
+								break label inner_loop; // Break from loop, not from labeled block.
 							}
 						} label inner_block
 					}
@@ -138,13 +138,13 @@ def BreakFromBlock_Test4():
 		fn Foo()
 		{
 			auto mut iterations= 0s;
-			for( auto mut i= 0; i < 10; ++i )
+			for( auto mut i= 0; i < 10; ++i ) label for_numbers
 			{
 				++iterations;
 				{
 					if( i == 3 )
 					{
-						break; // break outside loop, not outside labeled block.
+						break label for_numbers; // break outside loop, not outside labeled block.
 					}
 				} label some
 				halt if( i >= 3 );
@@ -161,13 +161,13 @@ def BreakFromBlock_Test5():
 		fn Foo()
 		{
 			auto mut iterations= 0s;
-			for( auto mut i= 0; i < 10; ++i )
+			for( auto mut i= 0; i < 10; ++i ) label for_numbers
 			{
 				++iterations;
 				{
 					if( i == 3 )
 					{
-						continue; // continue to loop, not to labeled block.
+						continue label for_numbers; // continue to loop, not to labeled block.
 					}
 				} label some
 				halt if( i == 3 );

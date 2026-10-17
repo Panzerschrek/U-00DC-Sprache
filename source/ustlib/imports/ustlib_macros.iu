@@ -66,7 +66,7 @@
 				if( ??next_res.empty() )
 				{
 					// End iteration if "next" call result is empty.
-					break;
+					break ?l<? label ?l ?>;
 				}
 				// Unwrap "optional" or "optional_ref".
 				with( ?r<? & ?> ?m<? mut ?> ?var_name : ??next_res.try_take() )
