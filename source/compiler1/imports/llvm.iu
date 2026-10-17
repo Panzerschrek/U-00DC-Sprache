@@ -2,20 +2,18 @@
 // These prototypes are written manually.
 // If LLVM version updated, all these functions should be revised!
 
-// Use struct with single element inside.
-// Such struct is passed in register and thus equivalent to raw C pointer.
-// We can't use enum for implementing such type alias, since it is UB in Ü to create enum values outside its range.
-// We also can't use a pointer to some dummy type, since we need to access "Null" element, which is possible only for classes.
 ?macro <? DefineLLVMRef:namespace ?name:ident ?>
 	->
 <?
-	// LLVM ref types are pointers to a class, inaccessible in Ü code.
+	// LLVM ref types are pointers to a class, which inaccessible in Ü code.
 	type ?name= $(??opaque_class);
 
-	// Since Ü has no opaque types, create a class strub, which can't be constructed.
+	// Since Ü has no opaque types, create a class stub, which can't be constructed nor copied.
 	class ??opaque_class
 	{
 		fn constructor() = delete;
+		fn constructor( mut this, ??opaque_class& other )= delete;
+		op=( mut this, ??opaque_class& other )= delete;
 	}
 
 	// Create a helper variable for null reference.
