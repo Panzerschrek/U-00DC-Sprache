@@ -40,6 +40,19 @@ fn wait_condition_variable( condition_variable_t &mut cv, mutex_impl::mutex_t &m
 	unsafe( ::pthread_cond_wait( cast_ref_unsafe</pthread_cond_t/>(cv), cast_ref_unsafe</pthread_mutex_t/>(m) ) );
 }
 
+fn wait_condition_variable_timed( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m, duration timeout ) unsafe
+{
+	// TODO - fix this. It's not a timeout, but absolute time.
+	var u64 microseconds= timeout.ceil_to_microseconds();
+	var timespec t
+	{
+		.tv_sec ( microseconds / 1000000u64 ),
+		.tv_nsec( microseconds % 1000000u64 ),
+	};
+
+	unsafe( ::pthread_cond_timedwait( cast_ref_unsafe</pthread_cond_t/>(cv), cast_ref_unsafe</pthread_mutex_t/>(m), t ) );
+}
+
 } // namespace condition_variable_impl
 
 } // namespace ust

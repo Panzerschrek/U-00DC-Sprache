@@ -1,5 +1,6 @@
 // Header for pthread library functions, used in "ustlib".
 import "../../imports/type_traits.iu"
+import "unix.iu"
 
 type pthread_t= size_type;
 
@@ -54,6 +55,7 @@ fn nomangle pthread_cond_destroy( pthread_cond_t &mut cond ) unsafe call_conv( "
 fn nomangle pthread_cond_signal( pthread_cond_t &mut cond ) unsafe call_conv( "C" ) : i32;
 fn nomangle pthread_cond_broadcast( pthread_cond_t &mut cond ) unsafe call_conv( "C" ) : i32;
 fn nomangle pthread_cond_wait( pthread_cond_t &mut cond, pthread_mutex_t &mut mutex ) unsafe call_conv( "C" ) : i32;
+fn nomangle pthread_cond_timedwait( pthread_cond_t &mut cond, pthread_mutex_t &mut mutex, timespec& abstime ) unsafe call_conv( "C" ) : i32;
 fn nomangle pthread_condattr_init( pthread_condattr_t &mut attr ) unsafe call_conv( "C" ) : i32;
 fn nomangle pthread_condattr_destroy( pthread_condattr_t &mut attr ) unsafe call_conv( "C" ) : i32;
 

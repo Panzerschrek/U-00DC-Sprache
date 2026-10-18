@@ -1,6 +1,7 @@
 // This file is used internally for low-level condition variables manipulations.
 // Do not use types/functions from this file directly!
 
+import "duration.iu"
 import "mutex_impl.iu"
 
 namespace ust
@@ -34,6 +35,9 @@ fn notify_all_condition_variable( condition_variable_t &mut cv ) unsafe;
 // Given mutex should be previously locked by current thread.
 // Spurious wakeups are possible.
 fn wait_condition_variable( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m ) unsafe;
+
+// Same as "wait_condition_variable", but with a timeout.
+fn wait_condition_variable_timed( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m, duration timeout ) unsafe;
 
 } // namespace condition_variable_impl
 
