@@ -1,0 +1,26 @@
+The Ü standard library now has many synchronization primitives - mutexes, rw_locks, barriers, semaphores, condition variables.
+Some of them have methods, which may block for an unpredictable amount of time.
+But such behavior isn't always desired, sometimes one needs to have some limit for blocking duration.
+
+So, such methods with limited waiting time should be implemented.
+
+For condition variables there are following underlying functions which can be used: pthread_cond_timedwait, SleepConditionVariableSRW.
+
+For rw_locks (shared_ptr_mt-classes) there are following underlying functions which can be used: pthread_rwlock_timedrdlock, pthread_rwlock_timedwrlock.
+There seems to be no timed alternative on Windows.
+
+For mutexes there are following underlying functions which can be used: pthread_mutex_timedlock.
+There seems to be no timed alternative on Windows.
+Maybe SleepConditionVariableSRW can be used in such case with some dummy condition variable (maybe a global one).
+
+For semaphores there are following underlying functions which can be used: sem_timedwait, WaitForSingleObject.
+
+For barriers there are following underlying functions which can be used: pthread_barrier_wait, WaitForSingleObject.
+There seems to be no timed alternative on Windows.
+
+Locking/blocking times methods should return an optional value (for methods returning locks) or some sort of boolean to indicate timeout condition.
+
+There should be methods for blocking duration specified as relative time (duration from now) and absolute (until some specific time point).
+
+Methods requiring time point-based blocking require having a time point class able to represent system time with good enough precision (up to nanoseconds) and large range (more than 1000 years).
+Such time point class should use more than 64 bits to store time, maybe 96 or even 128 bits.
