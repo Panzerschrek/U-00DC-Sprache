@@ -43,7 +43,7 @@ fn wait_condition_variable( condition_variable_t &mut cv, mutex_impl::mutex_t &m
 	unsafe( ::pthread_cond_wait( cast_ref_unsafe</pthread_cond_t/>(cv), cast_ref_unsafe</pthread_mutex_t/>(m) ) );
 }
 
-fn wait_condition_variable_timed( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m, duration timeout ) unsafe
+fn wait_condition_variable_timeout( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m, duration timeout ) unsafe
 {
 	// Request current time and add given timeout to it in order to calculate timeout time point.
 

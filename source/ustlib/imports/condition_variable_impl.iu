@@ -37,7 +37,7 @@ fn notify_all_condition_variable( condition_variable_t &mut cv ) unsafe;
 fn wait_condition_variable( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m ) unsafe;
 
 // Same as "wait_condition_variable", but with a timeout.
-fn wait_condition_variable_timed( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m, duration timeout ) unsafe;
+fn wait_condition_variable_timeout( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m, duration timeout ) unsafe;
 
 } // namespace condition_variable_impl
 
