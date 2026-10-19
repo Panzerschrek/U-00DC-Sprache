@@ -47,6 +47,13 @@ public:
 		unsafe( condition_variable_impl::wait_condition_variable( $>(cv_), l.get_raw_mutex() ) );
 	}
 
+	// Same as "wait", but with a timeout.
+	template</type T/>
+	fn wait_for( this, shared_ptr_mt_mutex_impl::lock</T/> &mut l, duration timeout )
+	{
+		unsafe( condition_variable_impl::wait_condition_variable_timeout( $>(cv_), l.get_raw_mutex(), timeout ) );
+	}
+
 private:
 	// Allocate condition variable instance on heap,
 	// because we need to perform mutation of underlying condition variable structure in "imut" methods

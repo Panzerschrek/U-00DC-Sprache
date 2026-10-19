@@ -1,6 +1,8 @@
 //##success_test
 import "../imports/condition_variable.iu"
 import "../imports/semaphore.iu"
+import "../imports/stdout.iu"
+import "../imports/string.iu"
 import "../imports/thread.iu"
 import "../imports/vector.iu"
 
@@ -147,6 +149,52 @@ fn nomangle main() call_conv( "C" ) : i32
 			{
 				halt if( vec[ size_type(i) ] != i * i + i );
 			}
+		}
+	}
+	{ // "wait_for" wit no "notify" to stop waiting. Timeout should be triggered.
+		var ust::condition_variable cv;
+
+		auto int_ptr= ust::make_shared_ptr_mt_mutex( i32( 123 ) );
+
+		ust::stdout_print( "Is about for waiting with timeout for a condition variable noone will actually signal.\n" );
+
+		with( mut lock : int_ptr.lock() )
+		{
+			cv.wait_for( lock, ust::duration::from_milliseconds( 2500u64 ) );
+		}
+
+		ust::stdout_print( "Finished waiting.\n" );
+	}
+	{ // "wait_for" with large timeout. Since "notify_one" is used, it should finish quickly.
+		var ust::condition_variable cv;
+
+		auto int_ptr= ust::make_shared_ptr_mt_mutex( i32( 123 ) );
+
+		auto t= ust::make_thread(
+			lambda [int_ptr, &cv]()
+				{
+					ust::sleep( ust::duration::from_milliseconds( 200u64 ) ); // Make sure this thread does its job before we start waiting for it.
+					with( mut lock : int_ptr.lock() )
+					{
+						lock.deref()= 456;
+					}
+					cv.notify_one();
+				} );
+
+		ust::stdout_print( "Waiting for up to 10 seconds.\n" );
+
+		with( mut lock : int_ptr.lock() )
+		{
+			cv.wait_for( lock, ust::duration::from_seconds( 10u64 ) );
+		}
+
+		ust::stdout_print( "Finished waiting.\n" );
+		with( mut lock : int_ptr.lock() )
+		{
+			ust::stdout_print(
+				( lock.deref() == 456
+					? ust::string_view8( "Waited successfully.\n" )
+					: ust::string_view8( "Waited without success.\n" ) ) );
 		}
 	}
 
