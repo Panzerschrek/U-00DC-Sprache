@@ -76,27 +76,38 @@ fn acquire_semaphore( semaphore_handle_t s ) unsafe
 
 fn nodiscard acquire_semaphore_timeout( semaphore_handle_t s, duration timeout ) unsafe : bool
 {
-	// Request current time and add given timeout to it in order to calculate timeout time point.
-
-	var u64 timeout_nanoseconds= timeout.ceil_to_nanoseconds();
-
-	var timespec mut now= zero_init;
-	halt if( unsafe( clock_gettime( CLOCK_REALTIME, $<(now) ) ) != 0 ); // TODO - make sure it's correct clock.
-
-	var u64 constexpr ns= 1000000000u64;
-
-	// TODO - make sure no overflow happens here.
-	var u64 wake_up_time_point_fractional_nanoseconds= ( u64( now.tv_nsec ) + timeout_nanoseconds ) % ns;
-	var i64 wake_up_time_point_seconds= i64( ( u64( now.tv_nsec ) + timeout_nanoseconds ) / ns ) + i64( now.tv_sec );
-
-	var timespec mut wake_up_time_point
+	static_if( is_darwin )
 	{
-		.tv_sec ( wake_up_time_point_seconds ),
-		.tv_nsec( wake_up_time_point_fractional_nanoseconds ),
-	};
+		ignore_unused( timeout );
 
-	var i32 res= unsafe( ::sem_timedwait( byte_ptr_cast</sem_t/>( s ), $<( wake_up_time_point ) ) );
-	return res == 0;
+		// HACK!
+		// "sem_timedwait" is missing on MacOS. So, jus use "sem_trywait".
+		return unsafe( sem_trywait( byte_ptr_cast</sem_t/>( s ) ) ) == 0;
+	}
+	else
+	{
+		// Request current time and add given timeout to it in order to calculate timeout time point.
+
+		var u64 timeout_nanoseconds= timeout.ceil_to_nanoseconds();
+
+		var timespec mut now= zero_init;
+		halt if( unsafe( clock_gettime( CLOCK_REALTIME, $<(now) ) ) != 0 ); // TODO - make sure it's correct clock.
+
+		var u64 constexpr ns= 1000000000u64;
+
+		// TODO - make sure no overflow happens here.
+		var u64 wake_up_time_point_fractional_nanoseconds= ( u64( now.tv_nsec ) + timeout_nanoseconds ) % ns;
+		var i64 wake_up_time_point_seconds= i64( ( u64( now.tv_nsec ) + timeout_nanoseconds ) / ns ) + i64( now.tv_sec );
+
+		var timespec mut wake_up_time_point
+		{
+			.tv_sec ( wake_up_time_point_seconds ),
+			.tv_nsec( wake_up_time_point_fractional_nanoseconds ),
+		};
+
+		var i32 res= unsafe( ::sem_timedwait( byte_ptr_cast</sem_t/>( s ), $<( wake_up_time_point ) ) );
+		return res == 0;
+	}
 }
 
 fn release_semaphore( semaphore_handle_t s ) unsafe
