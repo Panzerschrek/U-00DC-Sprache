@@ -58,5 +58,6 @@ fn nomangle pthread_cond_wait( pthread_cond_t &mut cond, pthread_mutex_t &mut mu
 fn nomangle pthread_cond_timedwait( pthread_cond_t &mut cond, pthread_mutex_t &mut mutex, timespec& abstime ) unsafe call_conv( "C" ) : i32;
 fn nomangle pthread_condattr_init( pthread_condattr_t &mut attr ) unsafe call_conv( "C" ) : i32;
 fn nomangle pthread_condattr_destroy( pthread_condattr_t &mut attr ) unsafe call_conv( "C" ) : i32;
+fn nomangle pthread_condattr_setclock( pthread_condattr_t &mut attr, i32 clock_id ) unsafe call_conv( "C" ) : i32;
 
 var bool c_pthread_is_darwin= ust::constexpr_string_equals( compiler::target::vendor, "apple" );
