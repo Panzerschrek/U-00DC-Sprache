@@ -40,7 +40,7 @@ fn wait_condition_variable( condition_variable_t &mut cv, mutex_impl::mutex_t &m
 		DWORD(0) ) );
 }
 
-fn wait_condition_variable_timed( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m, duration timeout ) unsafe
+fn wait_condition_variable_timeout( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m, duration timeout ) unsafe
 {
 	unsafe( ::SleepConditionVariableSRW(
 		$<( cast_ref_unsafe</RTL_CONDITION_VARIABLE/>( cv ) ),
