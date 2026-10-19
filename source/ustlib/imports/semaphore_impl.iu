@@ -1,6 +1,8 @@
 // This file is used internally for low-level semaphore manipulations.
 // Do not use types/functions from this file directly!
 
+import "duration.iu"
+
 namespace ust
 {
 
@@ -18,6 +20,10 @@ fn destroy_semaphore( semaphore_handle_t s ) unsafe;
 
 // Acquire a semaphore (decrease its internal counter by 1), potentially wait until it isn't released by some other thread.
 fn acquire_semaphore( semaphore_handle_t s ) unsafe;
+
+// Same as "acquire_semaphore", but with timeout.
+// Returns "true" if acquired.
+fn nodiscard acquire_semaphore_timeout( semaphore_handle_t s, duration timeout ) unsafe : bool;
 
 // Release semaphore (increase its internal counter by 1), potentially unblocking other threads waiting on this semaphore.
 fn release_semaphore( semaphore_handle_t s ) unsafe;

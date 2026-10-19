@@ -1,4 +1,5 @@
 import "../../imports/memory.iu"
+import "../../imports/minmax.iu"
 import "../../imports/semaphore_impl.iu"
 import "windows.iu"
 
@@ -33,6 +34,16 @@ fn destroy_semaphore( semaphore_handle_t s ) unsafe
 fn acquire_semaphore( semaphore_handle_t s ) unsafe
 {
 	unsafe( ::WaitForSingleObject( s, DWORD(INFINITE) ) );
+}
+
+fn nodiscard acquire_semaphore_timeout( semaphore_handle_t s, duration timeout ) unsafe : bool
+{
+	var DWORD res=
+		unsafe( ::WaitForSingleObject(
+			s, DWORD( min( timeout.ceil_to_milliseconds(), u64( u32( INFINITE ) ) - 1u64 ) ) ) );
+
+	// WAIT_OBJECT_0 is zero, WAIT_TIMEOUT is non-zero.
+	return res == 0u;
 }
 
 fn release_semaphore( semaphore_handle_t s ) unsafe
