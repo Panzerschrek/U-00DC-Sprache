@@ -80,6 +80,13 @@ public:
 		unsafe( condition_variable_impl::wait_condition_variable( $>(ptr_).cv, l.get_raw_mutex() ) );
 	}
 
+	// Same as "wait", but with a timeout.
+	template</type T/>
+	fn wait_for( this, shared_ptr_mt_mutex_impl::lock</T/> &mut l, duration timeout )
+	{
+		unsafe( condition_variable_impl::wait_condition_variable_timeout( $>(ptr_).cv, l.get_raw_mutex(), timeout ) );
+	}
+
 private:
 	struct storage
 	{
