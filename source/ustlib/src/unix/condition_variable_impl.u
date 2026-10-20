@@ -10,13 +10,21 @@ namespace condition_variable_impl
 static_assert( typeinfo</condition_variable_t/>.size_of == typeinfo</pthread_cond_t/>.size_of );
 static_assert( typeinfo</condition_variable_t/>.align_of >= typeinfo</pthread_cond_t/>.align_of );
 
+var bool is_darwin= constexpr_string_equals( compiler::target::vendor, "apple" );
+
 fn initialize_condition_variable( condition_variable_t &mut cv ) unsafe
 {
 	unsafe
 	{
 		var pthread_condattr_t mut attr= zero_init;
 		halt if( ::pthread_condattr_init( attr ) != 0 );
-		halt if( ::pthread_condattr_setclock( attr, i32( c_clock_for_cond_wait ) ) != 0 );
+
+		static_if( !is_darwin )
+		{
+			// Hack! Apple is busy redesigning their UI for each new OS version, so that they still can't implement esential pthread functions like this.
+			halt if( ::pthread_condattr_setclock( attr, i32( c_clock_for_cond_wait ) ) != 0 );
+		}
+
 		var i32 res= ::pthread_cond_init( cast_ref_unsafe</pthread_cond_t/>(cv), $<(attr) );
 		halt if( res != 0 );
 		::pthread_condattr_destroy( attr );
@@ -72,7 +80,7 @@ fn wait_condition_variable_timeout( condition_variable_t &mut cv, mutex_impl::mu
 
 // Use monotonic clock for measuring time for condition variables waiting.
 // It's better than CLOCK_REALTIME, since it can't go backwards.
-var clockid_t constexpr c_clock_for_cond_wait( CLOCK_MONOTONIC );
+var clockid_t constexpr c_clock_for_cond_wait( ( is_darwin ? CLOCK_REALTIME : CLOCK_MONOTONIC ) );
 
 } // namespace condition_variable_impl
 
