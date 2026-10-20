@@ -30,6 +30,11 @@ fn lock_mutex( mutex_t &mut m ) unsafe
 	unsafe( ::pthread_mutex_lock( cast_ref_unsafe</pthread_mutex_t/>( m ) ) );
 }
 
+fn nodiscard try_lock_mutex( mutex_t &mut m ) unsafe : bool
+{
+	return unsafe( ::pthread_mutex_trylock( cast_ref_unsafe</pthread_mutex_t/>( m ) ) ) == 0;
+}
+
 fn unlock_mutex( mutex_t &mut m ) unsafe
 {
 	unsafe( ::pthread_mutex_unlock( cast_ref_unsafe</pthread_mutex_t/>( m ) ) );

@@ -28,6 +28,11 @@ fn lock_rwlock_shared( rwlock &mut l ) unsafe
 	halt if( unsafe( ::pthread_rwlock_rdlock( l ) ) != 0 );
 }
 
+fn nodiscard try_lock_rwlock_shared( rwlock &mut l ) unsafe : bool
+{
+	return unsafe( ::pthread_rwlock_tryrdlock( l ) ) == 0;
+}
+
 fn unlock_rwlock_shared( rwlock &mut l ) unsafe
 {
 	halt if( unsafe( ::pthread_rwlock_unlock( l ) ) != 0 );
@@ -36,6 +41,11 @@ fn unlock_rwlock_shared( rwlock &mut l ) unsafe
 fn lock_rwlock_exclusive( rwlock &mut l ) unsafe
 {
 	halt if( unsafe( ::pthread_rwlock_wrlock( l ) ) != 0 );
+}
+
+fn nodiscard try_lock_rwlock_exclusive( rwlock &mut l ) unsafe : bool
+{
+	return unsafe( ::pthread_rwlock_trywrlock( l ) ) == 0;
 }
 
 fn unlock_rwlock_exclusive( rwlock &mut l ) unsafe
