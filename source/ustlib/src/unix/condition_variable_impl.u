@@ -72,7 +72,7 @@ fn wait_condition_variable_timeout( condition_variable_t &mut cv, mutex_impl::mu
 
 // Use monotonic clock for measuring time for condition variables waiting.
 // It's better than CLOCK_REALTIME, since it can't go backwards.
-var i32 constexpr c_clock_for_cond_wait( CLOCK_MONOTONIC );
+var clockid_t constexpr c_clock_for_cond_wait( CLOCK_MONOTONIC );
 
 } // namespace condition_variable_impl
 
