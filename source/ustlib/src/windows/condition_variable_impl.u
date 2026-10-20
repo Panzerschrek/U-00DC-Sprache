@@ -1,4 +1,5 @@
 import "../../imports/condition_variable_impl.iu"
+import "../../imports/minmax.iu"
 import "windows.iu"
 
 namespace ust
@@ -36,6 +37,15 @@ fn wait_condition_variable( condition_variable_t &mut cv, mutex_impl::mutex_t &m
 		$<( cast_ref_unsafe</RTL_CONDITION_VARIABLE/>( cv ) ),
 		$<( cast_ref_unsafe</RTL_SRWLOCK/>( m ) ),
 		DWORD(INFINITE),
+		DWORD(0) ) );
+}
+
+fn wait_condition_variable_timeout( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m, duration timeout ) unsafe
+{
+	unsafe( ::SleepConditionVariableSRW(
+		$<( cast_ref_unsafe</RTL_CONDITION_VARIABLE/>( cv ) ),
+		$<( cast_ref_unsafe</RTL_SRWLOCK/>( m ) ),
+		DWORD( min( timeout.ceil_to_milliseconds(), u64( u32( INFINITE ) ) - 1u64 ) ),
 		DWORD(0) ) );
 }
 

@@ -30,6 +30,12 @@ public:
 		unsafe( semaphore_impl::acquire_semaphore( handle_ ) );
 	}
 
+	// Same as "acquire", but will block only up to given timeout. Returns "true" if acquired.
+	fn nodiscard acquire_wait_for( this, duration timeout ) : bool
+	{
+		return unsafe( semaphore_impl::acquire_semaphore_timeout( handle_, timeout ) );
+	}
+
 	// Increase internal counter by 1, potentially allowing other waiting threads to continue their execution.
 	fn release( this )
 	{

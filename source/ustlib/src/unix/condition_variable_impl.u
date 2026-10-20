@@ -10,13 +10,24 @@ namespace condition_variable_impl
 static_assert( typeinfo</condition_variable_t/>.size_of == typeinfo</pthread_cond_t/>.size_of );
 static_assert( typeinfo</condition_variable_t/>.align_of >= typeinfo</pthread_cond_t/>.align_of );
 
+var bool is_darwin= constexpr_string_equals( compiler::target::vendor, "apple" );
+
 fn initialize_condition_variable( condition_variable_t &mut cv ) unsafe
 {
 	unsafe
 	{
-		var $(pthread_condattr_t) attr= zero_init;
-		var i32 res= ::pthread_cond_init( cast_ref_unsafe</pthread_cond_t/>(cv), attr );
+		var pthread_condattr_t mut attr= zero_init;
+		halt if( ::pthread_condattr_init( attr ) != 0 );
+
+		static_if( !is_darwin )
+		{
+			// Hack! Apple is busy redesigning their UI for each new OS version, so that they still can't implement esential pthread functions like this.
+			halt if( ::pthread_condattr_setclock( attr, i32( c_clock_for_cond_wait ) ) != 0 );
+		}
+
+		var i32 res= ::pthread_cond_init( cast_ref_unsafe</pthread_cond_t/>(cv), $<(attr) );
 		halt if( res != 0 );
+		::pthread_condattr_destroy( attr );
 	}
 }
 
@@ -39,6 +50,37 @@ fn wait_condition_variable( condition_variable_t &mut cv, mutex_impl::mutex_t &m
 {
 	unsafe( ::pthread_cond_wait( cast_ref_unsafe</pthread_cond_t/>(cv), cast_ref_unsafe</pthread_mutex_t/>(m) ) );
 }
+
+fn wait_condition_variable_timeout( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m, duration timeout ) unsafe
+{
+	// Request current time and add given timeout to it in order to calculate timeout time point.
+
+	var u64 timeout_nanoseconds= timeout.ceil_to_nanoseconds();
+
+	var timespec mut now= zero_init;
+	halt if( unsafe( clock_gettime( c_clock_for_cond_wait, $<(now) ) ) != 0 );
+
+	var u64 constexpr ns= 1000000000u64;
+
+	// TODO - make sure no overflow happens here.
+	var u64 wake_up_time_point_fractional_nanoseconds= ( u64( now.tv_nsec ) + timeout_nanoseconds ) % ns;
+	var i64 wake_up_time_point_seconds= i64( ( u64( now.tv_nsec ) + timeout_nanoseconds ) / ns ) + i64( now.tv_sec );
+
+	var timespec wake_up_time_point
+	{
+		.tv_sec ( wake_up_time_point_seconds ),
+		.tv_nsec( wake_up_time_point_fractional_nanoseconds ),
+	};
+
+	unsafe( ::pthread_cond_timedwait(
+		cast_ref_unsafe</pthread_cond_t/>(cv),
+		cast_ref_unsafe</pthread_mutex_t/>(m),
+		wake_up_time_point ) );
+}
+
+// Use monotonic clock for measuring time for condition variables waiting.
+// It's better than CLOCK_REALTIME, since it can't go backwards.
+var clockid_t constexpr c_clock_for_cond_wait( ( is_darwin ? CLOCK_REALTIME : CLOCK_MONOTONIC ) );
 
 } // namespace condition_variable_impl
 
