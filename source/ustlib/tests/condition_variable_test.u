@@ -156,7 +156,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		auto int_ptr= ust::make_shared_ptr_mt_mutex( i32( 123 ) );
 
-		ust::stdout_print( "Is about for waiting with timeout for a condition variable noone will actually signal.\n" );
+		ust::stdout_print( "Is about to waiting with timeout for a condition variable no one will actually signal.\n" );
 
 		with( mut lock : int_ptr.lock() )
 		{
@@ -186,11 +186,9 @@ fn nomangle main() call_conv( "C" ) : i32
 		with( mut lock : int_ptr.lock() )
 		{
 			cv.wait_for( lock, ust::duration::from_seconds( 10u64 ) );
-		}
 
-		ust::stdout_print( "Finished waiting.\n" );
-		with( mut lock : int_ptr.lock() )
-		{
+			ust::stdout_print( "Finished waiting.\n" );
+
 			ust::stdout_print(
 				( lock.deref() == 456
 					? ust::string_view8( "Waited successfully.\n" )

@@ -91,7 +91,7 @@ fn nodiscard acquire_semaphore_timeout( semaphore_handle_t s, duration timeout )
 		var u64 timeout_nanoseconds= timeout.ceil_to_nanoseconds();
 
 		var timespec mut now= zero_init;
-		halt if( unsafe( clock_gettime( CLOCK_REALTIME, $<(now) ) ) != 0 ); // TODO - make sure it's correct clock.
+		halt if( unsafe( clock_gettime( CLOCK_REALTIME /* This clock is hardcoded for semaphores. */, $<(now) ) ) != 0 );
 
 		var u64 constexpr ns= 1000000000u64;
 
