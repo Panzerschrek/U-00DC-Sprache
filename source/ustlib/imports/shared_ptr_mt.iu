@@ -194,11 +194,13 @@ public:
 
 	fn lock_mut_unchecked ( this ) unsafe : lock_mut_t @( reference_notation::return_inner_references::param0 )
 	{
+		unsafe( rwlock_impl::lock_rwlock_exclusive( $>( storage_.get_control_block_ptr() ).rwlock ) );
 		return unsafe( lock_mut_t ( storage_ ) );
 	}
 
 	fn lock_imut_unchecked( this ) unsafe : lock_imut_t @( reference_notation::return_inner_references::param0 )
 	{
+		unsafe( rwlock_impl::lock_rwlock_shared( $>( storage_.get_control_block_ptr() ).rwlock ) );
 		return unsafe( lock_imut_t( storage_ ) );
 	}
 
@@ -454,11 +456,10 @@ template</ type T />
 class lock_mut non_sync nodiscard
 {
 public:
+	// Lock must be acquired prior to this constructor call!
 	fn constructor( mut this, storage_type storage ) unsafe
 		( storage_= storage )
-	{
-		unsafe( rwlock_impl::lock_rwlock_exclusive( $>( storage_.get_control_block_ptr() ).rwlock ) );
-	}
+	{}
 
 	fn destructor()
 	{
@@ -488,11 +489,10 @@ template</ type T />
 class lock_imut non_sync nodiscard
 {
 public:
+	// Lock must be acquired prior to this constructor call!
 	fn constructor( mut this, storage_type storage )  unsafe
 		( storage_= storage )
-	{
-		unsafe( rwlock_impl::lock_rwlock_shared( $>( storage_.get_control_block_ptr() ).rwlock ) );
-	}
+	{}
 
 	fn destructor()
 	{
