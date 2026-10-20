@@ -123,7 +123,7 @@ Standart library:
 *) Allow setting/getting broadcast/multicast properties on UDP socket
 *) Fix inet address resolution for non-ASCII domain names on some systems (like GNU/Linux)
 *) Implement a thread-safe version of arena_allocator
-*) Support condition variable waiting with timeout
+*) Condider adding non-blocking lock methods into "shared_ptr_mt" and "shared_ptr_mt_mutex" (returning optional)
 *) Consider adding lock methods to "shared_ptr_mt" and "shared_ptr_mt_mutex" having timeout
 *) Consider implementing stringification for more library types - shared pointers, atomic variables, files, sockets,
 	but only if it makes sense
@@ -269,7 +269,7 @@ Targets:
 *) Support targeting iOS
 *) Support targeting GNU/Linux with x32 ABI
 *) Support older versions of OS X (prior to 15.0)
-*) Fix broken standard library functionality on OS X (semaphores, some file operations, some network functionality)
+*) Fix broken standard library functionality on OS X (semaphores, some network functionality)
 *) Support hosting/targeting OS X on x86_64 CPUs
 *) Support hosting/targeting Windows on AArch64 CPUs
 *) Support targeting WASM
