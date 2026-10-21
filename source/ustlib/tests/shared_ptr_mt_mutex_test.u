@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/binary_heap.iu"
 import "../imports/shared_ptr_mt_mutex.iu"
+import "../imports/stdout.iu"
 import "../imports/thread.iu"
 import "../imports/vector.iu"
 
@@ -415,6 +416,156 @@ fn nomangle main() call_conv( "C" ) : i32
 		static_assert( typeinfo</ lock_type />.size_of == typeinfo</size_type/>.size_of );
 		// Lock class is "non_sync" - in order to avoid move itto another thread and performing unlocking on a thread different from a thread which performed locking.
 		static_assert( non_sync</ lock_type /> );
+	}
+	{ // "lock_nonblocking" - should lock if no other locks exist.
+		var IntPtr ptr= ust::make_shared_ptr_mt_mutex( 123 );
+		if_var( &mut l : ptr.lock_nonblocking() )
+		{
+			halt if( l.deref() != 123 );
+			l.deref()= 456;
+		}
+		else { halt; }
+	}
+	{ // "try_lock_nonblocking" - should lock if no other locks exist.
+		var IntPtrNullable ptr= ust::make_shared_ptr_mt_mutex( 74734 );
+		if_var( &mut l : ptr.try_lock_nonblocking() )
+		{
+			halt if( l.deref() != 74734 );
+			l.deref()= 21512;
+		}
+		else { halt; }
+	}
+	{ // "lock_nonblocking" - should fail locking second time on the same thread.
+		var IntPtr ptr= ust::make_shared_ptr_mt_mutex( 95423 );
+		auto mut lock0_opt= ptr.lock_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 95423 );
+		auto mut lock1_opt= ptr.lock_nonblocking();
+		halt if( !lock1_opt.empty() );
+	}
+	{ // "try_lock_nonblocking" - should fail locking second time on the same thread.
+		var IntPtrNullable ptr= ust::make_shared_ptr_mt_mutex( 33632 );
+		auto mut lock0_opt= ptr.try_lock_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 33632 );
+		auto mut lock1_opt= ptr.try_lock_nonblocking();
+		halt if( !lock1_opt.empty() );
+	}
+	{ // "lock_nonblocking" - locking should fail if another thread holds the lock.
+		var IntPtr ptr= ust::make_shared_ptr_mt_mutex( 3236 );
+
+		auto t=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					auto mut l= ptr.lock_nonblocking();
+					if( l.empty() )
+					{
+						ust::stdout_print( "Unable to lock on background thread.\n" );
+					}
+					else
+					{
+						ust::stdout_print( "Locked on background thread.\n" );
+						halt if( l.try_deref().deref() != 3236 );
+					}
+					ust::sleep( ust::duration::from_milliseconds( 1000u64 ) );
+				} );
+
+		ust::sleep( ust::duration::from_milliseconds( 200u64 ) ); // Give the background thread some time to start.
+
+		// Generally should not lock here, unless the background thread already finished.
+		auto mut l= ptr.lock_nonblocking();
+		if( l.empty() )
+		{
+			ust::stdout_print( "Unable to lock on main thread.\n" );
+		}
+		else
+		{
+			ust::stdout_print( "Locked on main thread.\n" );
+			halt if( l.try_deref().deref() != 1323623 );
+		}
+	}
+	{ // "try_lock_nonblocking" - locking should fail if another thread holds the lock.
+		var IntPtrNullable ptr= ust::make_shared_ptr_mt_mutex( 1323623 );
+
+		auto t=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					auto mut l= ptr.try_lock_nonblocking();
+					if( l.empty() )
+					{
+						ust::stdout_print( "Unable to lock on background thread.\n" );
+					}
+					else
+					{
+						ust::stdout_print( "Locked on background thread.\n" );
+						halt if( l.try_deref().deref() != 1323623 );
+					}
+					ust::sleep( ust::duration::from_milliseconds( 1000u64 ) );
+				} );
+
+		ust::sleep( ust::duration::from_milliseconds( 200u64 ) ); // Give the background thread some time to start.
+
+		// Generally should not lock here, unless the background thread already finished.
+		auto mut l= ptr.try_lock_nonblocking();
+		if( l.empty() )
+		{
+			ust::stdout_print( "Unable to lock on main thread.\n" );
+		}
+		else
+		{
+			ust::stdout_print( "Locked on main thread.\n" );
+			halt if( l.try_deref().deref() != 1323623 );
+		}
+	}
+	{ // "lock_nonblocking" - locking should fail if another thread holds the lock.
+		var IntPtr ptr= ust::make_shared_ptr_mt_mutex( 5332 );
+
+		auto mut lock0_opt= ptr.lock_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 5332 );
+
+		auto t=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					// Should fail locking here, since the main thread already holds the lock.
+					auto mut lock1_opt= ptr.lock_nonblocking();
+					halt if( !lock1_opt.empty() );
+				} );
+	}
+	{ // "try_lock_nonblocking" - locking should fail if another thread holds the lock.
+		var IntPtrNullable ptr= ust::make_shared_ptr_mt_mutex( 5332 );
+
+		auto mut lock0_opt= ptr.try_lock_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 5332 );
+
+		auto t=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					// Should fail locking here, since the main thread already holds the lock.
+					auto mut lock1_opt= ptr.try_lock_nonblocking();
+					halt if( !lock1_opt.empty() );
+				} );
+	}
+	{ // "lock_mut_nonblocking" (alternative spelling) - should fail locking second time on the same thread.
+		var IntPtr ptr= ust::make_shared_ptr_mt_mutex( 95423 );
+		auto mut lock0_opt= ptr.lock_mut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 95423 );
+		auto mut lock1_opt= ptr.lock_mut_nonblocking();
+		halt if( !lock1_opt.empty() );
+	}
+	{ // "try_lock_mut_nonblocking" (alternative spelling) - should fail locking second time on the same thread.
+		var IntPtrNullable ptr= ust::make_shared_ptr_mt_mutex( 33632 );
+		auto mut lock0_opt= ptr.try_lock_mut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 33632 );
+		auto mut lock1_opt= ptr.try_lock_mut_nonblocking();
+		halt if( !lock1_opt.empty() );
 	}
 
 	// is_hash_compatible_type

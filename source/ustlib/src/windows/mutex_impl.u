@@ -30,6 +30,11 @@ fn lock_mutex( mutex_t &mut m ) unsafe
 	unsafe( ::AcquireSRWLockExclusive( $<( cast_ref_unsafe</RTL_SRWLOCK/>(m) ) ) );
 }
 
+fn nodiscard try_lock_mutex( mutex_t &mut m ) unsafe : bool
+{
+	return unsafe( ::TryAcquireSRWLockExclusive( $<( cast_ref_unsafe</RTL_SRWLOCK/>(m) ) ) ) != BYTE(0);
+}
+
 fn unlock_mutex( mutex_t &mut m ) unsafe
 {
 	unsafe( ::ReleaseSRWLockExclusive( $<( cast_ref_unsafe</RTL_SRWLOCK/>(m) ) ) );

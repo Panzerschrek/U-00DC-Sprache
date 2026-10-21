@@ -28,6 +28,9 @@ fn destroy_mutex( mutex_t &mut m ) unsafe;
 // Unlocking should happen on the same thread which previously performed locking.
 fn lock_mutex( mutex_t &mut m ) unsafe;
 
+// Same as "lock_mutex", but doesn't wait if can't lock right now. Returns "true" if locked.
+fn nodiscard try_lock_mutex( mutex_t &mut m ) unsafe : bool;
+
 // Unlock mutex previously locked.
 // Unlocking should happen on the same thread which previously performed locking.
 fn unlock_mutex( mutex_t &mut m ) unsafe;

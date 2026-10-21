@@ -26,10 +26,12 @@ fn destroy_rwlock( rwlock &mut l ) unsafe;
 
 // Lock/unlock for read-only shared access. Unlocking should happen on the same thread which previously performed locking.
 fn lock_rwlock_shared( rwlock &mut l ) unsafe;
+fn nodiscard try_lock_rwlock_shared( rwlock &mut l ) unsafe : bool;
 fn unlock_rwlock_shared( rwlock &mut l ) unsafe;
 
 // Lock/unlock for read-write exclusive access. Unlocking should happen on the same thread which previously performed locking.
 fn lock_rwlock_exclusive( rwlock &mut l ) unsafe;
+fn nodiscard try_lock_rwlock_exclusive( rwlock &mut l ) unsafe : bool;
 fn unlock_rwlock_exclusive( rwlock &mut l ) unsafe;
 
 } // namespace rwlock_impl

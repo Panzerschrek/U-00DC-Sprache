@@ -46,6 +46,8 @@ fn nomangle SetFilePointerEx( HANDLE hFile, LARGE_INTEGER liDistanceToMove, PLAR
 fn nomangle Sleep( DWORD dwMilliseconds ) unsafe call_conv( "system" ) : void;
 fn nomangle SleepConditionVariableSRW( PCONDITION_VARIABLE ConditionVariable, PSRWLOCK SRWLock, DWORD dwMilliseconds, ULONG Flags ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle SwitchToThread() unsafe call_conv( "system" ) : BOOL;
+fn nomangle TryAcquireSRWLockExclusive( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : BYTE;
+fn nomangle TryAcquireSRWLockShared( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : BYTE;
 fn nomangle WakeAllConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
 fn nomangle WakeConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
@@ -338,6 +340,7 @@ type wchar_t = char16; // Changed manually from "u16" in order to be able to use
 type ADDRESS_FAMILY = USHORT_;
 type ADDRINFOW = addrinfoW;
 type BOOL = i32;
+type BYTE = u8;
 type BY_HANDLE_FILE_INFORMATION = BY_HANDLE_FILE_INFORMATION_;
 type CHAR = char8;
 type GET_FILEEX_INFO_LEVELS = GET_FILEEX_INFO_LEVELS_;

@@ -26,6 +26,11 @@ fn lock_rwlock_shared( rwlock &mut l ) unsafe
 	unsafe( ::AcquireSRWLockShared( $<( cast_ref_unsafe</RTL_SRWLOCK/>( l ) ) ) );
 }
 
+fn nodiscard try_lock_rwlock_shared( rwlock &mut l ) unsafe : bool
+{
+	return unsafe( ::TryAcquireSRWLockShared( $<( cast_ref_unsafe</RTL_SRWLOCK/>(l) ) ) ) != BYTE(0);
+}
+
 fn unlock_rwlock_shared( rwlock &mut l ) unsafe
 {
 	unsafe( ::ReleaseSRWLockShared( $<( cast_ref_unsafe</RTL_SRWLOCK/>(l) ) ) );
@@ -34,6 +39,11 @@ fn unlock_rwlock_shared( rwlock &mut l ) unsafe
 fn lock_rwlock_exclusive( rwlock &mut l ) unsafe
 {
 	unsafe( ::AcquireSRWLockExclusive( $<( cast_ref_unsafe</RTL_SRWLOCK/>(l) ) ) );
+}
+
+fn nodiscard try_lock_rwlock_exclusive( rwlock &mut l ) unsafe : bool
+{
+	return unsafe( ::TryAcquireSRWLockExclusive( $<( cast_ref_unsafe</RTL_SRWLOCK/>(l) ) ) ) != BYTE(0);
 }
 
 fn unlock_rwlock_exclusive( rwlock &mut l ) unsafe
