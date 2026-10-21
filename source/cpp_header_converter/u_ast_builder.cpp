@@ -621,6 +621,36 @@ std::string CppAstConsumer::GetAnonymousItemUniqueName( std::string_view prefix,
 		}
 	}
 
+	// If we have an anonymous enum, extract common name prefix for each of its enumerators.
+	// This gives good results, since in C it's common practice to have such prefixes.
+	// But such prefix isn't enough to generate full name for anonymous enum, so, append file/line/column-based components too.
+	if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>( &decl ) )
+	{
+		auto enumerators= enum_decl->enumerators();
+		if( !enumerators.empty() )
+		{
+			std::string_view common_prefix= enumerators.begin()->getName();
+			for( const clang::EnumConstantDecl* enumerator : enumerators )
+			{
+				const llvm::StringRef enumerator_name= enumerator->getName();
+				size_t i= 0;
+				while( i < common_prefix.size() && i < enumerator_name.size() && common_prefix[i] == enumerator_name[i] )
+					++i;
+				common_prefix= common_prefix.substr( 0, i );
+			}
+
+			while( !common_prefix.empty() && common_prefix.back() == '_' )
+				common_prefix= common_prefix.substr( 0, common_prefix.size() - 1 );
+
+			if( !common_prefix.empty() )
+			{
+				if( common_prefix.front() != '_' )
+					name+= "_";
+				name+= common_prefix;
+			}
+		}
+	}
+
 	// Use prefix_device_file_line_column format.
 	// This provides stable and deterministic names (at least on single machine).
 
