@@ -355,7 +355,7 @@ private:
 private:
 	void ProcessDecl( const clang::Decl& decl );
 
-	std::string GetAnonymousItemUniqueName( std::string_view prefix, clang::SourceLocation location );
+	std::string GetAnonymousItemUniqueName( std::string_view prefix, const clang::TagDecl& decl );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
@@ -510,7 +510,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 			const std::string name_translated=
 				src_name.empty()
-					? GetAnonymousItemUniqueName( g_anon_record_prefix, record_decl->getLocation() )
+					? GetAnonymousItemUniqueName( g_anon_record_prefix, *record_decl )
 					: TranslateIdentifier( src_name );
 
 			// Tagged names (structs, unions, enums) in C build a separae namespace.
@@ -550,7 +550,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 		const std::string name_translated=
 			src_name.empty()
-				? GetAnonymousItemUniqueName( g_anon_enum_prefix, enum_decl->getLocation() )
+				? GetAnonymousItemUniqueName( g_anon_enum_prefix, *enum_decl )
 				: TranslateIdentifier( src_name );
 
 		// Tagged names (structs, unions, enums) in C build a separae namespace.
@@ -603,10 +603,21 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	}
 }
 
-std::string CppAstConsumer::GetAnonymousItemUniqueName( std::string_view prefix, clang::SourceLocation location )
+std::string CppAstConsumer::GetAnonymousItemUniqueName( std::string_view prefix, const clang::TagDecl& decl )
 {
+	// For ananymous items try using typedef name for them.
+	// Mangling in C++ seems to do this too, an anonymous struct is mangled as first typedef created for it.
+	if( const clang::TypedefNameDecl* const typedef_name_decl = decl.getTypedefNameForAnonDecl() )
+	{
+		const clang::DeclarationName decl_name= typedef_name_decl->getDeclName();
+		if( decl_name.isIdentifier() )
+			return TranslateIdentifier( decl_name.getAsString() );
+	}
+
 	// Use prefix_device_file_line_column format.
 	// This provides stable and deterministic names (at least on single machine).
+
+	clang::SourceLocation location= decl.getLocation();
 
 	std::string name= std::string( prefix );
 
@@ -1047,7 +1058,7 @@ void CppAstConsumer::CollectSubrecords( NamespaceItem& item )
 
 					const std::string name_translated=
 						src_name.empty()
-							? GetAnonymousItemUniqueName( g_anon_record_prefix, subrecord->getLocation() )
+							? GetAnonymousItemUniqueName( g_anon_record_prefix, *subrecord )
 							: TranslateIdentifier( src_name );
 
 					NamespaceItemsMap& items_map=
