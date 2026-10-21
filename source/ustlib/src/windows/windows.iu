@@ -47,7 +47,7 @@ fn nomangle Sleep( DWORD dwMilliseconds ) unsafe call_conv( "system" ) : void;
 fn nomangle SleepConditionVariableSRW( PCONDITION_VARIABLE ConditionVariable, PSRWLOCK SRWLock, DWORD dwMilliseconds, ULONG Flags ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle SwitchToThread() unsafe call_conv( "system" ) : BOOL;
 fn nomangle TryAcquireSRWLockExclusive( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : BYTE;
-fn nomangle TryAcquireSRWLockShared( ::PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : BYTE;
+fn nomangle TryAcquireSRWLockShared( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : BYTE;
 fn nomangle WakeAllConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
 fn nomangle WakeConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
