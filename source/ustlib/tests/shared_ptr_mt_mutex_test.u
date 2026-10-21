@@ -551,6 +551,22 @@ fn nomangle main() call_conv( "C" ) : i32
 					halt if( !lock1_opt.empty() );
 				} );
 	}
+	{ // "lock_mut_nonblocking" (alternative spelling) - should fail locking second time on the same thread.
+		var IntPtr ptr= ust::make_shared_ptr_mt_mutex( 95423 );
+		auto mut lock0_opt= ptr.lock_mut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 95423 );
+		auto mut lock1_opt= ptr.lock_mut_nonblocking();
+		halt if( !lock1_opt.empty() );
+	}
+	{ // "try_lock_mut_nonblocking" (alternative spelling) - should fail locking second time on the same thread.
+		var IntPtrNullable ptr= ust::make_shared_ptr_mt_mutex( 33632 );
+		auto mut lock0_opt= ptr.try_lock_mut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 33632 );
+		auto mut lock1_opt= ptr.try_lock_mut_nonblocking();
+		halt if( !lock1_opt.empty() );
+	}
 
 	// is_hash_compatible_type
 	static_assert(  IntPtr::is_hash_compatible_type</IntPtr/>() );
