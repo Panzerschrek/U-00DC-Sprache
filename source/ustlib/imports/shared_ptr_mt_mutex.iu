@@ -3,6 +3,7 @@ import "atomic.iu"
 import "container_utils.iu"
 import "hash_apply.iu"
 import "mutex_impl.iu"
+import "optional.iu"
 import "polymorph.iu"
 
 namespace ust
@@ -162,6 +163,26 @@ public:
 		return unsafe( lock_t( storage_ ) );
 	}
 
+	fn enable_if(is_nullable) try_lock_nonblocking( this ) : optional</lock_t/>  @( reference_notation::return_inner_references::param0 )
+	{
+		halt if( empty() );
+		return unsafe( lock_nonblocking_unchecked() );
+	}
+
+	fn enable_if(!is_nullable) lock_nonblocking( this ) : optional</lock_t/> @( reference_notation::return_inner_references::param0 )
+	{
+		return unsafe( lock_nonblocking_unchecked() );
+	}
+
+	fn lock_nonblocking_unchecked( this ) unsafe : optional</lock_t/> @( reference_notation::return_inner_references::param0 )
+	{
+		if( unsafe( mutex_impl::try_lock_mutex( $>( storage_.get_control_block_ptr() ).mutex ) ) )
+		{
+			return unsafe( lock_t( storage_ ) );
+		}
+		return null_optional;
+	}
+
 	// Alternative names for lock operations - to be compatible with "shared_ptr_mt".
 
 	fn enable_if(is_nullable) try_lock_mut( this ) : lock_t @( reference_notation::return_inner_references::param0 )
@@ -177,6 +198,21 @@ public:
 	fn lock_mut_unchecked( this ) unsafe : lock_t @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( lock_unchecked() );
+	}
+
+	fn enable_if(is_nullable) try_lock_mut_nonblocking( this ) : optional</lock_t/>  @( reference_notation::return_inner_references::param0 )
+	{
+		return try_lock_nonblocking();
+	}
+
+	fn enable_if(!is_nullable) lock_mut_nonblocking( this ) : optional</lock_t/> @( reference_notation::return_inner_references::param0 )
+	{
+		return lock_nonblocking();
+	}
+
+	fn lock_mut_nonblocking_unchecked( this ) unsafe : optional</lock_t/> @( reference_notation::return_inner_references::param0 )
+	{
+		return unsafe( lock_nonblocking_unchecked() );
 	}
 
 	// Compare.
