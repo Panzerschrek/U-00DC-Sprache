@@ -123,7 +123,6 @@ Standart library:
 *) Allow setting/getting broadcast/multicast properties on UDP socket
 *) Fix inet address resolution for non-ASCII domain names on some systems (like GNU/Linux)
 *) Implement a thread-safe version of arena_allocator
-*) Condider adding non-blocking lock methods into "shared_ptr_mt" and "shared_ptr_mt_mutex" (returning optional)
 *) Consider adding lock methods to "shared_ptr_mt" and "shared_ptr_mt_mutex" having timeout
 *) Consider implementing stringification for more library types - shared pointers, atomic variables, files, sockets,
 	but only if it makes sense
