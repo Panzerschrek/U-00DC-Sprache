@@ -7,6 +7,7 @@ import "../imports/hash_map.iu"
 import "../imports/optional.iu"
 import "../imports/optional_ref.iu"
 import "../imports/random_access_range.iu"
+import "../imports/thread.iu"
 import "../imports/vector.iu"
 
 type IntPtrMut=  ust::shared_ptr_mt_mut </i32/>;
@@ -497,6 +498,200 @@ fn nomangle main() call_conv( "C" ) : i32
 		// Lock types are "non_sync" - in order to avoid moving them to another thread and performing unlocking on a thread different from a thread which performed locking.
 		static_assert( non_sync</ imut_lock_type /> );
 		static_assert( non_sync</ mut_lock_type /> );
+	}
+	{ // "lock_imut_nonblocking" - should be able to lock multiple times on the same thread.
+		var IntPtrImut ptr( 174 );
+		auto lock0_opt= ptr.lock_imut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 174 );
+		auto lock1_opt= ptr.lock_imut_nonblocking();
+		halt if( lock1_opt.empty() );
+		halt if( lock1_opt.try_deref().deref() != 174 );
+		auto lock2_opt= ptr.lock_imut_nonblocking();
+		halt if( lock2_opt.empty() );
+		halt if( lock2_opt.try_deref().deref() != 174 );
+	}
+	{ // "try_lock_imut_nonblocking" - should be able to lock multiple times on the same thread.
+		var IntPtrNullableImut ptr( 8342 );
+		auto lock0_opt= ptr.try_lock_imut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 8342 );
+		auto lock1_opt= ptr.try_lock_imut_nonblocking();
+		halt if( lock1_opt.empty() );
+		halt if( lock1_opt.try_deref().deref() != 8342 );
+		auto lock2_opt= ptr.try_lock_imut_nonblocking();
+		halt if( lock2_opt.empty() );
+		halt if( lock2_opt.try_deref().deref() != 8342 );
+	}
+	{ // "lock_mut_nonblocking" - can't create mutable second time on the same thead.
+		var IntPtrMut ptr( 641 );
+		auto mut lock0_opt= ptr.lock_mut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 641 );
+		auto lock1_opt= ptr.lock_mut_nonblocking();
+		halt if( !lock1_opt.empty() );
+	}
+	{ // "try_lock_mut_nonblocking" - can't create mutable second time on the same thead.
+		var IntPtrNullableMut ptr( -263672 );
+		auto mut lock0_opt= ptr.try_lock_mut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != -263672 );
+		auto lock1_opt= ptr.try_lock_mut_nonblocking();
+		halt if( !lock1_opt.empty() );
+	}
+	{ // "lock_mut_nonblocking" - can't create mutable lock after immutable lock.
+		var IntPtrMut ptr( 5358 );
+		auto mut lock0_opt= ptr.lock_imut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 5358 );
+		auto lock1_opt= ptr.lock_mut_nonblocking();
+		halt if( !lock1_opt.empty() );
+	}
+	{ // "try_lock_mut_nonblocking" - can't create mutable lock after immutable lock.
+		var IntPtrNullableMut ptr( 3236 );
+		auto mut lock0_opt= ptr.try_lock_imut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 3236 );
+		auto lock1_opt= ptr.try_lock_mut_nonblocking();
+		halt if( !lock1_opt.empty() );
+	}
+	{ // "lock_imut_nonblocking" - can't create immutable lock after mutable lock.
+		var IntPtrMut ptr( 52472 );
+		auto mut lock0_opt= ptr.lock_mut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 52472 );
+		auto lock1_opt= ptr.lock_imut_nonblocking();
+		halt if( !lock1_opt.empty() );
+	}
+	{ // "try_lock_imut_nonblocking" - can't create immutable lock after mutable lock.
+		var IntPtrNullableMut ptr( 2212 );
+		auto mut lock0_opt= ptr.try_lock_mut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 2212 );
+		auto lock1_opt= ptr.try_lock_imut_nonblocking();
+		halt if( !lock1_opt.empty() );
+	}
+	{ // "lock_imut_nonblocking" - can create second immutable lock when one already exists on other thread.
+		var IntPtrImut ptr( -125 );
+
+		auto mut lock0_opt= ptr.lock_imut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != -125 );
+
+		auto t=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					auto mut lock1_opt= ptr.lock_imut_nonblocking();
+					halt if( lock1_opt.empty() );
+					halt if( lock1_opt.try_deref().deref() != -125 );
+				} );
+	}
+	{ // "try_lock_imut_nonblocking" - can create second immutable lock when one already exists on other thread.
+		var IntPtrNullableImut ptr( -125 );
+
+		auto mut lock0_opt= ptr.try_lock_imut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != -125 );
+
+		auto t=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					auto mut lock1_opt= ptr.try_lock_imut_nonblocking();
+					halt if( lock1_opt.empty() );
+					halt if( lock1_opt.try_deref().deref() != -125 );
+				} );
+	}
+	{ // "lock_mut_nonblocking" - can't create second mutable lock when one already exists on other thread.
+		var IntPtrMut ptr( 323626 );
+
+		auto mut lock0_opt= ptr.lock_mut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 323626 );
+
+		auto t=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					auto mut lock1_opt= ptr.lock_mut_nonblocking();
+					halt if( !lock1_opt.empty() );
+				} );
+	}
+	{ // "try_lock_mut_nonblocking" - can't create second mutable lock when one already exists on other thread.
+		var IntPtrNullableMut ptr( 724723 );
+
+		auto mut lock0_opt= ptr.try_lock_mut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 724723 );
+
+		auto t=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					auto mut lock1_opt= ptr.try_lock_mut_nonblocking();
+					halt if( !lock1_opt.empty() );
+				} );
+	}
+	{ // "lock_mut_nonblocking" - can't create mutable lock when immutable lock already exists on other thread.
+		var IntPtrMut ptr( 1252 );
+
+		auto mut lock0_opt= ptr.lock_imut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 1252 );
+
+		auto t=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					auto mut lock1_opt= ptr.lock_mut_nonblocking();
+					halt if( !lock1_opt.empty() );
+				} );
+	}
+	{ // "try_lock_mut_nonblocking" - can't create mutable lock when immutable lock already exists on other thread.
+		var IntPtrNullableMut ptr( -2562362 );
+
+		auto mut lock0_opt= ptr.try_lock_imut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != -2562362 );
+
+		auto t=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					auto mut lock1_opt= ptr.try_lock_mut_nonblocking();
+					halt if( !lock1_opt.empty() );
+				} );
+	}
+	{ // "lock_imut_nonblocking" - can't create immutable lock when mutable lock already exists on other thread.
+		var IntPtrMut ptr( 1252 );
+
+		auto mut lock0_opt= ptr.lock_mut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != 1252 );
+
+		auto t=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					auto mut lock1_opt= ptr.lock_imut_nonblocking();
+					halt if( !lock1_opt.empty() );
+				} );
+	}
+	{ // "try_lock_imut_nonblocking" - can't create immutable lock when mutable lock already exists on other thread.
+		var IntPtrNullableMut ptr( -2562362 );
+
+		auto mut lock0_opt= ptr.try_lock_mut_nonblocking();
+		halt if( lock0_opt.empty() );
+		halt if( lock0_opt.try_deref().deref() != -2562362 );
+
+		auto t=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					auto mut lock1_opt= ptr.try_lock_imut_nonblocking();
+					halt if( !lock1_opt.empty() );
+				} );
 	}
 
 	// is_hash_compatible_type

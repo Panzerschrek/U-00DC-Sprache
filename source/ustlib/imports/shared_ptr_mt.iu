@@ -2,6 +2,7 @@ import "alloc.iu"
 import "atomic.iu"
 import "container_utils.iu"
 import "hash_apply.iu"
+import "optional.iu"
 import "polymorph.iu"
 import "rwlock_impl.iu"
 
@@ -202,6 +203,46 @@ public:
 	{
 		unsafe( rwlock_impl::lock_rwlock_shared( $>( storage_.get_control_block_ptr() ).rwlock ) );
 		return unsafe( lock_imut_t( storage_ ) );
+	}
+
+	fn enable_if(is_nullable && is_mutable) try_lock_mut_nonblocking( this ) : optional</lock_mut_t /> @( reference_notation::return_inner_references::param0 )
+	{
+		halt if( empty() );
+		return unsafe( lock_mut_nonblocking_unchecked() );
+	}
+
+	fn enable_if(is_nullable) try_lock_imut_nonblocking( this ) : optional</lock_imut_t/> @( reference_notation::return_inner_references::param0 )
+	{
+		halt if( empty() );
+		return unsafe( lock_imut_nonblocking_unchecked() );
+	}
+
+	fn enable_if(!is_nullable && is_mutable) lock_mut_nonblocking( this ) : optional</lock_mut_t/> @( reference_notation::return_inner_references::param0 )
+	{
+		return unsafe( lock_mut_nonblocking_unchecked() );
+	}
+
+	fn enable_if(!is_nullable) lock_imut_nonblocking( this ) : optional</lock_imut_t/> @( reference_notation::return_inner_references::param0 )
+	{
+		return unsafe( lock_imut_nonblocking_unchecked() );
+	}
+
+	fn lock_mut_nonblocking_unchecked ( this ) unsafe : optional</lock_mut_t /> @( reference_notation::return_inner_references::param0 )
+	{
+		if( unsafe( rwlock_impl::try_lock_rwlock_exclusive( $>( storage_.get_control_block_ptr() ).rwlock ) ) )
+		{
+			return unsafe( lock_mut_t ( storage_ ) );
+		}
+		return null_optional;
+	}
+
+	fn lock_imut_nonblocking_unchecked( this ) unsafe : optional</lock_imut_t/> @( reference_notation::return_inner_references::param0 )
+	{
+		if( unsafe( rwlock_impl::try_lock_rwlock_shared( $>( storage_.get_control_block_ptr() ).rwlock ) ) )
+		{
+			return unsafe( lock_imut_t( storage_ ) );
+		}
+		return null_optional;
 	}
 
 	// Compare.
