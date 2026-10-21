@@ -605,21 +605,26 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 std::string CppAstConsumer::GetAnonymousItemUniqueName( std::string_view prefix, const clang::TagDecl& decl )
 {
-	// For ananymous items try using typedef name for them.
-	// Mangling in C++ seems to do this too, an anonymous struct is mangled as first typedef created for it.
-	if( const clang::TypedefNameDecl* const typedef_name_decl = decl.getTypedefNameForAnonDecl() )
+	std::string name= std::string( prefix );
+
+	// For anonymous items try using typedef name as base for them.
+	// Since we use a prefix no additional encoding is needed.
+	// Since all typedefs in C are unique, we get unique names here too.
+	if( const clang::TypedefNameDecl* const typedef_name_decl= decl.getTypedefNameForAnonDecl() )
 	{
 		const clang::DeclarationName decl_name= typedef_name_decl->getDeclName();
 		if( decl_name.isIdentifier() )
-			return TranslateIdentifier( decl_name.getAsString() );
+		{
+			name+= "_";
+			name+= decl_name.getAsString();
+			return name;
+		}
 	}
 
 	// Use prefix_device_file_line_column format.
 	// This provides stable and deterministic names (at least on single machine).
 
 	clang::SourceLocation location= decl.getLocation();
-
-	std::string name= std::string( prefix );
 
 	// Use a loop to include locations of each macro expansion in the result name.
 	while( true )
