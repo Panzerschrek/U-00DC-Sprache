@@ -40,6 +40,8 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		ptr.lock_mut(); //##expect_error CouldNotSelectOverloadedFunction
 		ptr_nullable.try_lock_mut(); //##expect_error CouldNotSelectOverloadedFunction
+		ptr.lock_mut_nonblocking(); //##expect_error CouldNotSelectOverloadedFunction
+		ptr_nullable.try_lock_mut_nonblocking(); //##expect_error CouldNotSelectOverloadedFunction
 	}
 	{ // Nullable pointers have no "lock" methods (only "try_lock" methods).
 		var IntPtrNullableMut ptr_mut(0);
@@ -47,6 +49,8 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		ptr_mut.lock_mut(); //##expect_error CouldNotSelectOverloadedFunction
 		ptr_imut.lock_imut(); //##expect_error CouldNotSelectOverloadedFunction
+		ptr_mut.lock_mut_nonblocking(); //##expect_error CouldNotSelectOverloadedFunction
+		ptr_imut.lock_imut_nonblocking(); //##expect_error CouldNotSelectOverloadedFunction
 	}
 	{ // Non-nullable pointers have no "try_lock" methods (only "lock" methods).
 		var IntPtrMut ptr_mut(0);

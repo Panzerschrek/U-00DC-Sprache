@@ -30,18 +30,22 @@ fn nomangle main() call_conv( "C" ) : i32
 	{ // There is no "lock" method for "shared_ptr_mt_mutex_nullable".
 		var ust::shared_ptr_mt_mutex_nullable</i32/> m;
 		m.lock();//##expect_error CouldNotSelectOverloadedFunction
+		m.lock_nonblocking();//##expect_error CouldNotSelectOverloadedFunction
 	}
 	{ // There is no "try_lock" method for "shared_ptr_mt_mutex".
 		var ust::shared_ptr_mt_mutex</i32/> m( 123 );
 		m.try_lock();//##expect_error CouldNotSelectOverloadedFunction
+		m.try_lock_nonblocking();//##expect_error CouldNotSelectOverloadedFunction
 	}
 	{ // There is no "lock_imut" method for "shared_ptr_mt_mutex".
 		var ust::shared_ptr_mt_mutex</i32/> m( 123 );
 		m.lock_imut();//##expect_error NameNotFound
+		m.lock_imut_nonblocking();//##expect_error NameNotFound
 	}
 	{ // There is no "try_lock_imut" method for "shared_ptr_mt_mutex_nullable".
 		var ust::shared_ptr_mt_mutex_nullable</i32/> m;
 		m.try_lock_imut();//##expect_error NameNotFound
+		m.try_lock_imut_nonblocking();//##expect_error NameNotFound
 	}
 	{ // Reference can not outlive lock.
 		var ust::shared_ptr_mt_mutex</i32/> m( 7776655 );
