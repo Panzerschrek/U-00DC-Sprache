@@ -43,6 +43,30 @@ fn nomangle main() call_conv( "C" ) : i32
 		ust::apply_value_to_stringifier( stringifier, s );
 		halt if( move( stringifier ).get() != "Bärentanz" );
 	}
+	{ // Stringify strings - can do proper conversion including zero chars.
+		var ust::string8 s= "Pappschächtelchen\0Eichhörnchen";
+		var ust::default_stringifier16 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, s );
+		halt if( move( stringifier ).get() != "Pappschächtelchen\0Eichhörnchen"u16 );
+	}
+	{ // Stringify strings - can do proper conversion including zero chars.
+		var ust::string8 s= "\0\0\0\0\0\0kulturübergreifend\0\0\0\0\0\0\0\0\0\0funktionstüchtig\0\0\0";
+		var ust::default_stringifier32 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, s );
+		halt if( move( stringifier ).get() != "\0\0\0\0\0\0kulturübergreifend\0\0\0\0\0\0\0\0\0\0funktionstüchtig\0\0\0"u32 );
+	}
+	{ // Stringify strings - can do proper conversion including zero chars.
+		var ust::string16 s= "mikrowellengeeignet\0\0\0\0Meisterschaftsspiel\0\0"u16;
+		var ust::default_stringifier8 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, s );
+		halt if( move( stringifier ).get() != "mikrowellengeeignet\0\0\0\0Meisterschaftsspiel\0\0" );
+	}
+	{ // Stringify strings - can do proper conversion including zero chars.
+		var ust::string16 s= "\0\0\0\0\0Bevölkerungszunahme\0 \0Elektrizitätzwerk\0\0\0\0"u16;
+		var ust::default_stringifier32 mut stringifier;
+		ust::apply_value_to_stringifier( stringifier, s );
+		halt if( move( stringifier ).get() != "\0\0\0\0\0Bevölkerungszunahme\0 \0Elektrizitätzwerk\0\0\0\0"u32 );
+	}
 	{
 		var ust::default_stringifier8 mut stringifier;
 

@@ -135,14 +135,7 @@ op default_stringifier8::()( mut this, array_view_imut</char16/> mut arr )
 {
 	while( !arr.empty() )
 	{
-		var char32 cp= utf::extract_code_point_or_null_from_string(arr);
-		if( cp == char32(0) )
-		{
-			break;
-		}
-		// TODO - handle cases when given string contains broken UTF-16 or zero chars?
-
-		utf::push_code_point_to_string( str_, cp );
+		utf::push_code_point_to_string( str_, utf::extract_code_point_or_null_from_string( arr ) );
 	}
 }
 
@@ -283,14 +276,7 @@ op default_stringifier16::()( mut this, array_view_imut</char8/> mut arr )
 {
 	while( !arr.empty() )
 	{
-		var char32 cp= utf::extract_code_point_or_null_from_string(arr);
-		if( cp == char32(0) )
-		{
-			break;
-		}
-		// TODO - handle cases when given string contains broken UTF-8 or zero chars?
-
-		utf::push_code_point_to_string( str_, cp );
+		utf::push_code_point_to_string( str_, utf::extract_code_point_or_null_from_string( arr ) );
 	}
 }
 
@@ -433,14 +419,7 @@ op default_stringifier32::()( mut this, array_view_imut</char8/> mut arr )
 {
 	while( !arr.empty() )
 	{
-		var char32 cp= utf::extract_code_point_or_null_from_string(arr);
-		if( cp == char32(0) )
-		{
-			break;
-		}
-		// TODO - handle cases when given string contains broken UTF-8 or zero chars?
-
-		str_.push_back( cp );
+		str_.push_back( utf::extract_code_point_or_null_from_string( arr ) );
 	}
 }
 
@@ -448,14 +427,7 @@ op default_stringifier32::()( mut this, array_view_imut</char16/> mut arr )
 {
 	while( !arr.empty() )
 	{
-		var char32 cp= utf::extract_code_point_or_null_from_string(arr);
-		if( cp == char32(0) )
-		{
-			break;
-		}
-		// TODO - handle cases when given string contains broken UTF-16 or zero chars?
-
-		str_.push_back( cp );
+		str_.push_back( utf::extract_code_point_or_null_from_string( arr ) );
 	}
 }
 
