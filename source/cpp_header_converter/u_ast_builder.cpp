@@ -608,7 +608,7 @@ std::string CppAstConsumer::GetAnonymousItemUniqueName( std::string_view prefix,
 	std::string name= std::string( prefix );
 
 	// For anonymous items try using typedef name as base for them.
-	// Since we use a prefix no additional encoding is needed.
+	// Since we use a prefix, no additional encoding is needed.
 	// Since all typedefs in C are unique, we get unique names here too.
 	if( const clang::TypedefNameDecl* const typedef_name_decl= decl.getTypedefNameForAnonDecl() )
 	{
@@ -622,7 +622,7 @@ std::string CppAstConsumer::GetAnonymousItemUniqueName( std::string_view prefix,
 	}
 
 	// If we have an anonymous enum, extract common name prefix for each of its enumerators.
-	// This gives good results, since in C it's common practice to have such prefixes.
+	// This gives good results, since in C it's a common practice to have such prefixes.
 	// But such prefix isn't enough to generate full name for anonymous enum, so, append file/line/column-based components too.
 	if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>( &decl ) )
 	{
