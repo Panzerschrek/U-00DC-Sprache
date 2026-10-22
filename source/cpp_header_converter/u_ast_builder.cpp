@@ -355,7 +355,7 @@ private:
 private:
 	void ProcessDecl( const clang::Decl& decl );
 
-	std::string GetAnonymousItemUniqueName( std::string_view prefix, clang::SourceLocation location );
+	std::string GetAnonymousItemUniqueName( std::string_view prefix, const clang::TagDecl& decl );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
@@ -510,7 +510,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 			const std::string name_translated=
 				src_name.empty()
-					? GetAnonymousItemUniqueName( g_anon_record_prefix, record_decl->getLocation() )
+					? GetAnonymousItemUniqueName( g_anon_record_prefix, *record_decl )
 					: TranslateIdentifier( src_name );
 
 			// Tagged names (structs, unions, enums) in C build a separae namespace.
@@ -550,7 +550,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 
 		const std::string name_translated=
 			src_name.empty()
-				? GetAnonymousItemUniqueName( g_anon_enum_prefix, enum_decl->getLocation() )
+				? GetAnonymousItemUniqueName( g_anon_enum_prefix, *enum_decl )
 				: TranslateIdentifier( src_name );
 
 		// Tagged names (structs, unions, enums) in C build a separae namespace.
@@ -603,12 +603,58 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	}
 }
 
-std::string CppAstConsumer::GetAnonymousItemUniqueName( std::string_view prefix, clang::SourceLocation location )
+std::string CppAstConsumer::GetAnonymousItemUniqueName( std::string_view prefix, const clang::TagDecl& decl )
 {
+	std::string name= std::string( prefix );
+
+	// For anonymous items try using typedef name as base for them.
+	// Since we use a prefix, no additional encoding is needed.
+	// Since all typedefs in C are unique, we get unique names here too.
+	if( const clang::TypedefNameDecl* const typedef_name_decl= decl.getTypedefNameForAnonDecl() )
+	{
+		const clang::DeclarationName decl_name= typedef_name_decl->getDeclName();
+		if( decl_name.isIdentifier() )
+		{
+			name+= "_";
+			name+= decl_name.getAsString();
+			return name;
+		}
+	}
+
+	// If we have an anonymous enum, extract common name prefix for each of its enumerators.
+	// This gives good results, since in C it's a common practice to have such prefixes.
+	// But such prefix isn't enough to generate full name for anonymous enum, so, append file/line/column-based components too.
+	if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>( &decl ) )
+	{
+		auto enumerators= enum_decl->enumerators();
+		if( !enumerators.empty() )
+		{
+			std::string_view common_prefix= enumerators.begin()->getName();
+			for( const clang::EnumConstantDecl* enumerator : enumerators )
+			{
+				const llvm::StringRef enumerator_name= enumerator->getName();
+				size_t i= 0;
+				while( i < common_prefix.size() && i < enumerator_name.size() && common_prefix[i] == enumerator_name[i] )
+					++i;
+				common_prefix= common_prefix.substr( 0, i );
+			}
+
+			while( !common_prefix.empty() && common_prefix.back() == '_' )
+				common_prefix= common_prefix.substr( 0, common_prefix.size() - 1 );
+
+			if( !common_prefix.empty() )
+			{
+				if( common_prefix.front() != '_' )
+					name+= "_";
+				name+= common_prefix;
+			}
+		}
+	}
+
 	// Use prefix_device_file_line_column format.
 	// This provides stable and deterministic names (at least on single machine).
 
-	std::string name= std::string( prefix );
+	clang::SourceLocation location= decl.getLocation();
 
 	// Use a loop to include locations of each macro expansion in the result name.
 	while( true )
@@ -1047,7 +1093,7 @@ void CppAstConsumer::CollectSubrecords( NamespaceItem& item )
 
 					const std::string name_translated=
 						src_name.empty()
-							? GetAnonymousItemUniqueName( g_anon_record_prefix, subrecord->getLocation() )
+							? GetAnonymousItemUniqueName( g_anon_record_prefix, *subrecord )
 							: TranslateIdentifier( src_name );
 
 					NamespaceItemsMap& items_map=
