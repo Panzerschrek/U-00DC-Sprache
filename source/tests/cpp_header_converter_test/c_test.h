@@ -177,6 +177,12 @@ union UnionAlign4 { int i; };
 
 union UnionForwardDeclaration;
 
+typedef union
+{
+	float f;
+	int i;
+} TypedefedUnion;
+
 struct StructWithBitFields
 {
 	float x;
