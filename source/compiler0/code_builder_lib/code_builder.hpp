@@ -1286,8 +1286,8 @@ private:
 		const SrcLoc& src_loc );
 
 	// If this is preprocessing with reference notation deduction - collect actual reference effects.
-	void CollectReturnReferences( FunctionContext& function_context, const VariablePtr& return_node );
-	void CollectReturnInnerReferences( FunctionContext& function_context, const VariablePtr& return_node );
+	void CollectReturnReferences( FunctionContext& function_context, const VariablePtr& return_node, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
+	void CollectReturnInnerReferences( FunctionContext& function_context, const VariablePtr& return_node, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
 	void CollectReferencePollution( FunctionContext& function_context );
 
 	// Reference notation.

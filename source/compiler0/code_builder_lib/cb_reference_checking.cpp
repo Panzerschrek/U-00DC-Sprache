@@ -510,7 +510,8 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 	}
 }
 
-void CodeBuilder::CollectReturnReferences( FunctionContext& function_context, const VariablePtr& return_node )
+void CodeBuilder::CollectReturnReferences(
+	FunctionContext& function_context, const VariablePtr& return_node, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
 {
 	U_ASSERT( function_context.reference_notation_deduction_context != nullptr );
 	ReferenceNotationDeductionContext& reference_notation_deduction_context= *function_context.reference_notation_deduction_context;
@@ -525,14 +526,25 @@ void CodeBuilder::CollectReturnReferences( FunctionContext& function_context, co
 		for( const auto& arg_node_pair : function_context.args_nodes )
 		{
 			const size_t arg_n= size_t( &arg_node_pair - &function_context.args_nodes.front() );
+
 			if( var_node == arg_node_pair.first )
+			{
+				if( arg_n > FunctionType::c_max_param_index )
+					REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
 				reference_notation_deduction_context.return_references.emplace_back( uint8_t(arg_n), FunctionType::c_param_reference_number );
+			}
 
 			for( const VariablePtr& inner_node : arg_node_pair.second )
 			{
-				const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
 				if( var_node == inner_node )
+				{
+					if( arg_n > FunctionType::c_max_param_index )
+						REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
+					const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
 					reference_notation_deduction_context.return_references.emplace_back( uint8_t(arg_n), uint8_t(tag_n) );
+				}
 			}
 		}
 
@@ -555,7 +567,8 @@ void CodeBuilder::CollectReturnReferences( FunctionContext& function_context, co
 	}
 }
 
-void CodeBuilder::CollectReturnInnerReferences( FunctionContext& function_context, const VariablePtr& return_node )
+void CodeBuilder::CollectReturnInnerReferences(
+	FunctionContext& function_context, const VariablePtr& return_node, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
 {
 	U_ASSERT( function_context.reference_notation_deduction_context != nullptr );
 	ReferenceNotationDeductionContext& reference_notation_deduction_context= *function_context.reference_notation_deduction_context;
@@ -581,13 +594,23 @@ void CodeBuilder::CollectReturnInnerReferences( FunctionContext& function_contex
 			{
 				const size_t arg_n= size_t( &arg_node_pair - &function_context.args_nodes.front() );
 				if( var_node == arg_node_pair.first )
+				{
+					if( arg_n > FunctionType::c_max_param_index )
+						REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
 					reference_notation_deduction_context.return_inner_references[i].emplace_back( uint8_t(arg_n), FunctionType::c_param_reference_number );
+				}
 
 				for( const VariablePtr& inner_node : arg_node_pair.second )
 				{
-					const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
 					if( var_node == inner_node )
+					{
+						if( arg_n > FunctionType::c_max_param_index )
+							REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
+						const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
 						reference_notation_deduction_context.return_inner_references[i].emplace_back( uint8_t(arg_n), uint8_t(tag_n) );
+					}
 				}
 			}
 
