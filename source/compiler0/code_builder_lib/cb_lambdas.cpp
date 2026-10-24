@@ -543,7 +543,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 				return l.name < r.name;
 			} );
 
-		std::unordered_map<VariablePtr, uint8_t> captured_variable_to_lambda_inner_reference_tag;
+		std::unordered_map<VariablePtr, size_t> captured_variable_to_lambda_inner_reference_tag;
 
 		// Iterate over sorted captured variables, create fields for them, setup reference notation.
 		for( const CapturedVariableForSorting& captured_variable : captured_variables )
@@ -623,7 +623,12 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 		for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_references )
 		{
 			if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ); it != captured_variable_to_lambda_inner_reference_tag.end() )
-				return_references.emplace_back( this_param_index, it->second );
+			{
+				if( it->second != FunctionType::c_param_reference_number && it->second > FunctionType::c_max_reference_index )
+					REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope.GetErrors(), lambda.src_loc );
+
+				return_references.emplace_back( this_param_index, uint8_t( it->second ) );
+			}
 		}
 		NormalizeParamReferencesList( return_references );
 
@@ -636,7 +641,12 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 			for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_inner_references[ tag_n ] )
 			{
 				if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ); it != captured_variable_to_lambda_inner_reference_tag.end() )
-					return_inner_references[tag_n].emplace_back( this_param_index, it->second );
+				{
+					if( it->second != FunctionType::c_param_reference_number && it->second > FunctionType::c_max_reference_index )
+						REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope.GetErrors(), lambda.src_loc );
+
+					return_inner_references[tag_n].emplace_back( this_param_index, uint8_t( it->second ) );
+				}
 			}
 			NormalizeParamReferencesList( return_inner_references[tag_n] );
 		}
@@ -661,7 +671,12 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 				}
 
 				if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( *dst_variable_ptr ); it != captured_variable_to_lambda_inner_reference_tag.end() )
-					result_pollution.dst= std::make_pair( this_param_index, it->second );
+				{
+					if( it->second != FunctionType::c_param_reference_number && it->second > FunctionType::c_max_reference_index )
+						REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope.GetErrors(), lambda.src_loc );
+
+					result_pollution.dst= std::make_pair( this_param_index, uint8_t( it->second ) );
+				}
 				else
 					continue;
 			}
@@ -672,7 +687,12 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 			else if( const auto src_variable_ptr= std::get_if<VariablePtr>( &pollution.src ) )
 			{
 				if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( *src_variable_ptr ); it != captured_variable_to_lambda_inner_reference_tag.end() )
-					result_pollution.src= std::make_pair( this_param_index, it->second );
+				{
+					if( it->second != FunctionType::c_param_reference_number && it->second > FunctionType::c_max_reference_index )
+						REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope.GetErrors(), lambda.src_loc );
+
+					result_pollution.src= std::make_pair( this_param_index, uint8_t( it->second ) );
+				}
 				else
 					continue;
 			}

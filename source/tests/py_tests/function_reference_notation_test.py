@@ -1097,3 +1097,75 @@ def ReferenceNotationReferenceIndexOverflow_Test9():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 11 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test10():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt )
+		{
+			auto l=
+				lambda[=]() : i32&
+				{
+					return tt[28].r; // Automatically found, that inner reference #28 of captured variable "tt" is returned, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 6 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test11():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt )
+		{
+			auto l=
+				lambda[=]() : S
+				{
+					return tt[26]; // Automatically found, that inner reference #26 of captured variable "tt" is returned inside return value, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 6 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test12():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt )
+		{
+			auto l=
+				lambda[tt]( S &mut s )
+				{
+					DoPollution( s, tt[29].r ); // Automatically found, that inner reference #29 of captured variable is used as pollution source, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 8 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test13():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt )
+		{
+			auto l=
+				lambda [tt] mut ( i32& x )
+				{
+					DoPollution( tt[29], x ); // Automatically found, that inner reference #29 of captured variable is used as pollution destination, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 8 ) )
