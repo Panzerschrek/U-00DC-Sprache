@@ -766,3 +766,71 @@ def ReferenceNotationParamIndexOverflow_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 5 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			auto l=
+				lambda( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 ) : i32&
+				{
+					return a10; // Automatically found, that reference to param #10 is returned, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 7 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test5():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			auto l=
+				lambda( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 ) : S
+				{
+					var S s{ .r= a10 };
+					return s; // Automatically found, that reference to param #10 is returned, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 9 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test6():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			auto l=
+				lambda( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S& a10 ) : i32&
+				{
+					return a10.r; // Automatically found, that an inner reference param #10 is returned, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 8 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test7():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			auto l=
+				lambda( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S& a10 ) : S
+				{
+					return a10; // Automatically found, that an inner reference of param #10 is returned, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 8 ) )
