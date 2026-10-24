@@ -677,6 +677,9 @@ void CodeBuilder::CollectReferencePollution(
 							src_param_index > FunctionType::c_max_param_index )
 							REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
 
+						if( dst_tag > FunctionType::c_max_reference_index )
+							REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, errors, src_loc );
+
 						src_reference= FunctionType::ParamReference( uint8_t(src_param_index), FunctionType::c_param_reference_number );
 					}
 
@@ -687,6 +690,10 @@ void CodeBuilder::CollectReferencePollution(
 							if( dst_param_index > FunctionType::c_max_param_index ||
 								src_param_index > FunctionType::c_max_param_index )
 								REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
+							if( dst_tag > FunctionType::c_max_reference_index ||
+								src_tag > FunctionType::c_max_reference_index )
+								REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, errors, src_loc );
 
 							src_reference= FunctionType::ParamReference( uint8_t(src_param_index), uint8_t(src_tag) );
 						}
@@ -758,6 +765,9 @@ void CodeBuilder::CollectReferencePollution(
 						if( src_param_index > FunctionType::c_max_param_index )
 							REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
 
+						if( dst_tag > FunctionType::c_max_reference_index )
+							REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, errors, src_loc );
+
 						src_reference= FunctionType::ParamReference( uint8_t(src_param_index), FunctionType::c_param_reference_number );
 					}
 
@@ -767,6 +777,10 @@ void CodeBuilder::CollectReferencePollution(
 						{
 							if( src_param_index > FunctionType::c_max_param_index )
 								REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
+							if( dst_tag > FunctionType::c_max_reference_index ||
+								src_tag > FunctionType::c_max_reference_index )
+								REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, errors, src_loc );
 
 							src_reference= FunctionType::ParamReference( uint8_t(src_param_index), uint8_t(src_tag) );
 						}
