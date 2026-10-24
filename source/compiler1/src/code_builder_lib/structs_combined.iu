@@ -143,6 +143,12 @@ struct FunctionType
 
 	struct ParamReference
 	{
+		// Have some hard limits for param index and reference index in reference notation.
+		// Generate errors if these limits are violated.
+		// For now use limits dicated by ASCII-based notation, but they may be somewhat increased if this notation will be changed.
+		var u8 c_max_param_index= 9u8;
+		var u8 c_max_reference_index= 25u8;
+
 		u8 param_index;
 		u8 reference_index; // ~0 for param reference, 0 for inner reference
 

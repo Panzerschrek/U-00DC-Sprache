@@ -299,7 +299,7 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 		function_type_name.return_value_reference_expression == nullptr &&
 		function_type_name.return_value_inner_references_expression == nullptr )
 	{
-		for( size_t i= 0u; i < function_type.params.size(); ++i )
+		for( size_t i= 0u; i < std::min( function_type.params.size(), size_t( FunctionType::c_max_param_index ) + 1 ); ++i )
 		{
 			if( ( function_type.return_value_type == ValueType::ReferenceImut && function_type.params[i].value_type != ValueType::Value ) ||
 				( function_type.return_value_type == ValueType::ReferenceMut  && function_type.params[i].value_type == ValueType::ReferenceMut ) )

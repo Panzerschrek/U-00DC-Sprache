@@ -699,3 +699,18 @@ def ReferenceNotationInLocalScope_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ReferenceNotation_ParamIndexOverflowIsPrevented_Test0():
+	c_program_text= """
+		// We have single reference param #9 - allow returning it.
+		fn Foo( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32& a9, i32 a10 ) : i32&;
+		var [ [ char8, 2 ], 1 ] g_expected_foo_return_references[ "9_" ];
+		static_assert( typeinfo</ typeof(Foo) />.return_references == g_expected_foo_return_references );
+
+		// We have single reference param #10 - don't allow returning it, since we can specify up to 10 params in reference notation.
+		fn Bar( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 ) : i32&;
+		var [ [ char8, 2 ], 0 ] g_expected_bar_return_references[];
+		static_assert( typeinfo</ typeof(Bar) />.return_references == g_expected_bar_return_references );
+	"""
+	tests_lib.build_program( c_program_text )

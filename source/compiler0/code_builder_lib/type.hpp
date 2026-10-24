@@ -210,6 +210,12 @@ public:
 	static constexpr uint8_t c_param_reference_number= 255u;
 	using ParamReference= std::pair< uint8_t, uint8_t >;
 
+	// Have some hard limits for param index and reference index in reference notation.
+	// Generate errors if these limits are violated.
+	// For now use limits dicated by ASCII-based notation, but they may be somewhat increased if this notation will be changed.
+	static constexpr uint8_t c_max_param_index= 9u;
+	static constexpr uint8_t c_max_reference_index= 25u;
+
 	using ReturnReferences= std::vector<ParamReference>; // Sorted.
 	using ReturnInnerReferences= std::vector<ReturnReferences>; // Return references for each inner tag of the return type.
 
