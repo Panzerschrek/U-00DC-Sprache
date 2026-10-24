@@ -834,3 +834,105 @@ def ReferenceNotationParamIndexOverflow_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 8 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test8():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S &mut a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 ) : auto
+		{
+			DoPollution( a0, a10 ); // Automatically found pollution with source param index #10, but we can't represent it in reference notation.
+		}
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 8 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test9():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S &mut a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S& a10 ) : auto
+		{
+			DoPollution( a0, a10.r ); // Automatically found pollution with source param index #10, but we can't represent it in reference notation.
+		}
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 8 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test10():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( i32& a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S &mut a10 ) : auto
+		{
+			DoPollution( a10, a0 ); // Automatically found pollution with destination param index #10, but we can't represent it in reference notation.
+		}
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 8 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test11():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S& a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S &mut a10 ) : auto
+		{
+			return DoPollution( a10, a0.r ); // Automatically found pollution with destination param index #10, but we can't represent it in reference notation.
+		}
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 7 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test12():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S &mut s )
+		{
+			auto l=
+				lambda[&]( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 ) : auto
+				{
+					DoPollution( s, a10 ); // Automatically found pollution with source param index #10, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 11 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test13():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S &mut s )
+		{
+			auto l=
+				lambda[&]( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S& a10 ) : auto
+				{
+					DoPollution( s, a10.r ); // Automatically found pollution with source param index #10, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 11 ) )

@@ -763,7 +763,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), return_operator.src_loc, *function_context.return_type_deduction_context->return_type, void_type_ );
 
 			if( function_context.reference_notation_deduction_context != nullptr )
-				CollectReferencePollution( function_context );
+				CollectReferencePollution( function_context, names_scope.GetErrors(), return_operator.src_loc );
 
 			return block_info;
 		}
@@ -828,7 +828,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			CollectReturnInnerReferences( function_context, expression_result, names_scope.GetErrors(), return_operator.src_loc );
 
-			CollectReferencePollution( function_context );
+			CollectReferencePollution( function_context, names_scope.GetErrors(), return_operator.src_loc );
 		}
 
 		return block_info;
@@ -1006,7 +1006,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	CallDestructorsBeforeReturn( names_scope, function_context, return_operator.src_loc );
 
 	if( function_context.reference_notation_deduction_context != nullptr )
-		CollectReferencePollution( function_context );
+		CollectReferencePollution( function_context, names_scope.GetErrors(), return_operator.src_loc );
 	else
 		CheckReferencesPollutionBeforeReturn( function_context, names_scope.GetErrors(), return_operator.src_loc );
 
@@ -3132,7 +3132,7 @@ void CodeBuilder::BuildEmptyReturn( NamesScope& names_scope, FunctionContext& fu
 	CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
 
 	if( function_context.reference_notation_deduction_context != nullptr )
-		CollectReferencePollution( function_context );
+		CollectReferencePollution( function_context, names_scope.GetErrors(), src_loc  );
 	else
 		CheckReferencesPollutionBeforeReturn( function_context, names_scope.GetErrors(), src_loc );
 
