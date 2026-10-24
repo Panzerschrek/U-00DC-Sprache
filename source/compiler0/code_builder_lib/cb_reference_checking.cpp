@@ -543,6 +543,10 @@ void CodeBuilder::CollectReturnReferences(
 						REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
 
 					const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
+
+					if( tag_n > FunctionType::c_max_reference_index )
+						REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, errors, src_loc );
+
 					reference_notation_deduction_context.return_references.emplace_back( uint8_t(arg_n), uint8_t(tag_n) );
 				}
 			}
@@ -609,6 +613,10 @@ void CodeBuilder::CollectReturnInnerReferences(
 							REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
 
 						const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
+
+						if( tag_n > FunctionType::c_max_reference_index )
+							REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, errors, src_loc );
+
 						reference_notation_deduction_context.return_inner_references[i].emplace_back( uint8_t(arg_n), uint8_t(tag_n) );
 					}
 				}

@@ -936,3 +936,62 @@ def ReferenceNotationParamIndexOverflow_Test13():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 11 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test0():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt ) : auto&
+		{
+			return tt[26].r; // Automatically found, that inner reference #26 of param #0 is returned, but we can't represent it in reference notation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 5 ) )
+
+def ReferenceNotationReferenceIndexOverflow_Test1():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt ) : auto
+		{
+			return tt[27]; // Automatically found, that inner reference #27 of param #0 is returned inside return value, but we can't represent it in reference notation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 5 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test2():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			auto l=
+				lambda( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt ) : auto&
+				{
+					return tt[28].r; // Automatically found, that inner reference #28 of param #0 is returned, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 8 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test3():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			auto l=
+				lambda( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt ) : auto
+				{
+					return tt[26]; // Automatically found, that inner reference #27 of param #0 is returned inside return value, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 8 ) )
