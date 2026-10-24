@@ -459,6 +459,7 @@ fn CodeBuilder::CollectReturnReferences( FunctionContext &mut function_context, 
 		{
 			if( variable_node == function_context.args_nodes[arg_n][0] )
 			{
+				// TODO - handle possible overflow of param index and reference index here?
 				reference_notation_deduction_context.return_references.push_back(
 					FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number } );
 			}
@@ -466,6 +467,7 @@ fn CodeBuilder::CollectReturnReferences( FunctionContext &mut function_context, 
 			{
 				if( variable_node == function_context.args_nodes[arg_n][1][tag_n] )
 				{
+					// TODO - handle possible overflow of param index and reference index here?
 					reference_notation_deduction_context.return_references.push_back(
 						FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) } );
 				}
@@ -519,6 +521,7 @@ fn CodeBuilder::CollectReturnInnerReferences( FunctionContext &mut function_cont
 				{
 					if( variable_node == function_context.args_nodes[arg_n][0] )
 					{
+						// TODO - handle possible overflow of param index and reference index here?
 						reference_notation_deduction_context.return_inner_references[i].push_back(
 							FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number } );
 					}
@@ -526,6 +529,7 @@ fn CodeBuilder::CollectReturnInnerReferences( FunctionContext &mut function_cont
 					{
 						if( variable_node == function_context.args_nodes[arg_n][1][tag_n] )
 						{
+							// TODO - handle possible overflow of param index and reference index here?
 							reference_notation_deduction_context.return_inner_references[i].push_back(
 								FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) } );
 						}
@@ -608,6 +612,7 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 						{
 							if( accessible_variable_node == args_nodes[j][1][tag_j] )
 							{
+								// TODO - handle possible overflow of param index and reference index here?
 								src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index=u8(tag_j) };
 							}
 						}
@@ -652,6 +657,7 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 							lambda_preprocessing_context.references_pollution.push_back(
 								LambdaPreprocessingContext::ReferencePollution
 								{
+									// TODO - handle possible overflow of param index and reference index here?
 									.dst= FunctionType::ParamReference{ .param_index= u8(param_i), .reference_index= u8(tag_i) },
 									.src= src_captured_variable.try_to_non_nullable(),
 								} );

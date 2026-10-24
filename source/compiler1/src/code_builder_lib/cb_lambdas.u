@@ -706,6 +706,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					class_type.inner_references.push_back( move(inner_reference) );
 
 					// Captured by reference variable points to one of inner the reference tags of lambda this.
+					// TODO - handle possible overflow of reference index here?
 					captured_variable_to_lambda_inner_reference_tag.insert_new( captured_variable.data.variable_node, field.reference_tag );
 				}
 				else
@@ -716,6 +717,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					// Each reference tag of each captured variable get its own reference tag in result lambda class.
 					for( auto mut i= 0s; i < reference_tag_count; ++i )
 					{
+						// TODO - handle possible overflow of reference index here?
 						auto reference_tag= u8( class_type.inner_references.size() );
 						field.inner_reference_tags.push_back( reference_tag );
 						class_type.inner_references.push_back(
