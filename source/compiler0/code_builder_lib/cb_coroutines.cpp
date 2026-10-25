@@ -101,6 +101,9 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
 			}
 
+			if( reference_tag_count > 0 && param_index > FunctionType::c_max_param_index )
+				REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope.GetErrors(), src_loc );
+
 			for( size_t i= 0; i < reference_tag_count; ++i )
 			{
 				coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceKind(i) );
@@ -121,6 +124,9 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				field_name+= param.type.ToString();
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
 			}
+
+			if( param_index > FunctionType::c_max_param_index )
+				REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope.GetErrors(), src_loc );
 
 			coroutine_type_description.inner_references.push_back(
 				param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );

@@ -938,6 +938,29 @@ def ReferenceNotationParamIndexOverflow_Test13():
 	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 11 ) )
 
 
+def ReferenceNotationParamIndexOverflow_Test14():
+	c_program_text= """
+		// "async" function returns actually an async object with inner references linked to reference-arguments.
+		// Parameter #10 is a reference parameter, but it can't be represented in reference notation.
+		fn async Foo( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 4 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test15():
+	c_program_text= """
+		struct S{ i32& r; }
+		// "generator" function returns actually a generator object with inner references linked to value-arguments having references inside.
+		// Parameter #10 has references inside, but it can't be represented in reference notation.
+		fn generator Foo( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S a10 );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 5 ) )
+
+
 def ReferenceNotationReferenceIndexOverflow_Test0():
 	c_program_text= """
 		struct S{ i32& r; }
@@ -949,6 +972,7 @@ def ReferenceNotationReferenceIndexOverflow_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 5 ) )
+
 
 def ReferenceNotationReferenceIndexOverflow_Test1():
 	c_program_text= """
