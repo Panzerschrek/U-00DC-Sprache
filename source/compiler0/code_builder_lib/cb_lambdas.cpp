@@ -596,7 +596,6 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 				field->inner_reference_tags.reserve( reference_tag_count );
 				for( size_t i= 0; i < reference_tag_count; ++i )
 				{
-					// TODO - handle overflow here?
 					const uint8_t reference_tag= uint8_t( class_->inner_references.size() );
 					field->inner_reference_tags.push_back( reference_tag );
 					class_->inner_references.push_back(
@@ -616,6 +615,10 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 			capture.field= std::move(field);
 			std::get_if<LambdaClassData>( &class_->generated_class_data )->captures.push_back( std::move(capture) );
 		}
+
+		// Don't allow a lambda to have more inner reference tags inside than is supported.
+		if( class_->inner_references.size() > FunctionType::c_max_reference_index + 1 )
+			REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope.GetErrors(), lambda.src_loc );
 
 		const uint8_t this_param_index= 0; // Lambda is "this" (argument 0).
 

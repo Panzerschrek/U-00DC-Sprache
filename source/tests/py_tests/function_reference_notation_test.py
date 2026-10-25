@@ -1232,3 +1232,21 @@ def ReferenceNotationReferenceIndexOverflow_Test16():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 6 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test17():
+	c_program_text= """
+		struct S{ i32& r; }
+		type S10= tup[ S, S, S, S, S, S, S, S, S, S ];
+		fn Foo( S10 a0, S10 a1, S10 a2, S10 a3 )
+		{
+			auto l=
+				lambda[=]() : i32 // Capture here too many variables having references inside.
+				{
+					return a0[0].r + a1[0].r + a2[0].r + a3[0].r;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 7 ) )

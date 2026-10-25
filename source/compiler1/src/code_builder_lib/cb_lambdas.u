@@ -716,7 +716,6 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					// Each reference tag of each captured variable get its own reference tag in result lambda class.
 					for( auto mut i= 0s; i < reference_tag_count; ++i )
 					{
-						// TODO - handle possible overflow of reference index here?
 						auto reference_tag= class_type.inner_references.size();
 						field.inner_reference_tags.push_back( u8( reference_tag ) );
 						class_type.inner_references.push_back(
@@ -724,7 +723,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 								.kind= source_variable.t.GetInnerReferenceKind(i),
 								.second_order_kind= source_variable.t.GetSecondOrderInnerReferenceKind(i) } );
 
-						captured_variable_to_lambda_inner_reference_tag.insert_new( captured_variable.data.accessible_variables[i], size_type( reference_tag ) );
+						captured_variable_to_lambda_inner_reference_tag.insert_new( captured_variable.data.accessible_variables[i], reference_tag );
 					}
 				}
 
@@ -738,6 +737,12 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				{
 					members_lock.deref().AddName( field_pair[0], field_pair[1] );
 				}
+			}
+
+			// Don't allow a lambda to have more inner reference tags inside than is supported.
+			if( class_type.inner_references.size() > size_type( FunctionType::ParamReference::c_max_reference_index ) + 1s )
+			{
+				REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, lambda_.src_loc )
 			}
 		}
 
