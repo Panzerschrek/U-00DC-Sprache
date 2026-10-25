@@ -1218,3 +1218,17 @@ def ReferenceNotationReferenceIndexOverflow_Test15():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 6 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test16():
+	c_program_text= """
+		struct S{ i32& r; }
+		struct SSS
+		{
+			// Automatically-calculated inner references for this field, but there are too much of them.
+			tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ] sss;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 6 ) )

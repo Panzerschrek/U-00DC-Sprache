@@ -567,6 +567,12 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			ClassField& field= *fields_with_references_inside.front();
 			const auto reference_tag_count= field.type.ReferenceTagCount();
 
+			if( reference_tag_count > FunctionType::c_max_reference_index + 1 )
+				REPORT_ERROR(
+					ReferenceNotationReferenceIndexOverflow,
+					the_class.members->GetErrors(),
+					field.syntax_element == nullptr ? class_type->src_loc : field.syntax_element->src_loc );
+
 			field.inner_reference_tags.resize( reference_tag_count );
 			the_class.inner_references.reserve( reference_tag_count );
 			for( size_t i= 0; i < reference_tag_count; ++i )
