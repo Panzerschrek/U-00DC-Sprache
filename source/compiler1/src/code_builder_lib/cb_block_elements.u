@@ -822,7 +822,7 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 			}
 			if( !function_context.reference_notation_deduction_context.empty() )
 			{
-				CollectReferencePollution( function_context );
+				CollectReferencePollution( function_context, names_scope, return_operator.src_loc );
 			}
 		}
 		else
@@ -881,12 +881,12 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 		{
 			if( function_context.function_type.return_value_type != ValueType::Value )
 			{
-				CollectReturnReferences( function_context, expr_ptr );
+				CollectReturnReferences( function_context, expr_ptr, names_scope, return_operator.src_loc );
 			}
 
-			CollectReturnInnerReferences( function_context, expr_ptr );
+			CollectReturnInnerReferences( function_context, expr_ptr, names_scope, return_operator.src_loc );
 
-			CollectReferencePollution( function_context );
+			CollectReferencePollution( function_context, names_scope, return_operator.src_loc );
 		}
 		return;
 	}
@@ -931,7 +931,7 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 
 		if( !function_context.reference_notation_deduction_context.empty() )
 		{
-			CollectReturnInnerReferences( function_context, expr_ptr );
+			CollectReturnInnerReferences( function_context, expr_ptr, names_scope, return_operator.src_loc );
 		}
 		else
 		{
@@ -1043,8 +1043,8 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 
 		if( !function_context.reference_notation_deduction_context.empty() )
 		{
-			CollectReturnReferences( function_context, expr_ptr );
-			CollectReturnInnerReferences( function_context, expr_ptr );
+			CollectReturnReferences( function_context, expr_ptr, names_scope, return_operator.src_loc );
+			CollectReturnInnerReferences( function_context, expr_ptr, names_scope, return_operator.src_loc );
 		}
 		else
 		{
@@ -1062,7 +1062,7 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 
 	if( !function_context.reference_notation_deduction_context.empty() )
 	{
-		CollectReferencePollution( function_context );
+		CollectReferencePollution( function_context, names_scope, return_operator.src_loc );
 	}
 	else
 	{
@@ -3324,7 +3324,7 @@ fn CodeBuilder::BuildEmptyReturn( mut this, NamesScopePtr& names_scope, Function
 
 	if( !function_context.reference_notation_deduction_context.empty() )
 	{
-		CollectReferencePollution( function_context );
+		CollectReferencePollution( function_context, names_scope, src_loc );
 	}
 	else
 	{

@@ -115,13 +115,26 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
 			}
 
-			for( auto mut i= 0u; i < reference_tag_count; ++i )
+			if( reference_tag_count > 0u )
 			{
-				// TODO - handle possible overflow of param index and reference index here?
-				coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
-				coroutine_return_inner_references.push_back(
-					ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
+				if( param_index > size_type( FunctionType::ParamReference::c_max_param_index ) )
+				{
+					REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope, src_loc )
+				}
+
+				if( reference_tag_count > u32( FunctionType::ParamReference::c_max_reference_index ) )
+				{
+					REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, src_loc )
+				}
+
+				for( auto mut i= 0u; i < reference_tag_count; ++i )
+				{
+					coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
+					coroutine_return_inner_references.push_back(
+						ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
+				}
 			}
+
 		}
 		else
 		{
@@ -133,12 +146,22 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
 			}
 
+			if( param_index > size_type( FunctionType::ParamReference::c_max_param_index ) )
+			{
+				REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope, src_loc )
+			}
+
 			coroutine_type_description.inner_references.push_back(
 				( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
 			// TODO - handle possible overflow of param index and reference index here?
 			coroutine_return_inner_references.push_back(
 				ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } ) );
 		}
+	}
+
+	if( coroutine_type_description.inner_references.size() > size_type( FunctionType::ParamReference::c_max_reference_index ) )
+	{
+		REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, src_loc )
 	}
 
 	// Fill references of return value.
