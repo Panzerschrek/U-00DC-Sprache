@@ -1193,3 +1193,28 @@ def ReferenceNotationReferenceIndexOverflow_Test13():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 8 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test14():
+	c_program_text= """
+		struct S{ i32& r; }
+		// An "async" function actually returns an async object with inner references linked to args having references inside.
+		// But we can't represent so many references in reference notation.
+		fn async Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ] tt );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 5 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test15():
+	c_program_text= """
+		struct S{ i32& r; }
+		type S10= tup[ S, S, S, S, S, S, S, S, S, S ];
+		// A "generator" function actually returns a generator object with inner references linked to args having references inside.
+		// But we can't represent so many references in reference notation.
+		fn generator Foo( S10 a0, S10 a1, S10 a2 );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 6 ) )
