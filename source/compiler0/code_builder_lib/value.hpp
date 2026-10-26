@@ -199,7 +199,7 @@ struct ClassField
 {
 	Type type;
 	ClassPtr class_= nullptr; // Class where this field is defined. Needed for tracking source class after field lookup from a namespace.
-	const Synt::ClassField* syntax_element= nullptr;
+	RcPtr<Synt::ClassField> syntax_element;
 	std::string name;
 	llvm::SmallVector<uint8_t, 4> inner_reference_tags; // For value fields with references inside - mapping of class inner reference tags to reference tags if this field.
 	uint32_t index= ~0u;

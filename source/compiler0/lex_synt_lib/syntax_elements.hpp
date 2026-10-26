@@ -299,7 +299,7 @@ using ClassElementsList= VariantLinkedList<
 	TypeAlias,
 	Enum,
 	Class,
-	ClassField,
+	RcPtr<ClassField>,
 	ClassVisibilityLabel,
 	TypeTemplate,
 	FunctionTemplate,

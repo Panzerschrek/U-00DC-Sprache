@@ -225,20 +225,20 @@ void CodeBuilder::FillClassNamesScope(
 			: this_(in_this), class_kind(in_class_kind), class_type(in_class_type), class_name(in_class_name), current_visibility(initial_visibility)
 		{}
 
-		void operator()( const Synt::ClassField& in_class_field )
+		void operator()( const RcPtr<Synt::ClassField>& in_class_field )
 		{
 			ClassField class_field;
-			class_field.syntax_element= &in_class_field;
+			class_field.syntax_element= in_class_field;
 			class_field.original_index= class_type->field_count;
-			class_field.name= in_class_field.name;
+			class_field.name= in_class_field->name;
 
-			if( IsKeyword( in_class_field.name ) )
-				REPORT_ERROR( UsingKeywordAsName, class_type->members->GetErrors(), in_class_field.src_loc );
-			if( class_type->members->AddName( in_class_field.name, NamesScopeValue( std::make_shared<ClassField>(std::move(class_field)), in_class_field.src_loc ) ) == nullptr )
-				REPORT_ERROR( Redefinition, class_type->members->GetErrors(), in_class_field.src_loc, in_class_field.name );
+			if( IsKeyword( in_class_field->name ) )
+				REPORT_ERROR( UsingKeywordAsName, class_type->members->GetErrors(), in_class_field->src_loc );
+			if( class_type->members->AddName( in_class_field->name, NamesScopeValue( std::make_shared<ClassField>(std::move(class_field)), in_class_field->src_loc ) ) == nullptr )
+				REPORT_ERROR( Redefinition, class_type->members->GetErrors(), in_class_field->src_loc, in_class_field->name );
 
 			++class_type->field_count;
-			class_type->SetMemberVisibility( in_class_field.name, current_visibility );
+			class_type->SetMemberVisibility( in_class_field->name, current_visibility );
 		}
 		void operator()( const Synt::Function& func )
 		{

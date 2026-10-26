@@ -4254,7 +4254,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			}
 			else
 			{
-				result_builder.Append( std::move( field ) );
+				result_builder.Append( RcPtr<ClassField>( std::move( field ) ) );
 				PushErrorMessage();
 				TryRecoverAfterError( g_class_body_elements_control_lexems );
 				continue;
@@ -4264,7 +4264,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			if( !std::holds_alternative<EmptyVariant>( field_initializer ) )
 				field.initializer= std::make_unique<Initializer>( std::move(field_initializer) );
 
-			result_builder.Append( std::move( field ) );
+			result_builder.Append( RcPtr<ClassField>( std::move( field ) ) );
 
 			if( it_->type == Lexem::Type::Semicolon )
 				NextLexem();
