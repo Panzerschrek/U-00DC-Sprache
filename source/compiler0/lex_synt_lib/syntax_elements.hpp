@@ -294,7 +294,7 @@ using IfAlternativePtr= std::unique_ptr<const IfAlternative>;
 using ClassElementsList= VariantLinkedList<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
-	StaticAssert,
+	RcPtr<StaticAssert>,
 	Function,
 	RcPtr<TypeAlias>,
 	RcPtr<Enum>,
@@ -308,7 +308,7 @@ using ClassElementsList= VariantLinkedList<
 using ProgramElementsList= VariantLinkedList<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
-	StaticAssert,
+	RcPtr<StaticAssert>,
 	Function,
 	RcPtr<TypeAlias>,
 	RcPtr<Enum>,

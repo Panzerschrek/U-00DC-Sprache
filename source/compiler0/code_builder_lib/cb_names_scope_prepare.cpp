@@ -263,7 +263,7 @@ void CodeBuilder::FillClassNamesScope(
 			this_.NamesScopeFill( *class_type->members, enum_ );
 			class_type->SetMemberVisibility( enum_->name, current_visibility );
 		}
-		void operator()( const Synt::StaticAssert& static_assert_ )
+		void operator()( const RcPtr<Synt::StaticAssert>& static_assert_ )
 		{
 			this_.NamesScopeFill( *class_type->members, static_assert_ );
 		}
@@ -354,14 +354,14 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Typ
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_alias_declaration->src_loc, type_alias_declaration->name );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::StaticAssert>& static_assert_declaration )
 {
 	StaticAssert static_assert_;
-	static_assert_.syntax_element= &static_assert_declaration;
+	static_assert_.syntax_element= static_assert_declaration;
 
 	names_scope.AddName(
-		"static_assert_" + std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)),
-		NamesScopeValue( static_assert_, static_assert_declaration.src_loc ) );
+		"static_assert_" + std::to_string(reinterpret_cast<uintptr_t>(&*static_assert_declaration)),
+		NamesScopeValue( static_assert_, static_assert_declaration->src_loc ) );
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin, const ClassMemberVisibility visibility )

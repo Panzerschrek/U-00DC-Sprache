@@ -1372,7 +1372,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::TypeTemplate>& type_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Enum>& enum_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::TypeAlias>& type_alias_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::StaticAssert>& static_assert_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );

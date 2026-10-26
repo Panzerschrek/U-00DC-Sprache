@@ -223,7 +223,7 @@ struct ThisOverloadedMethodsSet
 
 struct StaticAssert
 {
-	const Synt::StaticAssert* syntax_element= nullptr; // Null if completed.
+	RcPtr<Synt::StaticAssert> syntax_element; // Null if completed.
 };
 
 struct TypeAlias

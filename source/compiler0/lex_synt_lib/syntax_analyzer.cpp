@@ -794,7 +794,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
-			result_builder.Append( ParseStaticAssert() );
+			result_builder.Append( RcPtr<StaticAssert>( ParseStaticAssert() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
 		{
@@ -4134,7 +4134,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
-			result_builder.Append( ParseStaticAssert() );
+			result_builder.Append( RcPtr<StaticAssert>( ParseStaticAssert() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
 		{
