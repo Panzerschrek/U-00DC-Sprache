@@ -8,30 +8,31 @@ namespace U
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements )
 {
-	namespace_elements.Iter( [&]( const auto& el ) { NamesScopeFill( names_scope, el ); } );
+	for( const Synt::ProgramElement& element : namespace_elements )
+		std::visit( [&]( const auto& el ) { NamesScopeFill( names_scope, el ); }, element );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Namespace& namespace_  )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const std::unique_ptr<const Synt::Namespace>& namespace_ )
 {
 	NamesScope* result_scope= &names_scope;
-	if( const NamesScopeValue* const same_value= names_scope.GetThisScopeValue( namespace_.name ) )
+	if( const NamesScopeValue* const same_value= names_scope.GetThisScopeValue( namespace_->name ) )
 	{
 		if( const NamesScopePtr same_namespace= same_value->value.GetNamespace() )
 			result_scope= same_namespace.get(); // Extend existend namespace.
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), namespace_.src_loc, namespace_.name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), namespace_->src_loc, namespace_->name );
 	}
 	else
 	{
-		if( IsKeyword( namespace_.name ) )
-			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), namespace_.src_loc );
+		if( IsKeyword( namespace_->name ) )
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), namespace_->src_loc );
 
-		const auto new_names_scope= std::make_shared<NamesScope>( namespace_.name, &names_scope );
-		names_scope.AddName( namespace_.name, NamesScopeValue( new_names_scope, namespace_.src_loc ) );
+		const auto new_names_scope= std::make_shared<NamesScope>( namespace_->name, &names_scope );
+		names_scope.AddName( namespace_->name, NamesScopeValue( new_names_scope, namespace_->src_loc ) );
 		result_scope= new_names_scope.get();
 	}
 
-	NamesScopeFill( *result_scope, namespace_.elements );
+	NamesScopeFill( *result_scope, namespace_->elements );
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::VariablesDeclaration>& variables_declaration )
@@ -394,7 +395,8 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 	NamesScope& names_scope,
 	const Synt::ProgramElementsList& namespace_elements )
 {
-	namespace_elements.Iter( [&]( const auto& el ) { NamesScopeFillOutOfLineElement( names_scope, el ); } );
+	for( const Synt::ProgramElement& element : namespace_elements )
+		std::visit( [&]( const auto& el ) { NamesScopeFillOutOfLineElement( names_scope, el ); }, element );
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const RcPtr<Synt::Function>& function )

@@ -1010,7 +1010,8 @@ void ElementWrite( const ClassElementsList& class_elements ) const
 
 void ElementWrite( const ProgramElementsList& elements ) const
 {
-	elements.Iter( [&]( const auto& el ) { ElementWrite(el); } );
+	for( const ProgramElement& element : elements )
+		std::visit( [&]( const auto& el ) { ElementWrite( el ); }, element );
 }
 
 void WriteFunctionDeclaration( const Function& function ) const

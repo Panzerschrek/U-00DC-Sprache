@@ -307,7 +307,7 @@ using ClassElement= std::variant<
 
 using ClassElementsList= std::vector<ClassElement>;
 
-using ProgramElementsList= VariantLinkedList<
+using ProgramElement= std::variant<
 	RcPtr<VariablesDeclaration>,
 	RcPtr<AutoVariableDeclaration>,
 	RcPtr<StaticAssert>,
@@ -317,8 +317,10 @@ using ProgramElementsList= VariantLinkedList<
 	RcPtr<Class>,
 	RcPtr<TypeTemplate>,
 	RcPtr<FunctionTemplate>,
-	Namespace,
+	std::unique_ptr<const Namespace>,
 	RcPtr<Mixin> >;
+
+using ProgramElementsList= std::vector< ProgramElement >;
 
 struct NonSyncTagNone{};
 struct NonSyncTagTrue{};
