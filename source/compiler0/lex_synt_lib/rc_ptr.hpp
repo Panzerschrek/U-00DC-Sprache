@@ -19,19 +19,19 @@ template< typename T >
 class RcPtr
 {
 public:
-	RcPtr()= default;
+	RcPtr() noexcept = default;
 
-	RcPtr( std::nullptr_t )
+	RcPtr( std::nullptr_t ) noexcept
 	{}
 
-	RcPtr( const RcPtr& other )
+	RcPtr( const RcPtr& other ) noexcept
 		: ptr_( other.ptr_ )
 	{
 		if( ptr_ != nullptr )
 			++static_cast< RcPtrStorage<T>* >(ptr_)->use_counter;
 	}
 
-	RcPtr( RcPtr&& other )
+	RcPtr( RcPtr&& other ) noexcept
 		: ptr_( other.ptr_ )
 	{
 		other.ptr_= nullptr;
@@ -42,7 +42,7 @@ public:
 		ptr_= new RcPtrStorage<T>{ 1u, std::move(value) };
 	}
 
-	RcPtr& operator=( const RcPtr& other )
+	RcPtr& operator=( const RcPtr& other ) noexcept
 	{
 		if( this == &other )
 			return *this;
@@ -63,7 +63,7 @@ public:
 		return *this;
 	}
 
-	RcPtr& operator=( RcPtr&& other )
+	RcPtr& operator=( RcPtr&& other ) noexcept
 	{
 		if( this == &other )
 			return *this;
@@ -82,13 +82,13 @@ public:
 		return *this;
 	}
 
-	RcPtr& operator=( std::nullptr_t )
+	RcPtr& operator=( std::nullptr_t ) noexcept
 	{
 		reset();
 		return *this;
 	}
 
-	~RcPtr()
+	~RcPtr() noexcept
 	{
 		if( ptr_ != nullptr )
 		{
@@ -99,22 +99,22 @@ public:
 		}
 	}
 
-	bool empty() const
+	bool empty() const noexcept
 	{
 		return ptr_ == nullptr;
 	}
 
-	const T& operator*() const
+	const T& operator*() const noexcept
 	{
 		return static_cast< RcPtrStorage<T>* >(ptr_)->value;
 	}
 
-	const T* operator->() const
+	const T* operator->() const noexcept
 	{
 		return &static_cast< RcPtrStorage<T>* >(ptr_)->value;
 	}
 
-	void reset()
+	void reset() noexcept
 	{
 		if( ptr_ != nullptr )
 		{
@@ -132,25 +132,25 @@ private:
 };
 
 template<typename T>
-inline bool operator==( const RcPtr<T>& l, std::nullptr_t )
+inline bool operator==( const RcPtr<T>& l, std::nullptr_t ) noexcept
 {
 	return l.empty();
 }
 
 template<typename T>
-inline bool operator!=( const RcPtr<T>& l, std::nullptr_t )
+inline bool operator!=( const RcPtr<T>& l, std::nullptr_t ) noexcept
 {
 	return !l.empty();
 }
 
 template<typename T>
-inline bool operator==( std::nullptr_t, const RcPtr<T>& r )
+inline bool operator==( std::nullptr_t, const RcPtr<T>& r ) noexcept
 {
 	return r.empty();
 }
 
 template<typename T>
-inline bool operator!=( std::nullptr_t, const RcPtr<T>& r )
+inline bool operator!=( std::nullptr_t, const RcPtr<T>& r ) noexcept
 {
 	return !r.empty();
 }
