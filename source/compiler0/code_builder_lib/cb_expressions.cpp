@@ -2662,13 +2662,15 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		overloaded_operator->referenced= true;
 
+		const RcPtr<Synt::Expression> synt_args[2]{ left_expr, right_expr };
+
 		return
 			DoCallFunction(
 				EnsureLLVMFunctionCreated( *overloaded_operator ),
 				overloaded_operator->type,
 				src_loc,
 				nullptr,
-				{ &left_expr, &right_expr },
+				synt_args,
 				evaluate_args_in_reverse_order,
 				names_scope,
 				function_context,
