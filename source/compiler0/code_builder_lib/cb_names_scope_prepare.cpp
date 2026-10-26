@@ -288,7 +288,7 @@ void CodeBuilder::FillClassNamesScope(
 			this_.NamesScopeFill( *class_type->members, inner_class );
 			class_type->SetMemberVisibility( inner_class->name, current_visibility );
 		}
-		void operator()( const Synt::Mixin& mixin )
+		void operator()( const RcPtr<Synt::Mixin>& mixin )
 		{
 			this_.NamesScopeFill( *class_type->members, mixin, current_visibility );
 		}
@@ -364,12 +364,12 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Sta
 		NamesScopeValue( static_assert_, static_assert_declaration->src_loc ) );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin, const ClassMemberVisibility visibility )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Mixin>& mixin, const ClassMemberVisibility visibility )
 {
 	Mixin out_mixin;
-	out_mixin.src_loc= mixin.src_loc;
+	out_mixin.src_loc= mixin->src_loc;
 	out_mixin.visibility= visibility;
-	out_mixin.syntax_element= &mixin;
+	out_mixin.syntax_element= mixin;
 
 	// Collect all mixins in a member with name equal to "mixin" keyword.
 	const auto key= Keyword( Keywords::mixin_ );
@@ -383,7 +383,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mi
 	{
 		Mixins mixins;
 		mixins.push_back( std::move(out_mixin) );
-		names_scope.AddName( key, NamesScopeValue( std::move(mixins), mixin.src_loc ) );
+		names_scope.AddName( key, NamesScopeValue( std::move(mixins), mixin->src_loc ) );
 	}
 }
 

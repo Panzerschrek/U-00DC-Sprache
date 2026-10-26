@@ -303,7 +303,7 @@ using ClassElementsList= VariantLinkedList<
 	ClassVisibilityLabel,
 	RcPtr<TypeTemplate>,
 	RcPtr<FunctionTemplate>,
-	Mixin >;
+	RcPtr<Mixin> >;
 
 using ProgramElementsList= VariantLinkedList<
 	RcPtr<VariablesDeclaration>,
@@ -316,7 +316,7 @@ using ProgramElementsList= VariantLinkedList<
 	RcPtr<TypeTemplate>,
 	RcPtr<FunctionTemplate>,
 	Namespace,
-	Mixin >;
+	RcPtr<Mixin> >;
 
 struct NonSyncTagNone{};
 struct NonSyncTagTrue{};

@@ -66,7 +66,14 @@ uint32_t CodeBuilder::EvaluateMixinsExpressions_r( NamesScope& names_scope )
 						[&]( FunctionContext& function_context )
 						{
 							for( Mixin& mixin : *mixins )
-								EvaluateMixinExpression( names_scope, function_context, mixin );
+							{
+								if( mixin.syntax_element != nullptr && mixin.string_constant == nullptr )
+								{
+									mixin.string_constant=
+										EvaluateMixinExpression( names_scope, function_context, *mixin.syntax_element );
+									mixin.syntax_element= nullptr;
+								}
+							}
 						} );
 				}
 			}
@@ -250,16 +257,12 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 
 const Synt::BlockElementsList* CodeBuilder::ExpandBlockMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin )
 {
-	Mixin temp_mixin;
-	temp_mixin.syntax_element= &mixin;
-	temp_mixin.src_loc= mixin.src_loc;
+	const llvm::ConstantDataArray* const string_constant= EvaluateMixinExpression( names_scope, function_context, mixin );
 
-	EvaluateMixinExpression( names_scope, function_context, temp_mixin );
-
-	if( temp_mixin.string_constant == nullptr )
+	if( string_constant == nullptr )
 		return nullptr;
 
-	const std::string_view mixin_text= temp_mixin.string_constant->getRawDataValues();
+	const std::string_view mixin_text= string_constant->getRawDataValues();
 
 	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
 	auto it= block_mixin_expansions_.find(key);
@@ -297,16 +300,10 @@ const Synt::BlockElementsList* CodeBuilder::ExpandBlockMixin( NamesScope& names_
 
 const Synt::TypeName* CodeBuilder::ExpandTypeNameMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin )
 {
-	Mixin temp_mixin;
-	temp_mixin.syntax_element= &mixin;
-	temp_mixin.src_loc= mixin.src_loc;
-
-	EvaluateMixinExpression( names_scope, function_context, temp_mixin );
+	const llvm::ConstantDataArray* const string_constant= EvaluateMixinExpression( names_scope, function_context, mixin );
 
 	const std::string_view mixin_text=
-		temp_mixin.string_constant == nullptr
-			? std::string_view()
-			: std::string_view( temp_mixin.string_constant->getRawDataValues() );
+		string_constant == nullptr ? std::string_view() : std::string_view( string_constant->getRawDataValues() );
 
 	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
 	auto it= type_name_mixin_expansions_.find(key);
@@ -344,16 +341,10 @@ const Synt::TypeName* CodeBuilder::ExpandTypeNameMixin( NamesScope& names_scope,
 
 const Synt::Expression* CodeBuilder::ExpandExpressionMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin )
 {
-	Mixin temp_mixin;
-	temp_mixin.syntax_element= &mixin;
-	temp_mixin.src_loc= mixin.src_loc;
-
-	EvaluateMixinExpression( names_scope, function_context, temp_mixin );
+	const llvm::ConstantDataArray* const string_constant= EvaluateMixinExpression( names_scope, function_context, mixin );
 
 	const std::string_view mixin_text=
-		temp_mixin.string_constant == nullptr
-			? std::string_view()
-			: std::string_view( temp_mixin.string_constant->getRawDataValues() );
+		string_constant == nullptr ? std::string_view() : std::string_view( string_constant->getRawDataValues() );
 
 	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
 	auto it= expression_mixin_expansions_.find(key);
@@ -389,29 +380,22 @@ const Synt::Expression* CodeBuilder::ExpandExpressionMixin( NamesScope& names_sc
 	return &it->second;
 }
 
-void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, Mixin& mixin )
+const llvm::ConstantDataArray* CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin )
 {
-	if( mixin.syntax_element == nullptr || mixin.string_constant != nullptr )
-		return;
-
-	const Synt::Mixin& syntax_element= *mixin.syntax_element;
-
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( syntax_element.expression, names_scope, function_context );
-
-	mixin.syntax_element= nullptr;
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( mixin.expression, names_scope, function_context );
 
 	if( variable->constexpr_value == nullptr )
 	{
-		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), syntax_element.src_loc );
-		return;
+		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), mixin.src_loc );
+		return nullptr;
 	}
 
 	const auto array_type= variable->type.GetArrayType();
 	if( array_type == nullptr ||
 		array_type->element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ )  )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), syntax_element.src_loc, "char8 array", variable->type.ToString() );
-		return;
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), mixin.src_loc, "char8 array", variable->type.ToString() );
+		return nullptr;
 	}
 
 	if( const auto constant_data= llvm::dyn_cast<llvm::ConstantDataArray>( variable->constexpr_value ) )
@@ -420,18 +404,22 @@ void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, FunctionCont
 		auto ptr= reinterpret_cast<const llvm::UTF8*>(mixin_text.data());
 		if( !llvm::isLegalUTF8String( &ptr, ptr + mixin_text.size() ) )
 		{
-			REPORT_ERROR( MixinInvalidUTF8, names_scope.GetErrors(), syntax_element.src_loc );
-			return;
+			REPORT_ERROR( MixinInvalidUTF8, names_scope.GetErrors(), mixin.src_loc );
+			return nullptr;
 		}
 
-		mixin.string_constant= constant_data;
+		return constant_data;
 	}
 	else if( llvm::isa<llvm::ConstantAggregateZero>( variable->constexpr_value ) )
 	{
 		// Ignore mixins containing zeros. Their expansion leads to nothing.
+		return nullptr;
 	}
 	else
-		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), syntax_element.src_loc, "non-trivial mixin constants" );
+	{
+		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), mixin.src_loc, "non-trivial mixin constants" );
+		return nullptr;
+	}
 }
 
 std::optional<Lexems> CodeBuilder::PrepareMixinLexems( NamesScope& names_scope, const SrcLoc& src_loc, std::string_view mixin_text )

@@ -1373,7 +1373,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Enum>& enum_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::TypeAlias>& type_alias_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::StaticAssert>& static_assert_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Mixin>& mixin, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );
 	template<typename T> void NamesScopeFillOutOfLineElement( NamesScope&, const T& ) {} // Ignore almost all nodes in out of line filling, except a couple of special nodes.
@@ -1392,7 +1392,7 @@ private:
 	const Synt::BlockElementsList* ExpandBlockMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 	const Synt::TypeName* ExpandTypeNameMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 	const Synt::Expression* ExpandExpressionMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
-	void EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, Mixin& mixin );
+	const llvm::ConstantDataArray* EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 
 	std::optional<Lexems> PrepareMixinLexems( NamesScope& names_scope, const SrcLoc& src_loc, std::string_view mixin_text );
 

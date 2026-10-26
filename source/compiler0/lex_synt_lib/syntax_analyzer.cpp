@@ -806,7 +806,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ )
 		{
-			result_builder.Append( ParseMixin() );
+			result_builder.Append( RcPtr<Mixin>( ParseMixin() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
 		{
@@ -4150,7 +4150,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ )
 		{
-			result_builder.Append( ParseMixin() );
+			result_builder.Append( RcPtr<Mixin>( ParseMixin() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
