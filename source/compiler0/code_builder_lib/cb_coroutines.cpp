@@ -101,12 +101,21 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
 			}
 
-			for( size_t i= 0; i < reference_tag_count; ++i )
+			if( reference_tag_count > 0 )
 			{
-				coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceKind(i) );
-				coroutine_return_inner_references.push_back(
-					FunctionType::ReturnReferences{
-						FunctionType::ParamReference{ uint8_t(param_index), uint8_t(i) } } );
+				if( param_index > FunctionType::c_max_param_index )
+					REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope.GetErrors(), src_loc );
+
+				if( reference_tag_count > FunctionType::c_max_reference_index + 1 )
+					REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope.GetErrors(), src_loc );
+
+				for( size_t i= 0; i < reference_tag_count; ++i )
+				{
+					coroutine_type_description.inner_references.push_back( param.type.GetInnerReferenceKind(i) );
+					coroutine_return_inner_references.push_back(
+						FunctionType::ReturnReferences{
+							FunctionType::ParamReference{ uint8_t(param_index), uint8_t(i) } } );
+				}
 			}
 		}
 		else
@@ -122,6 +131,9 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
 			}
 
+			if( param_index > FunctionType::c_max_param_index )
+				REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope.GetErrors(), src_loc );
+
 			coroutine_type_description.inner_references.push_back(
 				param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 			coroutine_return_inner_references.push_back(
@@ -129,6 +141,9 @@ void CodeBuilder::TransformCoroutineFunctionType(
 					FunctionType::ParamReference{ uint8_t(param_index), FunctionType::c_param_reference_number } } );
 		}
 	}
+
+	if( coroutine_type_description.inner_references.size() > FunctionType::c_max_reference_index + 1 )
+		REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope.GetErrors(), src_loc );
 
 	// Fill references of return value.
 	for( const FunctionType::ParamReference& param_reference : coroutine_function_type.return_references )

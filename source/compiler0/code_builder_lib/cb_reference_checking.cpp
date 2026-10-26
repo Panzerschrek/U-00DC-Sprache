@@ -510,7 +510,8 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 	}
 }
 
-void CodeBuilder::CollectReturnReferences( FunctionContext& function_context, const VariablePtr& return_node )
+void CodeBuilder::CollectReturnReferences(
+	FunctionContext& function_context, const VariablePtr& return_node, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
 {
 	U_ASSERT( function_context.reference_notation_deduction_context != nullptr );
 	ReferenceNotationDeductionContext& reference_notation_deduction_context= *function_context.reference_notation_deduction_context;
@@ -525,14 +526,29 @@ void CodeBuilder::CollectReturnReferences( FunctionContext& function_context, co
 		for( const auto& arg_node_pair : function_context.args_nodes )
 		{
 			const size_t arg_n= size_t( &arg_node_pair - &function_context.args_nodes.front() );
+
 			if( var_node == arg_node_pair.first )
+			{
+				if( arg_n > FunctionType::c_max_param_index )
+					REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
 				reference_notation_deduction_context.return_references.emplace_back( uint8_t(arg_n), FunctionType::c_param_reference_number );
+			}
 
 			for( const VariablePtr& inner_node : arg_node_pair.second )
 			{
-				const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
 				if( var_node == inner_node )
+				{
+					if( arg_n > FunctionType::c_max_param_index )
+						REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
+					const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
+
+					if( tag_n > FunctionType::c_max_reference_index )
+						REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, errors, src_loc );
+
 					reference_notation_deduction_context.return_references.emplace_back( uint8_t(arg_n), uint8_t(tag_n) );
+				}
 			}
 		}
 
@@ -555,7 +571,8 @@ void CodeBuilder::CollectReturnReferences( FunctionContext& function_context, co
 	}
 }
 
-void CodeBuilder::CollectReturnInnerReferences( FunctionContext& function_context, const VariablePtr& return_node )
+void CodeBuilder::CollectReturnInnerReferences(
+	FunctionContext& function_context, const VariablePtr& return_node, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
 {
 	U_ASSERT( function_context.reference_notation_deduction_context != nullptr );
 	ReferenceNotationDeductionContext& reference_notation_deduction_context= *function_context.reference_notation_deduction_context;
@@ -581,13 +598,27 @@ void CodeBuilder::CollectReturnInnerReferences( FunctionContext& function_contex
 			{
 				const size_t arg_n= size_t( &arg_node_pair - &function_context.args_nodes.front() );
 				if( var_node == arg_node_pair.first )
+				{
+					if( arg_n > FunctionType::c_max_param_index )
+						REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
 					reference_notation_deduction_context.return_inner_references[i].emplace_back( uint8_t(arg_n), FunctionType::c_param_reference_number );
+				}
 
 				for( const VariablePtr& inner_node : arg_node_pair.second )
 				{
-					const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
 					if( var_node == inner_node )
+					{
+						if( arg_n > FunctionType::c_max_param_index )
+							REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
+						const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
+
+						if( tag_n > FunctionType::c_max_reference_index )
+							REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, errors, src_loc );
+
 						reference_notation_deduction_context.return_inner_references[i].emplace_back( uint8_t(arg_n), uint8_t(tag_n) );
+					}
 				}
 			}
 
@@ -611,7 +642,8 @@ void CodeBuilder::CollectReturnInnerReferences( FunctionContext& function_contex
 	}
 }
 
-void CodeBuilder::CollectReferencePollution( FunctionContext& function_context )
+void CodeBuilder::CollectReferencePollution(
+	FunctionContext& function_context, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
 {
 	U_ASSERT( function_context.reference_notation_deduction_context != nullptr );
 	ReferenceNotationDeductionContext& reference_notation_deduction_context= *function_context.reference_notation_deduction_context;
@@ -640,11 +672,32 @@ void CodeBuilder::CollectReferencePollution( FunctionContext& function_context )
 				for( size_t src_param_index= 0u; src_param_index < function_context.function_type.params.size(); ++src_param_index )
 				{
 					if( accesible_variable == function_context.args_nodes[src_param_index].first )
+					{
+						if( dst_param_index > FunctionType::c_max_param_index ||
+							src_param_index > FunctionType::c_max_param_index )
+							REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
+						if( dst_tag > FunctionType::c_max_reference_index )
+							REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, errors, src_loc );
+
 						src_reference= FunctionType::ParamReference( uint8_t(src_param_index), FunctionType::c_param_reference_number );
+					}
 
 					for( size_t src_tag= 0; src_tag < function_context.args_nodes[src_param_index].second.size(); ++src_tag )
+					{
 						if( accesible_variable == function_context.args_nodes[src_param_index].second[src_tag] )
+						{
+							if( dst_param_index > FunctionType::c_max_param_index ||
+								src_param_index > FunctionType::c_max_param_index )
+								REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
+							if( dst_tag > FunctionType::c_max_reference_index ||
+								src_tag > FunctionType::c_max_reference_index )
+								REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, errors, src_loc );
+
 							src_reference= FunctionType::ParamReference( uint8_t(src_param_index), uint8_t(src_tag) );
+						}
+					}
 				}
 
 				// Process captured variables sources.
@@ -708,11 +761,30 @@ void CodeBuilder::CollectReferencePollution( FunctionContext& function_context )
 				for( size_t src_param_index= 0u; src_param_index < function_context.function_type.params.size(); ++src_param_index )
 				{
 					if( accesible_variable == function_context.args_nodes[src_param_index].first )
+					{
+						if( src_param_index > FunctionType::c_max_param_index )
+							REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
+						if( dst_tag > FunctionType::c_max_reference_index )
+							REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, errors, src_loc );
+
 						src_reference= FunctionType::ParamReference( uint8_t(src_param_index), FunctionType::c_param_reference_number );
+					}
 
 					for( size_t src_tag= 0; src_tag < function_context.args_nodes[src_param_index].second.size(); ++src_tag )
+					{
 						if( accesible_variable == function_context.args_nodes[src_param_index].second[src_tag] )
+						{
+							if( src_param_index > FunctionType::c_max_param_index )
+								REPORT_ERROR( ReferenceNotationParamIndexOverflow, errors, src_loc );
+
+							if( dst_tag > FunctionType::c_max_reference_index ||
+								src_tag > FunctionType::c_max_reference_index )
+								REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, errors, src_loc );
+
 							src_reference= FunctionType::ParamReference( uint8_t(src_param_index), uint8_t(src_tag) );
+						}
+					}
 				}
 
 				// Process captured variables sources.

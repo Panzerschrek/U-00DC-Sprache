@@ -699,3 +699,554 @@ def ReferenceNotationInLocalScope_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ReferenceNotation_ParamIndexOverflowIsPrevented_Test0():
+	c_program_text= """
+		// We have single reference param #9 - allow returning it.
+		fn Foo( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32& a9, i32 a10 ) : i32&;
+		var [ [ char8, 2 ], 1 ] g_expected_foo_return_references[ "9_" ];
+		static_assert( typeinfo</ typeof(Foo) />.return_references == g_expected_foo_return_references );
+
+		// We have single reference param #10 - don't allow returning it, since we can specify up to 10 params in reference notation.
+		fn Bar( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 ) : i32&;
+		var [ [ char8, 2 ], 0 ] g_expected_bar_return_references[];
+		static_assert( typeinfo</ typeof(Bar) />.return_references == g_expected_bar_return_references );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferenceNotationParamIndexOverflow_Test0():
+	c_program_text= """
+		fn Foo( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 ) : auto&
+		{
+			return a10; // Automatically found, that reference to param #10 is returned, but we can't represent it in reference notation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 4 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test1():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 ) : auto
+		{
+			var S s{ .r= a10 };
+			return s; // Automatically found, that reference to param #10 is returned, but we can't represent it in reference notation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 6 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test2():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S& a10 ) : auto&
+		{
+			return a10.r; // Automatically found, that an inner reference param #10 is returned, but we can't represent it in reference notation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 5 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test3():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S& a10 ) : auto
+		{
+			return a10; // Automatically found, that an inner reference of param #10 is returned, but we can't represent it in reference notation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 5 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			auto l=
+				lambda( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 ) : i32&
+				{
+					return a10; // Automatically found, that reference to param #10 is returned, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 7 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test5():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			auto l=
+				lambda( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 ) : S
+				{
+					var S s{ .r= a10 };
+					return s; // Automatically found, that reference to param #10 is returned, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 9 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test6():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			auto l=
+				lambda( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S& a10 ) : i32&
+				{
+					return a10.r; // Automatically found, that an inner reference param #10 is returned, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 8 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test7():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			auto l=
+				lambda( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S& a10 ) : S
+				{
+					return a10; // Automatically found, that an inner reference of param #10 is returned, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 8 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test8():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S &mut a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 ) : auto
+		{
+			DoPollution( a0, a10 ); // Automatically found pollution with source param index #10, but we can't represent it in reference notation.
+		}
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 8 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test9():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S &mut a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S& a10 ) : auto
+		{
+			DoPollution( a0, a10.r ); // Automatically found pollution with source param index #10, but we can't represent it in reference notation.
+		}
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 8 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test10():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( i32& a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S &mut a10 ) : auto
+		{
+			DoPollution( a10, a0 ); // Automatically found pollution with destination param index #10, but we can't represent it in reference notation.
+		}
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 8 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test11():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S& a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S &mut a10 ) : auto
+		{
+			return DoPollution( a10, a0.r ); // Automatically found pollution with destination param index #10, but we can't represent it in reference notation.
+		}
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 7 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test12():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S &mut s )
+		{
+			auto l=
+				lambda[&]( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 ) : auto
+				{
+					DoPollution( s, a10 ); // Automatically found pollution with source param index #10, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 11 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test13():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( S &mut s )
+		{
+			auto l=
+				lambda[&]( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S& a10 ) : auto
+				{
+					DoPollution( s, a10.r ); // Automatically found pollution with source param index #10, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 11 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test14():
+	c_program_text= """
+		// "async" function returns actually an async object with inner references linked to reference-arguments.
+		// Parameter #10 is a reference parameter, but it can't be represented in reference notation.
+		fn async Foo( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, i32& a10 );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 4 ) )
+
+
+def ReferenceNotationParamIndexOverflow_Test15():
+	c_program_text= """
+		struct S{ i32& r; }
+		// "generator" function returns actually a generator object with inner references linked to value-arguments having references inside.
+		// Parameter #10 has references inside, but it can't be represented in reference notation.
+		fn generator Foo( i32 a0, i32 a1, i32 a2, i32 a3, i32 a4, i32 a5, i32 a6, i32 a7, i32 a8, i32 a9, S a10 );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationParamIndexOverflow", 5 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test0():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt ) : auto&
+		{
+			return tt[26].r; // Automatically found, that inner reference #26 of param #0 is returned, but we can't represent it in reference notation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 5 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test1():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt ) : auto
+		{
+			return tt[27]; // Automatically found, that inner reference #27 of param #0 is returned inside return value, but we can't represent it in reference notation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 5 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test2():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			auto l=
+				lambda( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt ) : auto&
+				{
+					return tt[28].r; // Automatically found, that inner reference #28 of param #0 is returned, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 8 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test3():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo()
+		{
+			auto l=
+				lambda( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt ) : auto
+				{
+					return tt[26]; // Automatically found, that inner reference #27 of param #0 is returned inside return value, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 8 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test4():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ] &mut tt, i32& x ) : auto
+		{
+			DoPollution( tt[26], x ); // Automatically found, that inner reference #26 of param #0 is used as pollution destination, but we can't represent it in reference notation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 8 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test5():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ] &mut tt, S& s ) : auto
+		{
+			DoPollution( tt[28], s.r ); // Automatically found, that inner reference #28 of param #0 is used as pollution destination, but we can't represent it in reference notation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 8 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test6():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt, S &mut s ) : auto
+		{
+			DoPollution( s, tt[29].r ); // Automatically found, that inner reference #29 of param #0 is used as pollution source, but we can't represent it in reference notation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 8 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test7():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo()
+		{
+			auto l=
+				lambda( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ] &mut tt, i32& x )
+				{
+					DoPollution( tt[26], x ); // Automatically found, that inner reference #26 of param #0 is used as pollution destination, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 11 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test8():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo()
+		{
+			auto l=
+				lambda( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ] &mut tt, S& s )
+				{
+					DoPollution( tt[28], s.r ); // Automatically found, that inner reference #28 of param #0 is used as pollution destination, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 11 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test9():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo()
+		{
+			auto l=
+				lambda( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt, S &mut s )
+				{
+					DoPollution( s, tt[29].r ); // Automatically found, that inner reference #29 of param #0 is used as pollution source, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 11 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test10():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt )
+		{
+			auto l=
+				lambda[=]() : i32&
+				{
+					return tt[28].r; // Automatically found, that inner reference #28 of captured variable "tt" is returned, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 6 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test11():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt )
+		{
+			auto l=
+				lambda[=]() : S
+				{
+					return tt[26]; // Automatically found, that inner reference #26 of captured variable "tt" is returned inside return value, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 6 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test12():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt )
+		{
+			auto l=
+				lambda[tt]( S &mut s )
+				{
+					DoPollution( s, tt[29].r ); // Automatically found, that inner reference #29 of captured variable is used as pollution source, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 8 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test13():
+	c_program_text= """
+		struct S{ i32& r; }
+		fn DoPollution( S &mut s, i32& x ) @( g_pollution );
+		var [ [ [ char8, 2 ], 2 ], 1 ] g_pollution[ [ "0a", "1_" ] ];
+		fn Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ]& tt )
+		{
+			auto l=
+				lambda [tt] mut ( i32& x )
+				{
+					DoPollution( tt[29], x ); // Automatically found, that inner reference #29 of captured variable is used as pollution destination, but we can't represent it in reference notation.
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 8 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test14():
+	c_program_text= """
+		struct S{ i32& r; }
+		// An "async" function actually returns an async object with inner references linked to args having references inside.
+		// But we can't represent so many references in reference notation.
+		fn async Foo( tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ] tt );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 5 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test15():
+	c_program_text= """
+		struct S{ i32& r; }
+		type S10= tup[ S, S, S, S, S, S, S, S, S, S ];
+		// A "generator" function actually returns a generator object with inner references linked to args having references inside.
+		// But we can't represent so many references in reference notation.
+		fn generator Foo( S10 a0, S10 a1, S10 a2 );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 6 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test16():
+	c_program_text= """
+		struct S{ i32& r; }
+		struct SSS
+		{
+			// Automatically-calculated inner references for this field, but there are too much of them.
+			tup[ S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S, S ] sss;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 6 ) )
+
+
+def ReferenceNotationReferenceIndexOverflow_Test17():
+	c_program_text= """
+		struct S{ i32& r; }
+		type S10= tup[ S, S, S, S, S, S, S, S, S, S ];
+		fn Foo( S10 a0, S10 a1, S10 a2, S10 a3 )
+		{
+			auto l=
+				lambda[=]() : i32 // Capture here too many variables having references inside.
+				{
+					return a0[0].r + a1[0].r + a2[0].r + a3[0].r;
+				};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceNotationReferenceIndexOverflow", 7 ) )

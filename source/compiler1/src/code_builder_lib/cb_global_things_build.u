@@ -828,6 +828,12 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			var ClassType& mut class_= class_lock.deref();
 
 			auto reference_tag_count= field.t.ReferenceTagCount();
+
+			if( reference_tag_count > u32( FunctionType::ParamReference::c_max_reference_index ) + 1u )
+			{
+				REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, class_members, field.syntax_element.deref().src_loc )
+			}
+
 			field.inner_reference_tags.resize( size_type(reference_tag_count), u8(0) );
 			for( auto mut i= 0s; i < size_type(reference_tag_count); ++i )
 			{

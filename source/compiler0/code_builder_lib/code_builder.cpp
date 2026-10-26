@@ -2129,7 +2129,7 @@ void CodeBuilder::BuildFuncCode(
 		else if( return_type_deduction_context != nullptr )
 		{
 			if( reference_notation_deduction_context != nullptr )
-				CollectReferencePollution( function_context );
+				CollectReferencePollution( function_context, function_names.GetErrors(), block.end_src_loc );
 		}
 		else
 		{

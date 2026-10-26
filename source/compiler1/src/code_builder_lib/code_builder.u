@@ -1786,7 +1786,7 @@ fn CodeBuilder::BuildFuncCode(
 			{
 				if( !function_context.reference_notation_deduction_context.empty() )
 				{
-					CollectReferencePollution( function_context );
+					CollectReferencePollution( function_context, args_names_scope_ptr, block.end_src_loc );
 				}
 			}
 			else

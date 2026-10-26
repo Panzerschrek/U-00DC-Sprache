@@ -649,7 +649,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		// There should be no equal elements here, because this can prevent sorting to be stable.
 		ust::sort( captured_variables );
 
-		var ust::hash_map</ VariablePtr, u8 /> mut captured_variable_to_lambda_inner_reference_tag;
+		var ust::hash_map</ VariablePtr, size_type /> mut captured_variable_to_lambda_inner_reference_tag;
 
 		with( mut class_lock : class_type_ptr.lock_mut() )
 		{
@@ -706,18 +706,18 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					class_type.inner_references.push_back( move(inner_reference) );
 
 					// Captured by reference variable points to one of inner the reference tags of lambda this.
-					captured_variable_to_lambda_inner_reference_tag.insert_new( captured_variable.data.variable_node, field.reference_tag );
+					captured_variable_to_lambda_inner_reference_tag.insert_new( captured_variable.data.variable_node, size_type( field.reference_tag ) );
 				}
 				else
 				{
 					// Captured by value variable points to lambda this param ptself.
-					captured_variable_to_lambda_inner_reference_tag.insert_new( captured_variable.data.variable_node, FunctionType::c_param_reference_number );
+					captured_variable_to_lambda_inner_reference_tag.insert_new( captured_variable.data.variable_node, size_type( FunctionType::c_param_reference_number ) );
 
 					// Each reference tag of each captured variable get its own reference tag in result lambda class.
 					for( auto mut i= 0s; i < reference_tag_count; ++i )
 					{
-						auto reference_tag= u8( class_type.inner_references.size() );
-						field.inner_reference_tags.push_back( reference_tag );
+						auto reference_tag= class_type.inner_references.size();
+						field.inner_reference_tags.push_back( u8( reference_tag ) );
 						class_type.inner_references.push_back(
 							InnerReference{
 								.kind= source_variable.t.GetInnerReferenceKind(i),
@@ -738,6 +738,12 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					members_lock.deref().AddName( field_pair[0], field_pair[1] );
 				}
 			}
+
+			// Don't allow a lambda to have more inner reference tags inside than is supported.
+			if( class_type.inner_references.size() > size_type( FunctionType::ParamReference::c_max_reference_index ) + 1s )
+			{
+				REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, lambda_.src_loc )
+			}
 		}
 
 		var u8 this_param_index(0); // Lambda is "this" (argument 0).
@@ -747,7 +753,13 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		{
 			if_var( tag : captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ) )
 			{
-				return_references.push_back( FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag } );
+				if( tag != size_type( FunctionType::c_param_reference_number ) &&
+					tag > size_type( FunctionType::ParamReference::c_max_reference_index ) )
+				{
+					REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, lambda_.src_loc )
+				}
+
+				return_references.push_back( FunctionType::ParamReference{ .param_index= this_param_index, .reference_index( tag ) } );
 			}
 		}
 
@@ -765,7 +777,13 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			{
 				if_var( tag : captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_inner_reference ) )
 				{
-					pair.first.push_back( FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag } );
+					if( tag != size_type( FunctionType::c_param_reference_number ) &&
+						tag > size_type( FunctionType::ParamReference::c_max_reference_index ) )
+					{
+						REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, lambda_.src_loc )
+					}
+
+					pair.first.push_back( FunctionType::ParamReference{ .param_index= this_param_index, .reference_index( tag ) } );
 				}
 			}
 			NormalizeParamReferencesList( pair.first );
@@ -793,7 +811,13 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 					if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(dst_variable) )
 					{
-						result_pollution.dst= FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag };
+						if( tag != size_type( FunctionType::c_param_reference_number ) &&
+							tag > size_type( FunctionType::ParamReference::c_max_reference_index ) )
+						{
+							REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, lambda_.src_loc )
+						}
+
+						result_pollution.dst= FunctionType::ParamReference{ .param_index= this_param_index, .reference_index( tag ) };
 					}
 					else
 					{
@@ -809,7 +833,13 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 				{
 					if_var( tag : captured_variable_to_lambda_inner_reference_tag.find(src_variable) )
 					{
-						result_pollution.src= FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag };
+						if( tag != size_type( FunctionType::c_param_reference_number ) &&
+							tag > size_type( FunctionType::ParamReference::c_max_reference_index ) )
+						{
+							REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, lambda_.src_loc )
+						}
+
+						result_pollution.src= FunctionType::ParamReference{ .param_index= this_param_index, .reference_index( tag ) };
 					}
 					else
 					{

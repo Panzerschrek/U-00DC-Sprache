@@ -335,6 +335,7 @@ fn CodeBuilder::GetReferencesPollutionConstant( this, FunctionType::ReferencesPo
 
 fn CodeBuilder::GetParamReferenceConstant( this, FunctionType::ParamReference& param_reference ) : LLVMValueRef
 {
+	// Overflow isn't possible here, since there are limits for param index and reference index.
 	var [ char8, 2 ] mut initializer
 	[
 		char8( u32( '0' ) + u32( param_reference.param_index ) ),

@@ -361,6 +361,7 @@ CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReferencesPollutionConsta
 
 llvm::Constant* CodeBuilder::GetParamReferenceConstant( const FunctionType::ParamReference& param_reference )
 {
+	// Overflow isn't possible here, since there are limits for param index and reference index.
 	const char initializer[2]
 	{
 		char( '0' + param_reference.first ),

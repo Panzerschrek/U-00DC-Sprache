@@ -445,7 +445,8 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 	}
 }
 
-fn CodeBuilder::CollectReturnReferences( FunctionContext &mut function_context, VariablePtr& return_node )
+fn CodeBuilder::CollectReturnReferences(
+	FunctionContext &mut function_context, VariablePtr& return_node, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
 	auto reference_notation_deduction_context_ptr= function_context.reference_notation_deduction_context;
 	auto mut lock= reference_notation_deduction_context_ptr.try_lock_mut();
@@ -459,6 +460,11 @@ fn CodeBuilder::CollectReturnReferences( FunctionContext &mut function_context, 
 		{
 			if( variable_node == function_context.args_nodes[arg_n][0] )
 			{
+				if( arg_n > size_type( FunctionType::ParamReference::c_max_param_index ) )
+				{
+					REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope, src_loc )
+				}
+
 				reference_notation_deduction_context.return_references.push_back(
 					FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number } );
 			}
@@ -466,6 +472,16 @@ fn CodeBuilder::CollectReturnReferences( FunctionContext &mut function_context, 
 			{
 				if( variable_node == function_context.args_nodes[arg_n][1][tag_n] )
 				{
+					if( arg_n > size_type( FunctionType::ParamReference::c_max_param_index ) )
+					{
+						REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope, src_loc )
+					}
+
+					if( tag_n > size_type( FunctionType::ParamReference::c_max_reference_index ) )
+					{
+						REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, src_loc )
+					}
+
 					reference_notation_deduction_context.return_references.push_back(
 						FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) } );
 				}
@@ -496,7 +512,8 @@ fn CodeBuilder::CollectReturnReferences( FunctionContext &mut function_context, 
 	}
 }
 
-fn CodeBuilder::CollectReturnInnerReferences( FunctionContext &mut function_context, VariablePtr& return_node )
+fn CodeBuilder::CollectReturnInnerReferences(
+	FunctionContext &mut function_context, VariablePtr& return_node, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
 	auto reference_notation_deduction_context_ptr= function_context.reference_notation_deduction_context;
 	auto mut lock= reference_notation_deduction_context_ptr.try_lock_mut();
@@ -519,6 +536,11 @@ fn CodeBuilder::CollectReturnInnerReferences( FunctionContext &mut function_cont
 				{
 					if( variable_node == function_context.args_nodes[arg_n][0] )
 					{
+						if( arg_n > size_type( FunctionType::ParamReference::c_max_param_index ) )
+						{
+							REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope, src_loc )
+						}
+
 						reference_notation_deduction_context.return_inner_references[i].push_back(
 							FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= FunctionType::c_param_reference_number } );
 					}
@@ -526,6 +548,16 @@ fn CodeBuilder::CollectReturnInnerReferences( FunctionContext &mut function_cont
 					{
 						if( variable_node == function_context.args_nodes[arg_n][1][tag_n] )
 						{
+							if( arg_n > size_type( FunctionType::ParamReference::c_max_param_index ) )
+							{
+								REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope, src_loc )
+							}
+
+							if( tag_n > size_type( FunctionType::ParamReference::c_max_reference_index ) )
+							{
+								REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, src_loc )
+							}
+
 							reference_notation_deduction_context.return_inner_references[i].push_back(
 								FunctionType::ParamReference{ .param_index= u8(arg_n), .reference_index= u8(tag_n) } );
 						}
@@ -564,7 +596,8 @@ fn CodeBuilder::CollectReturnInnerReferences( FunctionContext &mut function_cont
 	}
 }
 
-fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context )
+fn CodeBuilder::CollectReferencePollution(
+	FunctionContext &mut function_context, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
 	auto reference_notation_deduction_context_ptr= function_context.reference_notation_deduction_context;
 	auto mut lock= reference_notation_deduction_context_ptr.try_lock_mut();
@@ -602,12 +635,35 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 					{
 						if( accessible_variable_node == args_nodes[j][0] )
 						{
+							if( param_i > size_type( FunctionType::ParamReference::c_max_param_index ) ||
+									  j > size_type( FunctionType::ParamReference::c_max_param_index ) )
+							{
+								REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope, src_loc )
+							}
+
+							if( tag_i > size_type( FunctionType::ParamReference::c_max_reference_index ) )
+							{
+								REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, src_loc )
+							}
+
 							src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
 						}
 						for( auto mut tag_j= 0s; tag_j < args_nodes[j][1].size(); ++tag_j )
 						{
 							if( accessible_variable_node == args_nodes[j][1][tag_j] )
 							{
+								if( param_i > size_type( FunctionType::ParamReference::c_max_param_index ) ||
+										  j > size_type( FunctionType::ParamReference::c_max_param_index ) )
+								{
+									REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope, src_loc )
+								}
+
+								if( tag_i > size_type( FunctionType::ParamReference::c_max_reference_index ) ||
+									tag_j > size_type( FunctionType::ParamReference::c_max_reference_index ) )
+								{
+									REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, src_loc )
+								}
+
 								src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index=u8(tag_j) };
 							}
 						}
@@ -652,6 +708,7 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 							lambda_preprocessing_context.references_pollution.push_back(
 								LambdaPreprocessingContext::ReferencePollution
 								{
+									// TODO - handle possible overflow of param index and reference index here?
 									.dst= FunctionType::ParamReference{ .param_index= u8(param_i), .reference_index= u8(tag_i) },
 									.src= src_captured_variable.try_to_non_nullable(),
 								} );
@@ -695,12 +752,33 @@ fn CodeBuilder::CollectReferencePollution( FunctionContext &mut function_context
 					{
 						if( accessible_variable_node == function_context.args_nodes[j][0] )
 						{
+							if( j > size_type( FunctionType::ParamReference::c_max_param_index ) )
+							{
+								REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope, src_loc )
+							}
+
+							if( dst_tag > size_type( FunctionType::ParamReference::c_max_reference_index ) )
+							{
+								REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, src_loc )
+							}
+
 							src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
 						}
 						for( auto mut tag_j= 0s; tag_j < function_context.args_nodes[j][1].size(); ++tag_j )
 						{
 							if( accessible_variable_node == function_context.args_nodes[j][1][tag_j] )
 							{
+								if( j > size_type( FunctionType::ParamReference::c_max_param_index ) )
+								{
+									REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope, src_loc )
+								}
+
+								if( dst_tag > size_type( FunctionType::ParamReference::c_max_reference_index ) ||
+									tag_j   > size_type( FunctionType::ParamReference::c_max_reference_index ) )
+								{
+									REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, src_loc )
+								}
+
 								src_param_reference= FunctionType::ParamReference{ .param_index= u8(j), .reference_index=u8(tag_j) };
 							}
 						}

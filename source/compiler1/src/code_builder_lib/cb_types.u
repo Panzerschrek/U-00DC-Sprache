@@ -279,7 +279,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		function_type.return_value_reference_expression.empty() &&
 		function_type.return_value_inner_references_expression.empty() )
 	{
-		for( auto mut i= 0s; i < res.params.size(); ++i )
+		for( auto mut i= 0s; i < ust::min( res.params.size(), size_type( FunctionType::ParamReference::c_max_param_index ) + 1s ); ++i )
 		{
 			if( ( res.return_value_type == ValueType::ReferenceImut && res.params[i].value_type != ValueType::Value ) ||
 				( res.return_value_type == ValueType::ReferenceMut  && res.params[i].value_type == ValueType::ReferenceMut ) )
