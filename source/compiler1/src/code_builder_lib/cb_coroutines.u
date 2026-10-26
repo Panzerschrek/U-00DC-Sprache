@@ -153,7 +153,6 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 
 			coroutine_type_description.inner_references.push_back(
 				( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
-			// TODO - handle possible overflow of param index and reference index here?
 			coroutine_return_inner_references.push_back(
 				ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } ) );
 		}
@@ -182,7 +181,6 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			FunctionType::ParamReference
 			{
 				.param_index(0),
-				// TODO - handle possible overflow of reference index here?
 				.reference_index= (
 					param_reference.reference_index == FunctionType::c_param_reference_number
 						? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
@@ -212,7 +210,6 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 				FunctionType::ParamReference
 				{
 					.param_index(0),
-					// TODO - handle possible overflow of reference index here?
 					.reference_index= (
 						param_reference.reference_index == FunctionType::c_param_reference_number
 							? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
