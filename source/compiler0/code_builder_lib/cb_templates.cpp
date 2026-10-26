@@ -568,7 +568,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 			{
 				// Process a case with single trivial type alias.
 				// Expand it, if it's possible.
-				if( const auto type_alias_ptr= std::get_if< std::unique_ptr<const Synt::TypeAlias> >( &single_type_template->syntax_element->something ) )
+				if( const auto type_alias_ptr= std::get_if< RcPtr<Synt::TypeAlias> >( &single_type_template->syntax_element->something ) )
 				{
 					if( single_type_template->signature_params.size() == specialized_template_params.size() )
 					{
@@ -1188,12 +1188,12 @@ std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 
 		return Type(class_type);
 	}
-	if( const auto type_alias= std::get_if< std::unique_ptr<const Synt::TypeAlias> >( &type_template.syntax_element->something ) )
+	if( const auto type_alias= std::get_if< RcPtr<Synt::TypeAlias> >( &type_template.syntax_element->something ) )
 	{
 		Value& type_alias_value=
 			template_args_namespace->AddName(
 				Class::c_template_class_name,
-				NamesScopeValue( TypeAlias{ type_alias->get() }, (*type_alias)->src_loc ) )->value;
+				NamesScopeValue( TypeAlias{ *type_alias }, (*type_alias)->src_loc ) )->value;
 
 		// Call this function to enable globals loop detection.
 		GlobalThingBuildTypeAlias( *template_args_namespace, type_alias_value );

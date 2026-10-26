@@ -228,7 +228,7 @@ struct StaticAssert
 
 struct TypeAlias
 {
-	const Synt::TypeAlias* syntax_element= nullptr;
+	RcPtr<Synt::TypeAlias> syntax_element;
 };
 
 struct IncompleteGlobalVariable

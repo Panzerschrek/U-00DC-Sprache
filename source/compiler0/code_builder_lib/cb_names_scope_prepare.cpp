@@ -267,10 +267,10 @@ void CodeBuilder::FillClassNamesScope(
 		{
 			this_.NamesScopeFill( *class_type->members, static_assert_ );
 		}
-		void operator()( const Synt::TypeAlias& type_alias )
+		void operator()( const RcPtr<Synt::TypeAlias>& type_alias )
 		{
 			this_.NamesScopeFill( *class_type->members, type_alias );
-			class_type->SetMemberVisibility( type_alias.name, current_visibility );
+			class_type->SetMemberVisibility( type_alias->name, current_visibility );
 		}
 		void operator()( const Synt::VariablesDeclaration& variables_declaration )
 		{
@@ -342,16 +342,16 @@ void CodeBuilder::NamesScopeFill(NamesScope& names_scope, const RcPtr<Synt::Enum
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), enum_declaration->src_loc, enum_declaration->name );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::TypeAlias>& type_alias_declaration )
 {
-	if( IsKeyword( type_alias_declaration.name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_alias_declaration.src_loc );
+	if( IsKeyword( type_alias_declaration->name ) )
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_alias_declaration->src_loc );
 
 	TypeAlias type_alias;
-	type_alias.syntax_element= &type_alias_declaration;
+	type_alias.syntax_element= type_alias_declaration;
 
-	if( names_scope.AddName( type_alias_declaration.name, NamesScopeValue( type_alias, type_alias_declaration.src_loc ) ) == nullptr )
-		REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_alias_declaration.src_loc, type_alias_declaration.name );
+	if( names_scope.AddName( type_alias_declaration->name, NamesScopeValue( type_alias, type_alias_declaration->src_loc ) ) == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_alias_declaration->src_loc, type_alias_declaration->name );
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration )

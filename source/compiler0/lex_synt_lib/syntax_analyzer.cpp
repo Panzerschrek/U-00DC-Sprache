@@ -802,7 +802,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
-			result_builder.Append( ParseTypeAlias() );
+			result_builder.Append( RcPtr<TypeAlias>( ParseTypeAlias() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ )
 		{
@@ -4142,7 +4142,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
-			result_builder.Append( ParseTypeAlias() );
+			result_builder.Append( RcPtr<TypeAlias>( ParseTypeAlias() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ )
 		{
@@ -4505,10 +4505,10 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			type_alias_template.name= name;
 			type_alias_template.is_short_form= is_short_form;
 
-			auto type_alias= std::make_unique<TypeAlias>( ParseTypeAliasBody() );
-			type_alias->name= std::move(name);
+			TypeAlias type_alias( ParseTypeAliasBody() );
+			type_alias.name= std::move(name);
 
-			type_alias_template.something= std::move(type_alias);
+			type_alias_template.something= RcPtr<TypeAlias>( std::move(type_alias) );
 			return std::move(type_alias_template);
 		}
 
