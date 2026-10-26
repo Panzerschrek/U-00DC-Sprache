@@ -782,15 +782,15 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 		{
-			result_builder.Append( ParseVariablesDeclaration() );
+			result_builder.Append( RcPtr<VariablesDeclaration>( ParseVariablesDeclaration() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::thread_local_ )
 		{
-			result_builder.Append( ParseThreadLocalVariablesDeclaration() );
+			result_builder.Append( RcPtr<VariablesDeclaration>( ParseThreadLocalVariablesDeclaration() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 		{
-			result_builder.Append( ParseAutoVariableDeclaration() );
+			result_builder.Append( RcPtr<AutoVariableDeclaration>( ParseAutoVariableDeclaration() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
@@ -4122,15 +4122,15 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 		{
-			result_builder.Append( ParseVariablesDeclaration() );
+			result_builder.Append( RcPtr<VariablesDeclaration>( ParseVariablesDeclaration() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::thread_local_ )
 		{
-			result_builder.Append( ParseThreadLocalVariablesDeclaration() );
+			result_builder.Append( RcPtr<VariablesDeclaration>( ParseThreadLocalVariablesDeclaration() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 		{
-			result_builder.Append( ParseAutoVariableDeclaration() );
+			result_builder.Append( RcPtr<AutoVariableDeclaration>( ParseAutoVariableDeclaration() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{

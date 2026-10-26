@@ -292,8 +292,8 @@ using IfAlternative= std::variant<
 using IfAlternativePtr= std::unique_ptr<const IfAlternative>;
 
 using ClassElementsList= VariantLinkedList<
-	VariablesDeclaration,
-	AutoVariableDeclaration,
+	RcPtr<VariablesDeclaration>,
+	RcPtr<AutoVariableDeclaration>,
 	RcPtr<StaticAssert>,
 	Function,
 	RcPtr<TypeAlias>,
@@ -306,8 +306,8 @@ using ClassElementsList= VariantLinkedList<
 	Mixin >;
 
 using ProgramElementsList= VariantLinkedList<
-	VariablesDeclaration,
-	AutoVariableDeclaration,
+	RcPtr<VariablesDeclaration>,
+	RcPtr<AutoVariableDeclaration>,
 	RcPtr<StaticAssert>,
 	Function,
 	RcPtr<TypeAlias>,

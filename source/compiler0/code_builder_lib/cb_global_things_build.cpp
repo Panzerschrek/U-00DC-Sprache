@@ -1418,8 +1418,9 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 
 	const StackVariablesStorage dummy_stack( function_context );
 
-	if( const auto variables_declaration= incomplete_global_variable.variables_declaration )
+	if( incomplete_global_variable.variables_declaration != nullptr )
 	{
+		const auto& variables_declaration= incomplete_global_variable.variables_declaration;
 		const Synt::VariablesDeclaration::VariableEntry& variable_declaration= variables_declaration->variables[ incomplete_global_variable.element_index ];
 
 		const bool is_mutable = variable_declaration.mutability_modifier == MutabilityModifier::Mutable;
@@ -1584,8 +1585,9 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 
 		global_variable_value= variable_reference;
 	}
-	else if( const auto auto_variable_declaration= incomplete_global_variable.auto_variable_declaration )
+	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
 	{
+		const auto& auto_variable_declaration= incomplete_global_variable.auto_variable_declaration;
 		const bool is_mutable = auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable;
 
 		// Disable global mutable references because of problems with initializers and references protection.

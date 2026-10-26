@@ -234,8 +234,9 @@ struct TypeAlias
 struct IncompleteGlobalVariable
 {
 	// Exists one of.
-	const Synt::VariablesDeclaration* variables_declaration= nullptr;
-	const Synt::AutoVariableDeclaration* auto_variable_declaration= nullptr;
+	// TODO - rework this, use "variant".
+	RcPtr<Synt::VariablesDeclaration> variables_declaration;
+	RcPtr<Synt::AutoVariableDeclaration> auto_variable_declaration;
 
 	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
 };

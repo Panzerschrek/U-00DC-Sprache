@@ -34,32 +34,32 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Namespace
 	NamesScopeFill( *result_scope, namespace_.elements );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::VariablesDeclaration>& variables_declaration )
 {
-	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
+	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration->variables )
 	{
 		if( IsKeyword( variable_declaration.name ) )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration.src_loc );
 
 		IncompleteGlobalVariable incomplete_global_variable;
-		incomplete_global_variable.variables_declaration= &variables_declaration;
-		incomplete_global_variable.element_index= size_t( &variable_declaration - variables_declaration.variables.data() );
+		incomplete_global_variable.variables_declaration= variables_declaration;
+		incomplete_global_variable.element_index= size_t( &variable_declaration - variables_declaration->variables.data() );
 
 		if( names_scope.AddName( variable_declaration.name, NamesScopeValue( incomplete_global_variable, variable_declaration.src_loc ) ) == nullptr )
 			REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration.src_loc, variable_declaration.name );
 	}
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::AutoVariableDeclaration>& variable_declaration )
 {
-	if( IsKeyword( variable_declaration.name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration.src_loc );
+	if( IsKeyword( variable_declaration->name ) )
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration->src_loc );
 
 	IncompleteGlobalVariable incomplete_global_variable;
-	incomplete_global_variable.auto_variable_declaration= &variable_declaration;
+	incomplete_global_variable.auto_variable_declaration= variable_declaration;
 
-	if( names_scope.AddName( variable_declaration.name, NamesScopeValue( incomplete_global_variable, variable_declaration.src_loc ) ) == nullptr )
-		REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration.src_loc, variable_declaration.name );
+	if( names_scope.AddName( variable_declaration->name, NamesScopeValue( incomplete_global_variable, variable_declaration->src_loc ) ) == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration->src_loc, variable_declaration->name );
 }
 
 void CodeBuilder::NamesScopeFill(
@@ -272,16 +272,16 @@ void CodeBuilder::FillClassNamesScope(
 			this_.NamesScopeFill( *class_type->members, type_alias );
 			class_type->SetMemberVisibility( type_alias->name, current_visibility );
 		}
-		void operator()( const Synt::VariablesDeclaration& variables_declaration )
+		void operator()( const RcPtr<Synt::VariablesDeclaration>& variables_declaration )
 		{
 			this_.NamesScopeFill( *class_type->members, variables_declaration );
-			for( const auto& variable_declaration : variables_declaration.variables )
+			for( const auto& variable_declaration : variables_declaration->variables )
 				class_type->SetMemberVisibility( variable_declaration.name, current_visibility );
 		}
-		void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
+		void operator()( const RcPtr<Synt::AutoVariableDeclaration>& auto_variable_declaration )
 		{
 			this_.NamesScopeFill( *class_type->members, auto_variable_declaration );
-			class_type->SetMemberVisibility( auto_variable_declaration.name, current_visibility );
+			class_type->SetMemberVisibility( auto_variable_declaration->name, current_visibility );
 		}
 		void operator()( const RcPtr<Synt::Class>& inner_class )
 		{
