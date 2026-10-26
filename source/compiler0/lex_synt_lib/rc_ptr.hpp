@@ -127,6 +127,11 @@ public:
 		}
 	}
 
+	void* get_raw_ptr() noexcept
+	{
+		return ptr_;
+	}
+
 private:
 	void* ptr_= nullptr; // Is actually RcPtrStorage<T>, but stupid C++ doesn't allow instantiating it for incomplete "T".
 };
@@ -153,6 +158,18 @@ template<typename T>
 inline bool operator!=( std::nullptr_t, const RcPtr<T>& r ) noexcept
 {
 	return !r.empty();
+}
+
+template<typename T>
+inline bool operator==( const RcPtr<T>& l, const RcPtr<T>& r ) noexcept
+{
+	return l.get_raw_ptr() == r.get_raw_ptr();
+}
+
+template<typename T>
+inline bool operator!=( const RcPtr<T>& l, const RcPtr<T>& r ) noexcept
+{
+	return l.get_raw_ptr() != r.get_raw_ptr();
 }
 
 } // namespace U
