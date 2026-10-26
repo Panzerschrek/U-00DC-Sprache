@@ -47,7 +47,7 @@ struct FunctionVariable
 	using Kind= Synt::Function::Kind;
 
 public:
-	const Synt::Function* syntax_element= nullptr;
+	RcPtr<Synt::Function> syntax_element;
 	Synt::VirtualFunctionKind virtual_function_kind= Synt::VirtualFunctionKind::None;
 
 	FunctionType type;
@@ -90,8 +90,8 @@ struct OverloadedFunctionsSet
 	std::vector<FunctionTemplatePtr> template_functions;
 
 	// Is incomplete, if there are some syntax elements in containers.
-	std::vector<const Synt::Function*> syntax_elements;
-	std::vector<const Synt::Function*> out_of_line_syntax_elements;
+	std::vector<RcPtr<Synt::Function>> syntax_elements;
+	std::vector<RcPtr<Synt::Function>> out_of_line_syntax_elements;
 	std::vector<RcPtr<Synt::FunctionTemplate>> template_syntax_elements;
 
 	ClassPtr base_class= nullptr;

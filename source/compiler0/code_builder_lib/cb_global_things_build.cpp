@@ -195,9 +195,9 @@ void CodeBuilder::PrepareFunctionsSet( NamesScope& names_scope, OverloadedFuncti
 	}
 	DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_src_loc );
 
-	for( const Synt::Function* const function : functions_set.syntax_elements )
+	for( const RcPtr<Synt::Function>& function : functions_set.syntax_elements )
 	{
-		const size_t function_index= PrepareFunction( names_scope, functions_set.base_class, functions_set, *function, false );
+		const size_t function_index= PrepareFunction( names_scope, functions_set.base_class, functions_set, function, false );
 
 		if( function_index == ~0u )
 			continue;
@@ -245,8 +245,8 @@ void CodeBuilder::PrepareFunctionsSet( NamesScope& names_scope, OverloadedFuncti
 	}
 	functions_set.syntax_elements.clear();
 
-	for( const Synt::Function* const function : functions_set.out_of_line_syntax_elements )
-		PrepareFunction( names_scope, functions_set.base_class, functions_set, *function, true );
+	for( const RcPtr<Synt::Function>& function : functions_set.out_of_line_syntax_elements )
+		PrepareFunction( names_scope, functions_set.base_class, functions_set, function, true );
 	functions_set.out_of_line_syntax_elements.clear();
 
 	for( const RcPtr<Synt::FunctionTemplate>& function_template : functions_set.template_syntax_elements )
@@ -952,7 +952,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				// Functions declared virtual requires preparation in order to build virtual table later.
 				for( const FunctionVariable& function : functions_set->functions )
 					need_to_prepare|= function.syntax_element != nullptr && function.syntax_element->virtual_function_kind != Synt::VirtualFunctionKind::None;
-				for( const Synt::Function* const synt_function : functions_set->syntax_elements )
+				for( const RcPtr<Synt::Function>& synt_function : functions_set->syntax_elements )
 					need_to_prepare|= synt_function->virtual_function_kind != Synt::VirtualFunctionKind::None;
 			}
 			if( !need_to_prepare )

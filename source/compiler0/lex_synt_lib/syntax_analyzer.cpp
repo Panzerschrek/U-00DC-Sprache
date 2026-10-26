@@ -759,7 +759,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 	{
 		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
-			result_builder.Append( ParseFunction() );
+			result_builder.Append( RcPtr<Function>( ParseFunction() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
@@ -1611,11 +1611,13 @@ Lambda SyntaxAnalyzer::ParseLambda()
 	U_ASSERT( it_->text == Keywords::lambda_ );
 	Lambda result( it_->src_loc );
 
+	Function result_function( it_->src_loc );
+
 	NextLexem(); // Skip "lambda" keyword
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::nodiscard_ )
 	{
-		result.function.no_discard= true;
+		result_function.no_discard= true;
 		NextLexem();
 	}
 
@@ -1720,7 +1722,7 @@ Lambda SyntaxAnalyzer::ParseLambda()
 			NextLexem();
 		}
 
-		result.function.type.params.push_back( std::move( this_param ) );
+		result_function.type.params.push_back( std::move( this_param ) );
 	}
 
 	// Parse params.
@@ -1736,13 +1738,13 @@ Lambda SyntaxAnalyzer::ParseLambda()
 
 		if( it_->type == Lexem::Type::Ellipsis )
 		{
-			result.function.type.is_variadic= true;
+			result_function.type.is_variadic= true;
 			NextLexem();
 			ExpectLexem( Lexem::Type::BracketRight );
 			break;
 		}
 
-		result.function.type.params.push_back( ParseFunctionParam() );
+		result_function.type.params.push_back( ParseFunctionParam() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -1760,17 +1762,19 @@ Lambda SyntaxAnalyzer::ParseLambda()
 		}
 	} // for params.
 
-	ParseFunctionTypeEnding( result.function.type );
+	ParseFunctionTypeEnding( result_function.type );
 
 	// Make sure we have non-empty name.
-	result.function.name.push_back(
+	result_function.name.push_back(
 		Function::NameComponent{
 			std::string( OverloadedOperatorToString( OverloadedOperator::Call ) ),
 			result.src_loc,
 			false } );
 
 	// Lambdas always have a body.
-	result.function.block= std::make_unique<Block>( ParseBlock() );
+	result_function.block= std::make_unique<Block>( ParseBlock() );
+
+	result.function= RcPtr( std::move( result_function ) );
 
 	return result;
 }
@@ -4114,7 +4118,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			break;
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
-			result_builder.Append( ParseFunction() );
+			result_builder.Append( RcPtr<Function>( ParseFunction() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
@@ -4410,7 +4414,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	{
 		FunctionTemplate function_template( template_src_loc );
 		function_template.params= std::move(params);
-		function_template.function= std::make_unique<Function>(ParseFunction());
+		function_template.function= RcPtr<Function>( ParseFunction() );
 		function_template.src_loc= function_template.function->src_loc;
 		return std::move(function_template);
 	}

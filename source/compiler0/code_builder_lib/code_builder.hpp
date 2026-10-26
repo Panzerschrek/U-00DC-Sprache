@@ -219,7 +219,7 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Function& function );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Function>& function );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Class& class_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::FunctionTemplate>& function_template_syntax_element );
@@ -719,7 +719,7 @@ private:
 		NamesScope& names_scope,
 		ClassPtr base_class,
 		OverloadedFunctionsSet& functions_set,
-		const Synt::Function& function_declaration,
+		const RcPtr<Synt::Function>& function_declaration,
 		bool is_out_of_line_function );
 
 	void CheckOverloadedOperator(
@@ -1364,8 +1364,8 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::VariablesDeclaration>& variables_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::AutoVariableDeclaration>& variable_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	void NamesScopeFillFunction( NamesScope& names_scope, const Synt::Function& function_declaration, std::string_view func_name, ClassPtr base_class, ClassMemberVisibility visibility );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Function>& function_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFillFunction( NamesScope& names_scope, const RcPtr<Synt::Function>& function_declaration, std::string_view func_name, ClassPtr base_class, ClassMemberVisibility visibility );
 	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::FunctionTemplate>& function_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	ClassPtr NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Class>& class_declaration, std::optional<Class::BaseTemplate> base_template= std::nullopt );
 	void FillClassNamesScope( ClassPtr class_type, std::string_view class_name, Synt::ClassKindAttribute class_kind, const Synt::ClassElementsList& class_elements, ClassMemberVisibility initial_visibility );
@@ -1377,7 +1377,7 @@ private:
 
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );
 	template<typename T> void NamesScopeFillOutOfLineElement( NamesScope&, const T& ) {} // Ignore almost all nodes in out of line filling, except a couple of special nodes.
-	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Function& function );
+	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const RcPtr<Synt::Function>& function );
 	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 
 	// Mixins

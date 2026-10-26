@@ -295,7 +295,7 @@ using ClassElementsList= VariantLinkedList<
 	RcPtr<VariablesDeclaration>,
 	RcPtr<AutoVariableDeclaration>,
 	RcPtr<StaticAssert>,
-	Function,
+	RcPtr<Function>,
 	RcPtr<TypeAlias>,
 	RcPtr<Enum>,
 	RcPtr<Class>,
@@ -309,7 +309,7 @@ using ProgramElementsList= VariantLinkedList<
 	RcPtr<VariablesDeclaration>,
 	RcPtr<AutoVariableDeclaration>,
 	RcPtr<StaticAssert>,
-	Function,
+	RcPtr<Function>,
 	RcPtr<TypeAlias>,
 	RcPtr<Enum>,
 	RcPtr<Class>,
@@ -1383,12 +1383,12 @@ struct Lambda
 
 public:
 	explicit Lambda( const SrcLoc& src_loc )
-		: src_loc(src_loc), function(src_loc) {}
+		: src_loc(src_loc) {}
 
 public:
 	SrcLoc src_loc;
 	Capture capture;
-	Function function;
+	RcPtr<Function> function;
 };
 
 struct VariableInitialization
@@ -1520,7 +1520,7 @@ struct FunctionTemplate
 	SrcLoc src_loc;
 	std::vector<TemplateParam> params;
 
-	std::unique_ptr<const Function> function;
+	RcPtr<Function> function;
 };
 
 struct Namespace

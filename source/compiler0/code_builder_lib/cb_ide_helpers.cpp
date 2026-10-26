@@ -308,12 +308,12 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	(void)enum_;
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Function& function )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Function>& function )
 {
 	NamesScope* actual_names_scope= nullptr;
 	ClassPtr base_class= nullptr;
 
-	const auto& name= function.name;
+	const auto& name= function->name;
 
 	if( name.size() > 1 )
 	{
@@ -344,7 +344,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 			}
 
 			// Perform regular name lookup.
-			value= LookupName( names_scope, name[0].name, function.src_loc ).value;
+			value= LookupName( names_scope, name[0].name, function->src_loc ).value;
 			if( value != nullptr )
 				CollectDefinition( *value, name[0].src_loc );
 		}
@@ -414,7 +414,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		return;
 	}
 
-	if( function.block == nullptr )
+	if( function->block == nullptr )
 		return; // This is only prototype.
 
 	FunctionVariable& function_variable= functions_set.functions[ function_index ];

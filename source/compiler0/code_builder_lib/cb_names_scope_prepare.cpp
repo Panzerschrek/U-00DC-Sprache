@@ -64,26 +64,26 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Aut
 
 void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope,
-	const Synt::Function& function_declaration,
+	const RcPtr<Synt::Function>& function_declaration,
 	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
 {
-	if( function_declaration.name.size() != 1u )
+	if( function_declaration->name.size() != 1u )
 		return; // process out of line functions later.
 
-	const std::string& func_name= function_declaration.name.back().name;
+	const std::string& func_name= function_declaration->name.back().name;
 	NamesScopeFillFunction( names_scope, function_declaration, func_name, base_class, visibility );
 }
 
 void CodeBuilder::NamesScopeFillFunction(
 	NamesScope& names_scope,
-	const Synt::Function& function_declaration,
+	const RcPtr<Synt::Function>& function_declaration,
 	const std::string_view func_name,
 	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
 {
 	if( IsKeyword( func_name ) && func_name != Keywords::constructor_ && func_name != Keywords::destructor_ )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration.src_loc );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration->src_loc );
 
 	if( visibility != ClassMemberVisibility::Public )
 	{
@@ -92,7 +92,7 @@ void CodeBuilder::NamesScopeFillFunction(
 			func_name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
 			func_name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
 			func_name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
-			REPORT_ERROR( ThisMethodMustBePublic, names_scope.GetErrors(), function_declaration.src_loc, func_name );
+			REPORT_ERROR( ThisMethodMustBePublic, names_scope.GetErrors(), function_declaration->src_loc, func_name );
 	}
 
 	if( NamesScopeValue* const prev_value= names_scope.GetThisScopeValue( func_name ) )
@@ -100,13 +100,13 @@ void CodeBuilder::NamesScopeFillFunction(
 		if( const OverloadedFunctionsSetPtr functions_set= prev_value->value.GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->GetMemberVisibility( func_name ) != visibility )
-				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_declaration.src_loc, func_name );
+				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_declaration->src_loc, func_name );
 
 			U_ASSERT( functions_set->base_class == base_class );
-			functions_set->syntax_elements.push_back( &function_declaration );
+			functions_set->syntax_elements.push_back( function_declaration );
 		}
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_declaration.src_loc, func_name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_declaration->src_loc, func_name );
 	}
 	else
 	{
@@ -115,7 +115,7 @@ void CodeBuilder::NamesScopeFillFunction(
 
 		OverloadedFunctionsSet functions_set;
 		functions_set.base_class= base_class;
-		functions_set.syntax_elements.push_back( &function_declaration );
+		functions_set.syntax_elements.push_back( function_declaration );
 
 		names_scope.AddName( func_name, NamesScopeValue( std::make_shared<OverloadedFunctionsSet>( std::move(functions_set) ), SrcLoc() ) );
 	}
@@ -240,7 +240,7 @@ void CodeBuilder::FillClassNamesScope(
 			++class_type->field_count;
 			class_type->SetMemberVisibility( in_class_field->name, current_visibility );
 		}
-		void operator()( const Synt::Function& func )
+		void operator()( const RcPtr<Synt::Function>& func )
 		{
 			this_.NamesScopeFill( *class_type->members, func, class_type, current_visibility );
 		}
@@ -394,61 +394,61 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 	namespace_elements.Iter( [&]( const auto& el ) { NamesScopeFillOutOfLineElement( names_scope, el ); } );
 }
 
-void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Function& function )
+void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const RcPtr<Synt::Function>& function )
 {
-	if( function.name.size() <= 1u )
+	if( function->name.size() <= 1u )
 		return;
 
 	NamesScopeValue* value= nullptr;
 	size_t component_index= 0u;
-	if( function.name.front().name.empty() )
+	if( function->name.front().name.empty() )
 	{
 		// Perform function name lookup starting from root.
-		U_ASSERT( function.name.size() >= 2u );
-		value= names_scope.GetRoot()->GetThisScopeValue( function.name[1].name );
+		U_ASSERT( function->name.size() >= 2u );
+		value= names_scope.GetRoot()->GetThisScopeValue( function->name[1].name );
 		++component_index;
 		if( value != nullptr )
-			CollectDefinition( *value, function.name[1].src_loc );
+			CollectDefinition( *value, function->name[1].src_loc );
 	}
 	else
 	{
 		// Perform regular name lookup.
-		value= LookupName( names_scope, function.name[0].name, function.src_loc ).value;
+		value= LookupName( names_scope, function->name[0].name, function->src_loc ).value;
 		if( value != nullptr )
-			CollectDefinition( *value, function.name[0].src_loc );
+			CollectDefinition( *value, function->name[0].src_loc );
 	}
 
 	if( value == nullptr )
 	{
-		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), function.src_loc, function.name.front().name );
+		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), function->src_loc, function->name.front().name );
 		return;
 	}
 
-	for( size_t i= component_index + 1u; value != nullptr && i < function.name.size(); ++i )
+	for( size_t i= component_index + 1u; value != nullptr && i < function->name.size(); ++i )
 	{
 		if( const auto namespace_= value->value.GetNamespace() )
-			value= namespace_->GetThisScopeValue( function.name[i].name );
+			value= namespace_->GetThisScopeValue( function->name[i].name );
 		else if( const auto type= value->value.GetTypeName() )
 		{
 			if( const auto class_= type->GetClassType() )
-				value= class_->members->GetThisScopeValue( function.name[i].name );
+				value= class_->members->GetThisScopeValue( function->name[i].name );
 		}
 
 		if( value == nullptr )
 		{
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), function.src_loc, function.name[i].name );
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), function->src_loc, function->name[i].name );
 			return;
 		}
-		if( i + 1 < function.name.size() )
-			CollectDefinition( *value, function.name[i].src_loc );
+		if( i + 1 < function->name.size() )
+			CollectDefinition( *value, function->name[i].src_loc );
 	}
 
 	if( value == nullptr || value->value.GetFunctionsSet() == nullptr )
 	{
-		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function.src_loc );
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function->src_loc );
 		return;
 	}
-	value->value.GetFunctionsSet()->out_of_line_syntax_elements.push_back(&function);
+	value->value.GetFunctionsSet()->out_of_line_syntax_elements.push_back( function );
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Namespace& namespace_ )

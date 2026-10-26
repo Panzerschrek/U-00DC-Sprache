@@ -1373,7 +1373,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name );
 
 	// First, prepare only as prototype.
-	NamesScopeFillFunction( *template_args_namespace, *function_template.syntax_element->function, func_name_in_namespace, function_template.base_class, ClassMemberVisibility::Public );
+	NamesScopeFillFunction( *template_args_namespace, function_template.syntax_element->function, func_name_in_namespace, function_template.base_class, ClassMemberVisibility::Public );
 	OverloadedFunctionsSet& result_functions_set= *template_args_namespace->GetThisScopeValue( func_name_in_namespace )->value.GetFunctionsSet();
 	PrepareFunctionsSet( *template_args_namespace, result_functions_set );
 

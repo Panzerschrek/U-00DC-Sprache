@@ -8,7 +8,7 @@ namespace U
 
 Value CodeBuilder::BuildLambda( NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda )
 {
-	if( lambda.function.type.is_variadic )
+	if( lambda.function->type.is_variadic )
 		REPORT_ERROR( VariadicLambda, names_scope.GetErrors(), lambda.src_loc );
 
 	const ClassPtr lambda_class= PrepareLambdaClass( names_scope, function_context, lambda );
@@ -316,12 +316,12 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 	// Perform some checks.
 
 	// Do not allow to specify reference notation - reference affects are calculated automatically during lambda preprocessing.
-	if( lambda.function.type.references_pollution_expression != nullptr )
-		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetSrcLoc( *lambda.function.type.references_pollution_expression ) );
-	if( lambda.function.type.return_value_reference_expression != nullptr )
-		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetSrcLoc( *lambda.function.type.return_value_reference_expression ) );
-	if( lambda.function.type.return_value_inner_references_expression != nullptr )
-		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetSrcLoc( *lambda.function.type.return_value_inner_references_expression ) );
+	if( lambda.function->type.references_pollution_expression != nullptr )
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetSrcLoc( *lambda.function->type.references_pollution_expression ) );
+	if( lambda.function->type.return_value_reference_expression != nullptr )
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetSrcLoc( *lambda.function->type.return_value_reference_expression ) );
+	if( lambda.function->type.return_value_inner_references_expression != nullptr )
+		REPORT_ERROR( ReferenceNotationForLambda, names_scope.GetErrors(), Synt::GetSrcLoc( *lambda.function->type.return_value_inner_references_expression ) );
 
 	const auto call_op_name= OverloadedOperatorToString( OverloadedOperator::Call );
 
@@ -342,9 +342,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 		lambda_preprocessing_context.external_variables= CollectCurrentFunctionVariables( function_context );
 		lambda_preprocessing_context.capture_by_reference= std::holds_alternative<Synt::Lambda::CaptureAllByReference>( lambda.capture );
 
-		U_ASSERT( !lambda.function.type.params.empty() );
+		U_ASSERT( !lambda.function->type.params.empty() );
 		{
-			const Synt::FunctionParam& in_this_param= lambda.function.type.params.front();
+			const Synt::FunctionParam& in_this_param= lambda.function->type.params.front();
 			U_ASSERT( in_this_param.name == Keywords::this_ );
 			lambda_preprocessing_context.lambda_this_is_mutable= in_this_param.mutability_modifier == Synt::MutabilityModifier::Mutable;
 		}
@@ -461,9 +461,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 
 		{
 			FunctionVariable op_variable;
-			op_variable.syntax_element= &lambda.function;
+			op_variable.syntax_element= lambda.function;
 			// It's fine to use incomplete lambda class here, since this class can't be accessed.
-			op_variable.type= PrepareFunctionType( names_scope, function_context, lambda.function.type, GetLambdaPreprocessingDummyClass( names_scope ) );
+			op_variable.type= PrepareFunctionType( names_scope, function_context, lambda.function->type, GetLambdaPreprocessingDummyClass( names_scope ) );
 			op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( "" /* The name of temporary function is irrelevant. */ );
 			op_variable.is_this_call= true;
 
@@ -472,7 +472,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 				class_,
 				custom_captures_names_scope,
 				call_op_name,
-				lambda.function.type.IsAutoReturn() ? &return_type_deduction_context : nullptr,
+				lambda.function->type.IsAutoReturn() ? &return_type_deduction_context : nullptr,
 				&reference_notation_deduction_context,
 				&lambda_preprocessing_context );
 
@@ -482,7 +482,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 
 		has_preprocessing_errors= lambda_preprocessing_context.has_preprocessing_errors;
 
-		if( lambda.function.type.IsAutoReturn() )
+		if( lambda.function->type.IsAutoReturn() )
 			return_type= return_type_deduction_context.return_type.value_or( void_type_ );
 
 		// Check if explicitly specified captures are not used.
@@ -664,7 +664,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 				result_pollution.dst= *dst_param_reference;
 			else if( const auto dst_variable_ptr= std::get_if<VariablePtr>( &pollution.dst ) )
 			{
-				const bool is_byval_this_lambda= lambda.function.type.params.front().reference_modifier == Synt::ReferenceModifier::None;
+				const bool is_byval_this_lambda= lambda.function->type.params.front().reference_modifier == Synt::ReferenceModifier::None;
 				if( is_byval_this_lambda )
 				{
 					// Ignore reference pollution for destination being a captured variable in "byval this" lambdas.
@@ -745,7 +745,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 	{
 		FunctionVariable op_variable;
 
-		op_variable.type= PrepareFunctionType( names_scope, function_context, lambda.function.type, class_ );
+		op_variable.type= PrepareFunctionType( names_scope, function_context, lambda.function->type, class_ );
 		op_variable.type.return_references= std::move(return_references);
 		op_variable.type.return_inner_references= std::move(return_inner_references);
 		op_variable.type.references_pollution= std::move(references_pollution);
@@ -753,11 +753,11 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 		if( return_type != std::nullopt )
 			op_variable.type.return_type= *return_type;
 
-		op_variable.syntax_element= &lambda.function;
+		op_variable.syntax_element= lambda.function;
 		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *class_->members, call_op_name, op_variable.type ) );
 		op_variable.is_this_call= true;
-		op_variable.prototype_src_loc= op_variable.body_src_loc= lambda.function.src_loc;
-		op_variable.no_discard= lambda.function.no_discard;
+		op_variable.prototype_src_loc= op_variable.body_src_loc= lambda.function->src_loc;
+		op_variable.no_discard= lambda.function->no_discard;
 
 		// Use auto-constexpr for () operator.
 		op_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
