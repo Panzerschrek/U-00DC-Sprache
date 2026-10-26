@@ -254,7 +254,7 @@ void CodeBuilder::FillClassNamesScope(
 				REPORT_ERROR( VisibilityForStruct, class_type->members->GetErrors(), visibility_label.src_loc, class_name );
 			current_visibility= visibility_label.visibility;
 		}
-		void operator()( const Synt::TypeTemplate& type_template )
+		void operator()( const RcPtr<Synt::TypeTemplate>& type_template )
 		{
 			this_.NamesScopeFill( *class_type->members, type_template, class_type, current_visibility );
 		}
@@ -299,23 +299,23 @@ void CodeBuilder::FillClassNamesScope(
 
 void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope,
-	const Synt::TypeTemplate& type_template_declaration,
+	const RcPtr<Synt::TypeTemplate>& type_template_declaration,
 	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
 {
-	const std::string type_template_name= type_template_declaration.name;
+	const std::string type_template_name= type_template_declaration->name;
 	if( IsKeyword( type_template_name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_template_declaration.src_loc );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_template_declaration->src_loc );
 
 	if( NamesScopeValue* const prev_value= names_scope.GetThisScopeValue( type_template_name ) )
 	{
 		if( base_class != nullptr && base_class->GetMemberVisibility( type_template_name ) != visibility )
-			REPORT_ERROR( TypeTemplatesVisibilityMismatch, names_scope.GetErrors(), type_template_declaration.src_loc, type_template_name ); // TODO - use separate error code
+			REPORT_ERROR( TypeTemplatesVisibilityMismatch, names_scope.GetErrors(), type_template_declaration->src_loc, type_template_name ); // TODO - use separate error code
 
 		if( TypeTemplatesSet* const type_templates_set= prev_value->value.GetTypeTemplatesSet() )
-			type_templates_set->syntax_elements.push_back( &type_template_declaration );
+			type_templates_set->syntax_elements.push_back( type_template_declaration );
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_template_declaration.src_loc, type_template_name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_template_declaration->src_loc, type_template_name );
 	}
 	else
 	{
@@ -323,8 +323,8 @@ void CodeBuilder::NamesScopeFill(
 			base_class->SetMemberVisibility( type_template_name, visibility );
 
 		TypeTemplatesSet type_templates_set;
-		type_templates_set.syntax_elements.push_back( &type_template_declaration );
-		names_scope.AddName( type_template_name, NamesScopeValue( std::move(type_templates_set), type_template_declaration.src_loc  ) );
+		type_templates_set.syntax_elements.push_back( type_template_declaration );
+		names_scope.AddName( type_template_name, NamesScopeValue( std::move(type_templates_set), type_template_declaration->src_loc  ) );
 	}
 }
 

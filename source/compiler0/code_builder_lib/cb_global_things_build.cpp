@@ -1365,7 +1365,7 @@ void CodeBuilder::GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, Typ
 	{
 		DETECT_GLOBALS_LOOP( &type_templates_set, type_templates_set.syntax_elements.front()->name, type_templates_set.syntax_elements.front()->src_loc );
 
-		for( const auto syntax_element : type_templates_set.syntax_elements )
+		for( const RcPtr<Synt::TypeTemplate>& syntax_element : type_templates_set.syntax_elements )
 			PrepareTypeTemplate( *syntax_element, type_templates_set, names_scope );
 
 		type_templates_set.syntax_elements.clear();

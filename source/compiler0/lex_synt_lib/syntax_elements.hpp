@@ -301,7 +301,7 @@ using ClassElementsList= VariantLinkedList<
 	RcPtr<Class>,
 	RcPtr<ClassField>,
 	ClassVisibilityLabel,
-	TypeTemplate,
+	RcPtr<TypeTemplate>,
 	FunctionTemplate,
 	Mixin >;
 
@@ -313,7 +313,7 @@ using ProgramElementsList= VariantLinkedList<
 	RcPtr<TypeAlias>,
 	RcPtr<Enum>,
 	RcPtr<Class>,
-	TypeTemplate,
+	RcPtr<TypeTemplate>,
 	FunctionTemplate,
 	Namespace,
 	Mixin >;
