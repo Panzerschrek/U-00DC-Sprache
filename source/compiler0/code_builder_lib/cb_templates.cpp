@@ -97,7 +97,7 @@ void CheckSignatureParamIsValidForTemplateValueArgumentType(
 } // namespace
 
 void CodeBuilder::PrepareTypeTemplate(
-	const Synt::TypeTemplate& type_template_declaration,
+	const RcPtr<Synt::TypeTemplate>& type_template_declaration,
 	TypeTemplatesSet& type_templates_set,
 	NamesScope& names_scope )
 {
@@ -110,24 +110,24 @@ void CodeBuilder::PrepareTypeTemplate(
 	const auto type_template= std::make_shared<TypeTemplate>();
 
 	type_template->parent_namespace= &names_scope;
-	type_template->syntax_element= &type_template_declaration;
-	type_template->src_loc= type_template_declaration.src_loc;
+	type_template->syntax_element= type_template_declaration;
+	type_template->src_loc= type_template_declaration->src_loc;
 
 	std::vector<TemplateParameter>& template_parameters= type_template->template_params;
-	template_parameters.reserve( type_template_declaration.params.size() );
+	template_parameters.reserve( type_template_declaration->params.size() );
 	llvm::SmallVector<bool, 32> template_parameters_usage_flags;
 
 	ProcessTemplateParams(
-		type_template_declaration.params,
+		type_template_declaration->params,
 		names_scope,
 		template_parameters,
 		template_parameters_usage_flags );
 
-	if( type_template_declaration.is_short_form )
+	if( type_template_declaration->is_short_form )
 	{
-		U_ASSERT( type_template_declaration.signature_params.empty() );
+		U_ASSERT( type_template_declaration->signature_params.empty() );
 		// Assign template params to signature params.
-		for( size_t i= 0u; i < type_template_declaration.params.size(); ++i )
+		for( size_t i= 0u; i < type_template_declaration->params.size(); ++i )
 		{
 			type_template->signature_params.push_back( TemplateSignatureParam::TemplateParam{ i, template_parameters[i].kind_data.index() } );
 			template_parameters_usage_flags[i]= true;
@@ -139,12 +139,12 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		// Check and fill signature args.
 		type_template->first_optional_signature_param= 0u;
-		if( !type_template_declaration.signature_params.empty() )
+		if( !type_template_declaration->signature_params.empty() )
 		{
 			WithGlobalFunctionContext(
 				[&]( FunctionContext& function_context )
 				{
-					for( const Synt::TypeTemplate::SignatureParam& signature_param : type_template_declaration.signature_params )
+					for( const Synt::TypeTemplate::SignatureParam& signature_param : type_template_declaration->signature_params )
 					{
 						type_template->signature_params.push_back(
 							CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, signature_param.name ) );
@@ -155,7 +155,7 @@ void CodeBuilder::PrepareTypeTemplate(
 						{
 							const size_t index= type_template->signature_params.size() - 1u;
 							if (index > type_template->first_optional_signature_param )
-								REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope.GetErrors(), type_template_declaration.src_loc );
+								REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope.GetErrors(), type_template_declaration->src_loc );
 
 							++type_template->first_optional_signature_param;
 						}
@@ -175,7 +175,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		if( type_template->signature_params == prev_template->signature_params )
 		{
-			REPORT_ERROR( TypeTemplateRedefinition, names_scope.GetErrors(), type_template_declaration.src_loc, type_template_declaration.name );
+			REPORT_ERROR( TypeTemplateRedefinition, names_scope.GetErrors(), type_template_declaration->src_loc, type_template_declaration->name );
 			return;
 		}
 		if( type_template->src_loc.GetFileIndex() != prev_template->src_loc.GetFileIndex() )

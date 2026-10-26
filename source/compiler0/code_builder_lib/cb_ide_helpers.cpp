@@ -146,7 +146,7 @@ NamesScopePtr CodeBuilder::EvaluateCompletionRequestPrefix_r( const NamesScopePt
 			}
 		}
 	}
-	else if( const auto type_template= std::get_if<const Synt::TypeTemplate*>( &prefix_head ) )
+	else if( const auto type_template= std::get_if<const RcPtr<Synt::TypeTemplate>*>( &prefix_head ) )
 	{
 		TypeTemplatesSet temp_type_templates_set;
 		PrepareTypeTemplate( **type_template, temp_type_templates_set, *start_scope );
@@ -156,7 +156,7 @@ NamesScopePtr CodeBuilder::EvaluateCompletionRequestPrefix_r( const NamesScopePt
 
 		// Try to found existing type template with same signature and provess completion inside it.
 		// It is faster to existing type template, rather than creating new one for each completion request.
-		if( const NamesScopeValue* const value= start_scope->GetThisScopeValue( (*type_template)->name ) )
+		if( const NamesScopeValue* const value= start_scope->GetThisScopeValue( (**type_template)->name ) )
 		{
 			if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
 			{
@@ -447,7 +447,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		} );
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::TypeTemplate>& type_template )
 {
 	TypeTemplatesSet temp_type_templates_set;
 	PrepareTypeTemplate( type_template, temp_type_templates_set, names_scope );

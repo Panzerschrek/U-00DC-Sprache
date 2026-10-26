@@ -55,7 +55,7 @@ public:
 	using CompletionRequestPrefixComponent= std::variant<
 		const Synt::Namespace*,
 		const Synt::Class*,
-		const Synt::TypeTemplate*>;
+		const RcPtr<Synt::TypeTemplate>*>;
 
 	enum class CompletionItemKind : uint8_t
 	{
@@ -221,7 +221,7 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Function>& function );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Class& class_ );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::TypeTemplate>& type_template );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::FunctionTemplate>& function_template_syntax_element );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field );
@@ -365,7 +365,7 @@ private:
 
 	// Templates
 	void PrepareTypeTemplate(
-		const Synt::TypeTemplate& type_template_declaration,
+		const RcPtr<Synt::TypeTemplate>& type_template_declaration,
 		TypeTemplatesSet& type_templates_set,
 		NamesScope& names_scope );
 

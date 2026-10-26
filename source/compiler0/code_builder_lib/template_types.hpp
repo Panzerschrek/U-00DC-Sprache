@@ -66,8 +66,7 @@ struct TypeTemplate final : TemplateBase
 	size_t first_optional_signature_param= ~0u;
 
 	// Store syntax tree element for instantiation.
-	// Syntax tree must live longer, than this struct.
-	const Synt::TypeTemplate* syntax_element= nullptr;
+	RcPtr<Synt::TypeTemplate> syntax_element;
 
 	// Set to "true" if this type template was instantiated at least once.
 	mutable bool used= false;
