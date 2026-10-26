@@ -21,6 +21,9 @@ class RcPtr
 public:
 	RcPtr()= default;
 
+	RcPtr( std::nullptr_t )
+	{}
+
 	RcPtr( const RcPtr& other )
 		: ptr_( other.ptr_ )
 	{
@@ -34,7 +37,7 @@ public:
 		other.ptr_= nullptr;
 	}
 
-	RcPtr( T value )
+	explicit RcPtr( T value )
 	{
 		ptr_= new RcPtrStorage<T>{ 1u, std::move(value) };
 	}
@@ -79,6 +82,12 @@ public:
 		return *this;
 	}
 
+	RcPtr& operator=( std::nullptr_t )
+	{
+		reset();
+		return *this;
+	}
+
 	~RcPtr()
 	{
 		if( ptr_ != nullptr )
@@ -100,6 +109,11 @@ public:
 		return static_cast< RcPtrStorage<T>* >(ptr_)->value;
 	}
 
+	const T* operator->() const
+	{
+		return &static_cast< RcPtrStorage<T>* >(ptr_)->value;
+	}
+
 	void reset()
 	{
 		if( ptr_ != nullptr )
@@ -116,5 +130,29 @@ public:
 private:
 	void* ptr_= nullptr; // Is actually RcPtrStorage<T>, but stupid C++ doesn't allow instantiating it for incomplete "T".
 };
+
+template<typename T>
+inline bool operator==( const RcPtr<T>& l, std::nullptr_t )
+{
+	return l.empty();
+}
+
+template<typename T>
+inline bool operator!=( const RcPtr<T>& l, std::nullptr_t )
+{
+	return !l.empty();
+}
+
+template<typename T>
+inline bool operator==( std::nullptr_t, const RcPtr<T>& r )
+{
+	return r.empty();
+}
+
+template<typename T>
+inline bool operator!=( std::nullptr_t, const RcPtr<T>& r )
+{
+	return !r.empty();
+}
 
 } // namespace U
