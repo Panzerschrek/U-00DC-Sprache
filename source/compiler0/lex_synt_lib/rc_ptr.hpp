@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 
 namespace U
 {
@@ -172,13 +173,14 @@ inline bool operator!=( const RcPtr<T>& l, const RcPtr<T>& r ) noexcept
 	return l.get_raw_ptr() != r.get_raw_ptr();
 }
 
-struct RcPtrHasher
+} // namespace U
+
+template<typename T>
+struct std::hash< U::RcPtr<T> >
 {
-	template<typename T>
-	size_t operator()( const RcPtr<T>& ptr ) const
+	size_t operator()( const U::RcPtr<T>& ptr ) const
 	{
-		return reinterpret_cast<uintptr_t>( ptr.get_raw_ptr() );
+		// Use hashing for raw pointers (provided by the standard library).
+		return std::hash<void*>()( ptr.get_raw_ptr() );
 	}
 };
-
-} // namespace U

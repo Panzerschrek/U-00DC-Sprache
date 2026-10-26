@@ -1615,7 +1615,7 @@ llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
 	// It's necessary to avoid populating it with entries for the initializer expression and its parts.
 	// It's incorrect to do so, because expression result types may depend on class members namespace,
 	// which may be different for different invocations for the same expression syntax elements - in case of templates.
-	std::unordered_map< RcPtr<Synt::Expression>, FunctionType::Param, RcPtrHasher > args_preevaluation_cache;
+	std::unordered_map< RcPtr<Synt::Expression>, FunctionType::Param > args_preevaluation_cache;
 	std::swap( args_preevaluation_cache, function_context.args_preevaluation_cache );
 
 	llvm::Constant* const result=
@@ -1649,7 +1649,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 	// It's necessary to avoid populating it with entries for the initializer expression and its parts.
 	// It's incorrect to do so, because expression result types may depend on class members namespace,
 	// which may be different for different invocations for the same expression syntax elements - in case of templates.
-	std::unordered_map< RcPtr<Synt::Expression>, FunctionType::Param, RcPtrHasher > args_preevaluation_cache;
+	std::unordered_map< RcPtr<Synt::Expression>, FunctionType::Param > args_preevaluation_cache;
 	std::swap( args_preevaluation_cache, function_context.args_preevaluation_cache );
 
 	llvm::Constant* const result=
