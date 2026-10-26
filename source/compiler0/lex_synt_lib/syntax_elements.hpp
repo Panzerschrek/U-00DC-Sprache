@@ -193,7 +193,7 @@ using Expression= std::variant<
 	std::unique_ptr<const NonSyncExpression>,
 	CallOperator,
 	CallOperatorSignatureHelp,
-	std::unique_ptr<const SubscriptOperator>,
+	SubscriptOperator,
 	std::unique_ptr<const MemberAccessOperator>,
 	std::unique_ptr<const MemberAccessOperatorCompletion>,
 	std::unique_ptr<const VariableInitialization>,
@@ -507,6 +507,16 @@ struct CallOperatorSignatureHelp
 	// For now no need to parse arguments.
 };
 
+struct SubscriptOperator
+{
+	explicit SubscriptOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::unique_ptr<const Expression> expression;
+	RcPtr<Expression> index;
+};
+
 struct BinaryOperator
 {
 	explicit BinaryOperator( const SrcLoc& src_loc )
@@ -664,16 +674,6 @@ struct NonSyncExpression
 
 	SrcLoc src_loc;
 	TypeName type;
-};
-
-struct SubscriptOperator
-{
-	explicit SubscriptOperator( const SrcLoc& src_loc )
-		: src_loc(src_loc) {}
-
-	SrcLoc src_loc;
-	Expression expression;
-	RcPtr<Expression> index;
 };
 
 struct MemberAccessOperator

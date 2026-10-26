@@ -258,7 +258,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::SubscriptOperator& subscript_operator )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( subscript_operator.expression, names_scope, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *subscript_operator.expression, names_scope, function_context );
 
 	if( variable->type.GetClassType() != nullptr ) // If this is class - try call overloaded [] operator.
 	{

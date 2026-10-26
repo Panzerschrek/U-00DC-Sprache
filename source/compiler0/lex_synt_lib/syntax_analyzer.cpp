@@ -963,11 +963,11 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 	{
 	case Lexem::Type::SquareBracketLeft:
 		{
-			auto subscript_opearator= std::make_unique<SubscriptOperator>( it_->src_loc );
+			SubscriptOperator subscript_opearator( it_->src_loc );
 			NextLexem();
 
-			subscript_opearator->expression= std::move(expr);
-			subscript_opearator->index= RcPtr<Expression>( ParseExpression() );
+			subscript_opearator.expression= std::make_unique<Expression>( std::move(expr) );
+			subscript_opearator.index= RcPtr<Expression>( ParseExpression() );
 
 			ExpectLexem( Lexem::Type::SquareBracketRight );
 
