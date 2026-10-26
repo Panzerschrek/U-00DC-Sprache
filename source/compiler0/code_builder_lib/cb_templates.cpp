@@ -1173,11 +1173,11 @@ std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 		type_template,
 		type_template.syntax_element->name );
 
-	if( const auto class_ptr= std::get_if< std::unique_ptr<const Synt::Class> >( &type_template.syntax_element->something ) )
+	if( const auto class_ptr= std::get_if< RcPtr<Synt::Class> >( &type_template.syntax_element->something ) )
 	{
 		U_ASSERT( (*class_ptr)->name == Class::c_template_class_name );
 
-		const ClassPtr class_type= NamesScopeFill( *template_args_namespace, **class_ptr, Class::BaseTemplate{ type_template_ptr, template_type_preparation_result.signature_args } );
+		const ClassPtr class_type= NamesScopeFill( *template_args_namespace, *class_ptr, Class::BaseTemplate{ type_template_ptr, template_type_preparation_result.signature_args } );
 		if( class_type == nullptr )
 			return std::nullopt;
 

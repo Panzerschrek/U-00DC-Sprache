@@ -161,15 +161,15 @@ void CodeBuilder::NamesScopeFill(
 	}
 }
 
-ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, std::optional<Class::BaseTemplate> base_template )
+ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Class>& class_declaration, std::optional<Class::BaseTemplate> base_template )
 {
-	const std::string& class_name= class_declaration.name;
+	const std::string& class_name= class_declaration->name;
 	if( IsKeyword( class_name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), class_declaration.src_loc );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), class_declaration->src_loc );
 
 	if( names_scope.GetThisScopeValue( class_name ) != nullptr )
 	{
-		REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.src_loc, class_name );
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration->src_loc, class_name );
 		return nullptr;
 	}
 
@@ -177,10 +177,10 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 	const ClassPtr class_type= class_type_ptr.get();
 	classes_table_.push_back( std::move(class_type_ptr) );
 
-	names_scope.AddName( class_name, NamesScopeValue( Type( class_type ), class_declaration.src_loc ) );
+	names_scope.AddName( class_name, NamesScopeValue( Type( class_type ), class_declaration->src_loc ) );
 
-	class_type->syntax_element= &class_declaration;
-	class_type->src_loc= class_declaration.src_loc;
+	class_type->syntax_element= class_declaration;
+	class_type->src_loc= class_declaration->src_loc;
 	if( base_template != std::nullopt )
 		class_type->generated_class_data= std::move(*base_template);
 
@@ -192,8 +192,8 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 	FillClassNamesScope(
 		class_type,
 		class_name,
-		class_declaration.kind_attribute,
-		class_declaration.elements,
+		class_declaration->kind_attribute,
+		class_declaration->elements,
 		// Members are public by-default, until first visibility label.
 		ClassMemberVisibility::Public );
 
@@ -283,10 +283,10 @@ void CodeBuilder::FillClassNamesScope(
 			this_.NamesScopeFill( *class_type->members, auto_variable_declaration );
 			class_type->SetMemberVisibility( auto_variable_declaration.name, current_visibility );
 		}
-		void operator()( const Synt::Class& inner_class )
+		void operator()( const RcPtr<Synt::Class>& inner_class )
 		{
 			this_.NamesScopeFill( *class_type->members, inner_class );
-			class_type->SetMemberVisibility( inner_class.name, current_visibility );
+			class_type->SetMemberVisibility( inner_class->name, current_visibility );
 		}
 		void operator()( const Synt::Mixin& mixin )
 		{

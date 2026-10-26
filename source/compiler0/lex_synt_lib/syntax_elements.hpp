@@ -298,7 +298,7 @@ using ClassElementsList= VariantLinkedList<
 	Function,
 	TypeAlias,
 	Enum,
-	Class,
+	RcPtr<Class>,
 	RcPtr<ClassField>,
 	ClassVisibilityLabel,
 	TypeTemplate,
@@ -312,7 +312,7 @@ using ProgramElementsList= VariantLinkedList<
 	Function,
 	TypeAlias,
 	Enum,
-	Class,
+	RcPtr<Class>,
 	TypeTemplate,
 	FunctionTemplate,
 	Namespace,
@@ -1506,7 +1506,7 @@ struct TypeTemplate
 	std::vector<TemplateParam> params;
 	std::vector<SignatureParam> signature_params;
 
-	std::variant<std::unique_ptr<const Class>, std::unique_ptr<const TypeAlias>> something;
+	std::variant<RcPtr<Class>, std::unique_ptr<const TypeAlias>> something;
 
 	// Short form means that template params are also signature params.
 	bool is_short_form= false;

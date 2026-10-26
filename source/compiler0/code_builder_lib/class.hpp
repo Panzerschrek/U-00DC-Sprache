@@ -71,7 +71,7 @@ public:
 	// Has no visibility for member, means it is public.
 	llvm::StringMap< ClassMemberVisibility > members_visibility;
 
-	const Synt::Class* syntax_element= nullptr;
+	RcPtr<Synt::Class> syntax_element;
 	SrcLoc src_loc;
 
 	uint32_t field_count= 0u;

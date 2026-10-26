@@ -763,7 +763,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 		}
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
-			result_builder.Append( ParseClass() );
+			result_builder.Append( RcPtr<Class>( ParseClass() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
@@ -4118,7 +4118,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 		}
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
-			result_builder.Append( ParseClass() );
+			result_builder.Append( RcPtr<Class>( ParseClass() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 		{
@@ -4493,7 +4493,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			class_.keep_fields_order= keep_fields_order;
 			class_.no_discard= no_discard;
 			class_.parents= std::move(class_parents_list);
-			class_template.something= std::make_unique<Class>(std::move(class_));
+			class_template.something= RcPtr<Class>( std::move(class_) );
 			return std::move(class_template);
 		}
 
