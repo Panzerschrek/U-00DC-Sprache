@@ -4110,56 +4110,38 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsToClassEnd()
 
 ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type end_lexem )
 {
-	ClassElementsList::Builder result_builder;
+	ClassElementsList result;
 
 	while( NotEndOfFile() )
 	{
 		if( it_->type == end_lexem )
 			break;
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
-		{
-			result_builder.Append( RcPtr<Function>( ParseFunction() ) );
-		}
+			result.push_back( RcPtr<Function>( ParseFunction() ) );
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
-		{
-			result_builder.Append( RcPtr<Class>( ParseClass() ) );
-		}
+			result.push_back( RcPtr<Class>( ParseClass() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
-		{
-			result_builder.Append( RcPtr<VariablesDeclaration>( ParseVariablesDeclaration() ) );
-		}
+			result.push_back( RcPtr<VariablesDeclaration>( ParseVariablesDeclaration() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::thread_local_ )
-		{
-			result_builder.Append( RcPtr<VariablesDeclaration>( ParseThreadLocalVariablesDeclaration() ) );
-		}
+			result.push_back( RcPtr<VariablesDeclaration>( ParseThreadLocalVariablesDeclaration() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
-		{
-			result_builder.Append( RcPtr<AutoVariableDeclaration>( ParseAutoVariableDeclaration() ) );
-		}
+			result.push_back( RcPtr<AutoVariableDeclaration>( ParseAutoVariableDeclaration() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
-		{
-			result_builder.Append( RcPtr<StaticAssert>( ParseStaticAssert() ) );
-		}
+			result.push_back( RcPtr<StaticAssert>( ParseStaticAssert() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
-		{
-			result_builder.Append( RcPtr<Enum>( ParseEnum() ) );
-		}
+			result.push_back( RcPtr<Enum>( ParseEnum() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
-		{
-			result_builder.Append( RcPtr<TypeAlias>( ParseTypeAlias() ) );
-		}
+			result.push_back( RcPtr<TypeAlias>( ParseTypeAlias() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ )
-		{
-			result_builder.Append( RcPtr<Mixin>( ParseMixin() ) );
-		}
+			result.push_back( RcPtr<Mixin>( ParseMixin() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			TemplateVar template_= ParseTemplate();
 			
 			if( auto* const type_template= std::get_if<TypeTemplate>(&template_) )
-				result_builder.Append( RcPtr<TypeTemplate>( std::move( *type_template ) ) );
+				result.push_back( RcPtr<TypeTemplate>( std::move( *type_template ) ) );
 			else if( auto* const function_template= std::get_if<FunctionTemplate>(&template_) )
-				result_builder.Append( RcPtr<FunctionTemplate>( std::move( *function_template ) ) );
+				result.push_back( RcPtr<FunctionTemplate>( std::move( *function_template ) ) );
 			else if( std::get_if<EmptyVariant>(&template_) )
 			{}
 			else
@@ -4177,7 +4159,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			if( it_->text == Keywords::protected_ )
 				visibility= ClassMemberVisibility::Protected;
 
-			result_builder.Append( ClassVisibilityLabel( it_->src_loc, visibility ) );
+			result.push_back( RcPtr<ClassVisibilityLabel>( ClassVisibilityLabel( it_->src_loc, visibility ) ) );
 
 			NextLexem();
 			ExpectLexem( Lexem::Type::Colon );
@@ -4188,7 +4170,9 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			{
 				if( const Macro* const macro= FetchMacro( it_->text, Macro::Context::Class ) )
 				{
-					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseClassBodyElementsToFileEnd ) );
+					for( ClassElement& element : ExpandMacro( *macro, &SyntaxAnalyzer::ParseClassBodyElementsToFileEnd ) )
+						result.push_back( std::move( element ) );
+
 					continue;
 				}
 			}
@@ -4258,7 +4242,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			}
 			else
 			{
-				result_builder.Append( RcPtr<ClassField>( std::move( field ) ) );
+				result.push_back( RcPtr<ClassField>( std::move( field ) ) );
 				PushErrorMessage();
 				TryRecoverAfterError( g_class_body_elements_control_lexems );
 				continue;
@@ -4268,7 +4252,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			if( !std::holds_alternative<EmptyVariant>( field_initializer ) )
 				field.initializer= std::make_unique<Initializer>( std::move(field_initializer) );
 
-			result_builder.Append( RcPtr<ClassField>( std::move( field ) ) );
+			result.push_back( RcPtr<ClassField>( std::move( field ) ) );
 
 			if( it_->type == Lexem::Type::Semicolon )
 				NextLexem();
@@ -4280,7 +4264,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 		}
 	}
 
-	return result_builder.Build();
+	return result;
 }
 
 Class SyntaxAnalyzer::ParseClassBody()

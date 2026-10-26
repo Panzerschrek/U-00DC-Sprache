@@ -248,11 +248,11 @@ void CodeBuilder::FillClassNamesScope(
 		{
 			this_.NamesScopeFill( *class_type->members, func_template, class_type, current_visibility );
 		}
-		void operator()( const Synt::ClassVisibilityLabel& visibility_label )
+		void operator()( const RcPtr<Synt::ClassVisibilityLabel>& visibility_label )
 		{
 			if( class_kind == Synt::ClassKindAttribute::Struct )
-				REPORT_ERROR( VisibilityForStruct, class_type->members->GetErrors(), visibility_label.src_loc, class_name );
-			current_visibility= visibility_label.visibility;
+				REPORT_ERROR( VisibilityForStruct, class_type->members->GetErrors(), visibility_label->src_loc, class_name );
+			current_visibility= visibility_label->visibility;
 		}
 		void operator()( const RcPtr<Synt::TypeTemplate>& type_template )
 		{
@@ -294,7 +294,10 @@ void CodeBuilder::FillClassNamesScope(
 		}
 	};
 
-	class_elements.Iter( Visitor( *this, class_kind, class_type, class_name, initial_visibility ) );
+	Visitor visitor( *this, class_kind, class_type, class_name, initial_visibility );
+
+	for( const Synt::ClassElement& element : class_elements )
+		std::visit( visitor, element );
 }
 
 void CodeBuilder::NamesScopeFill(

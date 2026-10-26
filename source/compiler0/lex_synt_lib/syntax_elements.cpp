@@ -50,7 +50,7 @@ SIZE_ASSERT( TypeName, 48u )
 SIZE_ASSERT( Expression, 48u )
 SIZE_ASSERT( Initializer, 56u )
 SIZE_ASSERT( BlockElementsList, 16u ) // Variant index + unique_ptr
-SIZE_ASSERT( ClassElementsList, 16u ) // Variant index + unique_ptr
+SIZE_ASSERT( ClassElement, 16u ) // variant tag + RcPtr
 SIZE_ASSERT( ProgramElementsList, 16u ) // Variant index + unique_ptr
 
 bool FunctionType::IsAutoReturn() const

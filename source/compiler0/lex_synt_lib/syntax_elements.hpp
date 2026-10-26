@@ -291,7 +291,7 @@ using IfAlternative= std::variant<
 
 using IfAlternativePtr= std::unique_ptr<const IfAlternative>;
 
-using ClassElementsList= VariantLinkedList<
+using ClassElement= std::variant<
 	RcPtr<VariablesDeclaration>,
 	RcPtr<AutoVariableDeclaration>,
 	RcPtr<StaticAssert>,
@@ -300,10 +300,12 @@ using ClassElementsList= VariantLinkedList<
 	RcPtr<Enum>,
 	RcPtr<Class>,
 	RcPtr<ClassField>,
-	ClassVisibilityLabel,
+	RcPtr<ClassVisibilityLabel>, // RcPtr isn't strictly-necessary here, but we use it here to reduce overall variant size.
 	RcPtr<TypeTemplate>,
 	RcPtr<FunctionTemplate>,
 	RcPtr<Mixin> >;
+
+using ClassElementsList= std::vector<ClassElement>;
 
 using ProgramElementsList= VariantLinkedList<
 	RcPtr<VariablesDeclaration>,
@@ -1467,7 +1469,6 @@ struct ClassVisibilityLabel
 	SrcLoc src_loc;
 	const ClassMemberVisibility visibility;
 };
-
 
 struct TemplateParam
 {

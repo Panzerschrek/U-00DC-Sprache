@@ -1004,7 +1004,8 @@ void ElementWrite( const Mixin& mixin ) const
 
 void ElementWrite( const ClassElementsList& class_elements ) const
 {
-	class_elements.Iter( [&]( const auto& el ) { ElementWrite(el); } );
+	for( const ClassElement& element : class_elements )
+		std::visit( [&]( const auto& el ) { ElementWrite( el ); }, element );
 }
 
 void ElementWrite( const ProgramElementsList& elements ) const
