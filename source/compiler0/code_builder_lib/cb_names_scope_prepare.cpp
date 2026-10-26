@@ -258,10 +258,10 @@ void CodeBuilder::FillClassNamesScope(
 		{
 			this_.NamesScopeFill( *class_type->members, type_template, class_type, current_visibility );
 		}
-		void operator()( const Synt::Enum& enum_ )
+		void operator()( const RcPtr<Synt::Enum>& enum_ )
 		{
 			this_.NamesScopeFill( *class_type->members, enum_ );
-			class_type->SetMemberVisibility( enum_.name, current_visibility );
+			class_type->SetMemberVisibility( enum_->name, current_visibility );
 		}
 		void operator()( const Synt::StaticAssert& static_assert_ )
 		{
@@ -328,18 +328,18 @@ void CodeBuilder::NamesScopeFill(
 	}
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration )
+void CodeBuilder::NamesScopeFill(NamesScope& names_scope, const RcPtr<Synt::Enum>& enum_declaration )
 {
-	if( IsKeyword( enum_declaration.name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), enum_declaration.src_loc );
+	if( IsKeyword( enum_declaration->name ) )
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), enum_declaration->src_loc );
 
-	enums_table_.push_back( std::make_unique<Enum>( enum_declaration.name, &names_scope ) );
+	enums_table_.push_back( std::make_unique<Enum>( enum_declaration->name, &names_scope ) );
 	const EnumPtr enum_= enums_table_.back().get();
 
-	enum_->syntax_element= &enum_declaration;
+	enum_->syntax_element= enum_declaration;
 
-	if( names_scope.AddName( enum_declaration.name, NamesScopeValue( Type( enum_ ), enum_declaration.src_loc ) ) == nullptr )
-		REPORT_ERROR( Redefinition, names_scope.GetErrors(), enum_declaration.src_loc, enum_declaration.name );
+	if( names_scope.AddName( enum_declaration->name, NamesScopeValue( Type( enum_ ), enum_declaration->src_loc ) ) == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), enum_declaration->src_loc, enum_declaration->name );
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration )

@@ -1370,7 +1370,7 @@ private:
 	ClassPtr NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Class>& class_declaration, std::optional<Class::BaseTemplate> base_template= std::nullopt );
 	void FillClassNamesScope( ClassPtr class_type, std::string_view class_name, Synt::ClassKindAttribute class_kind, const Synt::ClassElementsList& class_elements, ClassMemberVisibility initial_visibility );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplate& type_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Enum>& enum_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
