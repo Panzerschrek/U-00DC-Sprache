@@ -9,6 +9,7 @@
 #include "lexical_analyzer.hpp"
 #include "number_parsing_utils.hpp"
 #include "operators.hpp"
+#include "rc_ptr.hpp"
 #include "variant_linked_list.hpp"
 
 namespace U

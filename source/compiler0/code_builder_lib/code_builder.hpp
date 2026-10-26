@@ -408,6 +408,18 @@ private:
 		return CreateTemplateSignatureParameterImpl( names_scope, function_context, template_parameters, template_parameters_usage_flags, *el );
 	}
 
+	// Handler for RcPtr unwrapping.
+	template<typename T>
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const RcPtr<T>& el )
+	{
+		return CreateTemplateSignatureParameterImpl( names_scope, function_context, template_parameters, template_parameters_usage_flags, *el );
+	}
+
 	// Handler for non-important for template args creation nodes - just evaluate expression.
 	template<typename T>
 	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
@@ -743,6 +755,12 @@ private:
 
 	template<typename T>
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<T>& el )
+	{
+		return BuildExpressionCodeImpl( names_scope, function_context, *el );
+	}
+
+	template<typename T>
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const RcPtr<T>& el )
 	{
 		return BuildExpressionCodeImpl( names_scope, function_context, *el );
 	}

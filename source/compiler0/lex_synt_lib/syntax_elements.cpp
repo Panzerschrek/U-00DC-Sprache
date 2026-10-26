@@ -29,6 +29,12 @@ SrcLoc GetSrcLocImpl( const std::unique_ptr<T>& e )
 	return GetSrcLocImpl(*e);
 }
 
+template<typename T>
+SrcLoc GetSrcLocImpl( const RcPtr<T>& e )
+{
+	return GetSrcLocImpl(*e);
+}
+
 template<typename ... Args>
 SrcLoc GetSrcLocImpl( const std::variant<Args...>& v )
 {

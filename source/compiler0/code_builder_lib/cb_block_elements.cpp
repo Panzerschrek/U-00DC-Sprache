@@ -94,6 +94,12 @@ bool SingleExpressionIsUselessImpl( const std::unique_ptr<T>& t )
 	return SingleExpressionIsUselessImpl(*t);
 }
 
+template<typename T>
+bool SingleExpressionIsUselessImpl( const RcPtr<T>& t )
+{
+	return SingleExpressionIsUselessImpl(*t);
+}
+
 bool SingleExpressionIsUseless( const Synt::Expression& expression )
 {
 	return std::visit( []( const auto& el ) { return SingleExpressionIsUselessImpl(el); }, expression );

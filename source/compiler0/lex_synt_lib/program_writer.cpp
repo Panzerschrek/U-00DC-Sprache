@@ -112,6 +112,12 @@ void ElementWrite( const std::unique_ptr<T>& el ) const
 	ElementWrite( *el );
 }
 
+template<typename T>
+void ElementWrite( const RcPtr<T>& el ) const
+{
+	ElementWrite( *el );
+}
+
 template<typename ... Args>
 void ElementWriteVariant( const std::variant<Args...>& v ) const
 {
