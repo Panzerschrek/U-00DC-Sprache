@@ -122,7 +122,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 					REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope, src_loc )
 				}
 
-				if( reference_tag_count > u32( FunctionType::ParamReference::c_max_reference_index ) )
+				if( reference_tag_count > u32( FunctionType::ParamReference::c_max_reference_index ) + 1u )
 				{
 					REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope, src_loc )
 				}

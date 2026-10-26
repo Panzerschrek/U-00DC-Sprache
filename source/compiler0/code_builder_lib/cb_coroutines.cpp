@@ -106,7 +106,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				if( param_index > FunctionType::c_max_param_index )
 					REPORT_ERROR( ReferenceNotationParamIndexOverflow, names_scope.GetErrors(), src_loc );
 
-				if( reference_tag_count > FunctionType::c_max_reference_index )
+				if( reference_tag_count > FunctionType::c_max_reference_index + 1 )
 					REPORT_ERROR( ReferenceNotationReferenceIndexOverflow, names_scope.GetErrors(), src_loc );
 
 				for( size_t i= 0; i < reference_tag_count; ++i )
