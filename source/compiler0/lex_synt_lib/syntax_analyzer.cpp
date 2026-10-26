@@ -930,12 +930,12 @@ template<size_t priority> Expression SyntaxAnalyzer::TryParseBinaryOperatorRight
 	{
 		if( it_->type == op_pair.first )
 		{
-			auto binary_operator= std::make_unique<BinaryOperator>( it_->src_loc );
+			BinaryOperator binary_operator( it_->src_loc );
 			NextLexem();
 
-			binary_operator->left= RcPtr<Expression>( std::move(l) );
-			binary_operator->operator_type= op_pair.second;
-			binary_operator->right= RcPtr<Expression>( TryParseBinaryOperator<priority + 1>() );
+			binary_operator.left= RcPtr<Expression>( std::move(l) );
+			binary_operator.operator_type= op_pair.second;
+			binary_operator.right= RcPtr<Expression>( TryParseBinaryOperator<priority + 1>() );
 
 			return TryParseBinaryOperatorRightPart<priority>( std::move(binary_operator) );
 		}

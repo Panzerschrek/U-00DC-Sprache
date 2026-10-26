@@ -203,7 +203,7 @@ using Expression= std::variant<
 	std::unique_ptr<const BitwiseNot>,
 	std::unique_ptr<const SafeExpression>,
 	std::unique_ptr<const UnsafeExpression>,
-	std::unique_ptr<const BinaryOperator>, // TODO - remove indirection?
+	BinaryOperator,
 	std::unique_ptr<const TernaryOperator>,
 	std::unique_ptr<const ReferenceToRawPointerOperator>,
 	std::unique_ptr<const RawPointerToReferenceOperator>,
@@ -486,6 +486,17 @@ struct CharLiteral
 	std::array<char, 8> type_suffix{0};
 };
 
+struct BinaryOperator
+{
+	explicit BinaryOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	BinaryOperatorType operator_type= BinaryOperatorType::Add; // Set actual value later
+	RcPtr<Expression> left;
+	RcPtr<Expression> right;
+};
+
 struct NamesScopeNameFetch
 {
 	SrcLoc src_loc;
@@ -743,17 +754,6 @@ struct UnsafeExpression
 
 	SrcLoc src_loc;
 	Expression expression;
-};
-
-struct BinaryOperator
-{
-	explicit BinaryOperator( const SrcLoc& src_loc )
-		: src_loc(src_loc) {}
-
-	SrcLoc src_loc;
-	BinaryOperatorType operator_type= BinaryOperatorType::Add; // Set actual value later
-	RcPtr<Expression> left;
-	RcPtr<Expression> right;
 };
 
 struct TernaryOperator
