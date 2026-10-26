@@ -455,7 +455,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		InstantiateTypeTemplateWithDummyArgs( temp_type_templates_set.type_templates.front() );
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_syntax_element )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::FunctionTemplate>& function_template_syntax_element )
 {
 	// Prepare function template and instantiate it with dummy template args in order to produce some sort of usefull completion result.
 
@@ -465,7 +465,8 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	FunctionTemplatePtr result_function_template;
 	for( const FunctionTemplatePtr& function_template : functions_set.template_functions )
 	{
-		if( function_template != nullptr && function_template->syntax_element == &function_template_syntax_element )
+		// TODO - use here proper == for RcPtr.
+		if( function_template != nullptr && &*function_template->syntax_element == &*function_template_syntax_element )
 		{
 			result_function_template= function_template;
 			break;

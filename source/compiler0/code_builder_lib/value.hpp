@@ -92,7 +92,7 @@ struct OverloadedFunctionsSet
 	// Is incomplete, if there are some syntax elements in containers.
 	std::vector<const Synt::Function*> syntax_elements;
 	std::vector<const Synt::Function*> out_of_line_syntax_elements;
-	std::vector<const Synt::FunctionTemplate*> template_syntax_elements;
+	std::vector<RcPtr<Synt::FunctionTemplate>> template_syntax_elements;
 
 	ClassPtr base_class= nullptr;
 

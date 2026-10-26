@@ -123,30 +123,30 @@ void CodeBuilder::NamesScopeFillFunction(
 
 void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope,
-	const Synt::FunctionTemplate& function_template_declaration,
+	const RcPtr<Synt::FunctionTemplate>& function_template_declaration,
 	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
 {
-	const auto& full_name = function_template_declaration.function->name;
+	const auto& full_name = function_template_declaration->function->name;
 	const std::string& function_template_name= full_name.front().name;
 
 	if( full_name.size() > 1u )
-		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.src_loc );
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration->src_loc );
 	if( IsKeyword( function_template_name ) && function_template_name != Keywords::constructor_ && function_template_name != Keywords::destructor_ )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_template_declaration.src_loc );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_template_declaration->src_loc );
 
 	if( NamesScopeValue* const prev_value= names_scope.GetThisScopeValue( function_template_name ) )
 	{
 		if( const OverloadedFunctionsSetPtr functions_set= prev_value->value.GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->GetMemberVisibility( function_template_name ) != visibility )
-				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_template_declaration.src_loc, function_template_name );
+				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_template_declaration->src_loc, function_template_name );
 
 			U_ASSERT( functions_set->base_class == base_class );
-			functions_set->template_syntax_elements.push_back( &function_template_declaration );
+			functions_set->template_syntax_elements.push_back( function_template_declaration );
 		}
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_template_declaration.src_loc, function_template_name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_template_declaration->src_loc, function_template_name );
 	}
 	else
 	{
@@ -155,7 +155,7 @@ void CodeBuilder::NamesScopeFill(
 
 		OverloadedFunctionsSet functions_set;
 		functions_set.base_class= base_class;
-		functions_set.template_syntax_elements.push_back( &function_template_declaration );
+		functions_set.template_syntax_elements.push_back( function_template_declaration );
 
 		names_scope.AddName( function_template_name, NamesScopeValue( std::make_shared<OverloadedFunctionsSet>( std::move(functions_set) ), SrcLoc() ) );
 	}
@@ -244,7 +244,7 @@ void CodeBuilder::FillClassNamesScope(
 		{
 			this_.NamesScopeFill( *class_type->members, func, class_type, current_visibility );
 		}
-		void operator()( const Synt::FunctionTemplate& func_template )
+		void operator()( const RcPtr<Synt::FunctionTemplate>& func_template )
 		{
 			this_.NamesScopeFill( *class_type->members, func_template, class_type, current_visibility );
 		}

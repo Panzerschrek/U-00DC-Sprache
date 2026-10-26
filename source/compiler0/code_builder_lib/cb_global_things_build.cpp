@@ -249,8 +249,8 @@ void CodeBuilder::PrepareFunctionsSet( NamesScope& names_scope, OverloadedFuncti
 		PrepareFunction( names_scope, functions_set.base_class, functions_set, *function, true );
 	functions_set.out_of_line_syntax_elements.clear();
 
-	for( const Synt::FunctionTemplate* const function_template : functions_set.template_syntax_elements )
-		PrepareFunctionTemplate( *function_template, functions_set, names_scope, functions_set.base_class );
+	for( const RcPtr<Synt::FunctionTemplate>& function_template : functions_set.template_syntax_elements )
+		PrepareFunctionTemplate( function_template, functions_set, names_scope, functions_set.base_class );
 	functions_set.template_syntax_elements.clear();
 
 	functions_set.has_unbuilt_constexpr_functions= false;

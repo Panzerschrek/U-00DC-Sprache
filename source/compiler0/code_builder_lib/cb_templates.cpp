@@ -190,44 +190,44 @@ void CodeBuilder::PrepareTypeTemplate(
 }
 
 void CodeBuilder::PrepareFunctionTemplate(
-	const Synt::FunctionTemplate& function_template_declaration,
+	const RcPtr<Synt::FunctionTemplate>& function_template_declaration,
 	OverloadedFunctionsSet& functions_set,
 	NamesScope& names_scope,
 	const ClassPtr base_class )
 {
-	const auto& full_name= function_template_declaration.function->name;
+	const auto& full_name= function_template_declaration->function->name;
 	const std::string& function_template_name= full_name.front().name;
 
 	if( full_name.size() > 1u )
-		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.src_loc );
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration->src_loc );
 
-	if( function_template_declaration.function->block == nullptr )
-		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope.GetErrors(), function_template_declaration.src_loc, function_template_name );
-	if( function_template_declaration.function->virtual_function_kind != Synt::VirtualFunctionKind::None )
-		REPORT_ERROR( VirtualForFunctionTemplate, names_scope.GetErrors(), function_template_declaration.src_loc, function_template_name );
-	if( function_template_declaration.function->type.is_variadic )
-		REPORT_ERROR( VariadicFunctionTemplate, names_scope.GetErrors(), function_template_declaration.src_loc );
+	if( function_template_declaration->function->block == nullptr )
+		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope.GetErrors(), function_template_declaration->src_loc, function_template_name );
+	if( function_template_declaration->function->virtual_function_kind != Synt::VirtualFunctionKind::None )
+		REPORT_ERROR( VirtualForFunctionTemplate, names_scope.GetErrors(), function_template_declaration->src_loc, function_template_name );
+	if( function_template_declaration->function->type.is_variadic )
+		REPORT_ERROR( VariadicFunctionTemplate, names_scope.GetErrors(), function_template_declaration->src_loc );
 
 	const auto function_template= std::make_shared<FunctionTemplate>();
-	function_template->syntax_element= &function_template_declaration;
-	function_template->src_loc= function_template_declaration.src_loc;
+	function_template->syntax_element= function_template_declaration;
+	function_template->src_loc= function_template_declaration->src_loc;
 	function_template->parent_namespace= &names_scope;
 	function_template->base_class= base_class;
 
 	llvm::SmallVector<bool, 32> template_parameters_usage_flags; // Currently unused, because function template has no signature.
 
 	ProcessTemplateParams(
-		function_template_declaration.params,
+		function_template_declaration->params,
 		names_scope,
 		function_template->template_params,
 		template_parameters_usage_flags );
 
-	if( !function_template_declaration.function->type.params.empty() )
+	if( !function_template_declaration->function->type.params.empty() )
 	{
 		WithGlobalFunctionContext(
 			[&]( FunctionContext& function_context )
 			{
-				for( const Synt::FunctionParam& function_param : function_template_declaration.function->type.params )
+				for( const Synt::FunctionParam& function_param : function_template_declaration->function->type.params )
 				{
 					if( base_class != nullptr && function_param.name == Keyword( Keywords::this_ ) )
 						function_template->signature_params.push_back( TemplateSignatureParam::Type{ Type(base_class) } );

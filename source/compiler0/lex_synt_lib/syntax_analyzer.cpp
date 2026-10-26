@@ -771,7 +771,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 			if( auto* const type_template= std::get_if<TypeTemplate>(&template_) )
 				result_builder.Append( RcPtr<TypeTemplate>( std::move( *type_template ) ) );
 			else if( auto* const function_template= std::get_if<FunctionTemplate>(&template_) )
-				result_builder.Append( std::move( *function_template ) );
+				result_builder.Append( RcPtr<FunctionTemplate>( std::move( *function_template ) ) );
 			else if( std::holds_alternative<EmptyVariant>(template_) )
 			{}
 			else
@@ -4155,7 +4155,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			if( auto* const type_template= std::get_if<TypeTemplate>(&template_) )
 				result_builder.Append( RcPtr<TypeTemplate>( std::move( *type_template ) ) );
 			else if( auto* const function_template= std::get_if<FunctionTemplate>(&template_) )
-				result_builder.Append( std::move( *function_template ) );
+				result_builder.Append( RcPtr<FunctionTemplate>( std::move( *function_template ) ) );
 			else if( std::get_if<EmptyVariant>(&template_) )
 			{}
 			else
