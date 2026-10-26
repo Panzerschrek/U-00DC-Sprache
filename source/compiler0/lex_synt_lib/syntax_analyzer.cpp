@@ -210,7 +210,7 @@ private:
 	ComplexName TryParseComplexNameTailWithTemplateArgs( ComplexName base );
 
 	struct SignatureHelpTag{};
-	std::variant<std::vector<Expression>, SignatureHelpTag> ParseCall();
+	std::variant<std::vector<RcPtr<Expression>>, SignatureHelpTag> ParseCall();
 
 	Initializer ParseInitializer( bool parse_expression_initializer );
 	Initializer ParseVariableInitializer();
@@ -949,9 +949,9 @@ template<size_t priority> Expression SyntaxAnalyzer::TryParseBinaryOperatorRight
 			auto binary_operator= std::make_unique<BinaryOperator>( it_->src_loc );
 			NextLexem();
 
-			binary_operator->left= std::move(l);
+			binary_operator->left= RcPtr<Expression>( std::move(l) );
 			binary_operator->operator_type= op_pair.second;
-			binary_operator->right= TryParseBinaryOperator<priority + 1>();
+			binary_operator->right= RcPtr<Expression>( TryParseBinaryOperator<priority + 1>() );
 
 			return TryParseBinaryOperatorRightPart<priority>( std::move(binary_operator) );
 		}
@@ -983,7 +983,7 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 			NextLexem();
 
 			subscript_opearator->expression= std::move(expr);
-			subscript_opearator->index= ParseExpression();
+			subscript_opearator->index= RcPtr<Expression>( ParseExpression() );
 
 			ExpectLexem( Lexem::Type::SquareBracketRight );
 
@@ -997,7 +997,7 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 			call_operator->expression= std::move(expr);
 
 			auto call_result= ParseCall();
-			if( const auto args= std::get_if< std::vector<Expression> >( &call_result ) )
+			if( const auto args= std::get_if< std::vector< RcPtr<Expression> > >( &call_result ) )
 				call_operator->arguments= std::move(*args);
 			else if( std::holds_alternative< SignatureHelpTag >( call_result ) )
 			{
@@ -2102,14 +2102,14 @@ ComplexName SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( ComplexName
 		return ParseComplexNameTail( std::move(base) );
 }
 
-std::variant<std::vector<Expression>, SyntaxAnalyzer::SignatureHelpTag> SyntaxAnalyzer::ParseCall()
+std::variant<std::vector<RcPtr<Expression>>, SyntaxAnalyzer::SignatureHelpTag> SyntaxAnalyzer::ParseCall()
 {
 	ExpectLexem( Lexem::Type::BracketLeft );
 
-	std::vector<Expression> args;
+	std::vector<RcPtr<Expression>> args;
 	while( NotEndOfFile() && it_->type != Lexem::Type::BracketRight )
 	{
-		args.push_back( ParseExpression() );
+		args.push_back( RcPtr<Expression>( ParseExpression() ) );
 		if( it_->type == Lexem::Type::Comma )
 		{
 			NextLexem();
@@ -2302,7 +2302,7 @@ Initializer SyntaxAnalyzer::ParseConstructorInitializer()
 	ConstructorInitializer result( it_->src_loc );
 
 	auto call_result= ParseCall();
-	if( const auto args= std::get_if< std::vector<Expression> >( &call_result ) )
+	if( const auto args= std::get_if< std::vector<RcPtr<Expression>> >( &call_result ) )
 		result.arguments= std::move(*args);
 	else if( std::holds_alternative< SignatureHelpTag >( call_result ) )
 	{
@@ -2881,8 +2881,8 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 			{
 				AssignmentOperator assignment_operator( it_->src_loc );
 				NextLexem();
-				assignment_operator.l_value= std::move(expression_l);
-				assignment_operator.r_value= ParseExpression();
+				assignment_operator.l_value= RcPtr<Expression>( std::move(expression_l) );
+				assignment_operator.r_value= RcPtr<Expression>( ParseExpression() );
 
 				iteration_part_elements_list_builder.Append( std::move(assignment_operator) );
 			}
@@ -2891,8 +2891,8 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 				CompoundAssignmentOperator compound_assignment_operator( it_->src_loc );
 				compound_assignment_operator.compound_operation= *compound_operation;
 				NextLexem();
-				compound_assignment_operator.l_value= std::move(expression_l);
-				compound_assignment_operator.r_value= ParseExpression();
+				compound_assignment_operator.l_value= RcPtr<Expression>( std::move(expression_l) );
+				compound_assignment_operator.r_value= RcPtr<Expression>( ParseExpression() );
 
 				iteration_part_elements_list_builder.Append( std::move(compound_assignment_operator) );
 			}
@@ -3402,8 +3402,8 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 				AssignmentOperator assignment_operator( it_->src_loc );
 				NextLexem();
 
-				assignment_operator.l_value= std::move(l_expression);
-				assignment_operator.r_value= ParseExpression();
+				assignment_operator.l_value= RcPtr<Expression>( std::move(l_expression) );
+				assignment_operator.r_value= RcPtr<Expression>( ParseExpression() );
 
 				result_builder.Append( std::move(assignment_operator) );
 
@@ -3422,8 +3422,8 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 				op.compound_operation= *compound_operation;
 				NextLexem();
 
-				op.l_value= std::move(l_expression);
-				op.r_value= ParseExpression();
+				op.l_value= RcPtr<Expression>( std::move(l_expression) );
+				op.r_value= RcPtr<Expression>( ParseExpression() );
 
 				result_builder.Append( std::move(op) );
 

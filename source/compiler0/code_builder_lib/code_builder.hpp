@@ -830,8 +830,8 @@ private:
 	// In success call of overloaded operator arguments evaluated in left to right order.
 	std::optional<Value> TryCallOverloadedBinaryOperator(
 		OverloadedOperator op,
-		const Synt::Expression&  left_expr,
-		const Synt::Expression& right_expr,
+		const RcPtr<Synt::Expression>&  left_expr,
+		const RcPtr<Synt::Expression>& right_expr,
 		bool evaluate_args_in_reverse_order,
 		const SrcLoc& src_loc,
 		NamesScope& names_scope,
@@ -861,7 +861,7 @@ private:
 
 	std::optional<Value> TryCallOverloadedPostfixOperator(
 		const VariablePtr& variable,
-		llvm::ArrayRef<Synt::Expression> synt_args,
+		llvm::ArrayRef<RcPtr<Synt::Expression>> synt_args,
 		OverloadedOperator op,
 		const SrcLoc& src_loc,
 		NamesScope& names_scope,
@@ -902,7 +902,7 @@ private:
 	// Call something (function, pointer) or even perform temp variable construction.
 	Value CallFunctionValue(
 		const Value& function_value,
-		llvm::ArrayRef<Synt::Expression> synt_args,
+		llvm::ArrayRef<RcPtr<Synt::Expression>> synt_args,
 		const SrcLoc& call_src_loc,
 		const std::optional<SrcLoc>& function_value_src_loc,
 		NamesScope& names_scope,
@@ -914,7 +914,7 @@ private:
 		const FunctionType& function_type,
 		const SrcLoc& call_src_loc,
 		const VariablePtr& this_, // optional
-		llvm::ArrayRef<const Synt::Expression*> args,
+		llvm::ArrayRef<RcPtr<Synt::Expression>> args,
 		bool evaluate_args_in_reverse_order,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
@@ -926,7 +926,7 @@ private:
 		const FunctionType& function_type,
 		const SrcLoc& call_src_loc,
 		llvm::ArrayRef<VariablePtr> preevaluated_args,
-		llvm::ArrayRef<const Synt::Expression*> args,
+		llvm::ArrayRef<RcPtr<Synt::Expression>> args,
 		bool evaluate_args_in_reverse_order,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
@@ -935,7 +935,7 @@ private:
 
 	VariablePtr BuildTempVariableConstruction(
 		const Type& type,
-		llvm::ArrayRef<Synt::Expression> synt_args,
+		llvm::ArrayRef<RcPtr<Synt::Expression>> synt_args,
 		const SrcLoc& src_loc,
 		NamesScope& names_scope,
 		FunctionContext& function_context );
@@ -952,7 +952,7 @@ private:
 
 	// Preevaluate expresion to know it's extened type.
 	// Call this only inside save/state restore calls.
-	FunctionType::Param PreEvaluateArg( const Synt::Expression& expression, NamesScope& names_scope, FunctionContext& function_context );
+	FunctionType::Param PreEvaluateArg( const RcPtr<Synt::Expression>& expression, NamesScope& names_scope, FunctionContext& function_context );
 	FunctionType::Param GetArgExtendedType( const Variable& variable );
 
 	// Typeinfo
@@ -1211,7 +1211,7 @@ private:
 
 	llvm::Constant* ApplyConstructorInitializer(
 		const VariablePtr& variable,
-		llvm::ArrayRef<Synt::Expression> synt_args,
+		llvm::ArrayRef<RcPtr<Synt::Expression>> synt_args,
 		const SrcLoc& src_loc,
 		NamesScope& names_scope,
 		FunctionContext& function_context );

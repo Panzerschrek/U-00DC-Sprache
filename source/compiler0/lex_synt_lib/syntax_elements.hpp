@@ -203,7 +203,7 @@ using Expression= std::variant<
 	std::unique_ptr<const BitwiseNot>,
 	std::unique_ptr<const SafeExpression>,
 	std::unique_ptr<const UnsafeExpression>,
-	std::unique_ptr<const BinaryOperator>,
+	std::unique_ptr<const BinaryOperator>, // TODO - remove indirection?
 	std::unique_ptr<const TernaryOperator>,
 	std::unique_ptr<const ReferenceToRawPointerOperator>,
 	std::unique_ptr<const RawPointerToReferenceOperator>,
@@ -637,7 +637,7 @@ struct CallOperator
 
 	SrcLoc src_loc;
 	Expression expression;
-	std::vector<Expression> arguments;
+	std::vector< RcPtr<Expression> > arguments;
 };
 
 // Special kind of call operator, created only by language server to perform signature help.
@@ -658,7 +658,7 @@ struct SubscriptOperator
 
 	SrcLoc src_loc;
 	Expression expression;
-	Expression index;
+	RcPtr<Expression> index;
 };
 
 struct MemberAccessOperator
@@ -748,8 +748,8 @@ struct BinaryOperator
 
 	SrcLoc src_loc;
 	BinaryOperatorType operator_type= BinaryOperatorType::Add; // Set actual value later
-	Expression left;
-	Expression right;
+	RcPtr<Expression> left;
+	RcPtr<Expression> right;
 };
 
 struct TernaryOperator
@@ -901,7 +901,7 @@ struct ConstructorInitializer
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	std::vector<Expression> arguments;
+	std::vector<RcPtr<Expression>> arguments;
 };
 
 struct ConstructorInitializerSignatureHelp
@@ -1257,8 +1257,8 @@ struct AssignmentOperator
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	Expression l_value;
-	Expression r_value;
+	RcPtr<Expression> l_value;
+	RcPtr<Expression> r_value;
 };
 
 struct CompoundAssignmentOperator
@@ -1268,8 +1268,8 @@ struct CompoundAssignmentOperator
 
 	SrcLoc src_loc;
 	BinaryOperatorType compound_operation= BinaryOperatorType::Add; // Set actual value later.
-	Expression l_value;
-	Expression r_value;
+	RcPtr<Expression> l_value;
+	RcPtr<Expression> r_value;
 };
 
 struct IncrementOperator

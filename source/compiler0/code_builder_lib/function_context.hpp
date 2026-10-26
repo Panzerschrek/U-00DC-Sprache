@@ -122,7 +122,7 @@ public:
 
 	// Cache result of arguments pre-evaluation for selection of overloaded functions and operators.
 	// This needed for reducing exponential expression evaluation complexity.
-	std::unordered_map< const Synt::Expression*, FunctionType::Param > args_preevaluation_cache;
+	std::unordered_map< RcPtr<Synt::Expression>, FunctionType::Param, RcPtrHasher > args_preevaluation_cache;
 
 	llvm::DIScope* current_debug_info_scope= nullptr;
 

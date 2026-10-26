@@ -665,7 +665,7 @@ void ElementWrite( const CallOperator& call_operator ) const
 	ElementWrite( call_operator.expression );
 
 	stream_ << "( ";
-	for( const Expression& arg : call_operator.arguments )
+	for( const RcPtr<Expression>& arg : call_operator.arguments )
 	{
 		ElementWrite( arg );
 
@@ -695,7 +695,7 @@ void ElementWrite( const Initializer& initializer ) const
 		else
 		{
 			stream_ << "( ";
-			for( const Expression& arg :constructor_initializer->arguments )
+			for( const RcPtr<Expression>& arg :constructor_initializer->arguments )
 			{
 				ElementWrite( arg );
 				if( &arg != &constructor_initializer->arguments.back() )

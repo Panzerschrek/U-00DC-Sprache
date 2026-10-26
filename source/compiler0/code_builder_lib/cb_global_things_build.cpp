@@ -1542,7 +1542,7 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope.GetErrors(), constructor_initializer->src_loc );
 					FAIL_RETURN;
 				}
-				initializer_expression= &constructor_initializer->arguments.front();
+				initializer_expression= &*constructor_initializer->arguments.front();
 			}
 			else
 			{

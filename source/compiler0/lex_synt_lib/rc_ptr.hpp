@@ -127,7 +127,7 @@ public:
 		}
 	}
 
-	void* get_raw_ptr() noexcept
+	void* get_raw_ptr() const noexcept
 	{
 		return ptr_;
 	}
@@ -171,5 +171,14 @@ inline bool operator!=( const RcPtr<T>& l, const RcPtr<T>& r ) noexcept
 {
 	return l.get_raw_ptr() != r.get_raw_ptr();
 }
+
+struct RcPtrHasher
+{
+	template<typename T>
+	size_t operator()( const RcPtr<T>& ptr ) const
+	{
+		return reinterpret_cast<uintptr_t>( ptr.get_raw_ptr() );
+	}
+};
 
 } // namespace U
