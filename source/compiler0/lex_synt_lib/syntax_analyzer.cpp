@@ -976,18 +976,18 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 
 	case Lexem::Type::BracketLeft:
 		{
-			auto call_operator= std::make_unique<CallOperator>( it_->src_loc );
+			CallOperator call_operator( it_->src_loc );
 
-			call_operator->expression= std::move(expr);
+			call_operator.expression= std::make_unique<Expression>( std::move(expr) );
 
 			auto call_result= ParseCall();
 			if( const auto args= std::get_if< std::vector< RcPtr<Expression> > >( &call_result ) )
-				call_operator->arguments= std::move(*args);
+				call_operator.arguments= std::move(*args);
 			else if( std::holds_alternative< SignatureHelpTag >( call_result ) )
 			{
-				auto signature_help_result= std::make_unique<CallOperatorSignatureHelp>( it_->src_loc );
+				CallOperatorSignatureHelp signature_help_result( it_->src_loc );
 				NextLexem();
-				signature_help_result->expression= std::move(call_operator->expression);
+				signature_help_result.expression= std::move(call_operator.expression);
 				return std::move(signature_help_result);
 			}
 			else U_ASSERT(false);
@@ -997,10 +997,10 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 
 	case Lexem::Type::SignatureHelpBracketLeft:
 		{
-			auto call_operator_signature_help= std::make_unique<CallOperatorSignatureHelp>( it_->src_loc );
+			CallOperatorSignatureHelp call_operator_signature_help( it_->src_loc );
 			NextLexem();
 
-			call_operator_signature_help->expression= std::move(expr);
+			call_operator_signature_help.expression= std::make_unique<Expression>( std::move(expr) );
 
 			return TryParseBinaryOperatorComponentPostfixOperator(std::move(call_operator_signature_help));
 		}

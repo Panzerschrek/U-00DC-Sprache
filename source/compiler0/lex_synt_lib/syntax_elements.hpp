@@ -191,8 +191,8 @@ using Expression= std::variant<
 	std::unique_ptr<const TypeInfo>,
 	std::unique_ptr<const SameType>,
 	std::unique_ptr<const NonSyncExpression>,
-	std::unique_ptr<const CallOperator>,
-	std::unique_ptr<const CallOperatorSignatureHelp>,
+	CallOperator,
+	CallOperatorSignatureHelp,
 	std::unique_ptr<const SubscriptOperator>,
 	std::unique_ptr<const MemberAccessOperator>,
 	std::unique_ptr<const MemberAccessOperatorCompletion>,
@@ -486,6 +486,27 @@ struct CharLiteral
 	std::array<char, 8> type_suffix{0};
 };
 
+struct CallOperator
+{
+	explicit CallOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::unique_ptr<const Expression> expression;
+	std::vector< RcPtr<Expression> > arguments;
+};
+
+// Special kind of call operator, created only by language server to perform signature help.
+struct CallOperatorSignatureHelp
+{
+	explicit CallOperatorSignatureHelp( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::unique_ptr<const Expression> expression;
+	// For now no need to parse arguments.
+};
+
 struct BinaryOperator
 {
 	explicit BinaryOperator( const SrcLoc& src_loc )
@@ -643,27 +664,6 @@ struct NonSyncExpression
 
 	SrcLoc src_loc;
 	TypeName type;
-};
-
-struct CallOperator
-{
-	explicit CallOperator( const SrcLoc& src_loc )
-		: src_loc(src_loc) {}
-
-	SrcLoc src_loc;
-	Expression expression;
-	std::vector< RcPtr<Expression> > arguments;
-};
-
-// Special kind of call operator, created only by language server to perform signature help.
-struct CallOperatorSignatureHelp
-{
-	explicit CallOperatorSignatureHelp( const SrcLoc& src_loc )
-		: src_loc(src_loc) {}
-
-	SrcLoc src_loc;
-	Expression expression;
-	// For now no need to parse arguments.
 };
 
 struct SubscriptOperator

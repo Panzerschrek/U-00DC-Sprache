@@ -225,7 +225,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CallOperator& call_operator )
 {
-	const Value function_value= BuildExpressionCode( call_operator.expression, names_scope, function_context );
+	const Value function_value= BuildExpressionCode( *call_operator.expression, names_scope, function_context );
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
 	std::optional<SrcLoc> value_src_loc;
@@ -235,10 +235,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// In most cases proper src_loc is just src_loc of NameLookup/NamesScopeNameFetch, which is proper function name lexem.
 		// But this also may be call to template function with provided template args.
 		// In such case extract underlying name.
-		if( const auto template_parameterization= std::get_if< std::unique_ptr< const Synt::TemplateParameterization > >( &call_operator.expression ) )
+		if( const auto template_parameterization= std::get_if< std::unique_ptr< const Synt::TemplateParameterization > >( &*call_operator.expression ) )
 			value_src_loc= Synt::GetSrcLoc( (*template_parameterization)->base );
 		else
-			value_src_loc= Synt::GetSrcLoc(call_operator.expression);
+			value_src_loc= Synt::GetSrcLoc(*call_operator.expression);
 	}
 
 	return CallFunctionValue( function_value, call_operator.arguments, call_operator.src_loc, value_src_loc, names_scope, function_context );
@@ -249,7 +249,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CallOperatorSignatureHelp& call_operator_signature_help )
 {
-	PerformSignatureHelp( BuildExpressionCode( call_operator_signature_help.expression, names_scope, function_context ) );
+	PerformSignatureHelp( BuildExpressionCode( *call_operator_signature_help.expression, names_scope, function_context ) );
 	return ErrorValue();
 }
 
