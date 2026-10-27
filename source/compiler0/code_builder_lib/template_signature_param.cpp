@@ -239,8 +239,8 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateSignatureParam::Array& param )
 {
 	TemplateSignatureParam::Array out_param;
-	out_param.element_count= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.element_count ) );
-	out_param.element_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.element_type ) );
+	out_param.element_count= MakeRcPtr( MapTemplateParamsToSignatureParams( mapping, *param.element_count ) );
+	out_param.element_type= MakeRcPtr( MapTemplateParamsToSignatureParams( mapping, *param.element_type ) );
 	return out_param;
 }
 
@@ -262,7 +262,7 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateSignatureParam::RawPointer& param )
 {
 	TemplateSignatureParam::RawPointer out_param;
-	out_param.element_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.element_type ) );
+	out_param.element_type= MakeRcPtr( MapTemplateParamsToSignatureParams( mapping, *param.element_type ) );
 	return out_param;
 }
 
@@ -271,10 +271,10 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateSignatureParam::Function& param )
 {
 	TemplateSignatureParam::Function out_param= param;
-	out_param.return_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.return_type ) );
+	out_param.return_type= MakeRcPtr( MapTemplateParamsToSignatureParams( mapping, *param.return_type ) );
 
 	for( TemplateSignatureParam::Function::Param& function_param : out_param.params )
-		function_param.type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *function_param.type ) );
+		function_param.type= MakeRcPtr( MapTemplateParamsToSignatureParams( mapping, *function_param.type ) );
 
 	return out_param;
 }
@@ -284,7 +284,7 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateSignatureParam::Coroutine& param )
 {
 	TemplateSignatureParam::Coroutine out_param= param;
-	out_param.return_type= std::make_shared<TemplateSignatureParam>( MapTemplateParamsToSignatureParams( mapping, *param.return_type ) );
+	out_param.return_type= MakeRcPtr( MapTemplateParamsToSignatureParams( mapping, *param.return_type ) );
 	return out_param;
 }
 

@@ -342,8 +342,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	const Synt::ArrayTypeName& array_type_name )
 {
 	TemplateSignatureParam::Array array_param;
-	array_param.element_count= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, array_type_name.size ) );
-	array_param.element_type= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, array_type_name.element_type ) );
+	array_param.element_count= MakeRcPtr( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, array_type_name.size ) );
+	array_param.element_type= MakeRcPtr( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, array_type_name.element_type ) );
 
 	if( array_param.element_count->IsVariable() && array_param.element_type->IsType() )
 		return TemplateSignatureParam::Type{ PrepareTypeImpl( names_scope, function_context, array_type_name ) };
@@ -373,9 +373,9 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 
 	// TODO - maybe check also reference tags?
 	if( function_pointer_type_name.return_type != nullptr )
-		function_param.return_type= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *function_pointer_type_name.return_type ) );
+		function_param.return_type= MakeRcPtr( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *function_pointer_type_name.return_type ) );
 	else
-		function_param.return_type= std::make_unique<TemplateSignatureParam>( TemplateSignatureParam::Type{ void_type_ } );
+		function_param.return_type= RcPtr<TemplateSignatureParam>( TemplateSignatureParam::Type{ void_type_ } );
 
 	all_types_are_known&= function_param.return_type->IsType();
 
@@ -385,7 +385,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 		all_types_are_known&= t.IsType();
 
 		TemplateSignatureParam::Function::Param out_param;
-		out_param.type= std::make_unique<TemplateSignatureParam>( std::move(t) );
+		out_param.type= MakeRcPtr( std::move(t) );
 		if( in_param.reference_modifier == Synt::ReferenceModifier::None )
 			out_param.value_type= ValueType::Value;
 		else if( in_param.mutability_modifier == Synt::MutabilityModifier::Mutable )
@@ -433,7 +433,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 {
 	TemplateSignatureParam::RawPointer raw_pointer_param;
 	raw_pointer_param.element_type=
-		std::make_unique<TemplateSignatureParam>(
+		MakeRcPtr(
 			CreateTemplateSignatureParameter(
 				names_scope,
 				function_context,
@@ -457,7 +457,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	TemplateSignatureParam::Coroutine coroutine_param;
 
 	coroutine_param.return_type=
-		std::make_unique<TemplateSignatureParam>(
+		MakeRcPtr(
 			CreateTemplateSignatureParameter(
 				names_scope,
 				function_context,

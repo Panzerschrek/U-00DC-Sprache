@@ -48,8 +48,8 @@ public:
 
 	struct Array
 	{
-		std::shared_ptr<const TemplateSignatureParam> element_count;
-		std::shared_ptr<const TemplateSignatureParam> element_type;
+		RcPtr<TemplateSignatureParam> element_count;
+		RcPtr<TemplateSignatureParam> element_type;
 
 		bool operator==( const Array& other ) const;
 	};
@@ -63,14 +63,14 @@ public:
 
 	struct RawPointer
 	{
-		std::shared_ptr<const TemplateSignatureParam> element_type;
+		RcPtr<TemplateSignatureParam> element_type;
 
 		bool operator==( const RawPointer& other ) const;
 	};
 
 	struct Function
 	{
-		std::shared_ptr<const TemplateSignatureParam> return_type;
+		RcPtr<TemplateSignatureParam> return_type;
 		ValueType return_value_type= ValueType::Value;
 
 		bool is_unsafe= false;
@@ -79,7 +79,7 @@ public:
 
 		struct Param
 		{
-			std::shared_ptr<const TemplateSignatureParam> type;
+			RcPtr<TemplateSignatureParam> type;
 			ValueType value_type= ValueType::Value;
 
 			bool operator==( const Param& other ) const;
@@ -92,7 +92,7 @@ public:
 	struct Coroutine
 	{
 		CoroutineKind kind= CoroutineKind::Generator;
-		std::shared_ptr<const TemplateSignatureParam> return_type;
+		RcPtr<TemplateSignatureParam> return_type;
 		ValueType return_value_type= ValueType::Value;
 
 		FunctionType::ReturnReferences return_references;

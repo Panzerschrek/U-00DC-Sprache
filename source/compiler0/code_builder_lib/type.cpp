@@ -24,7 +24,7 @@ llvm::Type* GetLLVMTypeImpl( const T& el )
 }
 
 template<typename T>
-llvm::Type* GetLLVMTypeImpl( const std::shared_ptr<const T>& boxed )
+llvm::Type* GetLLVMTypeImpl( const RcPtr<T>& boxed )
 {
 	U_ASSERT(boxed != nullptr);
 	return GetLLVMTypeImpl( *boxed );
@@ -81,19 +81,19 @@ Type::Type( FundamentalType fundamental_type )
 {}
 
 Type::Type( FunctionPointerType function_pointer_type )
-	: something_( std::make_shared<FunctionPointerType>( std::move(function_pointer_type) ) )
+	: something_( MakeRcPtr( std::move(function_pointer_type) ) )
 {}
 
 Type::Type( ArrayType array_type )
-	: something_( std::make_shared<ArrayType>( std::move(array_type) ) )
+	: something_( MakeRcPtr( std::move(array_type) ) )
 {}
 
 Type::Type( RawPointerType raw_pointer_type )
-	: something_( std::make_shared<RawPointerType>( std::move(raw_pointer_type) ) )
+	: something_( MakeRcPtr( std::move(raw_pointer_type) ) )
 {}
 
 Type::Type( TupleType tuple_type )
-	: something_( std::make_shared<TupleType>( std::move(tuple_type) ) )
+	: something_( MakeRcPtr( std::move(tuple_type) ) )
 {}
 
 Type::Type( ClassPtr class_type )
@@ -112,28 +112,28 @@ const FundamentalType* Type::GetFundamentalType() const
 const FunctionPointerType* Type::GetFunctionPointerType() const
 {
 	if( const auto function_pointer_type= std::get_if<FunctionPointerPtr>( &something_ ) )
-		return function_pointer_type->get();
+		return &**function_pointer_type;
 	return nullptr;
 }
 
 const ArrayType* Type::GetArrayType() const
 {
 	if( const auto array_type= std::get_if<ArrayPtr>( &something_ ) )
-		return array_type->get();
+		return &**array_type;
 	return nullptr;
 }
 
 const RawPointerType* Type::GetRawPointerType() const
 {
 	if( const auto raw_pointer_type= std::get_if<RawPointerPtr>( &something_ ) )
-		return raw_pointer_type->get();
+		return &**raw_pointer_type;
 	return nullptr;
 }
 
 const TupleType* Type::GetTupleType() const
 {
 	if( const auto tuple_type= std::get_if<TupleTypePtr>( &something_ ) )
-		return tuple_type->get();
+		return &**tuple_type;
 	return nullptr;
 }
 
