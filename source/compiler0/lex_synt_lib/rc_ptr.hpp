@@ -5,9 +5,11 @@
 namespace U
 {
 
+// Store contents of RcPtr and its use counter in the same allocation.
 template<typename T>
 struct RcPtrStorage
 {
+	 // 32-bit counter should be enough, even on 64-bit platforms. Hopefully no one will create 2^32 copies of it.
 	uint32_t use_counter;
 	T value;
 };
@@ -20,11 +22,14 @@ template< typename T >
 class RcPtr
 {
 public:
+	// Default constructor - set to nullable.
 	RcPtr() noexcept = default;
 
+	// Construct from "nullptr".
 	RcPtr( std::nullptr_t ) noexcept
 	{}
 
+	// Copy constructor. Shares value with the source.
 	RcPtr( const RcPtr& other ) noexcept
 		: ptr_( other.ptr_ )
 	{
@@ -32,17 +37,22 @@ public:
 			++static_cast< RcPtrStorage<T>* >(ptr_)->use_counter;
 	}
 
+	// Move constructor. Takes value from the source.
 	RcPtr( RcPtr&& other ) noexcept
 		: ptr_( other.ptr_ )
 	{
 		other.ptr_= nullptr;
 	}
 
+	// Construct new instance.
+	// "T" should be movable.
+	// Prefer calling this contructor with "std::move" applied to its argument.
 	explicit RcPtr( T value )
 	{
 		ptr_= new RcPtrStorage<T>{ 1u, std::move(value) };
 	}
 
+	// Copy-assignemt operator. Shares value with the source.
 	RcPtr& operator=( const RcPtr& other ) noexcept
 	{
 		if( this == &other )
@@ -64,6 +74,7 @@ public:
 		return *this;
 	}
 
+	// Move-assignemtn operator. Takes value from the source.
 	RcPtr& operator=( RcPtr&& other ) noexcept
 	{
 		if( this == &other )
@@ -83,6 +94,7 @@ public:
 		return *this;
 	}
 
+	// Assign "nullptr".
 	RcPtr& operator=( std::nullptr_t ) noexcept
 	{
 		reset();
@@ -128,6 +140,7 @@ public:
 		}
 	}
 
+	// Method for internal usage (comparison, hashing).
 	void* get_raw_ptr() const noexcept
 	{
 		return ptr_;
