@@ -1159,9 +1159,9 @@ void CppAstConsumer::EmitItemsSorted( ListType& out_items, const TypeNamesMap& t
 		{
 			// HACK! Emit a namespace if can, otherwise emit a class.
 			if constexpr( std::is_same_v< ListType, Synt::ProgramElementsList > )
-				out_items.push_back( std::make_unique<const Synt::Namespace>( EmitNamespaceItem( type_names_map, item_to_sort.name, *namespace_ ) ) );
+				out_items.push_back( RcPtr<Synt::Namespace>( EmitNamespaceItem( type_names_map, item_to_sort.name, *namespace_ ) ) );
 			else
-				out_items.push_back( RcPtr( EmitItemImpl( type_names_map, item_to_sort.name, *namespace_ ) ) );
+				out_items.push_back( RcPtr<Synt::Class>( EmitItemImpl( type_names_map, item_to_sort.name, *namespace_ ) ) );
 		}
 		else
 			std::visit(
@@ -1179,9 +1179,9 @@ void CppAstConsumer::EmitItemsSorted( ListType& out_items, const TypeNamesMap& t
 		{
 			// HACK! Emit a namespace if can, otherwise emit a class.
 			if constexpr( std::is_same_v< ListType, Synt::ProgramElementsList > )
-				out_items.push_back( std::make_unique<const Synt::Namespace>( EmitNamespaceItem( type_names_map, item_name, *namespace_ ) ) );
+				out_items.push_back( RcPtr<Synt::Namespace>( EmitNamespaceItem( type_names_map, item_name, *namespace_ ) ) );
 			else
-				out_items.push_back( RcPtr( EmitItemImpl( type_names_map, item_name, *namespace_ ) ) );
+				out_items.push_back( RcPtr<Synt::Class>( EmitItemImpl( type_names_map, item_name, *namespace_ ) ) );
 		}
 		else
 			std::visit(
