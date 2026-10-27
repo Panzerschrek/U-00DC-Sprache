@@ -1931,9 +1931,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
+	// Fetch parent file path with index check. This may be needed in LangaugeServer, where source graph may be outdated.
 	const auto file_index= embed.src_loc.GetFileIndex();
-	U_ASSERT( file_index < source_graph_->nodes_storage.size() );
-	const IVfs::Path& parent_file_path= source_graph_->nodes_storage[file_index].file_path;
+	const IVfs::Path empty_path;
+	const IVfs::Path& parent_file_path=
+		file_index < source_graph_->nodes_storage.size() ? source_graph_->nodes_storage[file_index].file_path : empty_path;
 
 	// Load file contents. Use caching in order to avoid loading same file contents more than once.
 	IVfs::Path full_file_path= vfs_->GetFullFilePath( file_path, parent_file_path );
