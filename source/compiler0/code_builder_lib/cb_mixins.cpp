@@ -17,6 +17,8 @@ namespace
 
 constexpr uint32_t g_max_mixins_depth= 4;
 
+const char g_file_index_out_of_bounds_error[]= "Can't expand a mixin - file index is out of bounds!";
+
 } // namespace
 
 void CodeBuilder::ProcessMixins( NamesScope& names_scope )
@@ -175,7 +177,13 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin )
 		if( lexems == std::nullopt )
 			return;
 
-		U_ASSERT( mixin.src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
+		if( mixin.src_loc.GetFileIndex() >= source_graph_->nodes_storage.size() )
+		{
+			// A workaround for LanguageServer - source graph may be outdated and thus file index may be incorrect.
+			REPORT_ERROR( MixinLexicalError, names_scope.GetErrors(), mixin.src_loc, g_file_index_out_of_bounds_error );
+			return;
+		}
+
 		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
 
 		Synt::NamespaceParsingResult synt_result=
@@ -220,7 +228,13 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 		if( lexems == std::nullopt )
 			return;
 
-		U_ASSERT( mixin.src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
+		if( mixin.src_loc.GetFileIndex() >= source_graph_->nodes_storage.size() )
+		{
+			// A workaround for LanguageServer - source graph may be outdated and thus file index may be incorrect.
+			REPORT_ERROR( MixinLexicalError, class_members.GetErrors(), mixin.src_loc, g_file_index_out_of_bounds_error );
+			return;
+		}
+
 		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
 
 		Synt::ClassElementsParsingResult synt_result=
@@ -273,7 +287,13 @@ const Synt::BlockElementsList* CodeBuilder::ExpandBlockMixin( NamesScope& names_
 		if( lexems == std::nullopt )
 			return nullptr;
 
-		U_ASSERT( mixin.src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
+		if( mixin.src_loc.GetFileIndex() >= source_graph_->nodes_storage.size() )
+		{
+			// A workaround for LanguageServer - source graph may be outdated and thus file index may be incorrect.
+			REPORT_ERROR( MixinLexicalError, names_scope.GetErrors(), mixin.src_loc, g_file_index_out_of_bounds_error );
+			return nullptr;
+		}
+
 		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
 
 		Synt::BlockElementsParsingResult synt_result=
@@ -314,7 +334,13 @@ const Synt::TypeName* CodeBuilder::ExpandTypeNameMixin( NamesScope& names_scope,
 		if( lexems == std::nullopt )
 			return nullptr;
 
-		U_ASSERT( mixin.src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
+		if( mixin.src_loc.GetFileIndex() >= source_graph_->nodes_storage.size() )
+		{
+			// A workaround for LanguageServer - source graph may be outdated and thus file index may be incorrect.
+			REPORT_ERROR( MixinLexicalError, names_scope.GetErrors(), mixin.src_loc, g_file_index_out_of_bounds_error );
+			return nullptr;
+		}
+
 		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
 
 		Synt::TypeNameParsingResult synt_result=
@@ -355,7 +381,13 @@ const Synt::Expression* CodeBuilder::ExpandExpressionMixin( NamesScope& names_sc
 		if( lexems == std::nullopt )
 			return nullptr;
 
-		U_ASSERT( mixin.src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
+		if( mixin.src_loc.GetFileIndex() >= source_graph_->nodes_storage.size() )
+		{
+			// A workaround for LanguageServer - source graph may be outdated and thus file index may be incorrect.
+			REPORT_ERROR( MixinLexicalError, names_scope.GetErrors(), mixin.src_loc, g_file_index_out_of_bounds_error );
+			return nullptr;
+		}
+
 		const SourceGraph::Node& source_graph_node= source_graph_->nodes_storage[ mixin.src_loc.GetFileIndex() ];
 
 		Synt::ExpressionParsingResult synt_result=
