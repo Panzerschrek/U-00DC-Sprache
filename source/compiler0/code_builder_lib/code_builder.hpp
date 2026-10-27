@@ -53,9 +53,9 @@ public:
 	};
 
 	using CompletionRequestPrefixComponent= std::variant<
-		const Synt::Namespace*,
-		const Synt::Class*,
-		const RcPtr<Synt::TypeTemplate>*>;
+		RcPtr<Synt::Namespace>,
+		RcPtr<Synt::Class>,
+		RcPtr<Synt::TypeTemplate>>;
 
 	enum class CompletionItemKind : uint8_t
 	{
@@ -214,19 +214,19 @@ private:
 	std::vector<CompletionItem> CompletionResultFinalize();
 	std::vector<SignatureHelpItem> SignatureHelpResultFinalize();
 
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::VariablesDeclaration>& variables_declaration );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::AutoVariableDeclaration>& auto_variable_declaration );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::StaticAssert>& static_assert_ );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::TypeAlias>& type_alias );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Enum>& enum_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Function>& function );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Class& class_ );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Class>& class_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::TypeTemplate>& type_template );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::FunctionTemplate>& function_template_syntax_element );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Mixin& mixin );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Namespace>& namespace_ );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::ClassField>& class_field );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::ClassVisibilityLabel>& class_visibility_label );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Mixin>& mixin );
 
 	// Performs template instantiation with dummy args and returns names scope, if it is a class template.
 	// May reuse value, created during previous dummy-instantiation.

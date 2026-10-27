@@ -52,6 +52,15 @@ void FindImpl( const std::unique_ptr<T>& el )
 	FindImpl( *el );
 }
 
+template<typename T>
+void FindImpl( const RcPtr<T>& el )
+{
+	if( el == nullptr )
+		return;
+
+	FindImpl( *el );
+}
+
 void FindImpl( const Synt::Expression& expression )
 {
 	FindImplVariant( expression );
@@ -76,7 +85,7 @@ void FindImpl( const Synt::CallOperator& call_operator )
 {
 	FindImpl( call_operator.expression );
 
-	for( const Synt::Expression& expression : call_operator.arguments )
+	for( const RcPtr<Synt::Expression>& expression : call_operator.arguments )
 		FindImpl( expression );
 }
 
@@ -419,7 +428,7 @@ void FindImpl( const Synt::StructNamedInitializer& struct_named_initializer )
 
 void FindImpl( const Synt::ConstructorInitializer& constructor_initializer )
 {
-	for( const Synt::Expression& expression : constructor_initializer.arguments )
+	for( const RcPtr<Synt::Expression>& expression : constructor_initializer.arguments )
 		FindImpl( expression );
 }
 
@@ -445,24 +454,36 @@ void FindImpl( const Synt::UninitializedInitializer& uninitialized_initializer )
 void FindImpl( const Synt::ProgramElementsList& program_elements )
 {
 	std::optional<GlobalItem> prev_global_item= global_item_;
-	program_elements.Iter(
-		[&]( const auto & el )
-		{
-			global_item_= GlobalItem(&el);
-			FindImpl( el );
-		} );
+
+	for( const Synt::ProgramElement& element : program_elements )
+	{
+		std::visit(
+			[&]( const auto& el )
+			{
+				global_item_= GlobalItem(el);
+				FindImpl( el );
+			},
+			element );
+	}
+
 	global_item_= prev_global_item;
 }
 
 void FindImpl( const Synt::ClassElementsList& class_elements )
 {
 	std::optional<GlobalItem> prev_global_item= global_item_;
-	class_elements.Iter(
-		[&]( const auto & el )
-		{
-			global_item_= GlobalItem(&el);
-			FindImpl( el );
-		} );
+
+	for( const Synt::ClassElement& element : class_elements )
+	{
+		std::visit(
+			[&]( const auto& el )
+			{
+				global_item_= GlobalItem(el);
+				FindImpl( el );
+			},
+			element );
+	}
+
 	global_item_= prev_global_item;
 }
 
@@ -554,30 +575,30 @@ void FindImpl( const Synt::Function& function )
 	FindImpl( function.block );
 }
 
-void FindImpl( const Synt::Class& class_ )
+void FindImpl( const RcPtr<Synt::Class>& class_ )
 {
-	prefix_.push_back( &class_ );
-	FindImpl( class_.elements );
+	prefix_.push_back( class_ );
+	FindImpl( class_->elements );
 	prefix_.pop_back();
 
-	for( const Synt::ComplexName& parent : class_.parents )
+	for( const Synt::ComplexName& parent : class_->parents )
 		FindImpl( parent );
 
-	FindImpl( class_.non_sync_tag );
+	FindImpl( class_->non_sync_tag );
 }
 
-void FindImpl( const Synt::TypeTemplate& type_template )
+void FindImpl( const RcPtr<Synt::TypeTemplate>& type_template )
 {
-	prefix_.push_back( &type_template );
+	prefix_.push_back( type_template );
 
 	std::optional<GlobalItem> prev_global_item= global_item_;
 	std::visit(
 		[&]( const auto& el )
 		{
-			global_item_= GlobalItem( el.get() );
+			global_item_= GlobalItem( el );
 			FindImpl( el );
 		},
-		type_template.something );
+		type_template->something );
 
 	global_item_= prev_global_item;
 
@@ -603,10 +624,10 @@ void FindImpl( const Synt::FunctionTemplate& function_template )
 	FindImpl( function_template.function );
 }
 
-void FindImpl( const Synt::Namespace& namespace_ )
+void FindImpl( const RcPtr<Synt::Namespace>& namespace_ )
 {
-	prefix_.push_back( &namespace_ );
-	FindImpl( namespace_.elements );
+	prefix_.push_back( namespace_ );
+	FindImpl( namespace_->elements );
 	prefix_.pop_back();
 }
 

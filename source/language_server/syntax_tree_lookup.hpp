@@ -21,19 +21,19 @@ using CompletionSyntaxElement= std::variant<
 	const Synt::DecomposeDeclarationStructComponent::Entry*>;
 
 using GlobalItem= std::variant<
-	const Synt::Namespace*,
-	const Synt::VariablesDeclaration*,
-	const Synt::AutoVariableDeclaration*,
-	const Synt::StaticAssert*,
-	const Synt::TypeAlias*,
-	const Synt::Enum*,
-	const Synt::Function*,
-	const Synt::ClassField*,
-	const Synt::ClassVisibilityLabel*,
-	const Synt::Class*,
-	const Synt::TypeTemplate*,
-	const Synt::FunctionTemplate*,
-	const Synt::Mixin*>;
+	RcPtr<Synt::Namespace>,
+	RcPtr<Synt::VariablesDeclaration>,
+	RcPtr<Synt::AutoVariableDeclaration>,
+	RcPtr<Synt::StaticAssert>,
+	RcPtr<Synt::TypeAlias>,
+	RcPtr<Synt::Enum>,
+	RcPtr<Synt::Function>,
+	RcPtr<Synt::ClassField>,
+	RcPtr<Synt::ClassVisibilityLabel>,
+	RcPtr<Synt::Class>,
+	RcPtr<Synt::TypeTemplate>,
+	RcPtr<Synt::FunctionTemplate>,
+	RcPtr<Synt::Mixin>>;
 
 struct SyntaxTreeLookupResult
 {

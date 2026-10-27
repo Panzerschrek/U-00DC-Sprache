@@ -579,7 +579,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	// Also it is too slow to recompile program for each completion.
 	const std::vector<CodeBuilder::CompletionItem> completion_result=
 		std::visit(
-			[&]( const auto& el ) { return compiled_state_->code_builder->Complete( lookup_result->prefix, *el ); },
+			[&]( const auto& el ) { return compiled_state_->code_builder->Complete( lookup_result->prefix, el ); },
 			lookup_result->global_item );
 
 	std::vector<CompletionItem> result_transformed;
@@ -829,7 +829,7 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 	// Also it is too slow to recompile program for each signature help.
 	return
 		std::visit(
-			[&]( const auto& el ) { return compiled_state_->code_builder->GetSignatureHelp( lookup_result->prefix, *el ); },
+			[&]( const auto& el ) { return compiled_state_->code_builder->GetSignatureHelp( lookup_result->prefix, el ); },
 			lookup_result->global_item );
 }
 
