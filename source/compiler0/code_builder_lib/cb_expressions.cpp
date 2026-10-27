@@ -2578,8 +2578,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		const auto state= SaveFunctionContextState( function_context );
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
-			for( const RcPtr<Synt::Expression>* const in_arg : { &left_expr, &right_expr } )
-				args.push_back( PreEvaluateArg( *in_arg, names_scope, function_context ) );
+			args.push_back( PreEvaluateArg( left_expr, names_scope, function_context ) );
+			args.push_back( PreEvaluateArg( right_expr, names_scope, function_context ) );
 		}
 
 		RestoreFunctionContextState( function_context, state );
