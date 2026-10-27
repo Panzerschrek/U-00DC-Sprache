@@ -13,11 +13,11 @@ struct Mixin
 {
 	SrcLoc src_loc;
 	Synt::ClassMemberVisibility visibility= Synt::ClassMemberVisibility::Public;
-	const Synt::Mixin* syntax_element= nullptr; // Zeroed after mixin expression evaluation.
+	RcPtr<Synt::Mixin> syntax_element; // Zeroed after mixin expression evaluation.
 
 	// If non-null - it's proper constexpr string. Null if mixin is already expanded.
 	// Also is null if this mixin requires no expansion (if it is empty, for example).
-	llvm::ConstantDataArray* string_constant= nullptr;
+	const llvm::ConstantDataArray* string_constant= nullptr;
 };
 
 using Mixins= std::vector<Mixin>;

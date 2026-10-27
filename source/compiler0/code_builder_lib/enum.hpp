@@ -13,7 +13,7 @@ struct Enum
 	bool no_discard= false;
 	FundamentalType underlying_type; // must be integer
 
-	const Synt::Enum* syntax_element= nullptr; // Null if completed
+	RcPtr<Synt::Enum> syntax_element; // Null if completed
 };
 
 } // namespace U

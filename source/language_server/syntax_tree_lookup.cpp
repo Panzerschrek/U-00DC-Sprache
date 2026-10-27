@@ -52,6 +52,15 @@ void FindImpl( const std::unique_ptr<T>& el )
 	FindImpl( *el );
 }
 
+template<typename T>
+void FindImpl( const RcPtr<T>& el )
+{
+	if( el == nullptr )
+		return;
+
+	FindImpl( *el );
+}
+
 void FindImpl( const Synt::Expression& expression )
 {
 	FindImplVariant( expression );
@@ -76,7 +85,7 @@ void FindImpl( const Synt::CallOperator& call_operator )
 {
 	FindImpl( call_operator.expression );
 
-	for( const Synt::Expression& expression : call_operator.arguments )
+	for( const RcPtr<Synt::Expression>& expression : call_operator.arguments )
 		FindImpl( expression );
 }
 
@@ -87,7 +96,7 @@ void FindImpl( const Synt::CallOperatorSignatureHelp& call_operator_signature_he
 	if( call_operator_signature_help.src_loc.GetLine() == line_ && call_operator_signature_help.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &call_operator_signature_help, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -112,7 +121,7 @@ void FindImpl( const Synt::MemberAccessOperatorCompletion& member_access_operato
 	if( member_access_operator_completion.src_loc.GetLine() == line_ && member_access_operator_completion.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &member_access_operator_completion, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -205,7 +214,7 @@ void FindImpl( const Synt::MoveOperatorCompletion& move_operator_completion )
 	if( move_operator_completion.src_loc.GetLine() == line_ && move_operator_completion.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &move_operator_completion, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -225,7 +234,7 @@ void FindImpl( const Synt::Lambda& lambda )
 			if( capture.src_loc.GetLine() == line_ && capture.src_loc.GetColumn() == column_ )
 			{
 				U_ASSERT( global_item_ != std::nullopt );
-				result_= SyntaxTreeLookupResult{ prefix_, &capture, *global_item_ };
+				result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 			}
 		}
 	}
@@ -350,7 +359,7 @@ void FindImpl( const Synt::RootNamespaceNameLookupCompletion& root_namespace_nam
 	if( line_ == root_namespace_name_lookup_completion.src_loc.GetLine() && column_ == root_namespace_name_lookup_completion.src_loc.GetColumn() )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &root_namespace_name_lookup_completion, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -364,7 +373,7 @@ void FindImpl( const Synt::NameLookupCompletion& name_lookup_completion )
 	if( line_ == name_lookup_completion.src_loc.GetLine() && column_ == name_lookup_completion.src_loc.GetColumn() )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &name_lookup_completion, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -380,7 +389,7 @@ void FindImpl( const Synt::NamesScopeNameFetchCompletion& names_scope_name_fetch
 	if( line_ == names_scope_name_fetch_completion.src_loc.GetLine() && column_ == names_scope_name_fetch_completion.src_loc.GetColumn() )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &names_scope_name_fetch_completion, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -410,7 +419,7 @@ void FindImpl( const Synt::StructNamedInitializer& struct_named_initializer )
 		if( line_ == member_initializer.src_loc.GetLine() && column_ == member_initializer.src_loc.GetColumn() )
 		{
 			U_ASSERT( global_item_ != std::nullopt );
-			result_= SyntaxTreeLookupResult{ prefix_, &member_initializer, *global_item_ };
+			result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 		}
 
 		FindImpl( member_initializer.initializer );
@@ -419,7 +428,7 @@ void FindImpl( const Synt::StructNamedInitializer& struct_named_initializer )
 
 void FindImpl( const Synt::ConstructorInitializer& constructor_initializer )
 {
-	for( const Synt::Expression& expression : constructor_initializer.arguments )
+	for( const RcPtr<Synt::Expression>& expression : constructor_initializer.arguments )
 		FindImpl( expression );
 }
 
@@ -428,7 +437,7 @@ void FindImpl( const Synt::ConstructorInitializerSignatureHelp& constructor_init
 	if( constructor_initializer_signature_help.src_loc.GetLine() == line_ && constructor_initializer_signature_help.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &constructor_initializer_signature_help, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -445,24 +454,36 @@ void FindImpl( const Synt::UninitializedInitializer& uninitialized_initializer )
 void FindImpl( const Synt::ProgramElementsList& program_elements )
 {
 	std::optional<GlobalItem> prev_global_item= global_item_;
-	program_elements.Iter(
-		[&]( const auto & el )
-		{
-			global_item_= GlobalItem(&el);
-			FindImpl( el );
-		} );
+
+	for( const Synt::ProgramElement& element : program_elements )
+	{
+		std::visit(
+			[&]( const auto& el )
+			{
+				global_item_= GlobalItem(el);
+				FindImpl( el );
+			},
+			element );
+	}
+
 	global_item_= prev_global_item;
 }
 
 void FindImpl( const Synt::ClassElementsList& class_elements )
 {
 	std::optional<GlobalItem> prev_global_item= global_item_;
-	class_elements.Iter(
-		[&]( const auto & el )
-		{
-			global_item_= GlobalItem(&el);
-			FindImpl( el );
-		} );
+
+	for( const Synt::ClassElement& element : class_elements )
+	{
+		std::visit(
+			[&]( const auto& el )
+			{
+				global_item_= GlobalItem(el);
+				FindImpl( el );
+			},
+			element );
+	}
+
 	global_item_= prev_global_item;
 }
 
@@ -510,7 +531,7 @@ void FindImpl( const Synt::DecomposeDeclarationStructComponent& component )
 		if( entry.src_loc.GetLine() == line_ && entry.src_loc.GetColumn() == column_ )
 		{
 			U_ASSERT( global_item_ != std::nullopt );
-			result_= SyntaxTreeLookupResult{ prefix_, &entry, *global_item_ };
+			result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 		}
 	}
 }
@@ -544,7 +565,7 @@ void FindImpl( const Synt::Function& function )
 		if( line_ == name_component.src_loc.GetLine() && column_ == name_component.src_loc.GetColumn() )
 		{
 			U_ASSERT( global_item_ != std::nullopt );
-			result_= SyntaxTreeLookupResult{ prefix_, &name_component, *global_item_ };
+			result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 		}
 	}
 
@@ -554,30 +575,30 @@ void FindImpl( const Synt::Function& function )
 	FindImpl( function.block );
 }
 
-void FindImpl( const Synt::Class& class_ )
+void FindImpl( const RcPtr<Synt::Class>& class_ )
 {
-	prefix_.push_back( &class_ );
-	FindImpl( class_.elements );
+	prefix_.push_back( class_ );
+	FindImpl( class_->elements );
 	prefix_.pop_back();
 
-	for( const Synt::ComplexName& parent : class_.parents )
+	for( const Synt::ComplexName& parent : class_->parents )
 		FindImpl( parent );
 
-	FindImpl( class_.non_sync_tag );
+	FindImpl( class_->non_sync_tag );
 }
 
-void FindImpl( const Synt::TypeTemplate& type_template )
+void FindImpl( const RcPtr<Synt::TypeTemplate>& type_template )
 {
-	prefix_.push_back( &type_template );
+	prefix_.push_back( type_template );
 
 	std::optional<GlobalItem> prev_global_item= global_item_;
 	std::visit(
 		[&]( const auto& el )
 		{
-			global_item_= GlobalItem( el.get() );
+			global_item_= GlobalItem( el );
 			FindImpl( el );
 		},
-		type_template.something );
+		type_template->something );
 
 	global_item_= prev_global_item;
 
@@ -603,10 +624,10 @@ void FindImpl( const Synt::FunctionTemplate& function_template )
 	FindImpl( function_template.function );
 }
 
-void FindImpl( const Synt::Namespace& namespace_ )
+void FindImpl( const RcPtr<Synt::Namespace>& namespace_ )
 {
-	prefix_.push_back( &namespace_ );
-	FindImpl( namespace_.elements );
+	prefix_.push_back( namespace_ );
+	FindImpl( namespace_->elements );
 	prefix_.pop_back();
 }
 

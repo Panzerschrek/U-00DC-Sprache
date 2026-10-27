@@ -139,7 +139,6 @@ Compiler:
 *) In Compiler0 parse floating-point numeric literals in syntax analyzer and avoid storing literal string in AST. It
 	requires a locale-independent exact parser (std::from_chars?).
 *) Speed-up references graph code - try using faster hash-map implementation
-*) Avoid recursion in VariantLinkedList destructor - it causes stack overflow for long lists
 *) Find a way to detect recursive mixins in blocks, type names, expressions
 *) Print full mixin text on error within a mixin
 *) Imporve TBAA - use struct path-based TBAA.
@@ -185,9 +184,6 @@ Visual Studio extension:
 
 Language server:
 *) Fix crashes occuring sometimes during editing (possible because of broken code)
-*) Fix possible crashes due to accessing source graph instance stored within CodeBuilder class instance while
-	performing completion or signature help. It's wrong, since new syntax elements are constructed for completion or
-	signature help and accessing source graph based on source location from new syntax elements is incorrect.
 *) Reduce memory usage even more - avoid building unnecessary code, clear unused internal data structures, make mangled
 	names shorter, etc.
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened

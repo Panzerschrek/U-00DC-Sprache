@@ -376,8 +376,8 @@ private:
 
 	void CollectSubrecords( NamespaceItem& item );
 
-	template<typename ListBuilder>
-	void EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const NamespaceItemsMap& items );
+	template<typename ListType>
+	void EmitItemsSorted( ListType& out_items, const TypeNamesMap& type_names_map, const NamespaceItemsMap& items );
 
 	Synt::Namespace EmitNamespaceItem(
 		const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item );
@@ -412,7 +412,7 @@ private:
 
 	Synt::Initializer TranslateVariableInitializer_r( const clang::Type& variable_type, const clang::APValue& value );
 
-	void EmitDefinitionsForMacros( Synt::ProgramElementsList::Builder& out_items );
+	void EmitDefinitionsForMacros( Synt::ProgramElementsList& out_items );
 
 	Synt::Expression TranslateNumericLiteral( const clang::Token& token, bool has_minus_sign );
 
@@ -491,13 +491,13 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 		BuildTypeNamesMapImpl( type_names_map, prefix, root_namespace_ );
 	}
 
-	Synt::ProgramElementsList::Builder root_program_elements;
+	Synt::ProgramElementsList root_program_elements;
 
 	EmitItemsSorted( root_program_elements, type_names_map, root_namespace_.items );
 
 	EmitDefinitionsForMacros( root_program_elements );
 
-	out_program_elements_= root_program_elements.Build();
+	out_program_elements_= std::move(root_program_elements);
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
@@ -1113,8 +1113,8 @@ void CppAstConsumer::CollectSubrecords( NamespaceItem& item )
 	}
 }
 
-template<typename ListBuilder>
-void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap& type_names_map, const NamespaceItemsMap& items )
+template<typename ListType>
+void CppAstConsumer::EmitItemsSorted( ListType& out_items, const TypeNamesMap& type_names_map, const NamespaceItemsMap& items )
 {
 	// Emit namespace elements in their definition order.
 	// If can't do this - sort by name.
@@ -1158,14 +1158,14 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 		if( const auto namespace_= std::get_if< NamespaceItemNamespace >( &item ) )
 		{
 			// HACK! Emit a namespace if can, otherwise emit a class.
-			if constexpr( std::is_same_v< ListBuilder, Synt::ProgramElementsList::Builder > )
-				out_items.Append( EmitNamespaceItem( type_names_map, item_to_sort.name, *namespace_ ) );
+			if constexpr( std::is_same_v< ListType, Synt::ProgramElementsList > )
+				out_items.push_back( MakeRcPtr( EmitNamespaceItem( type_names_map, item_to_sort.name, *namespace_ ) ) );
 			else
-				out_items.Append( EmitItemImpl( type_names_map, item_to_sort.name, *namespace_ ) );
+				out_items.push_back( MakeRcPtr( EmitItemImpl( type_names_map, item_to_sort.name, *namespace_ ) ) );
 		}
 		else
 			std::visit(
-				[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, item_to_sort.name, t ) ); },
+				[&]( const auto& t ) { out_items.push_back( MakeRcPtr( EmitItemImpl( type_names_map, item_to_sort.name, t ) ) ); },
 				item );
 	}
 
@@ -1178,14 +1178,14 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 		if( const auto namespace_= std::get_if< NamespaceItemNamespace >( &item ) )
 		{
 			// HACK! Emit a namespace if can, otherwise emit a class.
-			if constexpr( std::is_same_v< ListBuilder, Synt::ProgramElementsList::Builder > )
-				out_items.Append( EmitNamespaceItem( type_names_map, item_name, *namespace_ ) );
+			if constexpr( std::is_same_v< ListType, Synt::ProgramElementsList > )
+				out_items.push_back( MakeRcPtr( EmitNamespaceItem( type_names_map, item_name, *namespace_ ) ) );
 			else
-				out_items.Append( EmitItemImpl( type_names_map, item_name, *namespace_ ) );
+				out_items.push_back( MakeRcPtr( EmitItemImpl( type_names_map, item_name, *namespace_ ) ) );
 		}
 		else
 			std::visit(
-				[&]( const auto& t ) { out_items.Append( EmitItemImpl( type_names_map, item_name, t ) ); },
+				[&]( const auto& t ) { out_items.push_back( MakeRcPtr( EmitItemImpl( type_names_map, item_name, t ) ) ); },
 				item );
 	}
 }
@@ -1193,28 +1193,18 @@ void CppAstConsumer::EmitItemsSorted( ListBuilder& out_items, const TypeNamesMap
 Synt::Namespace CppAstConsumer::EmitNamespaceItem(
 	const TypeNamesMap& type_names_map, std::string_view name, const NamespaceItemNamespace& item )
 {
-	Synt::ProgramElementsList::Builder items_builder;
-
-	EmitItemsSorted( items_builder, type_names_map, item.items );
-
 	Synt::Namespace namespace_( g_dummy_src_loc );
 	namespace_.name= name;
-	namespace_.elements= items_builder.Build();
-
+	EmitItemsSorted( namespace_.elements, type_names_map, item.items );
 	return namespace_;
 }
 
 Synt::Class CppAstConsumer::EmitItemImpl(
 	const TypeNamesMap& type_names_map, const std::string_view name, const NamespaceItemNamespace& item )
 {
-	Synt::ClassElementsList::Builder class_items_builder;
-
-	EmitItemsSorted( class_items_builder, type_names_map, item.items );
-
 	Synt::Class class_( g_dummy_src_loc );
 	class_.name= name;
-	class_.elements= class_items_builder.Build();
-
+	EmitItemsSorted( class_.elements, type_names_map, item.items );
 	return class_;
 }
 
@@ -1284,8 +1274,6 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 
 			bool is_empty= record_declaration.fields().empty();
 
-			Synt::ClassElementsList::Builder class_elements;
-
 			if( const auto cxx_record= llvm::dyn_cast<clang::CXXRecordDecl>( &record_declaration ) )
 			{
 				size_t num_bases= 0;
@@ -1296,7 +1284,7 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 					field.type= TranslateType( *base.getType().getTypePtr(), type_names_map );
 					field.name= "ü_base" + std::to_string( num_bases );
 
-					class_elements.Append( std::move(field) );
+					class_.elements.push_back( MakeRcPtr( std::move(field) ) );
 
 					++num_bases;
 
@@ -1344,7 +1332,7 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 
 					field.name= "ü_vptr";
 
-					class_elements.Append( std::move(field) );
+					class_.elements.push_back( MakeRcPtr( std::move(field) ) );
 				}
 			}
 
@@ -1397,14 +1385,12 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 					else
 						field.name= TranslateIdentifier( src_name );
 
-					class_elements.Append( std::move(field) );
+					class_.elements.push_back( MakeRcPtr( std::move(field) ) );
 				}
 
 				// Assume we have at least one field (which is necessary for all structs in C).
 
-				EmitItemsSorted( class_elements, type_names_map, item.items );
-
-				class_.elements= class_elements.Build();
+				EmitItemsSorted( class_.elements, type_names_map, item.items );
 			}
 		}
 		else
@@ -1413,9 +1399,7 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 			class_.kind_attribute= Synt::ClassKindAttribute::Class;
 
 			// Add deleted default constructor.
-			Synt::ClassElementsList::Builder class_elements;
-			class_elements.Append( GetDeletedDefaultConstructor() );
-			class_.elements= class_elements.Build();
+			class_.elements.push_back( MakeRcPtr( GetDeletedDefaultConstructor() ) );
 		}
 	}
 	else if( record_declaration.isUnion() )
@@ -1430,12 +1414,9 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 			class_.kind_attribute= Synt::ClassKindAttribute::Class;
 
 			// Add deleted default constructor.
-			Synt::ClassElementsList::Builder class_elements;
-			class_elements.Append( GetDeletedDefaultConstructor() );
+			class_.elements.push_back( MakeRcPtr( GetDeletedDefaultConstructor() ) );
 
-			EmitItemsSorted( class_elements, type_names_map, item.items );
-
-			class_.elements= class_elements.Build();
+			EmitItemsSorted( class_.elements, type_names_map, item.items );
 		}
 	}
 
@@ -1526,10 +1507,10 @@ Synt::VariablesDeclaration CppAstConsumer::EmitItemImpl(
 				unary_minus.expression= TranslateNumericConstant( -val );
 
 				constructor_initializer.arguments.push_back(
-					std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
+					RcPtr<Synt::Expression>( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) ) );
 			}
 			else
-				constructor_initializer.arguments.push_back( TranslateNumericConstant( val ) );
+				constructor_initializer.arguments.push_back( RcPtr<Synt::Expression>( TranslateNumericConstant( val ) ) );
 
 			var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
 		}
@@ -1628,12 +1609,12 @@ Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
 	field.name+= "_contents";
 	field.type= std::move(array_type);
 
-	Synt::ClassElementsList::Builder class_elements;
-	class_elements.Append( std::move(field) );
+	Synt::ClassElementsList class_elements;
+	class_elements.push_back( MakeRcPtr( std::move(field) ) );
 
 	EmitItemsSorted( class_elements, type_names_map, subitems );
 
-	return class_elements.Build();
+	return class_elements;
 }
 
 Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::Type& variable_type, const clang::APValue& value )
@@ -1649,10 +1630,10 @@ Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::T
 			Synt::UnaryMinus unary_minus( g_dummy_src_loc );
 			unary_minus.expression= TranslateNumericConstant( -init_val_int );
 
-			initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
+			initializer.arguments.push_back( RcPtr<Synt::Expression>( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) ) );
 		}
 		else
-			initializer.arguments.push_back( TranslateNumericConstant( init_val_int ) );
+			initializer.arguments.push_back( RcPtr<Synt::Expression>( TranslateNumericConstant( init_val_int ) ) );
 
 		return std::move(initializer);
 	}
@@ -1668,11 +1649,11 @@ Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::T
 			unary_minus.expression=
 				std::make_unique< Synt::FloatingPointNumericConstant >( TranslateNumericConstant( -init_val_float ) );
 
-			initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
+			initializer.arguments.push_back( RcPtr<Synt::Expression>( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) ) );
 		}
 		else
 			initializer.arguments.push_back(
-				std::make_unique< Synt::FloatingPointNumericConstant >( TranslateNumericConstant( init_val_float ) ) );
+				RcPtr<Synt::Expression>( std::make_unique< Synt::FloatingPointNumericConstant >( TranslateNumericConstant( init_val_float ) ) ) );
 
 		return std::move(initializer);
 	}
@@ -1725,7 +1706,7 @@ Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::T
 	return Synt::EmptyVariant();
 }
 
-void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builder& out_items )
+void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList& out_items )
 {
 	llvm::StringSet translated_function_names, translated_type_names, translated_variable_names;
 	for( const auto& pair : root_namespace_.items )
@@ -1801,7 +1782,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList::Builde
 			[&]( auto item )
 			{
 				if( !ShouldSkipEmittingItem( macro_directive->getLocation() ) )
-					out_items.Append( std::move( item ) );
+					out_items.push_back( MakeRcPtr( std::move( item ) ) );
 			};
 
 		clang::MacroInfo::const_tokens_iterator tokens_begin= macro_info->tokens_begin();
@@ -2034,8 +2015,8 @@ Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& to
 			if( numeric_literal_parser.isUnsigned )
 			{
 				// Create "0 - x" instead of "-x" for negative unsinged constants, since Ü has no unary minus for unsigned integer types.
-				auto binary_operator= std::make_unique<Synt::BinaryOperator>( g_dummy_src_loc );
-				binary_operator->operator_type= BinaryOperatorType::Sub;
+				Synt::BinaryOperator binary_operator( g_dummy_src_loc );
+				binary_operator.operator_type= BinaryOperatorType::Sub;
 				{
 					Synt::IntegerNumericConstant zero( g_dummy_src_loc );
 					zero.num= Int128{ 0, 0 };
@@ -2046,9 +2027,9 @@ Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& to
 						zero.type_suffix[2]= '4';
 					}
 
-					binary_operator->left= std::move( zero );
+					binary_operator.left= RcPtr<Synt::Expression>( std::move( zero ) );
 				}
-				binary_operator->right= std::move( expression );
+				binary_operator.right= MakeRcPtr( std::move( expression ) );
 				expression= std::move( binary_operator );
 			}
 			else

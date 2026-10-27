@@ -97,7 +97,7 @@ void CheckSignatureParamIsValidForTemplateValueArgumentType(
 } // namespace
 
 void CodeBuilder::PrepareTypeTemplate(
-	const Synt::TypeTemplate& type_template_declaration,
+	const RcPtr<Synt::TypeTemplate>& type_template_declaration,
 	TypeTemplatesSet& type_templates_set,
 	NamesScope& names_scope )
 {
@@ -110,24 +110,24 @@ void CodeBuilder::PrepareTypeTemplate(
 	const auto type_template= std::make_shared<TypeTemplate>();
 
 	type_template->parent_namespace= &names_scope;
-	type_template->syntax_element= &type_template_declaration;
-	type_template->src_loc= type_template_declaration.src_loc;
+	type_template->syntax_element= type_template_declaration;
+	type_template->src_loc= type_template_declaration->src_loc;
 
 	std::vector<TemplateParameter>& template_parameters= type_template->template_params;
-	template_parameters.reserve( type_template_declaration.params.size() );
+	template_parameters.reserve( type_template_declaration->params.size() );
 	llvm::SmallVector<bool, 32> template_parameters_usage_flags;
 
 	ProcessTemplateParams(
-		type_template_declaration.params,
+		type_template_declaration->params,
 		names_scope,
 		template_parameters,
 		template_parameters_usage_flags );
 
-	if( type_template_declaration.is_short_form )
+	if( type_template_declaration->is_short_form )
 	{
-		U_ASSERT( type_template_declaration.signature_params.empty() );
+		U_ASSERT( type_template_declaration->signature_params.empty() );
 		// Assign template params to signature params.
-		for( size_t i= 0u; i < type_template_declaration.params.size(); ++i )
+		for( size_t i= 0u; i < type_template_declaration->params.size(); ++i )
 		{
 			type_template->signature_params.push_back( TemplateSignatureParam::TemplateParam{ i, template_parameters[i].kind_data.index() } );
 			template_parameters_usage_flags[i]= true;
@@ -139,12 +139,12 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		// Check and fill signature args.
 		type_template->first_optional_signature_param= 0u;
-		if( !type_template_declaration.signature_params.empty() )
+		if( !type_template_declaration->signature_params.empty() )
 		{
 			WithGlobalFunctionContext(
 				[&]( FunctionContext& function_context )
 				{
-					for( const Synt::TypeTemplate::SignatureParam& signature_param : type_template_declaration.signature_params )
+					for( const Synt::TypeTemplate::SignatureParam& signature_param : type_template_declaration->signature_params )
 					{
 						type_template->signature_params.push_back(
 							CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, signature_param.name ) );
@@ -155,7 +155,7 @@ void CodeBuilder::PrepareTypeTemplate(
 						{
 							const size_t index= type_template->signature_params.size() - 1u;
 							if (index > type_template->first_optional_signature_param )
-								REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope.GetErrors(), type_template_declaration.src_loc );
+								REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope.GetErrors(), type_template_declaration->src_loc );
 
 							++type_template->first_optional_signature_param;
 						}
@@ -175,7 +175,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		if( type_template->signature_params == prev_template->signature_params )
 		{
-			REPORT_ERROR( TypeTemplateRedefinition, names_scope.GetErrors(), type_template_declaration.src_loc, type_template_declaration.name );
+			REPORT_ERROR( TypeTemplateRedefinition, names_scope.GetErrors(), type_template_declaration->src_loc, type_template_declaration->name );
 			return;
 		}
 		if( type_template->src_loc.GetFileIndex() != prev_template->src_loc.GetFileIndex() )
@@ -190,44 +190,44 @@ void CodeBuilder::PrepareTypeTemplate(
 }
 
 void CodeBuilder::PrepareFunctionTemplate(
-	const Synt::FunctionTemplate& function_template_declaration,
+	const RcPtr<Synt::FunctionTemplate>& function_template_declaration,
 	OverloadedFunctionsSet& functions_set,
 	NamesScope& names_scope,
 	const ClassPtr base_class )
 {
-	const auto& full_name= function_template_declaration.function->name;
+	const auto& full_name= function_template_declaration->function->name;
 	const std::string& function_template_name= full_name.front().name;
 
 	if( full_name.size() > 1u )
-		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.src_loc );
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration->src_loc );
 
-	if( function_template_declaration.function->block == nullptr )
-		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope.GetErrors(), function_template_declaration.src_loc, function_template_name );
-	if( function_template_declaration.function->virtual_function_kind != Synt::VirtualFunctionKind::None )
-		REPORT_ERROR( VirtualForFunctionTemplate, names_scope.GetErrors(), function_template_declaration.src_loc, function_template_name );
-	if( function_template_declaration.function->type.is_variadic )
-		REPORT_ERROR( VariadicFunctionTemplate, names_scope.GetErrors(), function_template_declaration.src_loc );
+	if( function_template_declaration->function->block == nullptr )
+		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope.GetErrors(), function_template_declaration->src_loc, function_template_name );
+	if( function_template_declaration->function->virtual_function_kind != Synt::VirtualFunctionKind::None )
+		REPORT_ERROR( VirtualForFunctionTemplate, names_scope.GetErrors(), function_template_declaration->src_loc, function_template_name );
+	if( function_template_declaration->function->type.is_variadic )
+		REPORT_ERROR( VariadicFunctionTemplate, names_scope.GetErrors(), function_template_declaration->src_loc );
 
 	const auto function_template= std::make_shared<FunctionTemplate>();
-	function_template->syntax_element= &function_template_declaration;
-	function_template->src_loc= function_template_declaration.src_loc;
+	function_template->syntax_element= function_template_declaration;
+	function_template->src_loc= function_template_declaration->src_loc;
 	function_template->parent_namespace= &names_scope;
 	function_template->base_class= base_class;
 
 	llvm::SmallVector<bool, 32> template_parameters_usage_flags; // Currently unused, because function template has no signature.
 
 	ProcessTemplateParams(
-		function_template_declaration.params,
+		function_template_declaration->params,
 		names_scope,
 		function_template->template_params,
 		template_parameters_usage_flags );
 
-	if( !function_template_declaration.function->type.params.empty() )
+	if( !function_template_declaration->function->type.params.empty() )
 	{
 		WithGlobalFunctionContext(
 			[&]( FunctionContext& function_context )
 			{
-				for( const Synt::FunctionParam& function_param : function_template_declaration.function->type.params )
+				for( const Synt::FunctionParam& function_param : function_template_declaration->function->type.params )
 				{
 					if( base_class != nullptr && function_param.name == Keyword( Keywords::this_ ) )
 						function_template->signature_params.push_back( TemplateSignatureParam::Type{ Type(base_class) } );
@@ -568,7 +568,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 			{
 				// Process a case with single trivial type alias.
 				// Expand it, if it's possible.
-				if( const auto type_alias_ptr= std::get_if< std::unique_ptr<const Synt::TypeAlias> >( &single_type_template->syntax_element->something ) )
+				if( const auto type_alias_ptr= std::get_if< RcPtr<Synt::TypeAlias> >( &single_type_template->syntax_element->something ) )
 				{
 					if( single_type_template->signature_params.size() == specialized_template_params.size() )
 					{
@@ -1173,11 +1173,11 @@ std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 		type_template,
 		type_template.syntax_element->name );
 
-	if( const auto class_ptr= std::get_if< std::unique_ptr<const Synt::Class> >( &type_template.syntax_element->something ) )
+	if( const auto class_ptr= std::get_if< RcPtr<Synt::Class> >( &type_template.syntax_element->something ) )
 	{
 		U_ASSERT( (*class_ptr)->name == Class::c_template_class_name );
 
-		const ClassPtr class_type= NamesScopeFill( *template_args_namespace, **class_ptr, Class::BaseTemplate{ type_template_ptr, template_type_preparation_result.signature_args } );
+		const ClassPtr class_type= NamesScopeFill( *template_args_namespace, *class_ptr, Class::BaseTemplate{ type_template_ptr, template_type_preparation_result.signature_args } );
 		if( class_type == nullptr )
 			return std::nullopt;
 
@@ -1188,12 +1188,12 @@ std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 
 		return Type(class_type);
 	}
-	if( const auto type_alias= std::get_if< std::unique_ptr<const Synt::TypeAlias> >( &type_template.syntax_element->something ) )
+	if( const auto type_alias= std::get_if< RcPtr<Synt::TypeAlias> >( &type_template.syntax_element->something ) )
 	{
 		Value& type_alias_value=
 			template_args_namespace->AddName(
 				Class::c_template_class_name,
-				NamesScopeValue( TypeAlias{ type_alias->get() }, (*type_alias)->src_loc ) )->value;
+				NamesScopeValue( TypeAlias{ *type_alias }, (*type_alias)->src_loc ) )->value;
 
 		// Call this function to enable globals loop detection.
 		GlobalThingBuildTypeAlias( *template_args_namespace, type_alias_value );
@@ -1373,7 +1373,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name );
 
 	// First, prepare only as prototype.
-	NamesScopeFillFunction( *template_args_namespace, *function_template.syntax_element->function, func_name_in_namespace, function_template.base_class, ClassMemberVisibility::Public );
+	NamesScopeFillFunction( *template_args_namespace, function_template.syntax_element->function, func_name_in_namespace, function_template.base_class, ClassMemberVisibility::Public );
 	OverloadedFunctionsSet& result_functions_set= *template_args_namespace->GetThisScopeValue( func_name_in_namespace )->value.GetFunctionsSet();
 	PrepareFunctionsSet( *template_args_namespace, result_functions_set );
 

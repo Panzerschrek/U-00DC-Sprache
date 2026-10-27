@@ -47,7 +47,7 @@ struct FunctionVariable
 	using Kind= Synt::Function::Kind;
 
 public:
-	const Synt::Function* syntax_element= nullptr;
+	RcPtr<Synt::Function> syntax_element;
 	Synt::VirtualFunctionKind virtual_function_kind= Synt::VirtualFunctionKind::None;
 
 	FunctionType type;
@@ -90,9 +90,9 @@ struct OverloadedFunctionsSet
 	std::vector<FunctionTemplatePtr> template_functions;
 
 	// Is incomplete, if there are some syntax elements in containers.
-	std::vector<const Synt::Function*> syntax_elements;
-	std::vector<const Synt::Function*> out_of_line_syntax_elements;
-	std::vector<const Synt::FunctionTemplate*> template_syntax_elements;
+	std::vector<RcPtr<Synt::Function>> syntax_elements;
+	std::vector<RcPtr<Synt::Function>> out_of_line_syntax_elements;
+	std::vector<RcPtr<Synt::FunctionTemplate>> template_syntax_elements;
 
 	ClassPtr base_class= nullptr;
 
@@ -105,7 +105,7 @@ struct TypeTemplatesSet
 	std::vector<TypeTemplatePtr> type_templates;
 
 	// Is incomplete, if there are some syntax elements in containers.
-	std::vector<const Synt::TypeTemplate*> syntax_elements;
+	std::vector< RcPtr<Synt::TypeTemplate> > syntax_elements;
 };
 
 struct Variable;
@@ -199,7 +199,7 @@ struct ClassField
 {
 	Type type;
 	ClassPtr class_= nullptr; // Class where this field is defined. Needed for tracking source class after field lookup from a namespace.
-	const Synt::ClassField* syntax_element= nullptr;
+	RcPtr<Synt::ClassField> syntax_element;
 	std::string name;
 	llvm::SmallVector<uint8_t, 4> inner_reference_tags; // For value fields with references inside - mapping of class inner reference tags to reference tags if this field.
 	uint32_t index= ~0u;
@@ -223,22 +223,21 @@ struct ThisOverloadedMethodsSet
 
 struct StaticAssert
 {
-	const Synt::StaticAssert* syntax_element= nullptr; // Null if completed.
+	RcPtr<Synt::StaticAssert> syntax_element; // Null if completed.
 };
 
 struct TypeAlias
 {
-	const Synt::TypeAlias* syntax_element= nullptr;
+	RcPtr<Synt::TypeAlias> syntax_element;
 };
 
-struct IncompleteGlobalVariable
+struct IncompleteGlobalVariableWithType
 {
-	// Exists one of.
-	const Synt::VariablesDeclaration* variables_declaration= nullptr;
-	const Synt::AutoVariableDeclaration* auto_variable_declaration= nullptr;
-
-	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
+	RcPtr<Synt::VariablesDeclaration> variables_declaration;
+	uint32_t variable_index= ~0u;
 };
+
+using IncompleteGlobalVariable= std::variant< IncompleteGlobalVariableWithType, RcPtr<Synt::AutoVariableDeclaration> >;
 
 struct YetNotDeducedTemplateArg
 {};

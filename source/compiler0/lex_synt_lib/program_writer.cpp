@@ -112,6 +112,12 @@ void ElementWrite( const std::unique_ptr<T>& el ) const
 	ElementWrite( *el );
 }
 
+template<typename T>
+void ElementWrite( const RcPtr<T>& el ) const
+{
+	ElementWrite( *el );
+}
+
 template<typename ... Args>
 void ElementWriteVariant( const std::variant<Args...>& v ) const
 {
@@ -659,7 +665,7 @@ void ElementWrite( const CallOperator& call_operator ) const
 	ElementWrite( call_operator.expression );
 
 	stream_ << "( ";
-	for( const Expression& arg : call_operator.arguments )
+	for( const RcPtr<Expression>& arg : call_operator.arguments )
 	{
 		ElementWrite( arg );
 
@@ -689,7 +695,7 @@ void ElementWrite( const Initializer& initializer ) const
 		else
 		{
 			stream_ << "( ";
-			for( const Expression& arg :constructor_initializer->arguments )
+			for( const RcPtr<Expression>& arg :constructor_initializer->arguments )
 			{
 				ElementWrite( arg );
 				if( &arg != &constructor_initializer->arguments.back() )
@@ -998,12 +1004,14 @@ void ElementWrite( const Mixin& mixin ) const
 
 void ElementWrite( const ClassElementsList& class_elements ) const
 {
-	class_elements.Iter( [&]( const auto& el ) { ElementWrite(el); } );
+	for( const ClassElement& element : class_elements )
+		std::visit( [&]( const auto& el ) { ElementWrite( el ); }, element );
 }
 
 void ElementWrite( const ProgramElementsList& elements ) const
 {
-	elements.Iter( [&]( const auto& el ) { ElementWrite(el); } );
+	for( const ProgramElement& element : elements )
+		std::visit( [&]( const auto& el ) { ElementWrite( el ); }, element );
 }
 
 void WriteFunctionDeclaration( const Function& function ) const

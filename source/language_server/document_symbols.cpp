@@ -231,6 +231,18 @@ struct Visitor
 	Symbols result;
 	SrcLocToRangeMappingFunction src_loc_to_range_mapping_function;
 
+	template<typename T>
+	void operator()( const RcPtr<T>& el )
+	{
+		(*this)( *el );
+	}
+
+	template<typename T>
+	void operator()( const std::unique_ptr<T>& el )
+	{
+		(*this)( *el );
+	}
+
 	void operator()( const Synt::ClassField& class_field_ )
 	{
 		Symbol symbol;
@@ -275,11 +287,11 @@ struct Visitor
 		symbol.selection_range= symbol.range; // TODO - set it properly.
 		symbol.kind= SymbolKind::Class;
 
-		if( const auto class_= std::get_if< std::unique_ptr<const Synt::Class> >( &type_template.something ) )
+		if( const auto class_= std::get_if< RcPtr<Synt::Class> >( &type_template.something ) )
 		{
 			symbol.children= BuildProgramModel_r( (*class_)->elements, src_loc_to_range_mapping_function );
 		}
-		if( std::get_if<std::unique_ptr<const Synt::TypeAlias>>( &type_template.something ) != nullptr )
+		if( std::get_if< RcPtr<Synt::TypeAlias> >( &type_template.something ) != nullptr )
 		{}
 
 		result.push_back( std::move(symbol) );
@@ -364,7 +376,9 @@ Symbols BuildProgramModel_r(
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
 	Visitor visitor( src_loc_to_range_mapping_function );
-	elements.Iter( visitor );
+
+	for( const Synt::ClassElement& element : elements )
+		std::visit( visitor, element );
 
 	return std::move(visitor.result);
 }
@@ -374,7 +388,9 @@ Symbols BuildProgramModel_r(
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
 	Visitor visitor( src_loc_to_range_mapping_function );
-	elements.Iter( visitor );
+
+	for( const Synt::ProgramElement& element : elements )
+		std::visit( visitor, element );
 
 	return std::move(visitor.result);
 }

@@ -8,82 +8,82 @@ namespace U
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements )
 {
-	namespace_elements.Iter( [&]( const auto& el ) { NamesScopeFill( names_scope, el ); } );
+	for( const Synt::ProgramElement& element : namespace_elements )
+		std::visit( [&]( const auto& el ) { NamesScopeFill( names_scope, el ); }, element );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Namespace& namespace_  )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Namespace>& namespace_ )
 {
 	NamesScope* result_scope= &names_scope;
-	if( const NamesScopeValue* const same_value= names_scope.GetThisScopeValue( namespace_.name ) )
+	if( const NamesScopeValue* const same_value= names_scope.GetThisScopeValue( namespace_->name ) )
 	{
 		if( const NamesScopePtr same_namespace= same_value->value.GetNamespace() )
 			result_scope= same_namespace.get(); // Extend existend namespace.
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), namespace_.src_loc, namespace_.name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), namespace_->src_loc, namespace_->name );
 	}
 	else
 	{
-		if( IsKeyword( namespace_.name ) )
-			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), namespace_.src_loc );
+		if( IsKeyword( namespace_->name ) )
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), namespace_->src_loc );
 
-		const auto new_names_scope= std::make_shared<NamesScope>( namespace_.name, &names_scope );
-		names_scope.AddName( namespace_.name, NamesScopeValue( new_names_scope, namespace_.src_loc ) );
+		const auto new_names_scope= std::make_shared<NamesScope>( namespace_->name, &names_scope );
+		names_scope.AddName( namespace_->name, NamesScopeValue( new_names_scope, namespace_->src_loc ) );
 		result_scope= new_names_scope.get();
 	}
 
-	NamesScopeFill( *result_scope, namespace_.elements );
+	NamesScopeFill( *result_scope, namespace_->elements );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::VariablesDeclaration>& variables_declaration )
 {
-	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
+	for( size_t i= 0; i < variables_declaration->variables.size(); ++i )
 	{
+		const Synt::VariablesDeclaration::VariableEntry& variable_declaration= variables_declaration->variables[i];
+
 		if( IsKeyword( variable_declaration.name ) )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration.src_loc );
 
-		IncompleteGlobalVariable incomplete_global_variable;
-		incomplete_global_variable.variables_declaration= &variables_declaration;
-		incomplete_global_variable.element_index= size_t( &variable_declaration - variables_declaration.variables.data() );
+		IncompleteGlobalVariable incomplete_global_variable= IncompleteGlobalVariableWithType{ variables_declaration, uint32_t(i) };
 
-		if( names_scope.AddName( variable_declaration.name, NamesScopeValue( incomplete_global_variable, variable_declaration.src_loc ) ) == nullptr )
+		if( names_scope.AddName( variable_declaration.name, NamesScopeValue( std::move(incomplete_global_variable), variable_declaration.src_loc ) ) == nullptr )
 			REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration.src_loc, variable_declaration.name );
 	}
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::AutoVariableDeclaration>& variable_declaration )
 {
-	if( IsKeyword( variable_declaration.name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration.src_loc );
+	if( IsKeyword( variable_declaration->name ) )
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration->src_loc );
 
-	IncompleteGlobalVariable incomplete_global_variable;
-	incomplete_global_variable.auto_variable_declaration= &variable_declaration;
+	IncompleteGlobalVariable incomplete_global_variable= variable_declaration;
 
-	if( names_scope.AddName( variable_declaration.name, NamesScopeValue( incomplete_global_variable, variable_declaration.src_loc ) ) == nullptr )
-		REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration.src_loc, variable_declaration.name );
+	if( names_scope.AddName( variable_declaration->name, NamesScopeValue( std::move( incomplete_global_variable ), variable_declaration->src_loc ) ) == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration->src_loc, variable_declaration->name );
 }
 
 void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope,
-	const Synt::Function& function_declaration,
+	const RcPtr<Synt::Function>& function_declaration,
 	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
 {
-	if( function_declaration.name.size() != 1u )
+	if( function_declaration->name.size() != 1u )
 		return; // process out of line functions later.
 
-	const std::string& func_name= function_declaration.name.back().name;
+	const std::string& func_name= function_declaration->name.back().name;
 	NamesScopeFillFunction( names_scope, function_declaration, func_name, base_class, visibility );
 }
 
 void CodeBuilder::NamesScopeFillFunction(
 	NamesScope& names_scope,
-	const Synt::Function& function_declaration,
+	const RcPtr<Synt::Function>& function_declaration,
 	const std::string_view func_name,
 	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
 {
 	if( IsKeyword( func_name ) && func_name != Keywords::constructor_ && func_name != Keywords::destructor_ )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration.src_loc );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration->src_loc );
 
 	if( visibility != ClassMemberVisibility::Public )
 	{
@@ -92,7 +92,7 @@ void CodeBuilder::NamesScopeFillFunction(
 			func_name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
 			func_name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
 			func_name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
-			REPORT_ERROR( ThisMethodMustBePublic, names_scope.GetErrors(), function_declaration.src_loc, func_name );
+			REPORT_ERROR( ThisMethodMustBePublic, names_scope.GetErrors(), function_declaration->src_loc, func_name );
 	}
 
 	if( NamesScopeValue* const prev_value= names_scope.GetThisScopeValue( func_name ) )
@@ -100,13 +100,13 @@ void CodeBuilder::NamesScopeFillFunction(
 		if( const OverloadedFunctionsSetPtr functions_set= prev_value->value.GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->GetMemberVisibility( func_name ) != visibility )
-				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_declaration.src_loc, func_name );
+				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_declaration->src_loc, func_name );
 
 			U_ASSERT( functions_set->base_class == base_class );
-			functions_set->syntax_elements.push_back( &function_declaration );
+			functions_set->syntax_elements.push_back( function_declaration );
 		}
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_declaration.src_loc, func_name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_declaration->src_loc, func_name );
 	}
 	else
 	{
@@ -115,7 +115,7 @@ void CodeBuilder::NamesScopeFillFunction(
 
 		OverloadedFunctionsSet functions_set;
 		functions_set.base_class= base_class;
-		functions_set.syntax_elements.push_back( &function_declaration );
+		functions_set.syntax_elements.push_back( function_declaration );
 
 		names_scope.AddName( func_name, NamesScopeValue( std::make_shared<OverloadedFunctionsSet>( std::move(functions_set) ), SrcLoc() ) );
 	}
@@ -123,30 +123,30 @@ void CodeBuilder::NamesScopeFillFunction(
 
 void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope,
-	const Synt::FunctionTemplate& function_template_declaration,
+	const RcPtr<Synt::FunctionTemplate>& function_template_declaration,
 	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
 {
-	const auto& full_name = function_template_declaration.function->name;
+	const auto& full_name = function_template_declaration->function->name;
 	const std::string& function_template_name= full_name.front().name;
 
 	if( full_name.size() > 1u )
-		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.src_loc );
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration->src_loc );
 	if( IsKeyword( function_template_name ) && function_template_name != Keywords::constructor_ && function_template_name != Keywords::destructor_ )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_template_declaration.src_loc );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_template_declaration->src_loc );
 
 	if( NamesScopeValue* const prev_value= names_scope.GetThisScopeValue( function_template_name ) )
 	{
 		if( const OverloadedFunctionsSetPtr functions_set= prev_value->value.GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->GetMemberVisibility( function_template_name ) != visibility )
-				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_template_declaration.src_loc, function_template_name );
+				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_template_declaration->src_loc, function_template_name );
 
 			U_ASSERT( functions_set->base_class == base_class );
-			functions_set->template_syntax_elements.push_back( &function_template_declaration );
+			functions_set->template_syntax_elements.push_back( function_template_declaration );
 		}
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_template_declaration.src_loc, function_template_name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_template_declaration->src_loc, function_template_name );
 	}
 	else
 	{
@@ -155,21 +155,21 @@ void CodeBuilder::NamesScopeFill(
 
 		OverloadedFunctionsSet functions_set;
 		functions_set.base_class= base_class;
-		functions_set.template_syntax_elements.push_back( &function_template_declaration );
+		functions_set.template_syntax_elements.push_back( function_template_declaration );
 
 		names_scope.AddName( function_template_name, NamesScopeValue( std::make_shared<OverloadedFunctionsSet>( std::move(functions_set) ), SrcLoc() ) );
 	}
 }
 
-ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, std::optional<Class::BaseTemplate> base_template )
+ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Class>& class_declaration, std::optional<Class::BaseTemplate> base_template )
 {
-	const std::string& class_name= class_declaration.name;
+	const std::string& class_name= class_declaration->name;
 	if( IsKeyword( class_name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), class_declaration.src_loc );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), class_declaration->src_loc );
 
 	if( names_scope.GetThisScopeValue( class_name ) != nullptr )
 	{
-		REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.src_loc, class_name );
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration->src_loc, class_name );
 		return nullptr;
 	}
 
@@ -177,10 +177,10 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 	const ClassPtr class_type= class_type_ptr.get();
 	classes_table_.push_back( std::move(class_type_ptr) );
 
-	names_scope.AddName( class_name, NamesScopeValue( Type( class_type ), class_declaration.src_loc ) );
+	names_scope.AddName( class_name, NamesScopeValue( Type( class_type ), class_declaration->src_loc ) );
 
-	class_type->syntax_element= &class_declaration;
-	class_type->src_loc= class_declaration.src_loc;
+	class_type->syntax_element= class_declaration;
+	class_type->src_loc= class_declaration->src_loc;
 	if( base_template != std::nullopt )
 		class_type->generated_class_data= std::move(*base_template);
 
@@ -192,8 +192,8 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 	FillClassNamesScope(
 		class_type,
 		class_name,
-		class_declaration.kind_attribute,
-		class_declaration.elements,
+		class_declaration->kind_attribute,
+		class_declaration->elements,
 		// Members are public by-default, until first visibility label.
 		ClassMemberVisibility::Public );
 
@@ -225,97 +225,100 @@ void CodeBuilder::FillClassNamesScope(
 			: this_(in_this), class_kind(in_class_kind), class_type(in_class_type), class_name(in_class_name), current_visibility(initial_visibility)
 		{}
 
-		void operator()( const Synt::ClassField& in_class_field )
+		void operator()( const RcPtr<Synt::ClassField>& in_class_field )
 		{
 			ClassField class_field;
-			class_field.syntax_element= &in_class_field;
+			class_field.syntax_element= in_class_field;
 			class_field.original_index= class_type->field_count;
-			class_field.name= in_class_field.name;
+			class_field.name= in_class_field->name;
 
-			if( IsKeyword( in_class_field.name ) )
-				REPORT_ERROR( UsingKeywordAsName, class_type->members->GetErrors(), in_class_field.src_loc );
-			if( class_type->members->AddName( in_class_field.name, NamesScopeValue( std::make_shared<ClassField>(std::move(class_field)), in_class_field.src_loc ) ) == nullptr )
-				REPORT_ERROR( Redefinition, class_type->members->GetErrors(), in_class_field.src_loc, in_class_field.name );
+			if( IsKeyword( in_class_field->name ) )
+				REPORT_ERROR( UsingKeywordAsName, class_type->members->GetErrors(), in_class_field->src_loc );
+			if( class_type->members->AddName( in_class_field->name, NamesScopeValue( std::make_shared<ClassField>(std::move(class_field)), in_class_field->src_loc ) ) == nullptr )
+				REPORT_ERROR( Redefinition, class_type->members->GetErrors(), in_class_field->src_loc, in_class_field->name );
 
 			++class_type->field_count;
-			class_type->SetMemberVisibility( in_class_field.name, current_visibility );
+			class_type->SetMemberVisibility( in_class_field->name, current_visibility );
 		}
-		void operator()( const Synt::Function& func )
+		void operator()( const RcPtr<Synt::Function>& func )
 		{
 			this_.NamesScopeFill( *class_type->members, func, class_type, current_visibility );
 		}
-		void operator()( const Synt::FunctionTemplate& func_template )
+		void operator()( const RcPtr<Synt::FunctionTemplate>& func_template )
 		{
 			this_.NamesScopeFill( *class_type->members, func_template, class_type, current_visibility );
 		}
-		void operator()( const Synt::ClassVisibilityLabel& visibility_label )
+		void operator()( const RcPtr<Synt::ClassVisibilityLabel>& visibility_label )
 		{
 			if( class_kind == Synt::ClassKindAttribute::Struct )
-				REPORT_ERROR( VisibilityForStruct, class_type->members->GetErrors(), visibility_label.src_loc, class_name );
-			current_visibility= visibility_label.visibility;
+				REPORT_ERROR( VisibilityForStruct, class_type->members->GetErrors(), visibility_label->src_loc, class_name );
+			current_visibility= visibility_label->visibility;
 		}
-		void operator()( const Synt::TypeTemplate& type_template )
+		void operator()( const RcPtr<Synt::TypeTemplate>& type_template )
 		{
 			this_.NamesScopeFill( *class_type->members, type_template, class_type, current_visibility );
 		}
-		void operator()( const Synt::Enum& enum_ )
+		void operator()( const RcPtr<Synt::Enum>& enum_ )
 		{
 			this_.NamesScopeFill( *class_type->members, enum_ );
-			class_type->SetMemberVisibility( enum_.name, current_visibility );
+			class_type->SetMemberVisibility( enum_->name, current_visibility );
 		}
-		void operator()( const Synt::StaticAssert& static_assert_ )
+		void operator()( const RcPtr<Synt::StaticAssert>& static_assert_ )
 		{
 			this_.NamesScopeFill( *class_type->members, static_assert_ );
 		}
-		void operator()( const Synt::TypeAlias& type_alias )
+		void operator()( const RcPtr<Synt::TypeAlias>& type_alias )
 		{
 			this_.NamesScopeFill( *class_type->members, type_alias );
-			class_type->SetMemberVisibility( type_alias.name, current_visibility );
+			class_type->SetMemberVisibility( type_alias->name, current_visibility );
 		}
-		void operator()( const Synt::VariablesDeclaration& variables_declaration )
+		void operator()( const RcPtr<Synt::VariablesDeclaration>& variables_declaration )
 		{
 			this_.NamesScopeFill( *class_type->members, variables_declaration );
-			for( const auto& variable_declaration : variables_declaration.variables )
+			for( const auto& variable_declaration : variables_declaration->variables )
 				class_type->SetMemberVisibility( variable_declaration.name, current_visibility );
 		}
-		void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
+		void operator()( const RcPtr<Synt::AutoVariableDeclaration>& auto_variable_declaration )
 		{
 			this_.NamesScopeFill( *class_type->members, auto_variable_declaration );
-			class_type->SetMemberVisibility( auto_variable_declaration.name, current_visibility );
+			class_type->SetMemberVisibility( auto_variable_declaration->name, current_visibility );
 		}
-		void operator()( const Synt::Class& inner_class )
+		void operator()( const RcPtr<Synt::Class>& inner_class )
 		{
 			this_.NamesScopeFill( *class_type->members, inner_class );
-			class_type->SetMemberVisibility( inner_class.name, current_visibility );
+			class_type->SetMemberVisibility( inner_class->name, current_visibility );
 		}
-		void operator()( const Synt::Mixin& mixin )
+		void operator()( const RcPtr<Synt::Mixin>& mixin )
 		{
 			this_.NamesScopeFill( *class_type->members, mixin, current_visibility );
 		}
 	};
 
-	class_elements.Iter( Visitor( *this, class_kind, class_type, class_name, initial_visibility ) );
+	Visitor visitor( *this, class_kind, class_type, class_name, initial_visibility );
+
+	for( const Synt::ClassElement& element : class_elements )
+		std::visit( visitor, element );
 }
 
 void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope,
-	const Synt::TypeTemplate& type_template_declaration,
+	const RcPtr<Synt::TypeTemplate>& type_template_declaration,
 	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
 {
-	const std::string type_template_name= type_template_declaration.name;
+	const std::string type_template_name= type_template_declaration->name;
 	if( IsKeyword( type_template_name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_template_declaration.src_loc );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_template_declaration->src_loc );
 
 	if( NamesScopeValue* const prev_value= names_scope.GetThisScopeValue( type_template_name ) )
 	{
 		if( base_class != nullptr && base_class->GetMemberVisibility( type_template_name ) != visibility )
-			REPORT_ERROR( TypeTemplatesVisibilityMismatch, names_scope.GetErrors(), type_template_declaration.src_loc, type_template_name ); // TODO - use separate error code
+			REPORT_ERROR( TypeTemplatesVisibilityMismatch, names_scope.GetErrors(), type_template_declaration->src_loc, type_template_name ); // TODO - use separate error code
 
 		if( TypeTemplatesSet* const type_templates_set= prev_value->value.GetTypeTemplatesSet() )
-			type_templates_set->syntax_elements.push_back( &type_template_declaration );
+			type_templates_set->syntax_elements.push_back( type_template_declaration );
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_template_declaration.src_loc, type_template_name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_template_declaration->src_loc, type_template_name );
 	}
 	else
 	{
@@ -323,53 +326,53 @@ void CodeBuilder::NamesScopeFill(
 			base_class->SetMemberVisibility( type_template_name, visibility );
 
 		TypeTemplatesSet type_templates_set;
-		type_templates_set.syntax_elements.push_back( &type_template_declaration );
-		names_scope.AddName( type_template_name, NamesScopeValue( std::move(type_templates_set), type_template_declaration.src_loc  ) );
+		type_templates_set.syntax_elements.push_back( type_template_declaration );
+		names_scope.AddName( type_template_name, NamesScopeValue( std::move(type_templates_set), type_template_declaration->src_loc  ) );
 	}
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration )
+void CodeBuilder::NamesScopeFill(NamesScope& names_scope, const RcPtr<Synt::Enum>& enum_declaration )
 {
-	if( IsKeyword( enum_declaration.name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), enum_declaration.src_loc );
+	if( IsKeyword( enum_declaration->name ) )
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), enum_declaration->src_loc );
 
-	enums_table_.push_back( std::make_unique<Enum>( enum_declaration.name, &names_scope ) );
+	enums_table_.push_back( std::make_unique<Enum>( enum_declaration->name, &names_scope ) );
 	const EnumPtr enum_= enums_table_.back().get();
 
-	enum_->syntax_element= &enum_declaration;
+	enum_->syntax_element= enum_declaration;
 
-	if( names_scope.AddName( enum_declaration.name, NamesScopeValue( Type( enum_ ), enum_declaration.src_loc ) ) == nullptr )
-		REPORT_ERROR( Redefinition, names_scope.GetErrors(), enum_declaration.src_loc, enum_declaration.name );
+	if( names_scope.AddName( enum_declaration->name, NamesScopeValue( Type( enum_ ), enum_declaration->src_loc ) ) == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), enum_declaration->src_loc, enum_declaration->name );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::TypeAlias>& type_alias_declaration )
 {
-	if( IsKeyword( type_alias_declaration.name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_alias_declaration.src_loc );
+	if( IsKeyword( type_alias_declaration->name ) )
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_alias_declaration->src_loc );
 
 	TypeAlias type_alias;
-	type_alias.syntax_element= &type_alias_declaration;
+	type_alias.syntax_element= type_alias_declaration;
 
-	if( names_scope.AddName( type_alias_declaration.name, NamesScopeValue( type_alias, type_alias_declaration.src_loc ) ) == nullptr )
-		REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_alias_declaration.src_loc, type_alias_declaration.name );
+	if( names_scope.AddName( type_alias_declaration->name, NamesScopeValue( type_alias, type_alias_declaration->src_loc ) ) == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_alias_declaration->src_loc, type_alias_declaration->name );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::StaticAssert>& static_assert_declaration )
 {
 	StaticAssert static_assert_;
-	static_assert_.syntax_element= &static_assert_declaration;
+	static_assert_.syntax_element= static_assert_declaration;
 
 	names_scope.AddName(
-		"static_assert_" + std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)),
-		NamesScopeValue( static_assert_, static_assert_declaration.src_loc ) );
+		"static_assert_" + std::to_string(reinterpret_cast<uintptr_t>(&*static_assert_declaration)),
+		NamesScopeValue( static_assert_, static_assert_declaration->src_loc ) );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin, const ClassMemberVisibility visibility )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Mixin>& mixin, const ClassMemberVisibility visibility )
 {
 	Mixin out_mixin;
-	out_mixin.src_loc= mixin.src_loc;
+	out_mixin.src_loc= mixin->src_loc;
 	out_mixin.visibility= visibility;
-	out_mixin.syntax_element= &mixin;
+	out_mixin.syntax_element= mixin;
 
 	// Collect all mixins in a member with name equal to "mixin" keyword.
 	const auto key= Keyword( Keywords::mixin_ );
@@ -383,7 +386,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mi
 	{
 		Mixins mixins;
 		mixins.push_back( std::move(out_mixin) );
-		names_scope.AddName( key, NamesScopeValue( std::move(mixins), mixin.src_loc ) );
+		names_scope.AddName( key, NamesScopeValue( std::move(mixins), mixin->src_loc ) );
 	}
 }
 
@@ -391,64 +394,71 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 	NamesScope& names_scope,
 	const Synt::ProgramElementsList& namespace_elements )
 {
-	namespace_elements.Iter( [&]( const auto& el ) { NamesScopeFillOutOfLineElement( names_scope, el ); } );
+	for( const Synt::ProgramElement& element : namespace_elements )
+	{
+		// We can have only out-of line functions. Process them and process inner namespaces which may contain them.
+		if( const auto function= std::get_if< RcPtr<Synt::Function> >( &element ) )
+			NamesScopeFillOutOfLineElement( names_scope, *function );
+		else if( const auto namespace_= std::get_if< RcPtr<Synt::Namespace> >( &element ) )
+			NamesScopeFillOutOfLineElement( names_scope, **namespace_ );
+	}
 }
 
-void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Function& function )
+void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const RcPtr<Synt::Function>& function )
 {
-	if( function.name.size() <= 1u )
+	if( function->name.size() <= 1u )
 		return;
 
 	NamesScopeValue* value= nullptr;
 	size_t component_index= 0u;
-	if( function.name.front().name.empty() )
+	if( function->name.front().name.empty() )
 	{
 		// Perform function name lookup starting from root.
-		U_ASSERT( function.name.size() >= 2u );
-		value= names_scope.GetRoot()->GetThisScopeValue( function.name[1].name );
+		U_ASSERT( function->name.size() >= 2u );
+		value= names_scope.GetRoot()->GetThisScopeValue( function->name[1].name );
 		++component_index;
 		if( value != nullptr )
-			CollectDefinition( *value, function.name[1].src_loc );
+			CollectDefinition( *value, function->name[1].src_loc );
 	}
 	else
 	{
 		// Perform regular name lookup.
-		value= LookupName( names_scope, function.name[0].name, function.src_loc ).value;
+		value= LookupName( names_scope, function->name[0].name, function->src_loc ).value;
 		if( value != nullptr )
-			CollectDefinition( *value, function.name[0].src_loc );
+			CollectDefinition( *value, function->name[0].src_loc );
 	}
 
 	if( value == nullptr )
 	{
-		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), function.src_loc, function.name.front().name );
+		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), function->src_loc, function->name.front().name );
 		return;
 	}
 
-	for( size_t i= component_index + 1u; value != nullptr && i < function.name.size(); ++i )
+	for( size_t i= component_index + 1u; value != nullptr && i < function->name.size(); ++i )
 	{
 		if( const auto namespace_= value->value.GetNamespace() )
-			value= namespace_->GetThisScopeValue( function.name[i].name );
+			value= namespace_->GetThisScopeValue( function->name[i].name );
 		else if( const auto type= value->value.GetTypeName() )
 		{
 			if( const auto class_= type->GetClassType() )
-				value= class_->members->GetThisScopeValue( function.name[i].name );
+				value= class_->members->GetThisScopeValue( function->name[i].name );
 		}
 
 		if( value == nullptr )
 		{
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), function.src_loc, function.name[i].name );
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), function->src_loc, function->name[i].name );
 			return;
 		}
-		if( i + 1 < function.name.size() )
-			CollectDefinition( *value, function.name[i].src_loc );
+		if( i + 1 < function->name.size() )
+			CollectDefinition( *value, function->name[i].src_loc );
 	}
 
 	if( value == nullptr || value->value.GetFunctionsSet() == nullptr )
 	{
-		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function.src_loc );
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function->src_loc );
 		return;
 	}
-	value->value.GetFunctionsSet()->out_of_line_syntax_elements.push_back(&function);
+	value->value.GetFunctionsSet()->out_of_line_syntax_elements.push_back( function );
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Namespace& namespace_ )

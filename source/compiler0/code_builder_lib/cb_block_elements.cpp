@@ -300,7 +300,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					function_context.variables_state.RemoveNode( variable_reference );
 					continue;
 				}
-				initializer_expression= &constructor_initializer->arguments.front();
+				initializer_expression= &*constructor_initializer->arguments.front();
 			}
 			else
 			{
@@ -2750,7 +2750,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context ) == std::nullopt )
 	{ // Here process default assignment operator for fundamental types.
 		// Evaluate right part
-		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value, names_scope, function_context );
+		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( *assignment_operator.r_value, names_scope, function_context );
 
 		if( function_context.variables_state.HasOutgoingMutableNodes( r_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), assignment_operator.src_loc, r_var->name );
@@ -2760,7 +2760,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), assignment_operator.src_loc ); // Destroy temporaries of right expression.
 
 		// Evaluate left part.
-		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( assignment_operator.l_value, names_scope, function_context );
+		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( *assignment_operator.l_value, names_scope, function_context );
 
 		if( l_var->type == invalid_type_ || r_var->type == invalid_type_ )
 			return BlockBuildInfo();
@@ -2824,7 +2824,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{ // Here process default compound assignment operators for fundamental types or raw pointers.
 		VariablePtr r_var=
 			BuildExpressionCodeEnsureVariable(
-				compound_assignment_operator.r_value,
+				*compound_assignment_operator.r_value,
 				names_scope,
 				function_context );
 
@@ -2849,7 +2849,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		const VariablePtr l_var=
 			BuildExpressionCodeEnsureVariable(
-				compound_assignment_operator.l_value,
+				*compound_assignment_operator.l_value,
 				names_scope,
 				function_context );
 

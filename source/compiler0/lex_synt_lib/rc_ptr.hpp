@@ -1,0 +1,207 @@
+#pragma once
+#include <cstdint>
+#include <memory>
+
+namespace U
+{
+
+// Store contents of RcPtr and its use counter in the same allocation.
+template<typename T>
+struct RcPtrStorage
+{
+	 // 32-bit counter should be enough, even on 64-bit platforms. Hopefully no one will create 2^32 copies of it.
+	uint32_t use_counter;
+	T value;
+};
+
+// A simple reference-counted pointer allowing storing a constant value.
+// It's lighter than std::shared_ptr and doesn't have its overheads for multithreaded usage and polymorphism.
+// So, it isn't thread-safe.
+// It's roughly similar to "ust::shared_ptr_final_nullable" class in Ü.
+template< typename T >
+class RcPtr
+{
+public:
+	// Default constructor - set to nullable.
+	RcPtr() noexcept = default;
+
+	// Construct from "nullptr".
+	RcPtr( std::nullptr_t ) noexcept
+	{}
+
+	// Copy constructor. Shares value with the source.
+	RcPtr( const RcPtr& other ) noexcept
+		: ptr_( other.ptr_ )
+	{
+		if( ptr_ != nullptr )
+			++static_cast< RcPtrStorage<T>* >(ptr_)->use_counter;
+	}
+
+	// Move constructor. Takes value from the source.
+	RcPtr( RcPtr&& other ) noexcept
+		: ptr_( other.ptr_ )
+	{
+		other.ptr_= nullptr;
+	}
+
+	// Construct new instance.
+	// "T" should be movable.
+	// Prefer calling this contructor with "std::move" applied to its argument.
+	explicit RcPtr( T value )
+	{
+		ptr_= new RcPtrStorage<T>{ 1u, std::move(value) };
+	}
+
+	// Copy-assignemt operator. Shares value with the source.
+	RcPtr& operator=( const RcPtr& other ) noexcept
+	{
+		if( this == &other )
+			return *this;
+
+		if( ptr_ != nullptr )
+		{
+			const auto ptr= static_cast< RcPtrStorage<T>* >(ptr_);
+			--ptr->use_counter;
+			if( ptr->use_counter == 0 )
+				delete ptr;
+		}
+
+		const auto ptr= static_cast< RcPtrStorage<T>* >( other.ptr_ );
+		ptr_= ptr;
+		if( ptr != nullptr )
+			++ptr->use_counter;
+
+		return *this;
+	}
+
+	// Move-assignemtn operator. Takes value from the source.
+	RcPtr& operator=( RcPtr&& other ) noexcept
+	{
+		if( this == &other )
+			return *this;
+
+		if( ptr_ != nullptr )
+		{
+			const auto ptr= static_cast< RcPtrStorage<T>* >(ptr_);
+			--ptr->use_counter;
+			if( ptr->use_counter == 0 )
+				delete ptr;
+		}
+
+		ptr_= other.ptr_;
+		other.ptr_= nullptr;
+
+		return *this;
+	}
+
+	// Assign "nullptr".
+	RcPtr& operator=( std::nullptr_t ) noexcept
+	{
+		reset();
+		return *this;
+	}
+
+	~RcPtr() noexcept
+	{
+		if( ptr_ != nullptr )
+		{
+			const auto ptr= static_cast< RcPtrStorage<T>* >(ptr_);
+			--ptr->use_counter;
+			if( ptr->use_counter == 0 )
+				delete ptr;
+		}
+	}
+
+	bool empty() const noexcept
+	{
+		return ptr_ == nullptr;
+	}
+
+	const T& operator*() const noexcept
+	{
+		return static_cast< RcPtrStorage<T>* >(ptr_)->value;
+	}
+
+	const T* operator->() const noexcept
+	{
+		return &static_cast< RcPtrStorage<T>* >(ptr_)->value;
+	}
+
+	void reset() noexcept
+	{
+		if( ptr_ != nullptr )
+		{
+			const auto ptr= static_cast< RcPtrStorage<T>* >(ptr_);
+			--ptr->use_counter;
+			if( ptr->use_counter == 0 )
+				delete ptr;
+
+			ptr_= nullptr;
+		}
+	}
+
+	// Method for internal usage (comparison, hashing).
+	void* get_raw_ptr() const noexcept
+	{
+		return ptr_;
+	}
+
+private:
+	void* ptr_= nullptr; // Is actually RcPtrStorage<T>, but stupid C++ doesn't allow instantiating it for incomplete "T".
+};
+
+template<typename T>
+inline bool operator==( const RcPtr<T>& l, std::nullptr_t ) noexcept
+{
+	return l.empty();
+}
+
+template<typename T>
+inline bool operator!=( const RcPtr<T>& l, std::nullptr_t ) noexcept
+{
+	return !l.empty();
+}
+
+template<typename T>
+inline bool operator==( std::nullptr_t, const RcPtr<T>& r ) noexcept
+{
+	return r.empty();
+}
+
+template<typename T>
+inline bool operator!=( std::nullptr_t, const RcPtr<T>& r ) noexcept
+{
+	return !r.empty();
+}
+
+template<typename T>
+inline bool operator==( const RcPtr<T>& l, const RcPtr<T>& r ) noexcept
+{
+	return l.get_raw_ptr() == r.get_raw_ptr();
+}
+
+template<typename T>
+inline bool operator!=( const RcPtr<T>& l, const RcPtr<T>& r ) noexcept
+{
+	return l.get_raw_ptr() != r.get_raw_ptr();
+}
+
+// A helper function for creation of RcPtr.
+// It's recommended to move the input argument into this function.
+template<typename T>
+RcPtr<T> MakeRcPtr( T t )
+{
+	return RcPtr<T>( std::move(t) );
+}
+
+} // namespace U
+
+template<typename T>
+struct std::hash< U::RcPtr<T> >
+{
+	size_t operator()( const U::RcPtr<T>& ptr ) const
+	{
+		// Use hashing for raw pointers (provided by the standard library).
+		return std::hash<void*>()( ptr.get_raw_ptr() );
+	}
+};

@@ -225,7 +225,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CallOperator& call_operator )
 {
-	const Value function_value= BuildExpressionCode( call_operator.expression, names_scope, function_context );
+	const Value function_value= BuildExpressionCode( *call_operator.expression, names_scope, function_context );
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
 	std::optional<SrcLoc> value_src_loc;
@@ -235,10 +235,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// In most cases proper src_loc is just src_loc of NameLookup/NamesScopeNameFetch, which is proper function name lexem.
 		// But this also may be call to template function with provided template args.
 		// In such case extract underlying name.
-		if( const auto template_parameterization= std::get_if< std::unique_ptr< const Synt::TemplateParameterization > >( &call_operator.expression ) )
+		if( const auto template_parameterization= std::get_if< std::unique_ptr< const Synt::TemplateParameterization > >( &*call_operator.expression ) )
 			value_src_loc= Synt::GetSrcLoc( (*template_parameterization)->base );
 		else
-			value_src_loc= Synt::GetSrcLoc(call_operator.expression);
+			value_src_loc= Synt::GetSrcLoc(*call_operator.expression);
 	}
 
 	return CallFunctionValue( function_value, call_operator.arguments, call_operator.src_loc, value_src_loc, names_scope, function_context );
@@ -249,7 +249,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CallOperatorSignatureHelp& call_operator_signature_help )
 {
-	PerformSignatureHelp( BuildExpressionCode( call_operator_signature_help.expression, names_scope, function_context ) );
+	PerformSignatureHelp( BuildExpressionCode( *call_operator_signature_help.expression, names_scope, function_context ) );
 	return ErrorValue();
 }
 
@@ -258,14 +258,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::SubscriptOperator& subscript_operator )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( subscript_operator.expression, names_scope, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *subscript_operator.expression, names_scope, function_context );
 
 	if( variable->type.GetClassType() != nullptr ) // If this is class - try call overloaded [] operator.
 	{
 		if( auto res=
 				TryCallOverloadedPostfixOperator(
 					variable,
-					llvm::ArrayRef<Synt::Expression>(subscript_operator.index),
+					llvm::ArrayRef<RcPtr<Synt::Expression>>(subscript_operator.index),
 					OverloadedOperator::Indexing,
 					subscript_operator.src_loc,
 					names_scope,
@@ -293,7 +293,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		variable_lock->preserve_temporary= true;
 		RegisterTemporaryVariable( function_context, variable_lock );
 
-		const VariablePtr index= BuildExpressionCodeEnsureVariable( subscript_operator.index, names_scope, function_context );
+		const VariablePtr index= BuildExpressionCodeEnsureVariable( *subscript_operator.index, names_scope, function_context );
 
 		if( function_context.variables_state.HasOutgoingMutableNodes( index ) )
 			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), subscript_operator.src_loc, variable->name );
@@ -402,7 +402,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// This is needed to properly access multiple mutable child nodes of same tuple variable.
 		{
 			const StackVariablesStorage temp_variables_storage( function_context );
-			index= BuildExpressionCodeEnsureVariable( subscript_operator.index, names_scope, function_context );
+			index= BuildExpressionCodeEnsureVariable( *subscript_operator.index, names_scope, function_context );
 			CallDestructors( temp_variables_storage, names_scope, function_context, subscript_operator.src_loc );
 			// It is fine if "index" will be destroyed here. We needed only "constexpr" value of index here.
 		}
@@ -860,8 +860,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		return
 			BuildLazyBinaryOperator(
-				binary_operator.left,
-				binary_operator.right,
+				*binary_operator.left,
+				*binary_operator.right,
 				binary_operator,
 				binary_operator.src_loc,
 				names_scope,
@@ -942,7 +942,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	VariablePtr l_var=
 		BuildExpressionCodeEnsureVariable(
-			binary_operator.left,
+			*binary_operator.left,
 			names_scope,
 			function_context );
 
@@ -976,7 +976,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	const VariablePtr r_var=
 		BuildExpressionCodeEnsureVariable(
-			binary_operator.right,
+			*binary_operator.right,
 			names_scope,
 			function_context );
 
@@ -1931,9 +1931,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
+	// Fetch parent file path with index check. This may be needed in LangaugeServer, where source graph may be outdated.
 	const auto file_index= embed.src_loc.GetFileIndex();
-	U_ASSERT( file_index < source_graph_->nodes_storage.size() );
-	const IVfs::Path& parent_file_path= source_graph_->nodes_storage[file_index].file_path;
+	const IVfs::Path empty_path;
+	const IVfs::Path& parent_file_path=
+		file_index < source_graph_->nodes_storage.size() ? source_graph_->nodes_storage[file_index].file_path : empty_path;
 
 	// Load file contents. Use caching in order to avoid loading same file contents more than once.
 	IVfs::Path full_file_path= vfs_->GetFullFilePath( file_path, parent_file_path );
@@ -2563,8 +2565,8 @@ Value CodeBuilder::AccessClassField(
 
 std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	const OverloadedOperator op,
-	const Synt::Expression&  left_expr,
-	const Synt::Expression& right_expr,
+	const RcPtr<Synt::Expression>&  left_expr,
+	const RcPtr<Synt::Expression>& right_expr,
 	const bool evaluate_args_in_reverse_order,
 	const SrcLoc& src_loc,
 	NamesScope& names_scope,
@@ -2578,8 +2580,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		const auto state= SaveFunctionContextState( function_context );
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
-			for( const Synt::Expression* const in_arg : { &left_expr, &right_expr } )
-				args.push_back( PreEvaluateArg( *in_arg, names_scope, function_context ) );
+			args.push_back( PreEvaluateArg( left_expr, names_scope, function_context ) );
+			args.push_back( PreEvaluateArg( right_expr, names_scope, function_context ) );
 		}
 
 		RestoreFunctionContextState( function_context, state );
@@ -2604,7 +2606,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		}
 
 		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
-		const VariablePtr r_var_real= BuildExpressionCode( right_expr, names_scope, function_context ).GetVariable();
+		const VariablePtr r_var_real= BuildExpressionCode( *right_expr, names_scope, function_context ).GetVariable();
 
 		const VariableMutPtr r_var_lock=
 			Variable::Create(
@@ -2620,7 +2622,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		r_var_lock->preserve_temporary= true;
 		RegisterTemporaryVariable( function_context, r_var_lock );
 
-		const VariablePtr l_var_real= BuildExpressionCode( left_expr, names_scope, function_context ).GetVariable();
+		const VariablePtr l_var_real= BuildExpressionCode( *left_expr, names_scope, function_context ).GetVariable();
 
 		if( function_context.variables_state.HasOutgoingLinks( l_var_real ) )
 			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, l_var_real->name );
@@ -2643,9 +2645,9 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		return Variable::Create( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 	}
 	else if( op == OverloadedOperator::Add && AreCharArraysWithSameElementType( args.front().type, args.back().type ) )
-		return ConcatenateCharArrays( left_expr, right_expr, src_loc, names_scope, function_context );
+		return ConcatenateCharArrays( *left_expr, *right_expr, src_loc, names_scope, function_context );
 	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
-		return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, src_loc, names_scope, function_context );
+		return CallBinaryOperatorForArrayOrTuple( op, *left_expr, *right_expr, src_loc, names_scope, function_context );
 
 	if( const auto overloaded_operator= GetOverloadedOperator( args, op, names_scope, src_loc ) )
 	{
@@ -2662,13 +2664,15 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		overloaded_operator->referenced= true;
 
+		const RcPtr<Synt::Expression> synt_args[2]{ left_expr, right_expr };
+
 		return
 			DoCallFunction(
 				EnsureLLVMFunctionCreated( *overloaded_operator ),
 				overloaded_operator->type,
 				src_loc,
 				nullptr,
-				{ &left_expr, &right_expr },
+				synt_args,
 				evaluate_args_in_reverse_order,
 				names_scope,
 				function_context,
@@ -3089,7 +3093,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 
 std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 	const VariablePtr& variable,
-	const llvm::ArrayRef<Synt::Expression> synt_args,
+	const llvm::ArrayRef<RcPtr<Synt::Expression>> synt_args,
 	const OverloadedOperator op,
 	const SrcLoc& src_loc,
 	NamesScope& names_scope,
@@ -3108,7 +3112,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-			for( const Synt::Expression& arg_expression : synt_args )
+			for( const RcPtr<Synt::Expression>& arg_expression : synt_args )
 				actual_args.push_back( PreEvaluateArg( arg_expression, names_scope, function_context ) );
 		}
 
@@ -3125,11 +3129,6 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 
 	function->referenced= true;
 
-	llvm::SmallVector<const Synt::Expression*, 16> synt_args_ptrs;
-	synt_args_ptrs.reserve( synt_args.size() );
-	for( const Synt::Expression& arg : synt_args )
-		synt_args_ptrs.push_back( &arg );
-
 	const auto fetch_result= TryFetchVirtualFunction( variable, *function, function_context, names_scope.GetErrors(), src_loc );
 
 	return DoCallFunction(
@@ -3137,7 +3136,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 		function->type,
 		src_loc,
 		fetch_result.first,
-		synt_args_ptrs,
+		synt_args,
 		false,
 		names_scope,
 		function_context,
@@ -3963,7 +3962,7 @@ Value CodeBuilder::DoReferenceCast(
 
 Value CodeBuilder::CallFunctionValue(
 	const Value& function_value,
-	const llvm::ArrayRef<Synt::Expression> synt_args,
+	const llvm::ArrayRef<RcPtr<Synt::Expression>> synt_args,
 	const SrcLoc& call_src_loc,
 	const std::optional<SrcLoc>& function_value_src_loc,
 	NamesScope& names_scope,
@@ -4004,18 +4003,13 @@ Value CodeBuilder::CallFunctionValue(
 
 			llvm::Value* const func_itself= CreateMoveToLLVMRegisterInstruction( *callable_variable, function_context );
 
-			llvm::SmallVector<const Synt::Expression*, 16> args;
-			args.reserve( synt_args.size() );
-			for( const Synt::Expression& arg : synt_args )
-				args.push_back( &arg );
-
 			return
 				DoCallFunction(
 					func_itself,
 					function_pointer->function_type,
 					call_src_loc,
 					nullptr,
-					args,
+					synt_args,
 					false,
 					names_scope,
 					function_context,
@@ -4054,7 +4048,7 @@ Value CodeBuilder::CallFunctionValue(
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-				for( const Synt::Expression& arg_expression : synt_args )
+				for( const RcPtr<Synt::Expression>& arg_expression : synt_args )
 					actual_args.push_back( PreEvaluateArg( arg_expression, names_scope, function_context ) );
 			}
 
@@ -4105,11 +4099,6 @@ Value CodeBuilder::CallFunctionValue(
 	if( !( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.has_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
-	llvm::SmallVector<const Synt::Expression*, 16> synt_args_ptrs;
-	synt_args_ptrs.reserve( synt_args.size() );
-	for( const Synt::Expression& arg : synt_args )
-		synt_args_ptrs.push_back( &arg );
-
 	llvm::Value* llvm_function_ptr= EnsureLLVMFunctionCreated( function );
 	if( this_ != nullptr )
 	{
@@ -4123,7 +4112,7 @@ Value CodeBuilder::CallFunctionValue(
 			llvm_function_ptr, function_type,
 			call_src_loc,
 			this_,
-			synt_args_ptrs, false,
+			synt_args, false,
 			names_scope, function_context,
 			function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
 			function.no_discard );
@@ -4134,7 +4123,7 @@ Value CodeBuilder::DoCallFunction(
 	const FunctionType& function_type,
 	const SrcLoc& call_src_loc,
 	const VariablePtr& this_, // optional
-	const llvm::ArrayRef<const Synt::Expression*> args,
+	const llvm::ArrayRef<RcPtr<Synt::Expression>> args,
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
@@ -4159,7 +4148,7 @@ Value CodeBuilder::DoCallFunction(
 	const FunctionType& function_type,
 	const SrcLoc& call_src_loc,
 	const llvm::ArrayRef<VariablePtr> preevaluated_args,
-	const llvm::ArrayRef<const Synt::Expression*> args,
+	const llvm::ArrayRef<RcPtr<Synt::Expression>> args,
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
@@ -4875,7 +4864,7 @@ Value CodeBuilder::DoCallFunction(
 
 VariablePtr CodeBuilder::BuildTempVariableConstruction(
 	const Type& type,
-	const llvm::ArrayRef<Synt::Expression> synt_args,
+	const llvm::ArrayRef<RcPtr<Synt::Expression>> synt_args,
 	const SrcLoc& src_loc,
 	NamesScope& names_scope,
 	FunctionContext& function_context )
@@ -5013,16 +5002,16 @@ bool CodeBuilder::EvaluateBoolConstantExpression( NamesScope& names_scope, Funct
 	return v->constexpr_value->isAllOnesValue();
 }
 
-FunctionType::Param CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, NamesScope& names_scope, FunctionContext& function_context )
+FunctionType::Param CodeBuilder::PreEvaluateArg( const RcPtr<Synt::Expression>& expression, NamesScope& names_scope, FunctionContext& function_context )
 {
-	if( function_context.args_preevaluation_cache.count(&expression) == 0 )
+	if( function_context.args_preevaluation_cache.count(expression) == 0 )
 	{
-		const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
-		function_context.args_preevaluation_cache.emplace( &expression, GetArgExtendedType(*v) );
-		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), Synt::GetSrcLoc( expression ) );
+		const VariablePtr v= BuildExpressionCodeEnsureVariable( *expression, names_scope, function_context );
+		function_context.args_preevaluation_cache.emplace( expression, GetArgExtendedType(*v) );
+		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), Synt::GetSrcLoc( *expression ) );
 
 	}
-	return function_context.args_preevaluation_cache[&expression];
+	return function_context.args_preevaluation_cache[expression];
 }
 
 FunctionType::Param CodeBuilder::GetArgExtendedType( const Variable& variable )

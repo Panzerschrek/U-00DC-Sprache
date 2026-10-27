@@ -53,9 +53,9 @@ public:
 	};
 
 	using CompletionRequestPrefixComponent= std::variant<
-		const Synt::Namespace*,
-		const Synt::Class*,
-		const Synt::TypeTemplate*>;
+		RcPtr<Synt::Namespace>,
+		RcPtr<Synt::Class>,
+		RcPtr<Synt::TypeTemplate>>;
 
 	enum class CompletionItemKind : uint8_t
 	{
@@ -214,19 +214,19 @@ private:
 	std::vector<CompletionItem> CompletionResultFinalize();
 	std::vector<SignatureHelpItem> SignatureHelpResultFinalize();
 
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Function& function );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Class& class_ );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_syntax_element );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Mixin& mixin );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::VariablesDeclaration>& variables_declaration );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::AutoVariableDeclaration>& auto_variable_declaration );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::StaticAssert>& static_assert_ );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::TypeAlias>& type_alias );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Enum>& enum_ );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Function>& function );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Class>& class_ );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::TypeTemplate>& type_template );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::FunctionTemplate>& function_template_syntax_element );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Namespace>& namespace_ );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::ClassField>& class_field );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::ClassVisibilityLabel>& class_visibility_label );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Mixin>& mixin );
 
 	// Performs template instantiation with dummy args and returns names scope, if it is a class template.
 	// May reuse value, created during previous dummy-instantiation.
@@ -365,12 +365,12 @@ private:
 
 	// Templates
 	void PrepareTypeTemplate(
-		const Synt::TypeTemplate& type_template_declaration,
+		const RcPtr<Synt::TypeTemplate>& type_template_declaration,
 		TypeTemplatesSet& type_templates_set,
 		NamesScope& names_scope );
 
 	void PrepareFunctionTemplate(
-		const Synt::FunctionTemplate& function_template_declaration,
+		const RcPtr<Synt::FunctionTemplate>& function_template_declaration,
 		OverloadedFunctionsSet& functions_set,
 		NamesScope& names_scope,
 		ClassPtr base_class );
@@ -707,7 +707,7 @@ private:
 		NamesScope& names_scope,
 		ClassPtr base_class,
 		OverloadedFunctionsSet& functions_set,
-		const Synt::Function& function_declaration,
+		const RcPtr<Synt::Function>& function_declaration,
 		bool is_out_of_line_function );
 
 	void CheckOverloadedOperator(
@@ -812,8 +812,8 @@ private:
 	// In success call of overloaded operator arguments evaluated in left to right order.
 	std::optional<Value> TryCallOverloadedBinaryOperator(
 		OverloadedOperator op,
-		const Synt::Expression&  left_expr,
-		const Synt::Expression& right_expr,
+		const RcPtr<Synt::Expression>&  left_expr,
+		const RcPtr<Synt::Expression>& right_expr,
 		bool evaluate_args_in_reverse_order,
 		const SrcLoc& src_loc,
 		NamesScope& names_scope,
@@ -843,7 +843,7 @@ private:
 
 	std::optional<Value> TryCallOverloadedPostfixOperator(
 		const VariablePtr& variable,
-		llvm::ArrayRef<Synt::Expression> synt_args,
+		llvm::ArrayRef<RcPtr<Synt::Expression>> synt_args,
 		OverloadedOperator op,
 		const SrcLoc& src_loc,
 		NamesScope& names_scope,
@@ -884,7 +884,7 @@ private:
 	// Call something (function, pointer) or even perform temp variable construction.
 	Value CallFunctionValue(
 		const Value& function_value,
-		llvm::ArrayRef<Synt::Expression> synt_args,
+		llvm::ArrayRef<RcPtr<Synt::Expression>> synt_args,
 		const SrcLoc& call_src_loc,
 		const std::optional<SrcLoc>& function_value_src_loc,
 		NamesScope& names_scope,
@@ -896,7 +896,7 @@ private:
 		const FunctionType& function_type,
 		const SrcLoc& call_src_loc,
 		const VariablePtr& this_, // optional
-		llvm::ArrayRef<const Synt::Expression*> args,
+		llvm::ArrayRef<RcPtr<Synt::Expression>> args,
 		bool evaluate_args_in_reverse_order,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
@@ -908,7 +908,7 @@ private:
 		const FunctionType& function_type,
 		const SrcLoc& call_src_loc,
 		llvm::ArrayRef<VariablePtr> preevaluated_args,
-		llvm::ArrayRef<const Synt::Expression*> args,
+		llvm::ArrayRef<RcPtr<Synt::Expression>> args,
 		bool evaluate_args_in_reverse_order,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
@@ -917,7 +917,7 @@ private:
 
 	VariablePtr BuildTempVariableConstruction(
 		const Type& type,
-		llvm::ArrayRef<Synt::Expression> synt_args,
+		llvm::ArrayRef<RcPtr<Synt::Expression>> synt_args,
 		const SrcLoc& src_loc,
 		NamesScope& names_scope,
 		FunctionContext& function_context );
@@ -934,7 +934,7 @@ private:
 
 	// Preevaluate expresion to know it's extened type.
 	// Call this only inside save/state restore calls.
-	FunctionType::Param PreEvaluateArg( const Synt::Expression& expression, NamesScope& names_scope, FunctionContext& function_context );
+	FunctionType::Param PreEvaluateArg( const RcPtr<Synt::Expression>& expression, NamesScope& names_scope, FunctionContext& function_context );
 	FunctionType::Param GetArgExtendedType( const Variable& variable );
 
 	// Typeinfo
@@ -1193,7 +1193,7 @@ private:
 
 	llvm::Constant* ApplyConstructorInitializer(
 		const VariablePtr& variable,
-		llvm::ArrayRef<Synt::Expression> synt_args,
+		llvm::ArrayRef<RcPtr<Synt::Expression>> synt_args,
 		const SrcLoc& src_loc,
 		NamesScope& names_scope,
 		FunctionContext& function_context );
@@ -1343,23 +1343,22 @@ private:
 	// NamesScope fill
 
 	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Namespace& namespace_ );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	void NamesScopeFillFunction( NamesScope& names_scope, const Synt::Function& function_declaration, std::string_view func_name, ClassPtr base_class, ClassMemberVisibility visibility );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	ClassPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, std::optional<Class::BaseTemplate> base_template= std::nullopt );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Namespace>& namespace_ );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::VariablesDeclaration>& variables_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::AutoVariableDeclaration>& variable_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Function>& function_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFillFunction( NamesScope& names_scope, const RcPtr<Synt::Function>& function_declaration, std::string_view func_name, ClassPtr base_class, ClassMemberVisibility visibility );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::FunctionTemplate>& function_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	ClassPtr NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Class>& class_declaration, std::optional<Class::BaseTemplate> base_template= std::nullopt );
 	void FillClassNamesScope( ClassPtr class_type, std::string_view class_name, Synt::ClassKindAttribute class_kind, const Synt::ClassElementsList& class_elements, ClassMemberVisibility initial_visibility );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplate& type_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::TypeTemplate>& type_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Enum>& enum_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::TypeAlias>& type_alias_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::StaticAssert>& static_assert_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Mixin>& mixin, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );
-	template<typename T> void NamesScopeFillOutOfLineElement( NamesScope&, const T& ) {} // Ignore almost all nodes in out of line filling, except a couple of special nodes.
-	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Function& function );
+	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const RcPtr<Synt::Function>& function );
 	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 
 	// Mixins
@@ -1374,7 +1373,7 @@ private:
 	const Synt::BlockElementsList* ExpandBlockMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 	const Synt::TypeName* ExpandTypeNameMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 	const Synt::Expression* ExpandExpressionMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
-	void EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, Mixin& mixin );
+	const llvm::ConstantDataArray* EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 
 	std::optional<Lexems> PrepareMixinLexems( NamesScope& names_scope, const SrcLoc& src_loc, std::string_view mixin_text );
 
@@ -1552,7 +1551,7 @@ private:
 	const std::shared_ptr<CodeBuilderErrorsContainer> global_errors_= std::make_shared<CodeBuilderErrorsContainer>();
 
 	// Current source graph.
-	// Store shared_ptr because we need to keep it alive, because some internal structures contain raw pointers to its contents.
+	// We need to access it sometimes.
 	SourceGraphPtr source_graph_;
 
 	Synt::MacroExpansionContextsPtr macro_expansion_contexts_; // Macro expansion contexts of currently compiled source graph.
@@ -1587,8 +1586,8 @@ private:
 	std::unordered_map<LambdaKey, std::unique_ptr<Class>, LambdaKeyHasher> lambda_classes_table_;
 	std::unique_ptr<Class> lambda_preprocessing_dummy_class_; // Lazily created.
 
-	// Store here mixin expansion results, because we need syntax elements to be alive, because they may be accessed during code building via raw pointers.
-	// Also it's useful to reuse expansions of same mixins in different templates if result text is identical.
+	// Store here mixin expansion results.
+	// It's useful to reuse expansions of same mixins in different templates if result text is identical.
 	// Important note: unordered_map doesn't invalidate pointers/references to elements after new elements are inserted.
 	// This makes it safe to store somewhere pointers to elements of this container, assuming no elements are deleted.
 	template<typename T> using MixinExpansionsMap= std::unordered_map<MixinExpansionKey, T, MixinExpansionKeyHasher>;

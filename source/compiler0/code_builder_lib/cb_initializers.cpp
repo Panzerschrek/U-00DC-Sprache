@@ -888,7 +888,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 
 llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	const VariablePtr& variable,
-	const llvm::ArrayRef<Synt::Expression> synt_args,
+	const llvm::ArrayRef<RcPtr<Synt::Expression>> synt_args,
 	const SrcLoc& src_loc,
 	NamesScope& names_scope,
 	FunctionContext& function_context )
@@ -904,7 +904,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		const VariablePtr src_var= BuildExpressionCodeEnsureVariable( synt_args.front(), names_scope, function_context );
+		const VariablePtr src_var= BuildExpressionCodeEnsureVariable( *synt_args.front(), names_scope, function_context );
 
 		if( function_context.variables_state.HasOutgoingMutableNodes( src_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, src_var->name );
@@ -1048,7 +1048,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( synt_args.front(), names_scope, function_context );
+		const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *synt_args.front(), names_scope, function_context );
 		if( expression_result->type != variable->type )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, variable->type, expression_result->type );
@@ -1076,7 +1076,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		return InitializeFunctionPointer( variable, synt_args.front(), names_scope, function_context );
+		return InitializeFunctionPointer( variable, *synt_args.front(), names_scope, function_context );
 	}
 	else if( variable->type.GetArrayType() != nullptr || variable->type.GetTupleType() != nullptr )
 	{
@@ -1086,7 +1086,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( synt_args.front(), names_scope, function_context );
+		const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *synt_args.front(), names_scope, function_context );
 		if( expression_result->type != variable->type )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, variable->type, expression_result->type );
@@ -1143,7 +1143,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-				const VariablePtr initializer_value= BuildExpressionCodeEnsureVariable( synt_args.front(), names_scope, function_context );
+				const VariablePtr initializer_value= BuildExpressionCodeEnsureVariable( *synt_args.front(), names_scope, function_context );
 				needs_move_constuct= initializer_value->type == variable->type && initializer_value->value_type == ValueType::Value;
 			}
 
@@ -1152,7 +1152,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		}
 		if( needs_move_constuct )
 		{
-			const VariablePtr initializer_variable= BuildExpressionCodeEnsureVariable( synt_args.front(), names_scope, function_context );
+			const VariablePtr initializer_variable= BuildExpressionCodeEnsureVariable( *synt_args.front(), names_scope, function_context );
 
 			SetupReferencesInCopyOrMove( function_context, variable, initializer_variable, names_scope.GetErrors(), src_loc );
 
@@ -1417,7 +1417,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 			REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope.GetErrors(), constructor_initializer->src_loc );
 			return nullptr;
 		}
-		initializer_expression= &constructor_initializer->arguments.front();
+		initializer_expression= &*constructor_initializer->arguments.front();
 	}
 	else
 	{
@@ -1615,7 +1615,7 @@ llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
 	// It's necessary to avoid populating it with entries for the initializer expression and its parts.
 	// It's incorrect to do so, because expression result types may depend on class members namespace,
 	// which may be different for different invocations for the same expression syntax elements - in case of templates.
-	std::unordered_map< const Synt::Expression*, FunctionType::Param > args_preevaluation_cache;
+	std::unordered_map< RcPtr<Synt::Expression>, FunctionType::Param > args_preevaluation_cache;
 	std::swap( args_preevaluation_cache, function_context.args_preevaluation_cache );
 
 	llvm::Constant* const result=
@@ -1649,7 +1649,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 	// It's necessary to avoid populating it with entries for the initializer expression and its parts.
 	// It's incorrect to do so, because expression result types may depend on class members namespace,
 	// which may be different for different invocations for the same expression syntax elements - in case of templates.
-	std::unordered_map< const Synt::Expression*, FunctionType::Param > args_preevaluation_cache;
+	std::unordered_map< RcPtr<Synt::Expression>, FunctionType::Param > args_preevaluation_cache;
 	std::swap( args_preevaluation_cache, function_context.args_preevaluation_cache );
 
 	llvm::Constant* const result=

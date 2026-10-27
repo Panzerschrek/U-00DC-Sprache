@@ -9,6 +9,7 @@
 #include "lexical_analyzer.hpp"
 #include "number_parsing_utils.hpp"
 #include "operators.hpp"
+#include "rc_ptr.hpp"
 #include "variant_linked_list.hpp"
 
 namespace U
@@ -190,9 +191,9 @@ using Expression= std::variant<
 	std::unique_ptr<const TypeInfo>,
 	std::unique_ptr<const SameType>,
 	std::unique_ptr<const NonSyncExpression>,
-	std::unique_ptr<const CallOperator>,
-	std::unique_ptr<const CallOperatorSignatureHelp>,
-	std::unique_ptr<const SubscriptOperator>,
+	CallOperator,
+	CallOperatorSignatureHelp,
+	SubscriptOperator,
 	std::unique_ptr<const MemberAccessOperator>,
 	std::unique_ptr<const MemberAccessOperatorCompletion>,
 	std::unique_ptr<const VariableInitialization>,
@@ -202,7 +203,7 @@ using Expression= std::variant<
 	std::unique_ptr<const BitwiseNot>,
 	std::unique_ptr<const SafeExpression>,
 	std::unique_ptr<const UnsafeExpression>,
-	std::unique_ptr<const BinaryOperator>,
+	BinaryOperator,
 	std::unique_ptr<const TernaryOperator>,
 	std::unique_ptr<const ReferenceToRawPointerOperator>,
 	std::unique_ptr<const RawPointerToReferenceOperator>,
@@ -290,32 +291,36 @@ using IfAlternative= std::variant<
 
 using IfAlternativePtr= std::unique_ptr<const IfAlternative>;
 
-using ClassElementsList= VariantLinkedList<
-	VariablesDeclaration,
-	AutoVariableDeclaration,
-	StaticAssert,
-	Function,
-	TypeAlias,
-	Enum,
-	Class,
-	ClassField,
-	ClassVisibilityLabel,
-	TypeTemplate,
-	FunctionTemplate,
-	Mixin >;
+using ClassElement= std::variant<
+	RcPtr<VariablesDeclaration>,
+	RcPtr<AutoVariableDeclaration>,
+	RcPtr<StaticAssert>,
+	RcPtr<Function>,
+	RcPtr<TypeAlias>,
+	RcPtr<Enum>,
+	RcPtr<Class>,
+	RcPtr<ClassField>,
+	RcPtr<ClassVisibilityLabel>, // RcPtr isn't strictly-necessary here, but we use it here to reduce overall variant size.
+	RcPtr<TypeTemplate>,
+	RcPtr<FunctionTemplate>,
+	RcPtr<Mixin> >;
 
-using ProgramElementsList= VariantLinkedList<
-	VariablesDeclaration,
-	AutoVariableDeclaration,
-	StaticAssert,
-	Function,
-	TypeAlias,
-	Enum,
-	Class,
-	TypeTemplate,
-	FunctionTemplate,
-	Namespace,
-	Mixin >;
+using ClassElementsList= std::vector<ClassElement>;
+
+using ProgramElement= std::variant<
+	RcPtr<VariablesDeclaration>,
+	RcPtr<AutoVariableDeclaration>,
+	RcPtr<StaticAssert>,
+	RcPtr<Function>,
+	RcPtr<TypeAlias>,
+	RcPtr<Enum>,
+	RcPtr<Class>,
+	RcPtr<TypeTemplate>,
+	RcPtr<FunctionTemplate>,
+	RcPtr<Namespace>,
+	RcPtr<Mixin> >;
+
+using ProgramElementsList= std::vector< ProgramElement >;
 
 struct NonSyncTagNone{};
 struct NonSyncTagTrue{};
@@ -481,6 +486,48 @@ struct CharLiteral
 	std::array<char, 8> type_suffix{0};
 };
 
+struct CallOperator
+{
+	explicit CallOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::unique_ptr<const Expression> expression;
+	std::vector< RcPtr<Expression> > arguments;
+};
+
+// Special kind of call operator, created only by language server to perform signature help.
+struct CallOperatorSignatureHelp
+{
+	explicit CallOperatorSignatureHelp( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::unique_ptr<const Expression> expression;
+	// For now no need to parse arguments.
+};
+
+struct SubscriptOperator
+{
+	explicit SubscriptOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::unique_ptr<const Expression> expression;
+	RcPtr<Expression> index;
+};
+
+struct BinaryOperator
+{
+	explicit BinaryOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	BinaryOperatorType operator_type= BinaryOperatorType::Add; // Set actual value later
+	RcPtr<Expression> left;
+	RcPtr<Expression> right;
+};
+
 struct NamesScopeNameFetch
 {
 	SrcLoc src_loc;
@@ -629,37 +676,6 @@ struct NonSyncExpression
 	TypeName type;
 };
 
-struct CallOperator
-{
-	explicit CallOperator( const SrcLoc& src_loc )
-		: src_loc(src_loc) {}
-
-	SrcLoc src_loc;
-	Expression expression;
-	std::vector<Expression> arguments;
-};
-
-// Special kind of call operator, created only by language server to perform signature help.
-struct CallOperatorSignatureHelp
-{
-	explicit CallOperatorSignatureHelp( const SrcLoc& src_loc )
-		: src_loc(src_loc) {}
-
-	SrcLoc src_loc;
-	Expression expression;
-	// For now no need to parse arguments.
-};
-
-struct SubscriptOperator
-{
-	explicit SubscriptOperator( const SrcLoc& src_loc )
-		: src_loc(src_loc) {}
-
-	SrcLoc src_loc;
-	Expression expression;
-	Expression index;
-};
-
 struct MemberAccessOperator
 {
 	explicit MemberAccessOperator( const SrcLoc& src_loc )
@@ -738,17 +754,6 @@ struct UnsafeExpression
 
 	SrcLoc src_loc;
 	Expression expression;
-};
-
-struct BinaryOperator
-{
-	explicit BinaryOperator( const SrcLoc& src_loc )
-		: src_loc(src_loc) {}
-
-	SrcLoc src_loc;
-	BinaryOperatorType operator_type= BinaryOperatorType::Add; // Set actual value later
-	Expression left;
-	Expression right;
 };
 
 struct TernaryOperator
@@ -900,7 +905,7 @@ struct ConstructorInitializer
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	std::vector<Expression> arguments;
+	std::vector<RcPtr<Expression>> arguments;
 };
 
 struct ConstructorInitializerSignatureHelp
@@ -1256,8 +1261,8 @@ struct AssignmentOperator
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	Expression l_value;
-	Expression r_value;
+	RcPtr<Expression> l_value;
+	RcPtr<Expression> r_value;
 };
 
 struct CompoundAssignmentOperator
@@ -1267,8 +1272,8 @@ struct CompoundAssignmentOperator
 
 	SrcLoc src_loc;
 	BinaryOperatorType compound_operation= BinaryOperatorType::Add; // Set actual value later.
-	Expression l_value;
-	Expression r_value;
+	RcPtr<Expression> l_value;
+	RcPtr<Expression> r_value;
 };
 
 struct IncrementOperator
@@ -1382,12 +1387,12 @@ struct Lambda
 
 public:
 	explicit Lambda( const SrcLoc& src_loc )
-		: src_loc(src_loc), function(src_loc) {}
+		: src_loc(src_loc) {}
 
 public:
 	SrcLoc src_loc;
 	Capture capture;
-	Function function;
+	RcPtr<Function> function;
 };
 
 struct VariableInitialization
@@ -1467,7 +1472,6 @@ struct ClassVisibilityLabel
 	const ClassMemberVisibility visibility;
 };
 
-
 struct TemplateParam
 {
 	struct TypeParamData{};
@@ -1505,7 +1509,7 @@ struct TypeTemplate
 	std::vector<TemplateParam> params;
 	std::vector<SignatureParam> signature_params;
 
-	std::variant<std::unique_ptr<const Class>, std::unique_ptr<const TypeAlias>> something;
+	std::variant<RcPtr<Class>, RcPtr<TypeAlias>> something;
 
 	// Short form means that template params are also signature params.
 	bool is_short_form= false;
@@ -1519,7 +1523,7 @@ struct FunctionTemplate
 	SrcLoc src_loc;
 	std::vector<TemplateParam> params;
 
-	std::unique_ptr<const Function> function;
+	RcPtr<Function> function;
 };
 
 struct Namespace

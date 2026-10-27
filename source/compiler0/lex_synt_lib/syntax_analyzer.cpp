@@ -210,7 +210,7 @@ private:
 	ComplexName TryParseComplexNameTailWithTemplateArgs( ComplexName base );
 
 	struct SignatureHelpTag{};
-	std::variant<std::vector<Expression>, SignatureHelpTag> ParseCall();
+	std::variant<std::vector<RcPtr<Expression>>, SignatureHelpTag> ParseCall();
 
 	Initializer ParseInitializer( bool parse_expression_initializer );
 	Initializer ParseVariableInitializer();
@@ -753,25 +753,21 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyToNamespaceEnd()
 
 ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type end_lexem )
 {
-	ProgramElementsList::Builder result_builder;
+	ProgramElementsList result;
 
 	while( NotEndOfFile() )
 	{
 		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
-		{
-			result_builder.Append( ParseFunction() );
-		}
+			result.push_back( MakeRcPtr( ParseFunction() ) );
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
-		{
-			result_builder.Append( ParseClass() );
-		}
+			result.push_back( MakeRcPtr( ParseClass() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			TemplateVar template_= ParseTemplate();
 			if( auto* const type_template= std::get_if<TypeTemplate>(&template_) )
-				result_builder.Append( std::move( *type_template ) );
+				result.push_back( MakeRcPtr( std::move( *type_template ) ) );
 			else if( auto* const function_template= std::get_if<FunctionTemplate>(&template_) )
-				result_builder.Append( std::move( *function_template ) );
+				result.push_back( MakeRcPtr( std::move( *function_template ) ) );
 			else if( std::holds_alternative<EmptyVariant>(template_) )
 			{}
 			else
@@ -781,33 +777,19 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 			}
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
-		{
-			result_builder.Append( ParseVariablesDeclaration() );
-		}
+			result.push_back( MakeRcPtr( ParseVariablesDeclaration() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::thread_local_ )
-		{
-			result_builder.Append( ParseThreadLocalVariablesDeclaration() );
-		}
+			result.push_back( MakeRcPtr( ParseThreadLocalVariablesDeclaration() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
-		{
-			result_builder.Append( ParseAutoVariableDeclaration() );
-		}
+			result.push_back( MakeRcPtr( ParseAutoVariableDeclaration() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
-		{
-			result_builder.Append( ParseStaticAssert() );
-		}
+			result.push_back( MakeRcPtr( ParseStaticAssert() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
-		{
-			result_builder.Append( ParseEnum() );
-		}
+			result.push_back( MakeRcPtr( ParseEnum() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
-		{
-			result_builder.Append( ParseTypeAlias() );
-		}
+			result.push_back( MakeRcPtr( ParseTypeAlias() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ )
-		{
-			result_builder.Append( ParseMixin() );
-		}
+			result.push_back( MakeRcPtr( ParseMixin() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
 		{
 			Namespace namespace_( it_->src_loc );
@@ -836,7 +818,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 
 			ExpectLexem( Lexem::Type::BraceRight );
 
-			result_builder.Append( std::move( namespace_ ) );
+			result.push_back( MakeRcPtr( std::move( namespace_ ) ) );
 		}
 		else if( it_->type == end_lexem )
 		{
@@ -849,7 +831,9 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 			{
 				if( const Macro* const macro= FetchMacro( it_->text, Macro::Context::Namespace ) )
 				{
-					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseNamespaceBodyToFileEnd ) );
+					for( ProgramElement& element : ExpandMacro( *macro, &SyntaxAnalyzer::ParseNamespaceBodyToFileEnd )  )
+						result.push_back( std::move(element) );
+
 					continue;
 				}
 			}
@@ -859,7 +843,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 		}
 	} // while not end of file
 
-	return result_builder.Build();
+	return result;
 }
 
 IntegerNumericConstant SyntaxAnalyzer::ParseIntegerNumericConstant()
@@ -946,12 +930,12 @@ template<size_t priority> Expression SyntaxAnalyzer::TryParseBinaryOperatorRight
 	{
 		if( it_->type == op_pair.first )
 		{
-			auto binary_operator= std::make_unique<BinaryOperator>( it_->src_loc );
+			BinaryOperator binary_operator( it_->src_loc );
 			NextLexem();
 
-			binary_operator->left= std::move(l);
-			binary_operator->operator_type= op_pair.second;
-			binary_operator->right= TryParseBinaryOperator<priority + 1>();
+			binary_operator.left= MakeRcPtr( std::move(l) );
+			binary_operator.operator_type= op_pair.second;
+			binary_operator.right= MakeRcPtr( TryParseBinaryOperator<priority + 1>() );
 
 			return TryParseBinaryOperatorRightPart<priority>( std::move(binary_operator) );
 		}
@@ -979,11 +963,11 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 	{
 	case Lexem::Type::SquareBracketLeft:
 		{
-			auto subscript_opearator= std::make_unique<SubscriptOperator>( it_->src_loc );
+			SubscriptOperator subscript_opearator( it_->src_loc );
 			NextLexem();
 
-			subscript_opearator->expression= std::move(expr);
-			subscript_opearator->index= ParseExpression();
+			subscript_opearator.expression= std::make_unique<Expression>( std::move(expr) );
+			subscript_opearator.index= MakeRcPtr( ParseExpression() );
 
 			ExpectLexem( Lexem::Type::SquareBracketRight );
 
@@ -992,18 +976,18 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 
 	case Lexem::Type::BracketLeft:
 		{
-			auto call_operator= std::make_unique<CallOperator>( it_->src_loc );
+			CallOperator call_operator( it_->src_loc );
 
-			call_operator->expression= std::move(expr);
+			call_operator.expression= std::make_unique<Expression>( std::move(expr) );
 
 			auto call_result= ParseCall();
-			if( const auto args= std::get_if< std::vector<Expression> >( &call_result ) )
-				call_operator->arguments= std::move(*args);
+			if( const auto args= std::get_if< std::vector< RcPtr<Expression> > >( &call_result ) )
+				call_operator.arguments= std::move(*args);
 			else if( std::holds_alternative< SignatureHelpTag >( call_result ) )
 			{
-				auto signature_help_result= std::make_unique<CallOperatorSignatureHelp>( it_->src_loc );
+				CallOperatorSignatureHelp signature_help_result( it_->src_loc );
 				NextLexem();
-				signature_help_result->expression= std::move(call_operator->expression);
+				signature_help_result.expression= std::move(call_operator.expression);
 				return std::move(signature_help_result);
 			}
 			else U_ASSERT(false);
@@ -1013,10 +997,10 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 
 	case Lexem::Type::SignatureHelpBracketLeft:
 		{
-			auto call_operator_signature_help= std::make_unique<CallOperatorSignatureHelp>( it_->src_loc );
+			CallOperatorSignatureHelp call_operator_signature_help( it_->src_loc );
 			NextLexem();
 
-			call_operator_signature_help->expression= std::move(expr);
+			call_operator_signature_help.expression= std::make_unique<Expression>( std::move(expr) );
 
 			return TryParseBinaryOperatorComponentPostfixOperator(std::move(call_operator_signature_help));
 		}
@@ -1611,11 +1595,13 @@ Lambda SyntaxAnalyzer::ParseLambda()
 	U_ASSERT( it_->text == Keywords::lambda_ );
 	Lambda result( it_->src_loc );
 
+	Function result_function( it_->src_loc );
+
 	NextLexem(); // Skip "lambda" keyword
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::nodiscard_ )
 	{
-		result.function.no_discard= true;
+		result_function.no_discard= true;
 		NextLexem();
 	}
 
@@ -1720,7 +1706,7 @@ Lambda SyntaxAnalyzer::ParseLambda()
 			NextLexem();
 		}
 
-		result.function.type.params.push_back( std::move( this_param ) );
+		result_function.type.params.push_back( std::move( this_param ) );
 	}
 
 	// Parse params.
@@ -1736,13 +1722,13 @@ Lambda SyntaxAnalyzer::ParseLambda()
 
 		if( it_->type == Lexem::Type::Ellipsis )
 		{
-			result.function.type.is_variadic= true;
+			result_function.type.is_variadic= true;
 			NextLexem();
 			ExpectLexem( Lexem::Type::BracketRight );
 			break;
 		}
 
-		result.function.type.params.push_back( ParseFunctionParam() );
+		result_function.type.params.push_back( ParseFunctionParam() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -1760,17 +1746,19 @@ Lambda SyntaxAnalyzer::ParseLambda()
 		}
 	} // for params.
 
-	ParseFunctionTypeEnding( result.function.type );
+	ParseFunctionTypeEnding( result_function.type );
 
 	// Make sure we have non-empty name.
-	result.function.name.push_back(
+	result_function.name.push_back(
 		Function::NameComponent{
 			std::string( OverloadedOperatorToString( OverloadedOperator::Call ) ),
 			result.src_loc,
 			false } );
 
 	// Lambdas always have a body.
-	result.function.block= std::make_unique<Block>( ParseBlock() );
+	result_function.block= std::make_unique<Block>( ParseBlock() );
+
+	result.function= MakeRcPtr( std::move( result_function ) );
 
 	return result;
 }
@@ -2098,14 +2086,14 @@ ComplexName SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( ComplexName
 		return ParseComplexNameTail( std::move(base) );
 }
 
-std::variant<std::vector<Expression>, SyntaxAnalyzer::SignatureHelpTag> SyntaxAnalyzer::ParseCall()
+std::variant<std::vector<RcPtr<Expression>>, SyntaxAnalyzer::SignatureHelpTag> SyntaxAnalyzer::ParseCall()
 {
 	ExpectLexem( Lexem::Type::BracketLeft );
 
-	std::vector<Expression> args;
+	std::vector<RcPtr<Expression>> args;
 	while( NotEndOfFile() && it_->type != Lexem::Type::BracketRight )
 	{
-		args.push_back( ParseExpression() );
+		args.push_back( MakeRcPtr( ParseExpression() ) );
 		if( it_->type == Lexem::Type::Comma )
 		{
 			NextLexem();
@@ -2298,7 +2286,7 @@ Initializer SyntaxAnalyzer::ParseConstructorInitializer()
 	ConstructorInitializer result( it_->src_loc );
 
 	auto call_result= ParseCall();
-	if( const auto args= std::get_if< std::vector<Expression> >( &call_result ) )
+	if( const auto args= std::get_if< std::vector<RcPtr<Expression>> >( &call_result ) )
 		result.arguments= std::move(*args);
 	else if( std::holds_alternative< SignatureHelpTag >( call_result ) )
 	{
@@ -2877,8 +2865,8 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 			{
 				AssignmentOperator assignment_operator( it_->src_loc );
 				NextLexem();
-				assignment_operator.l_value= std::move(expression_l);
-				assignment_operator.r_value= ParseExpression();
+				assignment_operator.l_value= MakeRcPtr( std::move(expression_l) );
+				assignment_operator.r_value= MakeRcPtr( ParseExpression() );
 
 				iteration_part_elements_list_builder.Append( std::move(assignment_operator) );
 			}
@@ -2887,8 +2875,8 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 				CompoundAssignmentOperator compound_assignment_operator( it_->src_loc );
 				compound_assignment_operator.compound_operation= *compound_operation;
 				NextLexem();
-				compound_assignment_operator.l_value= std::move(expression_l);
-				compound_assignment_operator.r_value= ParseExpression();
+				compound_assignment_operator.l_value= MakeRcPtr( std::move(expression_l) );
+				compound_assignment_operator.r_value= MakeRcPtr( ParseExpression() );
 
 				iteration_part_elements_list_builder.Append( std::move(compound_assignment_operator) );
 			}
@@ -3398,8 +3386,8 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 				AssignmentOperator assignment_operator( it_->src_loc );
 				NextLexem();
 
-				assignment_operator.l_value= std::move(l_expression);
-				assignment_operator.r_value= ParseExpression();
+				assignment_operator.l_value= MakeRcPtr( std::move(l_expression) );
+				assignment_operator.r_value= MakeRcPtr( ParseExpression() );
 
 				result_builder.Append( std::move(assignment_operator) );
 
@@ -3418,8 +3406,8 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 				op.compound_operation= *compound_operation;
 				NextLexem();
 
-				op.l_value= std::move(l_expression);
-				op.r_value= ParseExpression();
+				op.l_value= MakeRcPtr( std::move(l_expression) );
+				op.r_value= MakeRcPtr( ParseExpression() );
 
 				result_builder.Append( std::move(op) );
 
@@ -4106,56 +4094,38 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsToClassEnd()
 
 ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type end_lexem )
 {
-	ClassElementsList::Builder result_builder;
+	ClassElementsList result;
 
 	while( NotEndOfFile() )
 	{
 		if( it_->type == end_lexem )
 			break;
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
-		{
-			result_builder.Append( ParseFunction() );
-		}
+			result.push_back( MakeRcPtr( ParseFunction() ) );
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
-		{
-			result_builder.Append( ParseClass() );
-		}
+			result.push_back( MakeRcPtr( ParseClass() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
-		{
-			result_builder.Append( ParseVariablesDeclaration() );
-		}
+			result.push_back( MakeRcPtr( ParseVariablesDeclaration() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::thread_local_ )
-		{
-			result_builder.Append( ParseThreadLocalVariablesDeclaration() );
-		}
+			result.push_back( MakeRcPtr( ParseThreadLocalVariablesDeclaration() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
-		{
-			result_builder.Append( ParseAutoVariableDeclaration() );
-		}
+			result.push_back( MakeRcPtr( ParseAutoVariableDeclaration() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
-		{
-			result_builder.Append( ParseStaticAssert() );
-		}
+			result.push_back( MakeRcPtr( ParseStaticAssert() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
-		{
-			result_builder.Append( ParseEnum() );
-		}
+			result.push_back( MakeRcPtr( ParseEnum() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
-		{
-			result_builder.Append( ParseTypeAlias() );
-		}
+			result.push_back( MakeRcPtr( ParseTypeAlias() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ )
-		{
-			result_builder.Append( ParseMixin() );
-		}
+			result.push_back( MakeRcPtr( ParseMixin() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			TemplateVar template_= ParseTemplate();
 			
 			if( auto* const type_template= std::get_if<TypeTemplate>(&template_) )
-				result_builder.Append( std::move( *type_template ) );
+				result.push_back( MakeRcPtr( std::move( *type_template ) ) );
 			else if( auto* const function_template= std::get_if<FunctionTemplate>(&template_) )
-				result_builder.Append( std::move( *function_template ) );
+				result.push_back( MakeRcPtr( std::move( *function_template ) ) );
 			else if( std::get_if<EmptyVariant>(&template_) )
 			{}
 			else
@@ -4173,7 +4143,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			if( it_->text == Keywords::protected_ )
 				visibility= ClassMemberVisibility::Protected;
 
-			result_builder.Append( ClassVisibilityLabel( it_->src_loc, visibility ) );
+			result.push_back( MakeRcPtr( ClassVisibilityLabel( it_->src_loc, visibility ) ) );
 
 			NextLexem();
 			ExpectLexem( Lexem::Type::Colon );
@@ -4184,7 +4154,9 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			{
 				if( const Macro* const macro= FetchMacro( it_->text, Macro::Context::Class ) )
 				{
-					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseClassBodyElementsToFileEnd ) );
+					for( ClassElement& element : ExpandMacro( *macro, &SyntaxAnalyzer::ParseClassBodyElementsToFileEnd ) )
+						result.push_back( std::move( element ) );
+
 					continue;
 				}
 			}
@@ -4254,7 +4226,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			}
 			else
 			{
-				result_builder.Append( std::move( field ) );
+				result.push_back( MakeRcPtr( std::move( field ) ) );
 				PushErrorMessage();
 				TryRecoverAfterError( g_class_body_elements_control_lexems );
 				continue;
@@ -4264,7 +4236,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			if( !std::holds_alternative<EmptyVariant>( field_initializer ) )
 				field.initializer= std::make_unique<Initializer>( std::move(field_initializer) );
 
-			result_builder.Append( std::move( field ) );
+			result.push_back( MakeRcPtr( std::move( field ) ) );
 
 			if( it_->type == Lexem::Type::Semicolon )
 				NextLexem();
@@ -4276,7 +4248,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 		}
 	}
 
-	return result_builder.Build();
+	return result;
 }
 
 Class SyntaxAnalyzer::ParseClassBody()
@@ -4410,7 +4382,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	{
 		FunctionTemplate function_template( template_src_loc );
 		function_template.params= std::move(params);
-		function_template.function= std::make_unique<Function>(ParseFunction());
+		function_template.function= MakeRcPtr( ParseFunction() );
 		function_template.src_loc= function_template.function->src_loc;
 		return std::move(function_template);
 	}
@@ -4493,7 +4465,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			class_.keep_fields_order= keep_fields_order;
 			class_.no_discard= no_discard;
 			class_.parents= std::move(class_parents_list);
-			class_template.something= std::make_unique<Class>(std::move(class_));
+			class_template.something= MakeRcPtr( std::move(class_) );
 			return std::move(class_template);
 		}
 
@@ -4505,10 +4477,10 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			type_alias_template.name= name;
 			type_alias_template.is_short_form= is_short_form;
 
-			auto type_alias= std::make_unique<TypeAlias>( ParseTypeAliasBody() );
-			type_alias->name= std::move(name);
+			TypeAlias type_alias( ParseTypeAliasBody() );
+			type_alias.name= std::move(name);
 
-			type_alias_template.something= std::move(type_alias);
+			type_alias_template.something= MakeRcPtr( std::move(type_alias) );
 			return std::move(type_alias_template);
 		}
 

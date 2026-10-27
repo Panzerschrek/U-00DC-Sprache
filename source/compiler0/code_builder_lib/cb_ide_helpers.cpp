@@ -127,7 +127,7 @@ NamesScopePtr CodeBuilder::EvaluateCompletionRequestPrefix_r( const NamesScopePt
 	const CompletionRequestPrefixComponent& prefix_head= prefix.front();
 	const auto prefix_tail= prefix.drop_front();
 
-	if( const auto namespace_= std::get_if<const Synt::Namespace*>( &prefix_head ) )
+	if( const auto namespace_= std::get_if< RcPtr<Synt::Namespace> >( &prefix_head ) )
 	{
 		if( const NamesScopeValue* const value= start_scope->GetThisScopeValue( (*namespace_)->name ) )
 		{
@@ -135,7 +135,7 @@ NamesScopePtr CodeBuilder::EvaluateCompletionRequestPrefix_r( const NamesScopePt
 				return EvaluateCompletionRequestPrefix_r( names_scope, prefix_tail );
 		}
 	}
-	else if( const auto class_= std::get_if<const Synt::Class*>( &prefix_head ) )
+	else if( const auto class_= std::get_if< RcPtr<Synt::Class> >( &prefix_head ) )
 	{
 		if( const NamesScopeValue* const value= start_scope->GetThisScopeValue( (*class_)->name ) )
 		{
@@ -146,16 +146,16 @@ NamesScopePtr CodeBuilder::EvaluateCompletionRequestPrefix_r( const NamesScopePt
 			}
 		}
 	}
-	else if( const auto type_template= std::get_if<const Synt::TypeTemplate*>( &prefix_head ) )
+	else if( const auto type_template= std::get_if< RcPtr<Synt::TypeTemplate> >( &prefix_head ) )
 	{
 		TypeTemplatesSet temp_type_templates_set;
-		PrepareTypeTemplate( **type_template, temp_type_templates_set, *start_scope );
+		PrepareTypeTemplate( *type_template, temp_type_templates_set, *start_scope );
 		if( temp_type_templates_set.type_templates.empty() )
 			return nullptr;
 		const TypeTemplatePtr& prepared_type_template= temp_type_templates_set.type_templates.front();
 
-		// Try to found existing type template with same signature and provess completion inside it.
-		// It is faster to existing type template, rather than creating new one for each completion request.
+		// Try to found an existing type template with same signature and process completion inside it.
+		// It is faster to use an existing type template, rather than creating new one for each completion request.
 		if( const NamesScopeValue* const value= start_scope->GetThisScopeValue( (*type_template)->name ) )
 		{
 			if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
@@ -229,16 +229,16 @@ std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::SignatureHelpResultFina
 	return result;
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::VariablesDeclaration>& variables_declaration )
 {
 	WithGlobalFunctionContext(
 		[&]( FunctionContext& function_context )
 		{
 			// Complete type name.
-			const Type type= PrepareType( variables_declaration.type, names_scope, function_context );
+			const Type type= PrepareType( variables_declaration->type, names_scope, function_context );
 
 			// Complete names in initializers.
-			for( const Synt::VariablesDeclaration::VariableEntry& variable_entry : variables_declaration.variables )
+			for( const Synt::VariablesDeclaration::VariableEntry& variable_entry : variables_declaration->variables )
 			{
 				if( variable_entry.initializer == nullptr )
 					continue;
@@ -271,49 +271,49 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		} );
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::AutoVariableDeclaration>& auto_variable_declaration )
 {
 	WithGlobalFunctionContext(
 		[&]( FunctionContext& function_context )
 		{
 			// Complete names in auto-variable expression initializer.
-			BuildExpressionCode( auto_variable_declaration.initializer_expression, names_scope, function_context );
+			BuildExpressionCode( auto_variable_declaration->initializer_expression, names_scope, function_context );
 		} );
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::StaticAssert>& static_assert_ )
 {
 	WithGlobalFunctionContext(
 		[&]( FunctionContext& function_context )
 		{
 			// Complete names in static assert expression.
-			BuildExpressionCode( static_assert_.expression, names_scope, function_context );
+			BuildExpressionCode( static_assert_->expression, names_scope, function_context );
 		} );
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::TypeAlias>& type_alias )
 {
 	WithGlobalFunctionContext(
 		[&]( FunctionContext& function_context )
 		{
 			// Complete names in aliased type name.
-			PrepareType( type_alias.value, names_scope, function_context );
+			PrepareType( type_alias->value, names_scope, function_context );
 		} );
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Enum>& enum_ )
 {
 	// Nothing to complete in enum.
 	(void)names_scope;
 	(void)enum_;
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Function& function )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Function>& function )
 {
 	NamesScope* actual_names_scope= nullptr;
 	ClassPtr base_class= nullptr;
 
-	const auto& name= function.name;
+	const auto& name= function->name;
 
 	if( name.size() > 1 )
 	{
@@ -344,7 +344,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 			}
 
 			// Perform regular name lookup.
-			value= LookupName( names_scope, name[0].name, function.src_loc ).value;
+			value= LookupName( names_scope, name[0].name, function->src_loc ).value;
 			if( value != nullptr )
 				CollectDefinition( *value, name[0].src_loc );
 		}
@@ -414,7 +414,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		return;
 	}
 
-	if( function.block == nullptr )
+	if( function->block == nullptr )
 		return; // This is only prototype.
 
 	FunctionVariable& function_variable= functions_set.functions[ function_index ];
@@ -427,17 +427,17 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		function_variable.llvm_function->function->eraseFromParent();
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Class& class_ )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Class>& class_ )
 {
 	WithGlobalFunctionContext(
 		[&]( FunctionContext& function_context )
 		{
 			// Complete names in parent names.
-			for( const Synt::ComplexName& parent_name : class_.parents )
+			for( const Synt::ComplexName& parent_name : class_->parents )
 				ResolveValue( names_scope, function_context, parent_name );
 
 			// Complete names in non-sync tag.
-			if( const auto non_sync_expression= std::get_if< std::unique_ptr<const Synt::Expression> >( &class_.non_sync_tag ) )
+			if( const auto non_sync_expression= std::get_if< std::unique_ptr<const Synt::Expression> >( &class_->non_sync_tag ) )
 			{
 				if( *non_sync_expression != nullptr )
 					BuildExpressionCode( **non_sync_expression, names_scope, function_context );
@@ -447,7 +447,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		} );
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::TypeTemplate>& type_template )
 {
 	TypeTemplatesSet temp_type_templates_set;
 	PrepareTypeTemplate( type_template, temp_type_templates_set, names_scope );
@@ -455,7 +455,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		InstantiateTypeTemplateWithDummyArgs( temp_type_templates_set.type_templates.front() );
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_syntax_element )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::FunctionTemplate>& function_template_syntax_element )
 {
 	// Prepare function template and instantiate it with dummy template args in order to produce some sort of usefull completion result.
 
@@ -465,7 +465,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	FunctionTemplatePtr result_function_template;
 	for( const FunctionTemplatePtr& function_template : functions_set.template_functions )
 	{
-		if( function_template != nullptr && function_template->syntax_element == &function_template_syntax_element )
+		if( function_template != nullptr && function_template->syntax_element == function_template_syntax_element )
 		{
 			result_function_template= function_template;
 			break;
@@ -478,43 +478,43 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	InstantiateFunctionTemplateWithDummyArgs( result_function_template );
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Namespace>& namespace_ )
 {
 	// Nothing to do here, since completion for namespace has no sense and completion for namespace member will be trigered otherwise.
 	(void)names_scope;
 	(void)namespace_;
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::ClassField>& class_field )
 {
 	WithGlobalFunctionContext(
 		[&]( FunctionContext& function_context )
 		{
 			// Complete type name of class field.
-			PrepareType( class_field.type, names_scope, function_context );
+			PrepareType( class_field->type, names_scope, function_context );
 
 			// Complete inside reference notation expressions.
-			if( !std::holds_alternative< Synt::EmptyVariant >( class_field.reference_tag_expression ) )
-				BuildExpressionCode( class_field.reference_tag_expression, names_scope, function_context );
-			if( !std::holds_alternative< Synt::EmptyVariant >( class_field.inner_reference_tags_expression ) )
-				BuildExpressionCode( class_field.inner_reference_tags_expression, names_scope, function_context );
+			if( !std::holds_alternative< Synt::EmptyVariant >( class_field->reference_tag_expression ) )
+				BuildExpressionCode( class_field->reference_tag_expression, names_scope, function_context );
+			if( !std::holds_alternative< Synt::EmptyVariant >( class_field->inner_reference_tags_expression ) )
+				BuildExpressionCode( class_field->inner_reference_tags_expression, names_scope, function_context );
 		} );
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::ClassVisibilityLabel>& class_visibility_label )
 {
 	// Nothing to complete in class visibility label.
 	(void)names_scope;
 	(void)class_visibility_label;
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Mixin& mixin )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const RcPtr<Synt::Mixin>& mixin )
 {
 	// Complete in mixin expression.
 	WithGlobalFunctionContext(
 		[&]( FunctionContext& function_context )
 		{
-			BuildExpressionCode( mixin.expression, names_scope, function_context );
+			BuildExpressionCode( mixin->expression, names_scope, function_context );
 		} );
 }
 
