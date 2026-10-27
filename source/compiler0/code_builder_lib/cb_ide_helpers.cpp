@@ -154,8 +154,8 @@ NamesScopePtr CodeBuilder::EvaluateCompletionRequestPrefix_r( const NamesScopePt
 			return nullptr;
 		const TypeTemplatePtr& prepared_type_template= temp_type_templates_set.type_templates.front();
 
-		// Try to found existing type template with same signature and provess completion inside it.
-		// It is faster to existing type template, rather than creating new one for each completion request.
+		// Try to found an existing type template with same signature and process completion inside it.
+		// It is faster to use an existing type template, rather than creating new one for each completion request.
 		if( const NamesScopeValue* const value= start_scope->GetThisScopeValue( (*type_template)->name ) )
 		{
 			if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
