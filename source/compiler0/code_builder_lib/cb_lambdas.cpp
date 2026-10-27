@@ -808,38 +808,48 @@ ClassPtr CodeBuilder::GetLambdaPreprocessingDummyClass( NamesScope& names_scope 
 
 std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda, const llvm::ArrayRef<uint32_t> tuple_for_indices )
 {
-	// TODO - fix a tricky case in langauge server.
-	// We can't access source graph, since lambda syntax element may be from different source graph in case of completion or signature help.
-
 	std::string name;
 	name+= "_lambda_"; // Start with "_" in order to avoid collisions with user names.
 
 	SrcLoc src_loc= lambda.src_loc;
-	while(true)
-	{
-		// Encode file.
-		U_ASSERT( source_graph_ != nullptr );
-		U_ASSERT( src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
-		// Use file path hash instead of file index, because we need to use stable identifier independent on from which main file this file is imported.
-		name+= source_graph_->nodes_storage[ src_loc.GetFileIndex() ].file_path_hash;
-		name+= "_";
 
-		// Encode line and column into the name to produce different names for different lambdas in the same file.
+	if( completion_request_index_ != 0u )
+	{
+		// Workaround for language server.
+		// Don't even try accessing source graph in it, since it may be slightly outdated if completion for a lambda is performed.
 		name+= std::to_string( src_loc.GetLine() );
 		name+= "_";
-
 		name+= std::to_string( src_loc.GetColumn() );
 		name+= "_";
-
-		const auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
-		if( macro_expansion_index != SrcLoc::c_max_macro_expanison_index )
+	}
+	else
+	{
+		while(true)
 		{
-			// If this is a lambda defined via macro - add macro expansion context to the name.
-			src_loc= (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc;
-			continue;
+			// Encode file.
+			U_ASSERT( source_graph_ != nullptr );
+			U_ASSERT( src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
+			// Use file path hash instead of file index, because we need to use stable identifier independent on from which main file this file is imported.
+			name+= source_graph_->nodes_storage[ src_loc.GetFileIndex() ].file_path_hash;
+			name+= "_";
+
+			// Encode line and column into the name to produce different names for different lambdas in the same file.
+			name+= std::to_string( src_loc.GetLine() );
+			name+= "_";
+
+			name+= std::to_string( src_loc.GetColumn() );
+			name+= "_";
+
+			const auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
+			if( macro_expansion_index != SrcLoc::c_max_macro_expanison_index )
+			{
+				// If this is a lambda defined via macro - add macro expansion context to the name.
+				src_loc= (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc;
+				continue;
+			}
+			else
+				break; // Not a macro expansion context.
 		}
-		else
-			break; // Not a macro expansion context.
 	}
 
 	if( !tuple_for_indices.empty() )
