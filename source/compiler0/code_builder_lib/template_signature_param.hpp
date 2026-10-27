@@ -2,6 +2,7 @@
 #include <memory>
 #include <variant>
 #include <vector>
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "coroutine.hpp"
 #include "value.hpp"
 
@@ -83,21 +84,7 @@ public:
 		bool operator==( const Function& other ) const;
 	};
 
-	struct Coroutine
-	{
-		RcPtr<TemplateSignatureParam> return_type;
-
-		FunctionType::ReturnReferences return_references;
-		FunctionType::ReturnInnerReferences return_inner_references;
-
-		llvm::SmallVector<InnerReferenceKind, 4> inner_references;
-
-		CoroutineKind kind= CoroutineKind::Generator;
-		ValueType return_value_type= ValueType::Value;
-		bool non_sync= false;
-
-		bool operator==( const Coroutine& other ) const;
-	};
+	struct Coroutine;
 
 	struct SpecializedTemplate
 	{
@@ -136,7 +123,31 @@ public:
 	template<class Func>
 	auto Visit( const Func& func ) const
 	{
-		return std::visit( func, something_ );
+		if( const auto type= GetType() )
+			return func( *type );
+		else if( const auto variable= GetVariable() )
+			return func( *variable );
+		else if( const auto type_template= GetTypeTemplate() )
+			return func( *type_template );
+		else if( const auto template_param= GetTemplateParam() )
+			return func( *template_param );
+		else if( const auto array= GetArray() )
+			return func( *array );
+		else if( const auto tuple= GetTuple() )
+			return func( *tuple );
+		else if( const auto raw_pointer= GetRawPointer() )
+			return func( *raw_pointer );
+		else if( const auto function= GetFunction() )
+			return func( *function );
+		else if( const auto coroutine= GetCoroutine() )
+			return func( *coroutine );
+		else if( const auto specialized_template= GetSpecializedTemplate() )
+			return func( *specialized_template );
+		else
+		{
+			U_ASSERT( false );
+			return func( *GetSpecializedTemplate() );
+		}
 	}
 
 	bool operator==( const TemplateSignatureParam& other ) const;
@@ -152,7 +163,7 @@ private:
 		Tuple,
 		RawPointer,
 		Function,
-		Coroutine,
+		RcPtr<Coroutine>,
 		SpecializedTemplate> something_;
 };
 
@@ -163,6 +174,22 @@ struct TemplateSignatureParam::Function::Param
 	ValueType value_type= ValueType::Value;
 
 	bool operator==( const Param& other ) const;
+};
+
+struct TemplateSignatureParam::Coroutine
+{
+	TemplateSignatureParam return_type;
+
+	FunctionType::ReturnReferences return_references;
+	FunctionType::ReturnInnerReferences return_inner_references;
+
+	llvm::SmallVector<InnerReferenceKind, 4> inner_references;
+
+	CoroutineKind kind= CoroutineKind::Generator;
+	ValueType return_value_type= ValueType::Value;
+	bool non_sync= false;
+
+	bool operator==( const Coroutine& other ) const;
 };
 
 // Mapping of template params 0-N to signature params.

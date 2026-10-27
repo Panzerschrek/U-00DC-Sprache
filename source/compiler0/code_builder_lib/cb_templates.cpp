@@ -457,15 +457,14 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	TemplateSignatureParam::Coroutine coroutine_param;
 
 	coroutine_param.return_type=
-		MakeRcPtr(
-			CreateTemplateSignatureParameter(
-				names_scope,
-				function_context,
-				template_parameters,
-				template_parameters_usage_flags,
-				coroutine_type_name.return_type ) );
+		CreateTemplateSignatureParameter(
+			names_scope,
+			function_context,
+			template_parameters,
+			template_parameters_usage_flags,
+			coroutine_type_name.return_type );
 
-	if( coroutine_param.return_type->IsType() )
+	if( coroutine_param.return_type.IsType() )
 		return TemplateSignatureParam::Type{ PrepareTypeImpl( names_scope, function_context, coroutine_type_name ) };
 
 	coroutine_param.kind= coroutine_type_name.kind;
@@ -971,7 +970,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 					coroutine_type_description->return_inner_references == coroutine_param.return_inner_references &&
 					coroutine_type_description->inner_references == coroutine_param.inner_references &&
 					coroutine_type_description->non_sync == coroutine_param.non_sync &&
-					MatchTemplateArg( template_params, args_names_scope, coroutine_type_description->return_type, *coroutine_param.return_type );
+					MatchTemplateArg( template_params, args_names_scope, coroutine_type_description->return_type, coroutine_param.return_type );
 			}
 		}
 	}

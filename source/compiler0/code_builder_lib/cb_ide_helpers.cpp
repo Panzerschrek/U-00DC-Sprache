@@ -754,7 +754,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
 	NamesScope& args_names_scope,
 	const TemplateSignatureParam::Coroutine& coroutine_param )
 {
-	const TemplateArg return_type_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, *coroutine_param.return_type );
+	const TemplateArg return_type_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, coroutine_param.return_type );
 	if( const auto t= std::get_if<Type>( &return_type_type ) )
 	{
 		CoroutineTypeDescription coroutine_type_description;

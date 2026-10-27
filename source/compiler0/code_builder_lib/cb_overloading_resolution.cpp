@@ -236,7 +236,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 				l_coroutine->inner_references != r_coroutine->inner_references )
 				return ConversionsCompareResult::Incomparable;;
 
-			return TemplateSpecializationCompare( *l_coroutine->return_type, *r_coroutine->return_type );
+			return TemplateSpecializationCompare( l_coroutine->return_type, r_coroutine->return_type );
 		}
 		else U_ASSERT(false);
 	}

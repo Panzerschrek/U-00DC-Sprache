@@ -5,7 +5,7 @@
 namespace U
 {
 
-SIZE_ASSERT( TemplateSignatureParam, 104u )
+SIZE_ASSERT( TemplateSignatureParam, 56u )
 
 bool TemplateSignatureParam::Type::operator==( const Type& other ) const
 {
@@ -73,7 +73,7 @@ bool TemplateSignatureParam::Coroutine::operator==( const Coroutine& other ) con
 {
 	return
 		this->kind == other.kind &&
-		*this->return_type == *other.return_type &&
+		this->return_type == other.return_type &&
 		this->return_value_type == other.return_value_type &&
 		this->return_references == other.return_references &&
 		this->return_inner_references == other.return_inner_references &&
@@ -121,7 +121,7 @@ TemplateSignatureParam::TemplateSignatureParam( Function function )
 {}
 
 TemplateSignatureParam::TemplateSignatureParam( Coroutine coroutine )
-	: something_( std::move(coroutine) )
+	: something_( MakeRcPtr( std::move(coroutine) ) )
 {}
 
 TemplateSignatureParam::TemplateSignatureParam( SpecializedTemplate template_ )
@@ -185,7 +185,9 @@ const TemplateSignatureParam::Function* TemplateSignatureParam::GetFunction() co
 
 const TemplateSignatureParam::Coroutine* TemplateSignatureParam::GetCoroutine() const
 {
-	return std::get_if<Coroutine>( &something_ );
+	if( const auto c= std::get_if<RcPtr<Coroutine>>( &something_ ) )
+		return &**c;
+	return nullptr;
 }
 
 const TemplateSignatureParam::SpecializedTemplate* TemplateSignatureParam::GetSpecializedTemplate() const
@@ -287,7 +289,7 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	const TemplateSignatureParam::Coroutine& param )
 {
 	TemplateSignatureParam::Coroutine out_param= param;
-	out_param.return_type= MakeRcPtr( MapTemplateParamsToSignatureParams( mapping, *param.return_type ) );
+	out_param.return_type= MapTemplateParamsToSignatureParams( mapping, param.return_type );
 	return out_param;
 }
 
