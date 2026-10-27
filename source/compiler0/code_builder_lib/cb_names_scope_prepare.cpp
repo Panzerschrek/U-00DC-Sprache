@@ -396,7 +396,13 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 	const Synt::ProgramElementsList& namespace_elements )
 {
 	for( const Synt::ProgramElement& element : namespace_elements )
-		std::visit( [&]( const auto& el ) { NamesScopeFillOutOfLineElement( names_scope, el ); }, element );
+	{
+		// We can have only out-of line functions. Process them and process inner namespaces which may contain them.
+		if( const auto function= std::get_if< RcPtr<Synt::Function> >( &element ) )
+			NamesScopeFillOutOfLineElement( names_scope, *function );
+		else if( const auto namespace_= std::get_if< std::unique_ptr<const Synt::Namespace> >( &element ) )
+			NamesScopeFillOutOfLineElement( names_scope, **namespace_ );
+	}
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const RcPtr<Synt::Function>& function )

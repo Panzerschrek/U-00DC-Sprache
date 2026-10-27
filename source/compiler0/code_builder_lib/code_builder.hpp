@@ -1376,7 +1376,6 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Mixin>& mixin, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );
-	template<typename T> void NamesScopeFillOutOfLineElement( NamesScope&, const T& ) {} // Ignore almost all nodes in out of line filling, except a couple of special nodes.
 	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const RcPtr<Synt::Function>& function );
 	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 
