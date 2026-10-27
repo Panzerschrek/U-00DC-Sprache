@@ -1758,7 +1758,7 @@ Lambda SyntaxAnalyzer::ParseLambda()
 	// Lambdas always have a body.
 	result_function.block= std::make_unique<Block>( ParseBlock() );
 
-	result.function= RcPtr( std::move( result_function ) );
+	result.function= RcPtr<Function>( std::move( result_function ) );
 
 	return result;
 }

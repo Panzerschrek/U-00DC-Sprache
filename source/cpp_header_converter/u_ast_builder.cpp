@@ -1165,7 +1165,11 @@ void CppAstConsumer::EmitItemsSorted( ListType& out_items, const TypeNamesMap& t
 		}
 		else
 			std::visit(
-				[&]( const auto& t ) { out_items.push_back( RcPtr( EmitItemImpl( type_names_map, item_to_sort.name, t ) ) ); },
+				[&]( const auto& t )
+				{
+					auto item_emitted= EmitItemImpl( type_names_map, item_to_sort.name, t );
+					out_items.push_back( RcPtr< decltype(item_emitted) >( std::move(item_emitted) ) );
+				},
 				item );
 	}
 
@@ -1185,7 +1189,11 @@ void CppAstConsumer::EmitItemsSorted( ListType& out_items, const TypeNamesMap& t
 		}
 		else
 			std::visit(
-				[&]( const auto& t ) { out_items.push_back( RcPtr( EmitItemImpl( type_names_map, item_name, t ) ) ); },
+				[&]( const auto& t )
+				{
+					auto item_emitted= EmitItemImpl( type_names_map, item_name, t );
+					out_items.push_back( RcPtr< decltype(item_emitted) >( std::move(item_emitted) ) );
+				},
 				item );
 	}
 }
@@ -1782,7 +1790,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList& out_it
 			[&]( auto item )
 			{
 				if( !ShouldSkipEmittingItem( macro_directive->getLocation() ) )
-					out_items.push_back( RcPtr( std::move( item ) ) );
+					out_items.push_back( RcPtr< decltype(item) >( std::move( item ) ) );
 			};
 
 		clang::MacroInfo::const_tokens_iterator tokens_begin= macro_info->tokens_begin();
