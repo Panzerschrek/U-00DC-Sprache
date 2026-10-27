@@ -818,7 +818,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 
 			ExpectLexem( Lexem::Type::BraceRight );
 
-			result.push_back( std::make_unique<Namespace>( std::move( namespace_ ) ) );
+			result.push_back( RcPtr<Namespace>( std::move( namespace_ ) ) );
 		}
 		else if( it_->type == end_lexem )
 		{

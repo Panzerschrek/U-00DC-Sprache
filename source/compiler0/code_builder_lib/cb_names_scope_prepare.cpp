@@ -12,7 +12,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 		std::visit( [&]( const auto& el ) { NamesScopeFill( names_scope, el ); }, element );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const std::unique_ptr<const Synt::Namespace>& namespace_ )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Namespace>& namespace_ )
 {
 	NamesScope* result_scope= &names_scope;
 	if( const NamesScopeValue* const same_value= names_scope.GetThisScopeValue( namespace_->name ) )
@@ -400,7 +400,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 		// We can have only out-of line functions. Process them and process inner namespaces which may contain them.
 		if( const auto function= std::get_if< RcPtr<Synt::Function> >( &element ) )
 			NamesScopeFillOutOfLineElement( names_scope, *function );
-		else if( const auto namespace_= std::get_if< std::unique_ptr<const Synt::Namespace> >( &element ) )
+		else if( const auto namespace_= std::get_if< RcPtr<Synt::Namespace> >( &element ) )
 			NamesScopeFillOutOfLineElement( names_scope, **namespace_ );
 	}
 }

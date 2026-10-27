@@ -317,7 +317,7 @@ using ProgramElement= std::variant<
 	RcPtr<Class>,
 	RcPtr<TypeTemplate>,
 	RcPtr<FunctionTemplate>,
-	std::unique_ptr<const Namespace>,
+	RcPtr<Namespace>,
 	RcPtr<Mixin> >;
 
 using ProgramElementsList= std::vector< ProgramElement >;
