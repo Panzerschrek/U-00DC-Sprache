@@ -1569,7 +1569,7 @@ private:
 	const std::shared_ptr<CodeBuilderErrorsContainer> global_errors_= std::make_shared<CodeBuilderErrorsContainer>();
 
 	// Current source graph.
-	// Store shared_ptr because we need to keep it alive, because some internal structures contain raw pointers to its contents.
+	// We need to access it sometimes.
 	SourceGraphPtr source_graph_;
 
 	Synt::MacroExpansionContextsPtr macro_expansion_contexts_; // Macro expansion contexts of currently compiled source graph.
@@ -1604,8 +1604,8 @@ private:
 	std::unordered_map<LambdaKey, std::unique_ptr<Class>, LambdaKeyHasher> lambda_classes_table_;
 	std::unique_ptr<Class> lambda_preprocessing_dummy_class_; // Lazily created.
 
-	// Store here mixin expansion results, because we need syntax elements to be alive, because they may be accessed during code building via raw pointers.
-	// Also it's useful to reuse expansions of same mixins in different templates if result text is identical.
+	// Store here mixin expansion results.
+	// It's useful to reuse expansions of same mixins in different templates if result text is identical.
 	// Important note: unordered_map doesn't invalidate pointers/references to elements after new elements are inserted.
 	// This makes it safe to store somewhere pointers to elements of this container, assuming no elements are deleted.
 	template<typename T> using MixinExpansionsMap= std::unordered_map<MixinExpansionKey, T, MixinExpansionKeyHasher>;
