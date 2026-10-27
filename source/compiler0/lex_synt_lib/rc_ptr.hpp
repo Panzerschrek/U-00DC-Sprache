@@ -186,6 +186,14 @@ inline bool operator!=( const RcPtr<T>& l, const RcPtr<T>& r ) noexcept
 	return l.get_raw_ptr() != r.get_raw_ptr();
 }
 
+// A helper function for creation of RcPtr.
+// It's recommended to move the input argument into this function.
+template<typename T>
+RcPtr<T> MakeRcPtr( T t )
+{
+	return RcPtr<T>( std::move(t) );
+}
+
 } // namespace U
 
 template<typename T>

@@ -1159,17 +1159,13 @@ void CppAstConsumer::EmitItemsSorted( ListType& out_items, const TypeNamesMap& t
 		{
 			// HACK! Emit a namespace if can, otherwise emit a class.
 			if constexpr( std::is_same_v< ListType, Synt::ProgramElementsList > )
-				out_items.push_back( RcPtr<Synt::Namespace>( EmitNamespaceItem( type_names_map, item_to_sort.name, *namespace_ ) ) );
+				out_items.push_back( MakeRcPtr( EmitNamespaceItem( type_names_map, item_to_sort.name, *namespace_ ) ) );
 			else
-				out_items.push_back( RcPtr<Synt::Class>( EmitItemImpl( type_names_map, item_to_sort.name, *namespace_ ) ) );
+				out_items.push_back( MakeRcPtr( EmitItemImpl( type_names_map, item_to_sort.name, *namespace_ ) ) );
 		}
 		else
 			std::visit(
-				[&]( const auto& t )
-				{
-					auto item_emitted= EmitItemImpl( type_names_map, item_to_sort.name, t );
-					out_items.push_back( RcPtr< decltype(item_emitted) >( std::move(item_emitted) ) );
-				},
+				[&]( const auto& t ) { out_items.push_back( MakeRcPtr( EmitItemImpl( type_names_map, item_to_sort.name, t ) ) ); },
 				item );
 	}
 
@@ -1183,17 +1179,13 @@ void CppAstConsumer::EmitItemsSorted( ListType& out_items, const TypeNamesMap& t
 		{
 			// HACK! Emit a namespace if can, otherwise emit a class.
 			if constexpr( std::is_same_v< ListType, Synt::ProgramElementsList > )
-				out_items.push_back( RcPtr<Synt::Namespace>( EmitNamespaceItem( type_names_map, item_name, *namespace_ ) ) );
+				out_items.push_back( MakeRcPtr( EmitNamespaceItem( type_names_map, item_name, *namespace_ ) ) );
 			else
-				out_items.push_back( RcPtr<Synt::Class>( EmitItemImpl( type_names_map, item_name, *namespace_ ) ) );
+				out_items.push_back( MakeRcPtr( EmitItemImpl( type_names_map, item_name, *namespace_ ) ) );
 		}
 		else
 			std::visit(
-				[&]( const auto& t )
-				{
-					auto item_emitted= EmitItemImpl( type_names_map, item_name, t );
-					out_items.push_back( RcPtr< decltype(item_emitted) >( std::move(item_emitted) ) );
-				},
+				[&]( const auto& t ) { out_items.push_back( MakeRcPtr( EmitItemImpl( type_names_map, item_name, t ) ) ); },
 				item );
 	}
 }
@@ -1292,7 +1284,7 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 					field.type= TranslateType( *base.getType().getTypePtr(), type_names_map );
 					field.name= "ü_base" + std::to_string( num_bases );
 
-					class_.elements.push_back( RcPtr<Synt::ClassField>( std::move(field) ) );
+					class_.elements.push_back( MakeRcPtr( std::move(field) ) );
 
 					++num_bases;
 
@@ -1340,7 +1332,7 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 
 					field.name= "ü_vptr";
 
-					class_.elements.push_back( RcPtr<Synt::ClassField>( std::move(field) ) );
+					class_.elements.push_back( MakeRcPtr( std::move(field) ) );
 				}
 			}
 
@@ -1393,7 +1385,7 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 					else
 						field.name= TranslateIdentifier( src_name );
 
-					class_.elements.push_back( RcPtr<Synt::ClassField>( std::move(field) ) );
+					class_.elements.push_back( MakeRcPtr( std::move(field) ) );
 				}
 
 				// Assume we have at least one field (which is necessary for all structs in C).
@@ -1407,7 +1399,7 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 			class_.kind_attribute= Synt::ClassKindAttribute::Class;
 
 			// Add deleted default constructor.
-			class_.elements.push_back( RcPtr<Synt::Function>( GetDeletedDefaultConstructor() ) );
+			class_.elements.push_back( MakeRcPtr( GetDeletedDefaultConstructor() ) );
 		}
 	}
 	else if( record_declaration.isUnion() )
@@ -1422,7 +1414,7 @@ Synt::Class CppAstConsumer::EmitItemImpl(
 			class_.kind_attribute= Synt::ClassKindAttribute::Class;
 
 			// Add deleted default constructor.
-			class_.elements.push_back( RcPtr<Synt::Function>( GetDeletedDefaultConstructor() ) );
+			class_.elements.push_back( MakeRcPtr( GetDeletedDefaultConstructor() ) );
 
 			EmitItemsSorted( class_.elements, type_names_map, item.items );
 		}
@@ -1618,7 +1610,7 @@ Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
 	field.type= std::move(array_type);
 
 	Synt::ClassElementsList class_elements;
-	class_elements.push_back( RcPtr<Synt::ClassField>( std::move(field) ) );
+	class_elements.push_back( MakeRcPtr( std::move(field) ) );
 
 	EmitItemsSorted( class_elements, type_names_map, subitems );
 
@@ -1790,7 +1782,7 @@ void CppAstConsumer::EmitDefinitionsForMacros( Synt::ProgramElementsList& out_it
 			[&]( auto item )
 			{
 				if( !ShouldSkipEmittingItem( macro_directive->getLocation() ) )
-					out_items.push_back( RcPtr< decltype(item) >( std::move( item ) ) );
+					out_items.push_back( MakeRcPtr( std::move( item ) ) );
 			};
 
 		clang::MacroInfo::const_tokens_iterator tokens_begin= macro_info->tokens_begin();
@@ -2037,7 +2029,7 @@ Synt::Expression CppAstConsumer::TranslateNumericLiteral( const clang::Token& to
 
 					binary_operator.left= RcPtr<Synt::Expression>( std::move( zero ) );
 				}
-				binary_operator.right= RcPtr<Synt::Expression>( std::move( expression ) );
+				binary_operator.right= MakeRcPtr( std::move( expression ) );
 				expression= std::move( binary_operator );
 			}
 			else
