@@ -203,8 +203,34 @@ const TemplateSignatureParam::SpecializedTemplate* TemplateSignatureParam::GetSp
 
 bool TemplateSignatureParam::operator==( const TemplateSignatureParam& other ) const
 {
-	// TODO - fix this, == for RcPtr isn't correct.
-	return this->something_ == other.something_;
+	if( this->something_.index() != other.something_.index() )
+		return false;
+
+	if( const auto type= GetType() )
+		return *type == *other.GetType();
+	else if( const auto variable= GetVariable() )
+		return *variable == *other.GetVariable();
+	else if( const auto type_template= GetTypeTemplate() )
+		return *type_template == *other.GetTypeTemplate();
+	else if( const auto template_param= GetTemplateParam() )
+		return *template_param == *other.GetTemplateParam();
+	else if( const auto array= GetArray() )
+		return *array == *other.GetArray();
+	else if( const auto tuple= GetTuple() )
+		return *tuple == *other.GetTuple();
+	else if( const auto raw_pointer= GetRawPointer() )
+		return *raw_pointer == *other.GetRawPointer();
+	else if( const auto function= GetFunction() )
+		return *function == *other.GetFunction();
+	else if( const auto coroutine= GetCoroutine() )
+		return *coroutine == *other.GetCoroutine();
+	else if( const auto specialized_template= GetSpecializedTemplate() )
+		return *specialized_template == *other.GetSpecializedTemplate();
+	else
+	{
+		U_ASSERT( false );
+		return false;
+	}
 }
 
 namespace
