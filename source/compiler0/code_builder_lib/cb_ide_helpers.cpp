@@ -465,8 +465,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	FunctionTemplatePtr result_function_template;
 	for( const FunctionTemplatePtr& function_template : functions_set.template_functions )
 	{
-		// TODO - use here proper == for RcPtr.
-		if( function_template != nullptr && &*function_template->syntax_element == &*function_template_syntax_element )
+		if( function_template != nullptr && function_template->syntax_element == function_template_syntax_element )
 		{
 			result_function_template= function_template;
 			break;
