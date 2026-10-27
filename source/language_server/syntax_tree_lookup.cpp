@@ -96,7 +96,7 @@ void FindImpl( const Synt::CallOperatorSignatureHelp& call_operator_signature_he
 	if( call_operator_signature_help.src_loc.GetLine() == line_ && call_operator_signature_help.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &call_operator_signature_help, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -121,7 +121,7 @@ void FindImpl( const Synt::MemberAccessOperatorCompletion& member_access_operato
 	if( member_access_operator_completion.src_loc.GetLine() == line_ && member_access_operator_completion.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &member_access_operator_completion, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -214,7 +214,7 @@ void FindImpl( const Synt::MoveOperatorCompletion& move_operator_completion )
 	if( move_operator_completion.src_loc.GetLine() == line_ && move_operator_completion.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &move_operator_completion, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -234,7 +234,7 @@ void FindImpl( const Synt::Lambda& lambda )
 			if( capture.src_loc.GetLine() == line_ && capture.src_loc.GetColumn() == column_ )
 			{
 				U_ASSERT( global_item_ != std::nullopt );
-				result_= SyntaxTreeLookupResult{ prefix_, &capture, *global_item_ };
+				result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 			}
 		}
 	}
@@ -359,7 +359,7 @@ void FindImpl( const Synt::RootNamespaceNameLookupCompletion& root_namespace_nam
 	if( line_ == root_namespace_name_lookup_completion.src_loc.GetLine() && column_ == root_namespace_name_lookup_completion.src_loc.GetColumn() )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &root_namespace_name_lookup_completion, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -373,7 +373,7 @@ void FindImpl( const Synt::NameLookupCompletion& name_lookup_completion )
 	if( line_ == name_lookup_completion.src_loc.GetLine() && column_ == name_lookup_completion.src_loc.GetColumn() )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &name_lookup_completion, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -389,7 +389,7 @@ void FindImpl( const Synt::NamesScopeNameFetchCompletion& names_scope_name_fetch
 	if( line_ == names_scope_name_fetch_completion.src_loc.GetLine() && column_ == names_scope_name_fetch_completion.src_loc.GetColumn() )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &names_scope_name_fetch_completion, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -419,7 +419,7 @@ void FindImpl( const Synt::StructNamedInitializer& struct_named_initializer )
 		if( line_ == member_initializer.src_loc.GetLine() && column_ == member_initializer.src_loc.GetColumn() )
 		{
 			U_ASSERT( global_item_ != std::nullopt );
-			result_= SyntaxTreeLookupResult{ prefix_, &member_initializer, *global_item_ };
+			result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 		}
 
 		FindImpl( member_initializer.initializer );
@@ -437,7 +437,7 @@ void FindImpl( const Synt::ConstructorInitializerSignatureHelp& constructor_init
 	if( constructor_initializer_signature_help.src_loc.GetLine() == line_ && constructor_initializer_signature_help.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &constructor_initializer_signature_help, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 	}
 }
 
@@ -531,7 +531,7 @@ void FindImpl( const Synt::DecomposeDeclarationStructComponent& component )
 		if( entry.src_loc.GetLine() == line_ && entry.src_loc.GetColumn() == column_ )
 		{
 			U_ASSERT( global_item_ != std::nullopt );
-			result_= SyntaxTreeLookupResult{ prefix_, &entry, *global_item_ };
+			result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 		}
 	}
 }
@@ -565,7 +565,7 @@ void FindImpl( const Synt::Function& function )
 		if( line_ == name_component.src_loc.GetLine() && column_ == name_component.src_loc.GetColumn() )
 		{
 			U_ASSERT( global_item_ != std::nullopt );
-			result_= SyntaxTreeLookupResult{ prefix_, &name_component, *global_item_ };
+			result_= SyntaxTreeLookupResult{ prefix_, *global_item_ };
 		}
 	}
 

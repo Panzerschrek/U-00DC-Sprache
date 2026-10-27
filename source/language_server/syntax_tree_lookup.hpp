@@ -7,19 +7,6 @@ namespace U
 namespace LangServer
 {
 
-using CompletionSyntaxElement= std::variant<
-	const Synt::RootNamespaceNameLookupCompletion*,
-	const Synt::NameLookupCompletion*,
-	const Synt::NamesScopeNameFetchCompletion*,
-	const Synt::MemberAccessOperatorCompletion*,
-	const Synt::StructNamedInitializer::MemberInitializer*,
-	const Synt::MoveOperatorCompletion*,
-	const Synt::Function::NameComponent*,
-	const Synt::CallOperatorSignatureHelp*,
-	const Synt::ConstructorInitializerSignatureHelp*,
-	const Synt::Lambda::CaptureListElement*,
-	const Synt::DecomposeDeclarationStructComponent::Entry*>;
-
 using GlobalItem= std::variant<
 	RcPtr<Synt::Namespace>,
 	RcPtr<Synt::VariablesDeclaration>,
@@ -38,7 +25,6 @@ using GlobalItem= std::variant<
 struct SyntaxTreeLookupResult
 {
 	std::vector<CodeBuilder::CompletionRequestPrefixComponent> prefix;
-	CompletionSyntaxElement element;
 	GlobalItem global_item;
 };
 
