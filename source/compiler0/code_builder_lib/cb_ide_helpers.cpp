@@ -652,8 +652,8 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
 	NamesScope& args_names_scope,
 	const TemplateSignatureParam::Array& array_type_param )
 {
-	const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, *array_type_param.element_type );
-	const TemplateArg element_count= CreateDummyTemplateSignatureArg( template_params, args_names_scope, *array_type_param.element_count );
+	const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, array_type_param.element_type );
+	const TemplateArg element_count= CreateDummyTemplateSignatureArg( template_params, args_names_scope, array_type_param.element_count );
 
 	if( const auto t= std::get_if<Type>( &element_type ) )
 	{
@@ -702,7 +702,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
 	NamesScope& args_names_scope,
 	const TemplateSignatureParam::RawPointer& raw_pointer_type_param )
 {
-	const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, *raw_pointer_type_param.element_type );
+	const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, raw_pointer_type_param.element_type );
 	if( const auto t= std::get_if<Type>( &element_type ) )
 	{
 		RawPointerType raw_pointer;
@@ -736,7 +736,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
 		function_type.params.push_back( std::move(out_param) );
 	}
 
-	const TemplateArg return_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, *function_param.return_type );
+	const TemplateArg return_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, function_param.return_type );
 	if( const auto t= std::get_if<Type>( &return_type ) )
 		function_type.return_type= *t;
 	else

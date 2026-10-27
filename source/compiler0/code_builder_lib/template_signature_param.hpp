@@ -45,15 +45,7 @@ public:
 		bool operator==( const TemplateParam& other ) const;
 	};
 
-	// use shared_ptr to avoid manual copy constructors creation.
-
-	struct Array
-	{
-		RcPtr<TemplateSignatureParam> element_count;
-		RcPtr<TemplateSignatureParam> element_type;
-
-		bool operator==( const Array& other ) const;
-	};
+	struct Array;
 
 	struct Tuple
 	{
@@ -62,28 +54,8 @@ public:
 		bool operator==( const Tuple& other ) const;
 	};
 
-	struct RawPointer
-	{
-		RcPtr<TemplateSignatureParam> element_type;
-
-		bool operator==( const RawPointer& other ) const;
-	};
-
-	struct Function
-	{
-		RcPtr<TemplateSignatureParam> return_type;
-		ValueType return_value_type= ValueType::Value;
-
-		bool is_unsafe= false;
-		bool is_variadic= false;
-		CallingConvention calling_convention= CallingConvention::Default;
-
-		struct Param;
-		std::vector<Param> params;
-
-		bool operator==( const Function& other ) const;
-	};
-
+	struct RawPointer;
+	struct Function;
 	struct Coroutine;
 
 	struct SpecializedTemplate
@@ -154,26 +126,57 @@ public:
 	bool operator!=( const TemplateSignatureParam& other ) const { return !(*this == other); }
 
 private:
+	// Use RcPtr to allow cheap copying.
 	std::variant<
 		Type,
 		Variable,
 		TypeTemplate,
 		TemplateParam,
-		Array,
+		RcPtr<Array>,
 		Tuple,
-		RawPointer,
-		Function,
+		RcPtr<RawPointer>,
+		RcPtr<Function>,
 		RcPtr<Coroutine>,
 		SpecializedTemplate> something_;
 };
 
 // Declare it after "TemplateSignatureParam", since we require it to be complete.
-struct TemplateSignatureParam::Function::Param
-{
-	TemplateSignatureParam type;
-	ValueType value_type= ValueType::Value;
 
-	bool operator==( const Param& other ) const;
+struct TemplateSignatureParam::Array
+{
+	TemplateSignatureParam element_count;
+	TemplateSignatureParam element_type;
+
+	bool operator==( const Array& other ) const;
+};
+
+struct TemplateSignatureParam::RawPointer
+{
+	TemplateSignatureParam element_type;
+
+	bool operator==( const RawPointer& other ) const;
+};
+
+struct TemplateSignatureParam::Function
+{
+	TemplateSignatureParam return_type;
+	ValueType return_value_type= ValueType::Value;
+
+	bool is_unsafe= false;
+	bool is_variadic= false;
+	CallingConvention calling_convention= CallingConvention::Default;
+
+	struct Param
+	{
+		TemplateSignatureParam type;
+		ValueType value_type= ValueType::Value;
+
+		bool operator==( const Param& other ) const;
+	};
+
+	std::vector<Param> params;
+
+	bool operator==( const Function& other ) const;
 };
 
 struct TemplateSignatureParam::Coroutine
