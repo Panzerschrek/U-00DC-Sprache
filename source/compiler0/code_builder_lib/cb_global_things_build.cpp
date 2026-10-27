@@ -1402,26 +1402,29 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 	const IncompleteGlobalVariable incomplete_global_variable= *global_variable_value.GetIncompleteGlobalVariable();
 
 	SrcLoc src_loc;
-	if( incomplete_global_variable.variables_declaration != nullptr )
-		src_loc= incomplete_global_variable.variables_declaration->variables[ incomplete_global_variable.element_index ].src_loc;
-	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
-		src_loc= incomplete_global_variable.auto_variable_declaration->src_loc;
-
 	std::string_view name;
-	if( incomplete_global_variable.variables_declaration != nullptr )
-		name= incomplete_global_variable.variables_declaration->variables[ incomplete_global_variable.element_index ].name;
-	if( incomplete_global_variable.auto_variable_declaration != nullptr )
-		name= incomplete_global_variable.auto_variable_declaration->name;
+
+	if( const auto v= std::get_if< IncompleteGlobalVariableWithType >( &incomplete_global_variable ) )
+	{
+		src_loc= v->variables_declaration->variables[ v->variable_index ].src_loc;
+		name= v->variables_declaration->variables[ v->variable_index ].name;
+	}
+	else if( const auto av= std::get_if< RcPtr<Synt::AutoVariableDeclaration> >( &incomplete_global_variable ) )
+	{
+		src_loc= (*av)->src_loc;
+		name= (*av)->name;
+	}
+	else U_ASSERT(false);
 
 	DETECT_GLOBALS_LOOP( &global_variable_value, std::string(name), src_loc );
 	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
 
 	const StackVariablesStorage dummy_stack( function_context );
 
-	if( incomplete_global_variable.variables_declaration != nullptr )
+	if( const auto incomplete_global_variable_with_type= std::get_if< IncompleteGlobalVariableWithType >( &incomplete_global_variable ) )
 	{
-		const auto& variables_declaration= incomplete_global_variable.variables_declaration;
-		const Synt::VariablesDeclaration::VariableEntry& variable_declaration= variables_declaration->variables[ incomplete_global_variable.element_index ];
+		const Synt::VariablesDeclaration& variables_declaration= *incomplete_global_variable_with_type->variables_declaration;
+		const Synt::VariablesDeclaration::VariableEntry& variable_declaration= variables_declaration.variables[ incomplete_global_variable_with_type->variable_index ];
 
 		const bool is_mutable = variable_declaration.mutability_modifier == MutabilityModifier::Mutable;
 		// Disable global mutable references because of problems with initializers and references protection.
@@ -1431,7 +1434,7 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 			FAIL_RETURN;
 		}
 
-		const Type type= PrepareType( variables_declaration->type, names_scope, function_context );
+		const Type type= PrepareType( variables_declaration.type, names_scope, function_context );
 		if( !EnsureTypeComplete( type ) ) // Type completeness required for variable or reference declaration.
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), variable_declaration.src_loc, type );
@@ -1502,7 +1505,7 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 						variable->llvm_value );
 				function_context.variables_state.AddNode( variable_for_initialization );
 				function_context.variables_state.AddLink( variable, variable_for_initialization );
-				function_context.variables_state.TryAddInnerLinks( variable, variable_for_initialization, names_scope.GetErrors(), variables_declaration->src_loc );
+				function_context.variables_state.TryAddInnerLinks( variable, variable_for_initialization, names_scope.GetErrors(), variables_declaration.src_loc );
 
 				if( variable_declaration.initializer != nullptr )
 					variable->constexpr_value= ApplyInitializer( variable_for_initialization, names_scope, function_context, *variable_declaration.initializer );
@@ -1585,22 +1588,22 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 
 		global_variable_value= variable_reference;
 	}
-	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
+	else if( const auto auto_variable_declaration_ptr= std::get_if< RcPtr<Synt::AutoVariableDeclaration> >( &incomplete_global_variable ) )
 	{
-		const auto& auto_variable_declaration= incomplete_global_variable.auto_variable_declaration;
-		const bool is_mutable = auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable;
+		const Synt::AutoVariableDeclaration& auto_variable_declaration= **auto_variable_declaration_ptr;
+		const bool is_mutable = auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable;
 
 		// Disable global mutable references because of problems with initializers and references protection.
-		if( is_mutable && auto_variable_declaration->reference_modifier == ReferenceModifier::Reference )
+		if( is_mutable && auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
-			REPORT_ERROR( MutableGlobalReferencesAreNotAllowed, names_scope.GetErrors(), auto_variable_declaration->src_loc );
+			REPORT_ERROR( MutableGlobalReferencesAreNotAllowed, names_scope.GetErrors(), auto_variable_declaration.src_loc );
 			FAIL_RETURN;
 		}
 
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		const VariablePtr initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration->initializer_expression, names_scope, function_context );
+		const VariablePtr initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration.initializer_expression, names_scope, function_context );
 		if( initializer_experrsion->type == invalid_type_ )
 		{
 			FAIL_RETURN; // Some error was generated before.
@@ -1611,34 +1614,34 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 				initializer_experrsion->type,
 				is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				auto_variable_declaration->name,
+				auto_variable_declaration.name,
 				nullptr,
 				initializer_experrsion->constexpr_value );
 
 		if( !EnsureTypeComplete( variable_reference->type ) ) // Type completeness required for variable or reference declaration.
 		{
-			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), auto_variable_declaration->src_loc, variable_reference->type );
+			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), auto_variable_declaration.src_loc, variable_reference->type );
 			FAIL_RETURN;
 		}
 		if( !variable_reference->type.CanBeConstexpr() )
 		{
-			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), auto_variable_declaration->src_loc );
+			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), auto_variable_declaration.src_loc );
 			FAIL_RETURN;
 		}
 
-		if( auto_variable_declaration->reference_modifier == ReferenceModifier::Reference )
+		if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
 			if( initializer_experrsion->value_type == ValueType::Value )
 			{
-				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), auto_variable_declaration->src_loc );
+				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), auto_variable_declaration.src_loc );
 				FAIL_RETURN;
 			}
 
 			variable_reference->llvm_value= initializer_experrsion->llvm_value;
 		}
-		else if( auto_variable_declaration->reference_modifier == ReferenceModifier::None )
+		else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
-			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, auto_variable_declaration->name, variable_reference->type, !is_mutable );
+			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, auto_variable_declaration.name, variable_reference->type, !is_mutable );
 			llvm::GlobalVariable* const global_variable=
 				is_mutable
 					? CreateGlobalMutableVariable( variable_reference->type, name_mangled, src_loc )
@@ -1651,13 +1654,13 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 
 			// Create debug info only for mutable variables. Creating it for constants has no reason.
 			if( is_mutable )
-				debug_info_builder_->CreateGlobalVariableInfo( names_scope, *variable_reference, auto_variable_declaration->name, auto_variable_declaration->src_loc );
+				debug_info_builder_->CreateGlobalVariableInfo( names_scope, *variable_reference, auto_variable_declaration.name, auto_variable_declaration.src_loc );
 		}
 		else U_ASSERT(false);
 
 		if( variable_reference->constexpr_value == nullptr )
 		{
-			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), auto_variable_declaration->src_loc );
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), auto_variable_declaration.src_loc );
 			FAIL_RETURN;
 		}
 

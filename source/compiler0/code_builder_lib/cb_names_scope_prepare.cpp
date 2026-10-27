@@ -37,16 +37,16 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Nam
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::VariablesDeclaration>& variables_declaration )
 {
-	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration->variables )
+	for( size_t i= 0; i < variables_declaration->variables.size(); ++i )
 	{
+		const Synt::VariablesDeclaration::VariableEntry& variable_declaration= variables_declaration->variables[i];
+
 		if( IsKeyword( variable_declaration.name ) )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration.src_loc );
 
-		IncompleteGlobalVariable incomplete_global_variable;
-		incomplete_global_variable.variables_declaration= variables_declaration;
-		incomplete_global_variable.element_index= size_t( &variable_declaration - variables_declaration->variables.data() );
+		IncompleteGlobalVariable incomplete_global_variable= IncompleteGlobalVariableWithType{ variables_declaration, uint32_t(i) };
 
-		if( names_scope.AddName( variable_declaration.name, NamesScopeValue( incomplete_global_variable, variable_declaration.src_loc ) ) == nullptr )
+		if( names_scope.AddName( variable_declaration.name, NamesScopeValue( std::move(incomplete_global_variable), variable_declaration.src_loc ) ) == nullptr )
 			REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration.src_loc, variable_declaration.name );
 	}
 }
@@ -56,10 +56,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const RcPtr<Synt::Aut
 	if( IsKeyword( variable_declaration->name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration->src_loc );
 
-	IncompleteGlobalVariable incomplete_global_variable;
-	incomplete_global_variable.auto_variable_declaration= variable_declaration;
+	IncompleteGlobalVariable incomplete_global_variable= variable_declaration;
 
-	if( names_scope.AddName( variable_declaration->name, NamesScopeValue( incomplete_global_variable, variable_declaration->src_loc ) ) == nullptr )
+	if( names_scope.AddName( variable_declaration->name, NamesScopeValue( std::move( incomplete_global_variable ), variable_declaration->src_loc ) ) == nullptr )
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration->src_loc, variable_declaration->name );
 }
 

@@ -231,15 +231,13 @@ struct TypeAlias
 	RcPtr<Synt::TypeAlias> syntax_element;
 };
 
-struct IncompleteGlobalVariable
+struct IncompleteGlobalVariableWithType
 {
-	// Exists one of.
-	// TODO - rework this, use "variant".
 	RcPtr<Synt::VariablesDeclaration> variables_declaration;
-	RcPtr<Synt::AutoVariableDeclaration> auto_variable_declaration;
-
-	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
+	uint32_t variable_index= ~0u;
 };
+
+using IncompleteGlobalVariable= std::variant< IncompleteGlobalVariableWithType, RcPtr<Synt::AutoVariableDeclaration> >;
 
 struct YetNotDeducedTemplateArg
 {};
