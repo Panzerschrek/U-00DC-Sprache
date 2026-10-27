@@ -85,14 +85,15 @@ public:
 
 	struct Coroutine
 	{
-		CoroutineKind kind= CoroutineKind::Generator;
 		RcPtr<TemplateSignatureParam> return_type;
-		ValueType return_value_type= ValueType::Value;
 
 		FunctionType::ReturnReferences return_references;
 		FunctionType::ReturnInnerReferences return_inner_references;
 
 		llvm::SmallVector<InnerReferenceKind, 4> inner_references;
+
+		CoroutineKind kind= CoroutineKind::Generator;
+		ValueType return_value_type= ValueType::Value;
 		bool non_sync= false;
 
 		bool operator==( const Coroutine& other ) const;

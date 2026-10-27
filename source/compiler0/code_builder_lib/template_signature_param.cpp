@@ -1,8 +1,11 @@
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "../../lex_synt_lib_common/size_assert.hpp"
 #include "template_signature_param.hpp"
 
 namespace U
 {
+
+SIZE_ASSERT( TemplateSignatureParam, 104u )
 
 bool TemplateSignatureParam::Type::operator==( const Type& other ) const
 {
