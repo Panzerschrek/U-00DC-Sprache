@@ -45,7 +45,7 @@ bool TemplateSignatureParam::RawPointer::operator==( const RawPointer& other ) c
 bool TemplateSignatureParam::Function::Param::operator==( const Param& other ) const
 {
 	return
-		*this->type == *other.type &&
+		this->type == other.type &&
 		this->value_type == other.value_type;
 }
 
@@ -274,7 +274,7 @@ TemplateSignatureParam MapTemplateParamsToSignatureParamsImpl(
 	out_param.return_type= MakeRcPtr( MapTemplateParamsToSignatureParams( mapping, *param.return_type ) );
 
 	for( TemplateSignatureParam::Function::Param& function_param : out_param.params )
-		function_param.type= MakeRcPtr( MapTemplateParamsToSignatureParams( mapping, *function_param.type ) );
+		function_param.type= MapTemplateParamsToSignatureParams( mapping, function_param.type );
 
 	return out_param;
 }

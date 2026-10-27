@@ -726,7 +726,7 @@ TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl(
 	{
 		FunctionType::Param out_param;
 
-		const TemplateArg param_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, *param.type );
+		const TemplateArg param_type= CreateDummyTemplateSignatureArg( template_params, args_names_scope, param.type );
 		if( const auto t= std::get_if<Type>( &param_type ) )
 			out_param.type= *t;
 		else

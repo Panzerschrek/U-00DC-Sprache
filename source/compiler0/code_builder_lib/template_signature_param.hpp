@@ -77,13 +77,7 @@ public:
 		bool is_variadic= false;
 		CallingConvention calling_convention= CallingConvention::Default;
 
-		struct Param
-		{
-			RcPtr<TemplateSignatureParam> type;
-			ValueType value_type= ValueType::Value;
-
-			bool operator==( const Param& other ) const;
-		};
+		struct Param;
 		std::vector<Param> params;
 
 		bool operator==( const Function& other ) const;
@@ -159,6 +153,15 @@ private:
 		Function,
 		Coroutine,
 		SpecializedTemplate> something_;
+};
+
+// Declare it after "TemplateSignatureParam", since we require it to be complete.
+struct TemplateSignatureParam::Function::Param
+{
+	TemplateSignatureParam type;
+	ValueType value_type= ValueType::Value;
+
+	bool operator==( const Param& other ) const;
 };
 
 // Mapping of template params 0-N to signature params.

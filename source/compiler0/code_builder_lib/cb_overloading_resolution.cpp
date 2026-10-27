@@ -206,7 +206,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			ConversionsCompareResult result= TemplateSpecializationCompare( *l_function->return_type, *r_function->return_type );
 			for( size_t i= 0u; i < l_function->params.size(); ++i )
 			{
-				const ConversionsCompareResult arg_result= TemplateSpecializationCompare( *l_function->params[i].type, *r_function->params[i].type );
+				const ConversionsCompareResult arg_result= TemplateSpecializationCompare( l_function->params[i].type, r_function->params[i].type );
 				if( arg_result == ConversionsCompareResult::Incomparable )
 					return ConversionsCompareResult::Incomparable;
 

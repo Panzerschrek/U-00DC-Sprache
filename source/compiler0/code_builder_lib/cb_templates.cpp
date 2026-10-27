@@ -385,7 +385,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 		all_types_are_known&= t.IsType();
 
 		TemplateSignatureParam::Function::Param out_param;
-		out_param.type= MakeRcPtr( std::move(t) );
+		out_param.type= std::move(t);
 		if( in_param.reference_modifier == Synt::ReferenceModifier::None )
 			out_param.value_type= ValueType::Value;
 		else if( in_param.mutability_modifier == Synt::MutabilityModifier::Mutable )
@@ -940,7 +940,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			{
 				if( !(
 					given_function_type.params[i].value_type == function_param.params[i].value_type &&
-					MatchTemplateArg( template_params, args_names_scope, given_function_type.params[i].type, *function_param.params[i].type )
+					MatchTemplateArg( template_params, args_names_scope, given_function_type.params[i].type, function_param.params[i].type )
 					) )
 					return false;
 			}
