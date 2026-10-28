@@ -383,7 +383,7 @@ int Main( int argc, const char* argv[] )
 				data_layout,
 				target_triple,
 				options,
-				std::make_shared<SourceGraph>( std::move(source_graph) ),
+				MakeRcPtr( std::move(source_graph) ),
 				vfs );
 
 		PrintErrors( dependent_files, build_result.errors, errors_format );
