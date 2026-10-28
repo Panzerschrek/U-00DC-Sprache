@@ -971,7 +971,7 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 			text= text_,
 			code_builder_vfs= code_builder_vfs_, // The only thing which may be mutated in background thread. So, it should be thread-safe.
 			line_to_linear_position_index= line_to_linear_position_index_,
-			source_graph= std::make_shared<const SourceGraph>( std::move(source_graph) ),
+			source_graph= MakeRcPtr( std::move(source_graph) ),
 			build_options= build_options_ // Capture copy of build options in case this update func outlives this class instance.
 		]
 		() mutable // Mutable in order to move captured variables.

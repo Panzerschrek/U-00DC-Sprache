@@ -79,7 +79,7 @@ CodeBuilder::BuildResult RunCodeBuilder( const bool enable_unused_name_errors, I
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			MakeRcPtr( std::move(source_graph) ),
 			std::move(vfs) );
 }
 

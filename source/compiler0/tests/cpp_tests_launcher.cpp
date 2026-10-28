@@ -131,7 +131,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const std::string_view text )
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			GetCodeBuilderOptionsForTests(),
-			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			MakeRcPtr( std::move(source_graph) ),
 			vfs );
 
 	PrinteErrors_r( build_result.errors );
@@ -155,7 +155,7 @@ ErrorTestBuildResult BuildProgramWithErrors( const std::string_view text )
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			GetCodeBuilderOptionsForTests(),
-			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			MakeRcPtr( std::move(source_graph) ),
 			vfs ).errors };
 }
 
@@ -176,7 +176,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			MakeRcPtr( std::move(source_graph) ),
 			vfs );
 
 	PrinteErrors_r( build_result.errors );
@@ -199,7 +199,7 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			GetCodeBuilderOptionsForTests(),
-			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			MakeRcPtr( std::move(source_graph) ),
 			vfs ).errors };
 }
 
@@ -221,7 +221,7 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const std::string_vi
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			MakeRcPtr( std::move(source_graph) ),
 			vfs );
 
 	PrinteErrors_r( build_result.errors );
@@ -248,7 +248,7 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const std::string
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			MakeRcPtr( std::move(source_graph) ),
 			vfs );
 
 	PrinteErrors_r( build_result.errors );
@@ -278,7 +278,7 @@ std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const s
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			MakeRcPtr( std::move(source_graph) ),
 			vfs );
 
 	PrinteErrors_r( build_result.errors );
@@ -324,7 +324,7 @@ std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const std::string_vi
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			MakeRcPtr( std::move(source_graph) ),
 			vfs );
 
 	if( !allow_errors )

@@ -7,6 +7,7 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../../code_builder_lib_common/small_types.hpp"
+#include "../lex_synt_lib/rc_ptr.hpp"
 #include "lang_types.hpp"
 
 
@@ -57,11 +58,11 @@ struct InnerReference
 };
 
 // Observer pointer to class.
-// Class itself stored in class table.
+// Class itself is stored in class table.
 using ClassPtr= Class*;
 
 // Observer pointer to enum.
-// Enum itself stored in enum table.
+// Enum itself is stored in enum table.
 using EnumPtr= Enum*;
 
 struct FundamentalType
@@ -140,10 +141,13 @@ public:
 private:
 	friend bool operator==( const Type&, const Type&);
 
-	using FunctionPointerPtr= std::shared_ptr<const FunctionPointerType>;
-	using ArrayPtr= std::shared_ptr<const ArrayType>;
-	using RawPointerPtr= std::shared_ptr<const RawPointerType>;
-	using TupleTypePtr= std::shared_ptr<const TupleType>;
+	// Store type variants containing "Type" itself inside using an indirection.
+	// Using "RcPtr" allows having cheap copying.
+
+	using FunctionPointerPtr= RcPtr<FunctionPointerType>;
+	using ArrayPtr= RcPtr<ArrayType>;
+	using RawPointerPtr= RcPtr<RawPointerType>;
+	using TupleTypePtr= RcPtr<TupleType>;
 
 	using Variant= std::variant<
 		FundamentalType,

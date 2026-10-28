@@ -82,7 +82,7 @@ public:
 		// TODO - fill parameters range.
 	};
 
-	using SourceGraphPtr= std::shared_ptr<const SourceGraph>;
+	using SourceGraphPtr= RcPtr<SourceGraph>;
 
 public:
 	// Use static creation methods for building of code, since it is unsafe to reuse internal data structures after building single source graph.

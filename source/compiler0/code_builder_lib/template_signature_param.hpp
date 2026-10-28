@@ -2,6 +2,7 @@
 #include <memory>
 #include <variant>
 #include <vector>
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "coroutine.hpp"
 #include "value.hpp"
 
@@ -44,15 +45,7 @@ public:
 		bool operator==( const TemplateParam& other ) const;
 	};
 
-	// use shared_ptr to avoid manual copy constructors creation.
-
-	struct Array
-	{
-		std::shared_ptr<const TemplateSignatureParam> element_count;
-		std::shared_ptr<const TemplateSignatureParam> element_type;
-
-		bool operator==( const Array& other ) const;
-	};
+	struct Array;
 
 	struct Tuple
 	{
@@ -61,48 +54,11 @@ public:
 		bool operator==( const Tuple& other ) const;
 	};
 
-	struct RawPointer
-	{
-		std::shared_ptr<const TemplateSignatureParam> element_type;
+	// Use forward-declarations for subvariants containing fields of "TemplateSignatureParam" type itself.
 
-		bool operator==( const RawPointer& other ) const;
-	};
-
-	struct Function
-	{
-		std::shared_ptr<const TemplateSignatureParam> return_type;
-		ValueType return_value_type= ValueType::Value;
-
-		bool is_unsafe= false;
-		bool is_variadic= false;
-		CallingConvention calling_convention= CallingConvention::Default;
-
-		struct Param
-		{
-			std::shared_ptr<const TemplateSignatureParam> type;
-			ValueType value_type= ValueType::Value;
-
-			bool operator==( const Param& other ) const;
-		};
-		std::vector<Param> params;
-
-		bool operator==( const Function& other ) const;
-	};
-
-	struct Coroutine
-	{
-		CoroutineKind kind= CoroutineKind::Generator;
-		std::shared_ptr<const TemplateSignatureParam> return_type;
-		ValueType return_value_type= ValueType::Value;
-
-		FunctionType::ReturnReferences return_references;
-		FunctionType::ReturnInnerReferences return_inner_references;
-
-		llvm::SmallVector<InnerReferenceKind, 4> inner_references;
-		bool non_sync= false;
-
-		bool operator==( const Coroutine& other ) const;
-	};
+	struct RawPointer;
+	struct Function;
+	struct Coroutine;
 
 	struct SpecializedTemplate
 	{
@@ -141,24 +97,104 @@ public:
 	template<class Func>
 	auto Visit( const Func& func ) const
 	{
-		return std::visit( func, something_ );
+		if( const auto type= GetType() )
+			return func( *type );
+		else if( const auto variable= GetVariable() )
+			return func( *variable );
+		else if( const auto type_template= GetTypeTemplate() )
+			return func( *type_template );
+		else if( const auto template_param= GetTemplateParam() )
+			return func( *template_param );
+		else if( const auto array= GetArray() )
+			return func( *array );
+		else if( const auto tuple= GetTuple() )
+			return func( *tuple );
+		else if( const auto raw_pointer= GetRawPointer() )
+			return func( *raw_pointer );
+		else if( const auto function= GetFunction() )
+			return func( *function );
+		else if( const auto coroutine= GetCoroutine() )
+			return func( *coroutine );
+		else if( const auto specialized_template= GetSpecializedTemplate() )
+			return func( *specialized_template );
+		else
+		{
+			U_ASSERT( false );
+			return func( *GetSpecializedTemplate() );
+		}
 	}
 
 	bool operator==( const TemplateSignatureParam& other ) const;
 	bool operator!=( const TemplateSignatureParam& other ) const { return !(*this == other); }
 
 private:
+	// Use "RcPtr" to allow cheap copying. Also it creates indirection necessary for some variants.
 	std::variant<
 		Type,
 		Variable,
 		TypeTemplate,
 		TemplateParam,
-		Array,
+		RcPtr<Array>,
 		Tuple,
-		RawPointer,
-		Function,
-		Coroutine,
+		RcPtr<RawPointer>,
+		RcPtr<Function>,
+		RcPtr<Coroutine>,
 		SpecializedTemplate> something_;
+};
+
+// Define subvariants of "TemplateSignatureParam" containing it as field internally after this type itself is complete.
+
+struct TemplateSignatureParam::Array
+{
+	TemplateSignatureParam element_count;
+	TemplateSignatureParam element_type;
+
+	bool operator==( const Array& other ) const;
+};
+
+struct TemplateSignatureParam::RawPointer
+{
+	TemplateSignatureParam element_type;
+
+	bool operator==( const RawPointer& other ) const;
+};
+
+struct TemplateSignatureParam::Function
+{
+	TemplateSignatureParam return_type;
+	ValueType return_value_type= ValueType::Value;
+
+	bool is_unsafe= false;
+	bool is_variadic= false;
+	CallingConvention calling_convention= CallingConvention::Default;
+
+	struct Param
+	{
+		TemplateSignatureParam type;
+		ValueType value_type= ValueType::Value;
+
+		bool operator==( const Param& other ) const;
+	};
+
+	std::vector<Param> params;
+
+	bool operator==( const Function& other ) const;
+};
+
+struct TemplateSignatureParam::Coroutine
+{
+	TemplateSignatureParam return_type;
+
+	FunctionType::ReturnReferences return_references;
+	FunctionType::ReturnInnerReferences return_inner_references;
+
+	llvm::SmallVector<InnerReferenceKind, 4> inner_references;
+
+	CoroutineKind kind= CoroutineKind::Generator;
+	ValueType return_value_type= ValueType::Value;
+	bool non_sync= false;
+
+	bool operator==( const Coroutine& other ) const;
 };
 
 // Mapping of template params 0-N to signature params.

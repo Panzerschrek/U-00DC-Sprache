@@ -42,7 +42,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			data_layout,
 			target_triple,
 			options,
-			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			MakeRcPtr( std::move(source_graph) ),
 			vfs );
 
 	result.code_builder_errors= std::move( build_result.errors );
