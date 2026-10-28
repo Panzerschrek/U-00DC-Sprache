@@ -58,11 +58,11 @@ struct InnerReference
 };
 
 // Observer pointer to class.
-// Class itself stored in class table.
+// Class itself is stored in class table.
 using ClassPtr= Class*;
 
 // Observer pointer to enum.
-// Enum itself stored in enum table.
+// Enum itself is stored in enum table.
 using EnumPtr= Enum*;
 
 struct FundamentalType
@@ -140,6 +140,9 @@ public:
 
 private:
 	friend bool operator==( const Type&, const Type&);
+
+	// Store type variants containing "Type" itself inside using an indirection.
+	// Using "RcPtr" allows having cheap copying.
 
 	using FunctionPointerPtr= RcPtr<FunctionPointerType>;
 	using ArrayPtr= RcPtr<ArrayType>;

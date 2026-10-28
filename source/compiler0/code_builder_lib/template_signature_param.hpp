@@ -54,6 +54,8 @@ public:
 		bool operator==( const Tuple& other ) const;
 	};
 
+	// Use forward-declarations for subvariants containing fields of "TemplateSignatureParam" type itself.
+
 	struct RawPointer;
 	struct Function;
 	struct Coroutine;
@@ -126,7 +128,7 @@ public:
 	bool operator!=( const TemplateSignatureParam& other ) const { return !(*this == other); }
 
 private:
-	// Use RcPtr to allow cheap copying.
+	// Use "RcPtr" to allow cheap copying. Also it creates indirection necessary for some variants.
 	std::variant<
 		Type,
 		Variable,
@@ -140,7 +142,7 @@ private:
 		SpecializedTemplate> something_;
 };
 
-// Declare it after "TemplateSignatureParam", since we require it to be complete.
+// Define subvariants of "TemplateSignatureParam" containing it as field internally after this type itself is complete.
 
 struct TemplateSignatureParam::Array
 {
