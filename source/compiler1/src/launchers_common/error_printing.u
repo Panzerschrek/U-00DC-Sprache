@@ -183,7 +183,7 @@ fn PrintCodeBuilderErrorsMSVC( SourceGraph& source_graph, ErrorsContainer& error
 						context_file_path,
 						"(",
 						errors_context.context_declaration_src_loc.GetLine(),
-						"): note: In instantiation of mixin" );
+						"): note: In expansion of mixin" );
 				}
 				else
 				{
