@@ -3,6 +3,7 @@
 #include <llvm-c/Types.h>
 
 #include "../../code_builder_lib_common/mangling.hpp"
+#include "../../lex_synt_lib_common/lex_synt_error.hpp"
 
 // If contents of this file changed, funcs_u.iu must be changed too!
 
@@ -105,6 +106,7 @@ bool U1_BuildProgramUsingVFS(
 	U::ManglingScheme mangling_scheme,
 	const U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
-	U1_UserHandle result_source_file_path_processing_data );
+	U1_UserHandle result_source_file_path_processing_data,
+	U::ErrorsFormat errros_format );
 
 } // extern "C"

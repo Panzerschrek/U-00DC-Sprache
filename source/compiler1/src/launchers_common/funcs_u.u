@@ -100,7 +100,8 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	U1::ManglingScheme mangling_scheme,
 	U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
-	U1_UserHandle result_source_file_path_processing_data ) unsafe call_conv( "C" ) : bool
+	U1_UserHandle result_source_file_path_processing_data,
+	U1::ErrorsFormat errros_format ) unsafe call_conv( "C" ) : bool
 {
 	var ust::vector</ ust::string8 /> mut prefixed_include_dirs_vec;
 	for( auto mut i= 0s; i < num_prefixed_include_dirs; ++i )
@@ -155,7 +156,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 			}
 		}
 
-		U1::PrintLexSyntErrors( source_graph );
+		U1::PrintLexSyntErrors( source_graph, errros_format );
 
 		if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 		{
@@ -435,6 +436,20 @@ fn TransformSourceFiles( $(U1_SourceFile) source_files, size_type source_file_co
 
 fn PrintLexSyntErrors( SourceGraph& source_graph )
 {
+	PrintLexSyntErrorsFormatGCC( source_graph);
+}
+
+fn PrintLexSyntErrors( SourceGraph& source_graph, ErrorsFormat errors_format )
+{
+	switch( errors_format )
+	{
+	ErrorsFormat::GCC -> { PrintLexSyntErrorsFormatGCC( source_graph ); },
+	ErrorsFormat::MSVC -> { PrintLexSyntErrorsFormatMSVC( source_graph ); },
+	}
+}
+
+fn PrintLexSyntErrorsFormatGCC( SourceGraph& source_graph )
+{
 	foreach( &err : source_graph.errors )
 	{
 		auto file_index= size_type(err.src_loc.GetFileIndex());
@@ -446,6 +461,21 @@ fn PrintLexSyntErrors( SourceGraph& source_graph )
 			":",
 			err.src_loc.GetColumn(),
 			": error: ",
+			err.text );
+	}
+}
+
+fn PrintLexSyntErrorsFormatMSVC( SourceGraph& source_graph )
+{
+	foreach( &err : source_graph.errors )
+	{
+		auto file_index= size_type(err.src_loc.GetFileIndex());
+
+		ust::stderr_print_line(
+			( file_index < source_graph.nodes.size() ? source_graph.nodes[file_index].file_path_normalized.range() : ust::string_view8() ),
+			"(",
+			err.src_loc.GetLine(),
+			"): error: ",
 			err.text );
 	}
 }

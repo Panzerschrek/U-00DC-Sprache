@@ -83,10 +83,10 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			mangling_scheme,
 			StringToStringView(prelude_code),
 			SourceFilePathProcessingFunction,
-			reinterpret_cast<U1_UserHandle>(&result.dependent_files) );
+			reinterpret_cast<U1_UserHandle>(&result.dependent_files),
+			errors_format );
 
-	// TODO - pass them.
-	(void)errors_format;
+	// TODO - pass ir.
 	(void)tests_output;
 
 	return result;
