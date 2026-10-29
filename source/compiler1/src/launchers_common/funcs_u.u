@@ -101,7 +101,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
 	U1_UserHandle result_source_file_path_processing_data,
-	U1::ErrorsFormat errros_format ) unsafe call_conv( "C" ) : bool
+	U1::ErrorsFormat errors_format ) unsafe call_conv( "C" ) : bool
 {
 	var ust::vector</ ust::string8 /> mut prefixed_include_dirs_vec;
 	for( auto mut i= 0s; i < num_prefixed_include_dirs; ++i )
@@ -156,7 +156,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 			}
 		}
 
-		U1::PrintLexSyntErrors( source_graph, errros_format );
+		U1::PrintLexSyntErrors( source_graph, errors_format );
 
 		if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 		{
@@ -171,7 +171,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 		{
 			$>( out_modules + i )= code_builder_res.llvm_module;
 
-			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
+			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors, errors_format );
 
 			if( !code_builder_res.errors.empty() )
 			{
@@ -482,6 +482,20 @@ fn PrintLexSyntErrorsFormatMSVC( SourceGraph& source_graph )
 
 fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
 {
+	PrintCodeBuilderErrorsGCC( source_graph, errors );
+}
+
+fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors, ErrorsFormat errors_format )
+{
+	switch( errors_format )
+	{
+	ErrorsFormat::GCC -> { PrintCodeBuilderErrorsGCC( source_graph, errors ); },
+	ErrorsFormat::MSVC -> { PrintCodeBuilderErrorsMSVC( source_graph, errors ); },
+	}
+}
+
+fn PrintCodeBuilderErrorsGCC( SourceGraph& source_graph, ErrorsContainer& errors )
+{
 	foreach( & err : errors )
 	{
 		auto file_index= size_type(err.src_loc.GetFileIndex());
@@ -493,6 +507,21 @@ fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
 			":",
 			err.src_loc.GetColumn(),
 			": error: ",
+			err.text );
+	}
+}
+
+fn PrintCodeBuilderErrorsMSVC( SourceGraph& source_graph, ErrorsContainer& errors )
+{
+	foreach( & err : errors )
+	{
+		auto file_index= size_type(err.src_loc.GetFileIndex());
+
+		ust::stderr_print_line(
+			( file_index < source_graph.nodes.size() ? source_graph.nodes[file_index].file_path_normalized.range() : ust::string_view8() ),
+			"(",
+			err.src_loc.GetLine(),
+			"): error: ",
 			err.text );
 	}
 }

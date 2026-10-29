@@ -101,4 +101,4 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
 	U1_UserHandle result_source_file_path_processing_data,
-	U1::ErrorsFormat errros_format ) unsafe call_conv( "C" ) : bool;
+	U1::ErrorsFormat errors_format ) unsafe call_conv( "C" ) : bool;
