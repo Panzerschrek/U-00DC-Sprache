@@ -257,19 +257,23 @@ fn IsWithinGivenDirectory( ust::filesystem_path_view full_file_path, ust::filesy
 
 	loop
 	{
-		auto given_path_component_opt= given_path_it.next();
 		auto directory_path_component_opt= directory_path_it.next();
-		if( given_path_component_opt.empty() | directory_path_component_opt.empty() )
+		if( directory_path_component_opt.empty() )
 		{
-			break;
+			return true;
 		}
+
+		auto given_path_component_opt= given_path_it.next();
+		if( given_path_component_opt.empty() )
+		{
+			return false;
+		}
+
 		if( given_path_component_opt.try_deref() != directory_path_component_opt.try_deref() )
 		{
-			break;
+			return false;
 		}
 	}
-
-	return directory_path_it.next().empty();
 }
 
 fn TrimTrailingSlashes( ust::string8 &mut s )
