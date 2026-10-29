@@ -102,38 +102,38 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	for( const std::string& s : source_dirs )
 		source_dir_views.push_back( StringToStringView(s) );
 
-	void* const vfs=
-		U1_CreateVFS(
-			inciude_dir_views.data(),
-			inciude_dir_views.size(),
-			source_dir_views.data(),
-			source_dir_views.size(),
-			prevent_imports_outside_given_directories );
+	std::vector<U1_StringView> input_file_views;
+	input_file_views.reserve( source_dirs.size() );
+	for( const std::string& s : input_files )
+		input_file_views.push_back( StringToStringView(s) );
 
-	for( size_t i= 0; i < input_files.size(); ++i )
-	{
-		const LLVMModuleRef llvm_module=
-			U1_BuildProgramUsingVFS(
-				vfs,
-				StringToStringView(input_files[i]),
-				llvm::wrap(&llvm_context),
-				llvm::wrap(&data_layout ),
-				StringToStringView(target_triple.normalize()),
-				generate_debug_info,
-				generate_tbaa_metadata,
-				allow_unused_names,
-				mangling_scheme,
-				StringToStringView(prelude_code),
-				SourceFilePathProcessingFunction,
-				reinterpret_cast<U1_UserHandle>(&result.dependent_files),
-				LexSyntErrorProcessingFunction,
-				reinterpret_cast<U1_UserHandle>(&result.lex_synt_errors),
-				U1_ErrorsHandlingCallbacks{ ErrorHanlder, TemplateErrorsContextHandler },
-				reinterpret_cast<U1_UserHandle>(&result.code_builder_errors) );
+	static_assert( sizeof(LLVMModuleRef) == sizeof( std::unique_ptr<llvm::Module> ), "Unexpected size!" );
 
-		if( llvm_module != nullptr )
-			result.llvm_modules[i]= std::unique_ptr<llvm::Module>( llvm::unwrap(llvm_module) ); // Take ownership over module.
-	}
+	U1_BuildProgramUsingVFS(
+		inciude_dir_views.data(),
+		inciude_dir_views.size(),
+		source_dir_views.data(),
+		source_dir_views.size(),
+		prevent_imports_outside_given_directories,
+		input_file_views.data(),
+		input_file_views.size(),
+		// Pas result array containing unique_ptr instances as array containing raw pointers.
+		// This should work fine, assuming their layout is identical.
+		reinterpret_cast<LLVMModuleRef*>( result.llvm_modules.data() ),
+		llvm::wrap(&llvm_context),
+		llvm::wrap(&data_layout ),
+		StringToStringView(target_triple.normalize()),
+		generate_debug_info,
+		generate_tbaa_metadata,
+		allow_unused_names,
+		mangling_scheme,
+		StringToStringView(prelude_code),
+		SourceFilePathProcessingFunction,
+		reinterpret_cast<U1_UserHandle>(&result.dependent_files),
+		LexSyntErrorProcessingFunction,
+		reinterpret_cast<U1_UserHandle>(&result.lex_synt_errors),
+		U1_ErrorsHandlingCallbacks{ ErrorHanlder, TemplateErrorsContextHandler },
+		reinterpret_cast<U1_UserHandle>(&result.code_builder_errors) );
 
 	return result;
 }

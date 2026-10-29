@@ -88,8 +88,14 @@ LLVMModuleRef U1_BuildProgramForAsyncCallsInliningTest(
 	LLVMTargetDataRef data_layout );
 
 LLVMModuleRef U1_BuildProgramUsingVFS(
-	void* vfs_ptr,
-	const U1_StringView& root_file_path,
+	const U1_StringView* prefixed_include_dirs,
+	size_t num_prefixed_include_dirs,
+	const U1_StringView* source_dirs,
+	size_t num_source_dirs,
+	bool prevent_imports_outside_given_directories,
+	const U1_StringView* root_file_paths,
+	size_t num_root_file_paths,
+	LLVMModuleRef* out_modules, // Has size equal to number of root file paths. Ownership is transferred.
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
 	const U1_StringView& target_triple_str,
@@ -104,14 +110,5 @@ LLVMModuleRef U1_BuildProgramUsingVFS(
 	U1_UserHandle lex_synt_error_callback_data,
 	const U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle error_processing_data );
-
-void* U1_CreateVFS(
-	const U1_StringView* prefixed_include_dirs,
-	size_t num_prefixed_include_dirs,
-	const U1_StringView* source_dirs,
-	size_t num_source_dirs,
-	bool prevent_imports_outside_given_directories );
-
-void U1_DestroyVFS( void* vfs_ptr );
 
 } // extern "C"
