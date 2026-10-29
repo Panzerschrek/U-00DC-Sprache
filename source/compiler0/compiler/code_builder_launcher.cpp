@@ -4,7 +4,6 @@
 #include "../code_builder_lib/errors_print.hpp"
 #include "../code_builder_lib/code_builder.hpp"
 #include "../lex_synt_lib/error_printing.hpp"
-#include "../lex_synt_lib/source_graph_loader.hpp"
 
 namespace U
 {

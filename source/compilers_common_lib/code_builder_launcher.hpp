@@ -5,7 +5,6 @@
 
 #include "../lex_synt_lib_common/errors_format.hpp"
 #include "../code_builder_lib_common/mangling.hpp"
-#include "../code_builder_lib_common/code_builder_errors.hpp"
 
 namespace U
 {
