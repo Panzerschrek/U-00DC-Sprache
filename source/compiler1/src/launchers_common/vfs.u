@@ -92,6 +92,11 @@ fn VfsOverSystemFS::Create(
 	foreach( &mut source_dir : source_dirs )
 	{
 		TrimTrailingSlashes( source_dir );
+
+		if( !ust::path::is_absolute( source_dir ) )
+		{
+			source_dir= ust::path::join( ust::get_current_directory(), source_dir );
+		}
 		source_dir= ust::path::normalize( source_dir );
 	}
 
