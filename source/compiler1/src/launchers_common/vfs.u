@@ -125,7 +125,14 @@ fn VfsOverSystemFS::NormalizeFilePath(
 {
 	if( parent_file_path_normalized.empty() )
 	{
-		return ust::path::normalize( file_path );
+		if( ust::path::is_absolute( file_path ) )
+		{
+			return ust::path::normalize( file_path );
+		}
+		else
+		{
+			return ust::path::normalize( ust::path::join( ust::get_current_directory(), file_path ) );
+		}
 	}
 	else if( file_path.starts_with( "/" ) )
 	{
