@@ -87,7 +87,7 @@ LLVMModuleRef U1_BuildProgramForAsyncCallsInliningTest(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout );
 
-LLVMModuleRef U1_BuildProgramUsingVFS(
+bool U1_BuildProgramUsingVFS(
 	const U1_StringView* prefixed_include_dirs,
 	size_t num_prefixed_include_dirs,
 	const U1_StringView* source_dirs,
@@ -105,10 +105,6 @@ LLVMModuleRef U1_BuildProgramUsingVFS(
 	U::ManglingScheme mangling_scheme,
 	const U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
-	U1_UserHandle result_source_file_path_processing_data,
-	U1_LexSyntErrorCallback lex_synt_error_callback,
-	U1_UserHandle lex_synt_error_callback_data,
-	const U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
-	U1_UserHandle error_processing_data );
+	U1_UserHandle result_source_file_path_processing_data );
 
 } // extern "C"

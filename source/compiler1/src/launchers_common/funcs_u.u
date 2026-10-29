@@ -100,11 +100,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	U1::ManglingScheme mangling_scheme,
 	U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
-	U1_UserHandle result_source_file_path_processing_data,
-	U1_LexSyntErrorCallback lex_synt_error_callback,
-	U1_UserHandle lex_synt_error_callback_data,
-	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
-	U1_UserHandle error_processing_data ) unsafe call_conv( "C" )
+	U1_UserHandle result_source_file_path_processing_data ) unsafe call_conv( "C" ) : bool
 {
 	var ust::vector</ ust::string8 /> mut prefixed_include_dirs_vec;
 	for( auto mut i= 0s; i < num_prefixed_include_dirs; ++i )
@@ -124,7 +120,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 
 	if( vfs_opt.empty() )
 	{
-		return;
+		return false;
 	}
 
 	var U1::IVfsSharedPtr vfs= ust::make_shared_ptr( vfs_opt.try_take() );
@@ -138,6 +134,8 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 		.generate_tbaa_metadata= generate_tbaa_metadata,
 		.report_about_unused_names= !allow_unused_names,
 	};
+
+	var bool mut success= true;
 
 	for( auto mut i= 0s; i < num_root_file_paths; ++i )
 	{
@@ -157,17 +155,11 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 			}
 		}
 
-		foreach( &err : source_graph.errors )
-		{
-			unsafe
-			{
-				var U1_StringView text{ .data= cast_mut(err.text).data(), .size= err.text.size() };
-				lex_synt_error_callback( lex_synt_error_callback_data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), text );
-			}
-		}
+		U1::PrintLexSyntErrors( source_graph );
 
 		if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 		{
+			success= false;
 			continue;
 		}
 
@@ -178,9 +170,11 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 		{
 			$>( out_modules + i )= code_builder_res.llvm_module;
 
+			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
+
 			if( !code_builder_res.errors.empty() )
 			{
-				U1::ProcessCodeBuilderErrors( errors_handling_callbacks, error_processing_data, code_builder_res.errors );
+				success= false;
 			}
 
 			foreach( &embedded_file : code_builder_res.embedded_files )
@@ -190,6 +184,8 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 			}
 		}
 	}
+
+	return success;
 }
 
 fn nomangle nodiscard U1_BuildMultisourceProgram(

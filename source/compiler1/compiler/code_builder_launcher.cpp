@@ -17,60 +17,11 @@ const std::string StringViewToString( const U1_StringView view )
 	return std::string( view.data, view.data + view.size );
 }
 
-U1_UserHandle ErrorHanlder(
-	const U1_UserHandle data, // should be "CodeBuilderErrorsContainer"
-	const uint32_t file_index,
-	const uint32_t line,
-	const uint32_t column,
-	const uint32_t error_code,
-	const U1_StringView& error_text )
-{
-	CodeBuilderError error;
-	error.src_loc= SrcLoc( file_index, line, column );
-	error.code= CodeBuilderErrorCode(error_code);
-	error.text= StringViewToString( error_text );
-
-	const auto errors_container= reinterpret_cast<CodeBuilderErrorsContainer*>(data);
-	errors_container->push_back( std::move(error) );
-	return reinterpret_cast<U1_UserHandle>(&errors_container->back());
-}
-
-U1_UserHandle TemplateErrorsContextHandler(
-	const U1_UserHandle data, // should be "CodeBuilderError*"
-	const uint32_t file_index,
-	const uint32_t line,
-	const uint32_t column,
-	const U1_StringView& context_name,
-	const U1_StringView& args_description )
-{
-	const auto out_error= reinterpret_cast<CodeBuilderError*>(data);
-	out_error->template_context= std::make_shared<TemplateErrorsContext>();
-	out_error->template_context->context_declaration_src_loc= SrcLoc( file_index, line, column );
-	out_error->template_context->context_name= StringViewToString( context_name );
-	out_error->template_context->parameters_description= StringViewToString( args_description );
-
-	return reinterpret_cast<U1_UserHandle>(&out_error->template_context->errors);
-}
-
 void SourceFilePathProcessingFunction(
 	const U1_UserHandle data, // should be "std::vector<IVfs::Path>*"
 	const U1_StringView& file_path )
 {
 	reinterpret_cast< std::vector<IVfs::Path>* >(data)->push_back( StringViewToString(file_path) );
-}
-
-void LexSyntErrorProcessingFunction(
-	const U1_UserHandle data, // Should be "LexSyntErrors*"
-	const uint32_t file_index,
-	const uint32_t line,
-	const uint32_t column,
-	const U1_StringView& text )
-{
-	LexSyntError out_error;
-	out_error.src_loc= SrcLoc( file_index, line, column );
-	out_error.text= StringViewToString(text);
-
-	reinterpret_cast< LexSyntErrors* >(data)->push_back( std::move(out_error) );
 }
 
 } // namespace
@@ -87,7 +38,9 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const bool generate_tbaa_metadata,
 	const bool allow_unused_names,
 	const ManglingScheme mangling_scheme,
-	const std::string_view prelude_code )
+	const std::string_view prelude_code,
+	const ErrorsFormat errors_format,
+	const bool tests_output )
 {
 	CodeBuilderLaunchResult result;
 	result.llvm_modules.resize( input_files.size() );
@@ -109,31 +62,32 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 
 	static_assert( sizeof(LLVMModuleRef) == sizeof( std::unique_ptr<llvm::Module> ), "Unexpected size!" );
 
-	U1_BuildProgramUsingVFS(
-		inciude_dir_views.data(),
-		inciude_dir_views.size(),
-		source_dir_views.data(),
-		source_dir_views.size(),
-		prevent_imports_outside_given_directories,
-		input_file_views.data(),
-		input_file_views.size(),
-		// Pas result array containing unique_ptr instances as array containing raw pointers.
-		// This should work fine, assuming their layout is identical.
-		reinterpret_cast<LLVMModuleRef*>( result.llvm_modules.data() ),
-		llvm::wrap(&llvm_context),
-		llvm::wrap(&data_layout ),
-		StringToStringView(target_triple.normalize()),
-		generate_debug_info,
-		generate_tbaa_metadata,
-		allow_unused_names,
-		mangling_scheme,
-		StringToStringView(prelude_code),
-		SourceFilePathProcessingFunction,
-		reinterpret_cast<U1_UserHandle>(&result.dependent_files),
-		LexSyntErrorProcessingFunction,
-		reinterpret_cast<U1_UserHandle>(&result.lex_synt_errors),
-		U1_ErrorsHandlingCallbacks{ ErrorHanlder, TemplateErrorsContextHandler },
-		reinterpret_cast<U1_UserHandle>(&result.code_builder_errors) );
+	result.has_errors=
+		!U1_BuildProgramUsingVFS(
+			inciude_dir_views.data(),
+			inciude_dir_views.size(),
+			source_dir_views.data(),
+			source_dir_views.size(),
+			prevent_imports_outside_given_directories,
+			input_file_views.data(),
+			input_file_views.size(),
+			// Pas result array containing unique_ptr instances as array containing raw pointers.
+			// This should work fine, assuming their layout is identical.
+			reinterpret_cast<LLVMModuleRef*>( result.llvm_modules.data() ),
+			llvm::wrap(&llvm_context),
+			llvm::wrap(&data_layout ),
+			StringToStringView(target_triple.normalize()),
+			generate_debug_info,
+			generate_tbaa_metadata,
+			allow_unused_names,
+			mangling_scheme,
+			StringToStringView(prelude_code),
+			SourceFilePathProcessingFunction,
+			reinterpret_cast<U1_UserHandle>(&result.dependent_files) );
+
+	// TODO - pass them.
+	(void)errors_format;
+	(void)tests_output;
 
 	return result;
 }
