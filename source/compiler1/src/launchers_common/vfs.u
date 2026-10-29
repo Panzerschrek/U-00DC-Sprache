@@ -204,16 +204,64 @@ fn VfsOverSystemFS::LoadFile( mut this, ust::string_view8 full_file_path ) : ust
 
 fn VfsOverSystemFS::IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool
 {
-	// TODO
-	ust::ignore_unused( full_file_path );
-	return true;
+	if( !prevent_imports_outside_given_directories_ )
+	{
+		return false;
+	}
+
+	foreach( &prefixed_include_dir : prefixed_include_dirs_ )
+	{
+		if( IsWithinGivenDirectory( full_file_path, prefixed_include_dir.host_fs_path ) )
+		{
+			return true;
+		}
+	}
+
+	foreach( &source_dir : source_dirs_ )
+	{
+		if( IsWithinGivenDirectory( full_file_path, source_dir ) )
+		{
+			return true;
+		}
+	}
+
+	// Import outside allowed directories.
+	return false;
 }
 
 fn VfsOverSystemFS::IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool
 {
-	// TODO
-	ust::ignore_unused( full_file_path );
-	return true;
+	foreach( &source_dir : source_dirs_ )
+	{
+		if( IsWithinGivenDirectory( full_file_path, source_dir ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+fn IsWithinGivenDirectory( ust::filesystem_path_view full_file_path, ust::filesystem_path_view directory_path ) : bool
+{
+	auto mut given_path_it= ust::path::components_iter( full_file_path );
+	auto mut directory_path_it= ust::path::components_iter( directory_path );
+
+	loop
+	{
+		auto given_path_component_opt= given_path_it.next();
+		auto directory_path_component_opt= directory_path_it.next();
+		if( given_path_component_opt.empty() | directory_path_component_opt.empty() )
+		{
+			break;
+		}
+		if( given_path_component_opt.try_deref() != directory_path_component_opt.try_deref() )
+		{
+			break;
+		}
+	}
+
+	return directory_path_it.next().empty();
 }
 
 fn TrimTrailingSlashes( ust::string8 &mut s )
