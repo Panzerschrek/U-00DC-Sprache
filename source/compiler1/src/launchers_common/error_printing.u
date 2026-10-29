@@ -82,7 +82,7 @@ fn PrintCodeBuilderErrorsGCC( SourceGraph& source_graph, ErrorsContainer& errors
 
 				ust::stderr_print_line(
 					context_file_path,
-					"In instantiation of \"",
+					": In instantiation of \"",
 					errors_context.context_name,
 					"\" ",
 					errors_context.args_description );
