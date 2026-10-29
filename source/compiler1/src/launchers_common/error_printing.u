@@ -1,0 +1,209 @@
+import "/stdout_ext.iu"
+import "error_printing.iu"
+
+namespace U1
+{
+
+fn PrintLexSyntErrors( SourceGraph& source_graph )
+{
+	PrintLexSyntErrorsFormatGCC( source_graph);
+}
+
+fn PrintLexSyntErrors( SourceGraph& source_graph, ErrorsFormat errors_format )
+{
+	switch( errors_format )
+	{
+	ErrorsFormat::GCC -> { PrintLexSyntErrorsFormatGCC( source_graph ); },
+	ErrorsFormat::MSVC -> { PrintLexSyntErrorsFormatMSVC( source_graph ); },
+	}
+}
+
+fn PrintLexSyntErrorsFormatGCC( SourceGraph& source_graph )
+{
+	foreach( &err : source_graph.errors )
+	{
+		auto file_index= size_type(err.src_loc.GetFileIndex());
+
+		ust::stderr_print_line(
+			( file_index < source_graph.nodes.size() ? source_graph.nodes[file_index].file_path_normalized.range() : ust::string_view8() ),
+			":",
+			err.src_loc.GetLine(),
+			":",
+			err.src_loc.GetColumn(),
+			": error: ",
+			err.text );
+	}
+}
+
+fn PrintLexSyntErrorsFormatMSVC( SourceGraph& source_graph )
+{
+	foreach( &err : source_graph.errors )
+	{
+		auto file_index= size_type(err.src_loc.GetFileIndex());
+
+		ust::stderr_print_line(
+			( file_index < source_graph.nodes.size() ? source_graph.nodes[file_index].file_path_normalized.range() : ust::string_view8() ),
+			"(",
+			err.src_loc.GetLine(),
+			"): error: ",
+			err.text );
+	}
+}
+
+fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
+{
+	PrintCodeBuilderErrorsGCC( source_graph, errors );
+}
+
+fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors, ErrorsFormat errors_format )
+{
+	switch( errors_format )
+	{
+	ErrorsFormat::GCC -> { PrintCodeBuilderErrorsGCC( source_graph, errors ); },
+	ErrorsFormat::MSVC -> { PrintCodeBuilderErrorsMSVC( source_graph, errors ); },
+	}
+}
+
+fn PrintCodeBuilderErrorsGCC( SourceGraph& source_graph, ErrorsContainer& errors )
+{
+	foreach( & error : errors )
+	{
+		auto file_index= size_type(error.src_loc.GetFileIndex());
+		var ust::string_view8 file_path=
+			( file_index < source_graph.nodes.size() ? source_graph.nodes[file_index].file_path_normalized.range() : ust::string_view8() );
+
+		if( error.code == CodeBuilderErrorCode::TemplateContext )
+		{
+			with( &errors_context : error.errors_context.try_lock_imut().deref() )
+			{
+				auto context_file_index= size_type( errors_context.context_declaration_src_loc.GetFileIndex() );
+				var ust::string_view8 context_file_path=
+					( context_file_index < source_graph.nodes.size() ? source_graph.nodes[context_file_index].file_path_normalized.range() : ust::string_view8() );
+
+				ust::stderr_print_line(
+					context_file_path,
+					"In instantiation of \"",
+					errors_context.context_name,
+					"\" ",
+					errors_context.args_description );
+
+				ust::stderr_print_line(
+					file_path,
+					":",
+					error.src_loc.GetLine(),
+					":",
+					error.src_loc.GetColumn(),
+					": required from here: ",
+					error.text );
+
+				PrintCodeBuilderErrorsGCC( source_graph, errors_context.errors.lock_imut().deref() );
+			}
+		}
+		else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
+		{
+			with( &errors_context : error.errors_context.try_lock_imut().deref() )
+			{
+				auto context_file_index= size_type( errors_context.context_declaration_src_loc.GetFileIndex() );
+				var ust::string_view8 context_file_path=
+					( context_file_index < source_graph.nodes.size() ? source_graph.nodes[context_file_index].file_path_normalized.range() : ust::string_view8() );
+
+				if( errors_context.context_name == "mixin" )
+				{
+					ust::stderr_print_line( context_file_path, ": In expansion of mixin" );
+				}
+				else
+				{
+					ust::stderr_print_line(
+						context_file_path, ": In expansion of macro \"", errors_context.context_name, "\"" );
+				}
+
+				ust::stderr_print_line(
+					file_path,
+					":",
+					error.src_loc.GetLine(),
+					":",
+					error.src_loc.GetColumn(),
+					": required from here: ",
+					error.text );
+
+				PrintCodeBuilderErrorsGCC( source_graph, errors_context.errors.lock_imut().deref() );
+			}
+		}
+		else
+		{
+			ust::stderr_print_line(
+				file_path, ":", error.src_loc.GetLine(), ":", error.src_loc.GetColumn(), ": error: ", error.text );
+		}
+	}
+}
+
+fn PrintCodeBuilderErrorsMSVC( SourceGraph& source_graph, ErrorsContainer& errors )
+{
+	foreach( & error : errors )
+	{
+		auto file_index= size_type(error.src_loc.GetFileIndex());
+		var ust::string_view8 file_path=
+			( file_index < source_graph.nodes.size() ? source_graph.nodes[file_index].file_path_normalized.range() : ust::string_view8() );
+
+		if( error.code == CodeBuilderErrorCode::TemplateContext )
+		{
+			with( &errors_context : error.errors_context.try_lock_imut().deref() )
+			{
+				PrintCodeBuilderErrorsMSVC( source_graph, errors_context.errors.lock_imut().deref() );
+
+				auto context_file_index= size_type( errors_context.context_declaration_src_loc.GetFileIndex() );
+				var ust::string_view8 context_file_path=
+					( context_file_index < source_graph.nodes.size() ? source_graph.nodes[context_file_index].file_path_normalized.range() : ust::string_view8() );
+
+				ust::stderr_print_line(
+					context_file_path,
+					"(",
+					errors_context.context_declaration_src_loc.GetLine(),
+					"): note: In instantiation of \"",
+					errors_context.context_name,
+					"\" ",
+					errors_context.args_description );
+
+				ust::stderr_print_line( file_path, "(", error.src_loc.GetLine(), "): note: ", error.text );
+			}
+		}
+		else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
+		{
+			with( &errors_context : error.errors_context.try_lock_imut().deref() )
+			{
+				PrintCodeBuilderErrorsMSVC( source_graph, errors_context.errors.lock_imut().deref() );
+
+				auto context_file_index= size_type( errors_context.context_declaration_src_loc.GetFileIndex() );
+				var ust::string_view8 context_file_path=
+					( context_file_index < source_graph.nodes.size() ? source_graph.nodes[context_file_index].file_path_normalized.range() : ust::string_view8() );
+
+				if( errors_context.context_name == "mixin" )
+				{
+					ust::stderr_print_line(
+						context_file_path,
+						"(",
+						errors_context.context_declaration_src_loc.GetLine(),
+						"): note: In instantiation of mixin" );
+				}
+				else
+				{
+					ust::stderr_print_line(
+						context_file_path,
+						"(",
+						errors_context.context_declaration_src_loc.GetLine(),
+						"): note: In expansion of macro \"",
+						errors_context.context_name,
+						"\"" );
+				}
+
+				ust::stderr_print_line( file_path, "(", error.src_loc.GetLine(), "): note: required from here" );
+			}
+		}
+		else
+		{
+			ust::stderr_print_line( file_path, "(", error.src_loc.GetLine(), "): error: ", error.text );
+		}
+	}
+}
+
+} // namespace U1
