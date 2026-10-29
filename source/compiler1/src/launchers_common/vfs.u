@@ -206,7 +206,7 @@ fn VfsOverSystemFS::IsImportingFileAllowed( this, ust::string_view8 full_file_pa
 {
 	if( !prevent_imports_outside_given_directories_ )
 	{
-		return false;
+		return true;
 	}
 
 	foreach( &prefixed_include_dir : prefixed_include_dirs_ )
