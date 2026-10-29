@@ -74,20 +74,22 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 		}
 		else
 		{
+			const auto source_graph_ptr= MakeRcPtr( std::move(source_graph) );
+
 			CodeBuilder::BuildResult build_result=
 				CodeBuilder::BuildProgram(
 					llvm_context,
 					data_layout,
 					target_triple,
 					options,
-					MakeRcPtr( std::move(source_graph) ),
+					source_graph_ptr,
 					vfs );
 
 			result.llvm_modules[i]= std::move( build_result.module );
 
 			if( !build_result.errors.empty() )
 			{
-				const auto dependent_files_list= BuildDependentFilesList( source_graph );
+				const auto dependent_files_list= BuildDependentFilesList( *source_graph_ptr );
 				if( tests_output )
 					PrintErrorsForTests( dependent_files_list, build_result.errors );
 				else
