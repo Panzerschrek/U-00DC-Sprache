@@ -33,12 +33,12 @@ private:
 	struct PrefixedIncludeDir
 	{
 		ust::filesystem_path vfs_path;
-		ust::filesystem_path host_fs_path;
+		ust::filesystem_path host_fs_path; // Absolute.
 	}
 
 private:
 	ust::vector</ PrefixedIncludeDir /> imut prefixed_include_dirs_;
-	ust::vector</ ust::filesystem_path /> imut source_dirs_;
+	ust::vector</ ust::filesystem_path /> imut source_dirs_; // Absolute.
 	bool imut prevent_imports_outside_given_directories_;
 }
 

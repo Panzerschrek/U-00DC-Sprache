@@ -130,6 +130,7 @@ fn VfsOverSystemFS::NormalizeFilePath(
 {
 	if( parent_file_path_normalized.empty() )
 	{
+		// It's a root file. Return normalized path to it and make sure it's absolute.
 		if( ust::path::is_absolute( file_path ) )
 		{
 			return ust::path::normalize( file_path );
@@ -172,6 +173,9 @@ fn VfsOverSystemFS::NormalizeFilePath(
 			if( prefix_it.next().empty() )
 			{
 				// Given path is a subdirectory inside "vfs_path".
+
+				// Since "host_fs_path" is absolute, the result will be absolute too.
+
 				var ust::filesystem_path mut full_file_path= prefixed_include_dir.host_fs_path;
 				foreach( &component : move(given_path_it) )
 				{
@@ -261,6 +265,7 @@ fn VfsOverSystemFS::IsFileFromSourcesDirectory( this, ust::string_view8 full_fil
 	return false;
 }
 
+// Given paths should be absolute and normalized!
 fn IsWithinGivenDirectory( ust::filesystem_path_view full_file_path, ust::filesystem_path_view directory_path ) : bool
 {
 	auto mut given_path_it= ust::path::components_iter( full_file_path );
