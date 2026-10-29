@@ -133,8 +133,7 @@ fn VfsOverSystemFS::NormalizeFilePath(
 		// Return real file system path to first existent file.
 		foreach( & prefixed_include_dir : prefixed_include_dirs_ )
 		{
-			auto mut given_path_it= ust::path::components_iter( file_path );
-			ust::ignore_unused( given_path_it.next() ); // Skip first "/".
+			auto mut given_path_it= ust::path::components_iter( file_path.subrange_start( 1s ) /* skip first "/" */ );
 
 			auto mut prefix_it= ust::path::components_iter( prefixed_include_dir.vfs_path );
 
