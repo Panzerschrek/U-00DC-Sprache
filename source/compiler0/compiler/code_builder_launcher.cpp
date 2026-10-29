@@ -34,7 +34,6 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	if( vfs == nullptr )
 		return result;
 
-	result.llvm_modules.reserve( input_files.size() );
 	for( size_t i= 0; i < input_files.size(); ++i )
 	{
 		SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, input_files[i], prelude_code );

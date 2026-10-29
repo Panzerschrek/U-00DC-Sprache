@@ -73,19 +73,25 @@ void LexSyntErrorProcessingFunction(
 	reinterpret_cast< LexSyntErrors* >(data)->push_back( std::move(out_error) );
 }
 
-class VfsHolderImpl final : public VfsHolder
-{
-public:
-	void* vfs_;
-};
-
 } // namespace
 
-std::unique_ptr<VfsHolder> CreateVfsHolder(
+CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::ArrayRef<std::string> include_dirs,
 	const llvm::ArrayRef<std::string> source_dirs,
-	const bool prevent_imports_outside_given_directories )
+	const bool prevent_imports_outside_given_directories,
+	llvm::ArrayRef<std::string> input_files,
+	llvm::LLVMContext& llvm_context,
+	const llvm::DataLayout& data_layout,
+	const llvm::Triple& target_triple,
+	const bool generate_debug_info,
+	const bool generate_tbaa_metadata,
+	const bool allow_unused_names,
+	const ManglingScheme mangling_scheme,
+	const std::string_view prelude_code )
 {
+	CodeBuilderLaunchResult result;
+	result.llvm_modules.resize( input_files.size() );
+
 	std::vector<U1_StringView> inciude_dir_views;
 	inciude_dir_views.reserve( include_dirs.size() );
 	for( const std::string& s : include_dirs )
@@ -104,54 +110,30 @@ std::unique_ptr<VfsHolder> CreateVfsHolder(
 			source_dir_views.size(),
 			prevent_imports_outside_given_directories );
 
-	if( vfs == nullptr )
-		return nullptr;
+	for( size_t i= 0; i < input_files.size(); ++i )
+	{
+		const LLVMModuleRef llvm_module=
+			U1_BuildProgramUsingVFS(
+				vfs,
+				StringToStringView(input_files[i]),
+				llvm::wrap(&llvm_context),
+				llvm::wrap(&data_layout ),
+				StringToStringView(target_triple.normalize()),
+				generate_debug_info,
+				generate_tbaa_metadata,
+				allow_unused_names,
+				mangling_scheme,
+				StringToStringView(prelude_code),
+				SourceFilePathProcessingFunction,
+				reinterpret_cast<U1_UserHandle>(&result.dependent_files),
+				LexSyntErrorProcessingFunction,
+				reinterpret_cast<U1_UserHandle>(&result.lex_synt_errors),
+				U1_ErrorsHandlingCallbacks{ ErrorHanlder, TemplateErrorsContextHandler },
+				reinterpret_cast<U1_UserHandle>(&result.code_builder_errors) );
 
-	VfsHolderImpl vfs_holder_impl;
-	vfs_holder_impl.vfs_= vfs;
-
-	return std::make_unique<VfsHolderImpl>( std::move(vfs_holder_impl) );
-}
-
-CodeBuilderLaunchResult LaunchCodeBuilder(
-	const IVfs::Path& input_file,
-	const VfsHolder& vfs_holder,
-	llvm::LLVMContext& llvm_context,
-	const llvm::DataLayout& data_layout,
-	const llvm::Triple& target_triple,
-	const bool generate_debug_info,
-	const bool generate_tbaa_metadata,
-	const bool allow_unused_names,
-	const ManglingScheme mangling_scheme,
-	const std::string_view prelude_code )
-{
-	void* const vfs= static_cast<const VfsHolderImpl&>( vfs_holder ).vfs_;
-
-	CodeBuilderLaunchResult result;
-
-	const LLVMModuleRef llvm_module=
-		U1_BuildProgramUsingVFS(
-			vfs,
-			StringToStringView(input_file),
-			llvm::wrap(&llvm_context),
-			llvm::wrap(&data_layout ),
-			StringToStringView(target_triple.normalize()),
-			generate_debug_info,
-			generate_tbaa_metadata,
-			allow_unused_names,
-			mangling_scheme,
-			StringToStringView(prelude_code),
-			SourceFilePathProcessingFunction,
-			reinterpret_cast<U1_UserHandle>(&result.dependent_files),
-			LexSyntErrorProcessingFunction,
-			reinterpret_cast<U1_UserHandle>(&result.lex_synt_errors),
-			U1_ErrorsHandlingCallbacks{ ErrorHanlder, TemplateErrorsContextHandler },
-			reinterpret_cast<U1_UserHandle>(&result.code_builder_errors) );
-
-	if( llvm_module == nullptr )
-		return result;
-
-	result.llvm_module.reset( llvm::unwrap(llvm_module) ); // Take ownership over module.
+		if( llvm_module != nullptr )
+			result.llvm_modules[i]= std::unique_ptr<llvm::Module>( llvm::unwrap(llvm_module) ); // Take ownership over module.
+	}
 
 	return result;
 }
