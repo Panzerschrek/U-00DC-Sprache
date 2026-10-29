@@ -123,9 +123,74 @@ fn VfsOverSystemFS::NormalizeFilePath(
 	ust::string_view8 file_path,
 	ust::string_view8 parent_file_path_normalized ) : ust::string8
 {
-	// TODO
-	ust::ignore_unused( parent_file_path_normalized );
-	return file_path;
+	if( parent_file_path_normalized.empty() )
+	{
+		return ust::path::normalize( file_path );
+	}
+	else if( file_path.starts_with( "/" ) )
+	{
+		// If file path is absolute, like "/some_lib/some_file.u" search file in include dirs.
+		// Return real file system path to first existent file.
+		foreach( & prefixed_include_dir : prefixed_include_dirs_ )
+		{
+			auto mut given_path_it= ust::path::components_iter( file_path );
+			auto mut prefix_it= ust::path::components_iter( prefixed_include_dir.vfs_path );
+
+			loop
+			{
+				auto given_path_component_opt= given_path_it.next();
+				auto prefix_component_opt= prefix_it.next();
+				if( given_path_component_opt.empty() | prefix_component_opt.empty() )
+				{
+					break;
+				}
+				if( given_path_component_opt.try_deref() != prefix_component_opt.try_deref() )
+				{
+					break;
+				}
+			}
+
+			if( prefix_it.next().empty() )
+			{
+				// Given path is a subdirectory inside "vfs_path".
+				var ust::filesystem_path mut full_file_path= prefixed_include_dir.host_fs_path;
+				foreach( &component : move(given_path_it) )
+				{
+					ust::path::append( full_file_path, component );
+				}
+
+				result_match( ust::get_metadata_for_path( full_file_path ) )
+				{
+					Ok( metadata ) ->
+					{
+						if( metadata.kind == ust::file_kind::file )
+						{
+							return ust::path::normalize( full_file_path );
+						}
+					},
+					Err( e ) -> { ust::ignore_unused(e); },
+				}
+			}
+			else
+			{
+				move(given_path_it);
+			}
+		}
+
+		return ""; // Found nothing.
+	}
+	else
+	{
+		// Relative import.
+		if_var( parent_directory : ust::path::get_parent_path( parent_file_path_normalized ) )
+		{
+			return ust::path::normalize( ust::path::join( parent_directory, file_path ) );
+		}
+		else
+		{
+			return "";
+		}
+	}
 }
 
 fn VfsOverSystemFS::LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>
