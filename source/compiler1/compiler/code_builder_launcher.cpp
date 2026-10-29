@@ -56,7 +56,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 		source_dir_views.push_back( StringToStringView(s) );
 
 	std::vector<U1_StringView> input_file_views;
-	input_file_views.reserve( source_dirs.size() );
+	input_file_views.reserve( input_files.size() );
 	for( const std::string& s : input_files )
 		input_file_views.push_back( StringToStringView(s) );
 
