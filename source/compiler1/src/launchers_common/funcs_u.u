@@ -102,7 +102,8 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
 	U1_UserHandle result_source_file_path_processing_data,
-	U1::ErrorsFormat errors_format ) unsafe call_conv( "C" ) : bool
+	U1::ErrorsFormat errors_format,
+	bool tests_output ) unsafe call_conv( "C" ) : bool
 {
 	var ust::vector</ ust::string8 /> mut prefixed_include_dirs_vec;
 	for( auto mut i= 0s; i < num_prefixed_include_dirs; ++i )
@@ -168,11 +169,19 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 		var U1::CodeBuilder mut code_builder( llvm_context, data_layout, target_triple, options, vfs );
 		var U1::CodeBuilder::BuildResult code_builder_res= code_builder.BuildProgram( source_graph );
 
+		if( tests_output )
+		{
+			U1::PrintCodeBuilderErrorsForTests( source_graph, code_builder_res.errors );
+		}
+		else
+		{
+			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors, errors_format );
+		}
+
 		unsafe
 		{
 			$>( out_modules + i )= code_builder_res.llvm_module;
 
-			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors, errors_format );
 
 			if( !code_builder_res.errors.empty() )
 			{

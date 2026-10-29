@@ -107,6 +107,7 @@ bool U1_BuildProgramUsingVFS(
 	const U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
 	U1_UserHandle result_source_file_path_processing_data,
-	U::ErrorsFormat errros_format );
+	U::ErrorsFormat errros_format,
+	bool tests_output );
 
 } // extern "C"

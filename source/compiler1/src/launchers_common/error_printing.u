@@ -206,4 +206,17 @@ fn PrintCodeBuilderErrorsMSVC( SourceGraph& source_graph, ErrorsContainer& error
 	}
 }
 
+fn PrintCodeBuilderErrorsForTests( SourceGraph& source_graph, ErrorsContainer& errors )
+{
+	// For tests we print errors as "file.u 88 NameNotFound"
+	foreach( & error : errors )
+	{
+		auto file_index= size_type(error.src_loc.GetFileIndex());
+		var ust::string_view8 file_path=
+			( file_index < source_graph.nodes.size() ? source_graph.nodes[file_index].file_path_normalized.range() : ust::string_view8() );
+
+		ust::stderr_print_line( file_path, " ", error.src_loc.GetLine(), error.code );
+	}
+}
+
 } // namespace U1

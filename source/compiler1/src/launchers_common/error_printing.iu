@@ -11,4 +11,6 @@ fn PrintLexSyntErrors( SourceGraph& source_graph, ErrorsFormat errors_format );
 fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors );
 fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors, ErrorsFormat errors_format );
 
+fn PrintCodeBuilderErrorsForTests( SourceGraph& source_graph, ErrorsContainer& errors );
+
 } // namespace U1

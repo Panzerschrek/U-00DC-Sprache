@@ -84,10 +84,8 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			StringToStringView(prelude_code),
 			SourceFilePathProcessingFunction,
 			reinterpret_cast<U1_UserHandle>(&result.dependent_files),
-			errors_format );
-
-	// TODO - pass ir.
-	(void)tests_output;
+			errors_format,
+			tests_output );
 
 	return result;
 }
