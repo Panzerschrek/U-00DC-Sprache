@@ -104,10 +104,10 @@ bool U1_BuildProgramUsingVFS(
 	bool generate_tbaa_metadata,
 	bool allow_unused_names,
 	U::ManglingScheme mangling_scheme,
+	U::ErrorsFormat errros_format,
+	bool tests_output,
 	const U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
-	U1_UserHandle result_source_file_path_processing_data,
-	U::ErrorsFormat errros_format,
-	bool tests_output );
+	U1_UserHandle result_source_file_path_processing_data );
 
 } // extern "C"

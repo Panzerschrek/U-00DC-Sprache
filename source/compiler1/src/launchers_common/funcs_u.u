@@ -99,11 +99,11 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	bool generate_tbaa_metadata,
 	bool allow_unused_names,
 	U1::ManglingScheme mangling_scheme,
+	U1::ErrorsFormat errors_format,
+	bool tests_output,
 	U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
-	U1_UserHandle result_source_file_path_processing_data,
-	U1::ErrorsFormat errors_format,
-	bool tests_output ) unsafe call_conv( "C" ) : bool
+	U1_UserHandle result_source_file_path_processing_data ) unsafe call_conv( "C" ) : bool
 {
 	var ust::vector</ ust::string8 /> mut prefixed_include_dirs_vec;
 	for( auto mut i= 0s; i < num_prefixed_include_dirs; ++i )

@@ -38,9 +38,9 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const bool generate_tbaa_metadata,
 	const bool allow_unused_names,
 	const ManglingScheme mangling_scheme,
-	const std::string_view prelude_code,
 	const ErrorsFormat errors_format,
-	const bool tests_output )
+	const bool tests_output,
+	const std::string_view prelude_code )
 {
 	CodeBuilderLaunchResult result;
 	result.llvm_modules.resize( input_files.size() );
@@ -81,11 +81,11 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			generate_tbaa_metadata,
 			allow_unused_names,
 			mangling_scheme,
+			errors_format,
+			tests_output,
 			StringToStringView(prelude_code),
 			SourceFilePathProcessingFunction,
-			reinterpret_cast<U1_UserHandle>(&result.dependent_files),
-			errors_format,
-			tests_output );
+			reinterpret_cast<U1_UserHandle>(&result.dependent_files) );
 
 	return result;
 }

@@ -35,9 +35,9 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const bool generate_tbaa_metadata,
 	const bool allow_unused_names,
 	const ManglingScheme mangling_scheme,
-	const std::string_view prelude_code,
 	const ErrorsFormat errors_format,
-	bool tests_output )
+	bool tests_output,
+	const std::string_view prelude_code )
 {
 	CodeBuilderLaunchResult result;
 	result.llvm_modules.resize( input_files.size() );
