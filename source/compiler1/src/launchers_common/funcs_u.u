@@ -83,7 +83,7 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 }
 
 fn nomangle nodiscard U1_BuildProgramUsingVFS(
-	U1_IVfsInterface& vfs_interface,
+	$(byte8) vfs_ptr,
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
@@ -100,7 +100,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle error_processing_data ) unsafe call_conv( "C" ) : LLVMModuleRef
 {
-	var U1::IVfsSharedPtr vfs= ust::make_shared_ptr( U1::ExternalVfsWrapper( vfs_interface ) );
+	var U1::IVfsSharedPtr& vfs= unsafe( $>( ust::byte_ptr_cast</ U1::IVfsSharedPtr />( vfs_ptr ) ) );
 
 	auto source_graph=
 		U1::LoadSourceGraph(
@@ -197,12 +197,12 @@ fn nomangle nodiscard U1_CreateVFS(
 
 	unsafe
 	{
-		var U1::VfsOverSystemFS mut vfs= vfs_opt.try_take();
+		var U1::IVfsSharedPtr mut vfs_shared_ptr= ust::make_shared_ptr( vfs_opt.try_take() );
 
-		var $(byte8) ptr= ust::memory_allocate( typeinfo</ typeof(vfs) />.size_of );
-		ust::move_into_uninitialized( $>( ust::byte_ptr_cast</ typeof(vfs) />( ptr ) ), move(vfs) );
+		var $(byte8) vfs_ptr_raw= ust::memory_allocate( typeinfo</ typeof(vfs_shared_ptr) />.size_of );
+		ust::move_into_uninitialized( $>( ust::byte_ptr_cast</ typeof(vfs_shared_ptr) />( vfs_ptr_raw ) ), move(vfs_shared_ptr) );
 
-		return ptr;
+		return vfs_ptr_raw;
 	}
 }
 
@@ -210,12 +210,12 @@ fn nomangle U1_DestroyVFS( $(byte8) vfs_ptr ) unsafe call_conv( "C" )
 {
 	unsafe
 	{
-		var U1::VfsOverSystemFS mut vfs= uninitialized;
+		var U1::IVfsSharedPtr mut vfs_shared_ptr= uninitialized;
 		ust::memory_copy_aligned(
-			typeinfo</ typeof(vfs) />.align_of,
-			ust::ptr_cast_to_byte8( $<(vfs) ),
+			typeinfo</ typeof(vfs_shared_ptr) />.align_of,
+			ust::ptr_cast_to_byte8( $<(vfs_shared_ptr) ),
 			vfs_ptr,
-			typeinfo</ typeof(vfs) />.size_of );
+			typeinfo</ typeof(vfs_shared_ptr) />.size_of );
 
 		// Destructor should be called here.
 	}
@@ -556,85 +556,6 @@ public:
 
 private:
 	SourceEntries source_entries_;
-}
-
-class ExternalVfsWrapper final : IVfs
-{
-public:
-	fn constructor( U1_IVfsInterface mut vfs_interface )
-		( vfs_interface_= move(vfs_interface) )
-	{}
-
-public:
-	fn virtual override NormalizeFilePath(
-		mut this,
-		ust::string_view8 file_path,
-		ust::string_view8 parent_file_path_normalized ) : ust::string8
-	{
-		unsafe
-		{
-			var ust::string8 mut result;
-
-			var U1_StringView file_path_view{ .data= file_path.data(), .size= file_path.size() };
-			var U1_StringView parent_file_path_normalized_view{ .data= parent_file_path_normalized.data(), .size= parent_file_path_normalized.size() };
-
-			vfs_interface_.normalize_path_function(
-				vfs_interface_.this_,
-				file_path_view,
-				parent_file_path_normalized_view,
-				FillStringCallback,
-				ust::ref_to_int( result ) );
-			return result;
-		}
-	}
-
-	fn virtual override LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>
-	{
-		unsafe
-		{
-			var ust::string8 mut result;
-
-			var U1_StringView full_file_path_view{ .data= full_file_path.data(), .size= full_file_path.size() };
-
-			var bool ok= vfs_interface_.load_file_content_function(
-				vfs_interface_.this_,
-				full_file_path_view,
-				FillStringCallback,
-				ust::ref_to_int( result ) );
-			if( ok )
-			{
-				return result;
-			}
-		}
-		return ust::null_optional;
-	}
-
-	fn virtual override IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool
-	{
-		return unsafe( vfs_interface_.is_importing_file_allowed_function(
-			vfs_interface_.this_,
-			U1_StringView{ .data= full_file_path.data(), .size= full_file_path.size() } ) );
-	}
-
-	fn virtual override IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool
-	{
-		return unsafe( vfs_interface_.is_file_from_sources_directory_function(
-			vfs_interface_.this_,
-			U1_StringView{ .data= full_file_path.data(), .size= full_file_path.size() } ) );
-	}
-
-private:
-	fn FillStringCallback( U1_UserHandle user_data, U1_StringView& result_path_normalized ) unsafe call_conv( "C" )
-	{
-		unsafe
-		{
-			auto &mut str= cast_mut( ust::int_to_ref</ust::string8/>(user_data) );
-			str= StringToArrayView( result_path_normalized );
-		}
-	}
-
-private:
-	U1_IVfsInterface vfs_interface_;
 }
 
 } // namespace U1

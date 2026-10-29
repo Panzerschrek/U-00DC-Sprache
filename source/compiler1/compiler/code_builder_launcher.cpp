@@ -17,51 +17,6 @@ const std::string StringViewToString( const U1_StringView view )
 	return std::string( view.data, view.data + view.size );
 }
 
-void GetFullFilePath(
-	const U1_UserHandle this_,
-	const U1_StringView& file_path,
-	const U1_StringView& parent_file_path_normalized,
-	const  U1_IVfsInterface::FillStringCallback result_callback,
-	const U1_UserHandle user_data )
-{
-	const std::string path=
-		reinterpret_cast<IVfs*>(this_)->GetFullFilePath(
-			StringViewToString(file_path),
-			StringViewToString(parent_file_path_normalized) );
-
-	result_callback( user_data, StringToStringView(path) );
-}
-
-bool LoadFileContent(
-	const U1_UserHandle this_,
-	const U1_StringView& path_normalized,
-	const U1_IVfsInterface::FillStringCallback result_callback,
-	const U1_UserHandle user_data )
-{
-	const std::optional<IVfs::FileContent> file_content=
-		reinterpret_cast<IVfs*>(this_)->LoadFileContent( StringViewToString(path_normalized) );
-
-	if( file_content == std::nullopt )
-		return false;
-
-	result_callback( user_data, StringToStringView( *file_content ) );
-	return true;
-}
-
-bool IsImportingFileAllowed(
-	const U1_UserHandle this_,
-	const U1_StringView& path_normalized )
-{
-	return reinterpret_cast<IVfs*>(this_)->IsImportingFileAllowed( StringViewToString(path_normalized) );
-}
-
-bool IsFileFromSourcesDirectory(
-	const U1_UserHandle this_,
-	const U1_StringView& path_normalized )
-{
-	return reinterpret_cast<IVfs*>(this_)->IsFileFromSourcesDirectory( StringViewToString(path_normalized) );
-}
-
 U1_UserHandle ErrorHanlder(
 	const U1_UserHandle data, // should be "CodeBuilderErrorsContainer"
 	const uint32_t file_index,
@@ -118,11 +73,49 @@ void LexSyntErrorProcessingFunction(
 	reinterpret_cast< LexSyntErrors* >(data)->push_back( std::move(out_error) );
 }
 
+class VfsHolderImpl final : public VfsHolder
+{
+public:
+	void* vfs_;
+};
+
 } // namespace
+
+std::unique_ptr<VfsHolder> CreateVfsHolder(
+	const llvm::ArrayRef<std::string> include_dirs,
+	const llvm::ArrayRef<std::string> source_dirs,
+	const bool prevent_imports_outside_given_directories )
+{
+	std::vector<U1_StringView> inciude_dir_views;
+	inciude_dir_views.reserve( include_dirs.size() );
+	for( const std::string& s : include_dirs )
+		inciude_dir_views.push_back( StringToStringView(s) );
+
+	std::vector<U1_StringView> source_dir_views;
+	source_dir_views.reserve( source_dirs.size() );
+	for( const std::string& s : source_dirs )
+		source_dir_views.push_back( StringToStringView(s) );
+
+	void* const vfs=
+		U1_CreateVFS(
+			inciude_dir_views.data(),
+			inciude_dir_views.size(),
+			source_dir_views.data(),
+			source_dir_views.size(),
+			prevent_imports_outside_given_directories );
+
+	if( vfs == nullptr )
+		return nullptr;
+
+	VfsHolderImpl vfs_holder_impl;
+	vfs_holder_impl.vfs_= vfs;
+
+	return std::make_unique<VfsHolderImpl>( std::move(vfs_holder_impl) );
+}
 
 CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfs::Path& input_file,
-	const IVfsSharedPtr& vfs,
+	const VfsHolder& vfs_holder,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
@@ -132,16 +125,13 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const ManglingScheme mangling_scheme,
 	const std::string_view prelude_code )
 {
+	void* const vfs= static_cast<const VfsHolderImpl&>( vfs_holder ).vfs_;
+
 	CodeBuilderLaunchResult result;
 
 	const LLVMModuleRef llvm_module=
 		U1_BuildProgramUsingVFS(
-			U1_IVfsInterface{
-				reinterpret_cast<U1_UserHandle>(vfs.get()),
-				GetFullFilePath,
-				LoadFileContent,
-				IsImportingFileAllowed,
-				IsFileFromSourcesDirectory },
+			vfs,
 			StringToStringView(input_file),
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),
