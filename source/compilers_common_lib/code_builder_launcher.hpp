@@ -33,9 +33,9 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	bool generate_tbaa_metadata,
 	bool allow_unused_names,
 	ManglingScheme mangling_scheme,
-	std::string_view prelude_code,
-	const ErrorsFormat errors_format,
-	bool tests_output );
+	ErrorsFormat errors_format,
+	bool tests_output,
+	std::string_view prelude_code );
 
 // Contains value of current compiler generation (0, 1, 2, etc.).
 // Is constant, but not "constexpr", because this constant is defined outside this header.

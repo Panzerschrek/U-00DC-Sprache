@@ -656,9 +656,9 @@ int Main( int argc, const char* argv[] )
 				generate_tbaa_metadata,
 				Options::allow_unused_names,
 				mangling_scheme,
-				prelude_code,
 				errors_format,
-				Options::tests_output );
+				Options::tests_output,
+				prelude_code );
 
 		deps_list= std::move( code_builder_launch_result.dependent_files );
 

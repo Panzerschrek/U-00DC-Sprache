@@ -2,7 +2,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "../../lex_synt_lib_common/errors_format.hpp"
 #include "../../lex_synt_lib_common/src_loc.hpp"
 
 namespace U
@@ -20,7 +19,5 @@ struct LexSyntError
 };
 
 using LexSyntErrors= std::vector<LexSyntError>;
-
-void PrintLexSyntErrors( const std::vector<std::string>& source_files, const LexSyntErrors& errors, ErrorsFormat format= ErrorsFormat::GCC, std::ostream& errors_stream= std::cerr );
 
 } // namespace U

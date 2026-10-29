@@ -3,25 +3,11 @@
 #include "../../compilers_support_lib/vfs.hpp"
 #include "../code_builder_lib/errors_print.hpp"
 #include "../code_builder_lib/code_builder.hpp"
+#include "../lex_synt_lib/error_printing.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 
 namespace U
 {
-
-namespace
-{
-
-std::vector<std::string> BuildDependentFilesList( const SourceGraph& source_graph )
-{
-	std::vector<std::string> list;
-	list.reserve( source_graph.nodes_storage.size() );
-	for( const SourceGraph::Node& node : source_graph.nodes_storage )
-		list.push_back( node.file_path );
-
-	return list;
-}
-
-} // namespace
 
 CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::ArrayRef<std::string> include_dirs,
@@ -68,7 +54,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 
 		if( !source_graph.errors.empty() )
 		{
-			PrintLexSyntErrors( BuildDependentFilesList( source_graph ), source_graph.errors, errors_format );
+			PrintLexSyntErrors( source_graph, errors_format );
 
 			result.has_errors= true;
 		}
@@ -89,11 +75,10 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 
 			if( !build_result.errors.empty() )
 			{
-				const auto dependent_files_list= BuildDependentFilesList( *source_graph_ptr );
 				if( tests_output )
-					PrintErrorsForTests( dependent_files_list, build_result.errors );
+					PrintErrorsForTests( *source_graph_ptr, build_result.errors );
 				else
-					PrintErrors( dependent_files_list, build_result.errors, errors_format );
+					PrintErrors( *source_graph_ptr, build_result.errors, errors_format );
 
 				result.has_errors= true;
 			}
