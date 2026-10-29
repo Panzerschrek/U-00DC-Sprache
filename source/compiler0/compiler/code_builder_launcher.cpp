@@ -11,7 +11,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::ArrayRef<std::string> include_dirs,
 	const llvm::ArrayRef<std::string> source_dirs,
 	const bool prevent_imports_outside_given_directories,
-	llvm::ArrayRef<std::string> input_files,
+	const llvm::ArrayRef<std::string> input_files,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
@@ -34,6 +34,12 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	if( vfs == nullptr )
 		return result;
 
+	CodeBuilderOptions options;
+	options.build_debug_info= generate_debug_info;
+	options.mangling_scheme= mangling_scheme;
+	options.generate_tbaa_metadata= generate_tbaa_metadata;
+	options.report_about_unused_names= !allow_unused_names;
+
 	for( size_t i= 0; i < input_files.size(); ++i )
 	{
 		SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, input_files[i], prelude_code );
@@ -45,12 +51,6 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 		result.lex_synt_errors= std::move(source_graph.errors);
 		if( result.lex_synt_errors.empty() )
 		{
-			CodeBuilderOptions options;
-			options.build_debug_info= generate_debug_info;
-			options.mangling_scheme= mangling_scheme;
-			options.generate_tbaa_metadata= generate_tbaa_metadata;
-			options.report_about_unused_names= !allow_unused_names;
-
 			CodeBuilder::BuildResult build_result=
 				CodeBuilder::BuildProgram(
 					llvm_context,

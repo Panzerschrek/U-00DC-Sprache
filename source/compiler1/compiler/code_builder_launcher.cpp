@@ -79,7 +79,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::ArrayRef<std::string> include_dirs,
 	const llvm::ArrayRef<std::string> source_dirs,
 	const bool prevent_imports_outside_given_directories,
-	llvm::ArrayRef<std::string> input_files,
+	const llvm::ArrayRef<std::string> input_files,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
