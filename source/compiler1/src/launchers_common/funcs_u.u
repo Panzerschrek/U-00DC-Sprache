@@ -105,21 +105,18 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	U1_SourceFilePathCallback result_source_file_path_callback,
 	U1_UserHandle result_source_file_path_processing_data ) unsafe call_conv( "C" ) : bool
 {
-	var ust::vector</ ust::string8 /> mut prefixed_include_dirs_vec;
-	for( auto mut i= 0s; i < num_prefixed_include_dirs; ++i )
-	{
-		prefixed_include_dirs_vec.push_back( unsafe( U1::StringToArrayView( $>( prefixed_include_dirs + i ) ) ) );
-	}
-
-	var ust::vector</ ust::string8 /> mut source_dirs_vec;
-	for( auto mut i= 0s; i < num_source_dirs; ++i )
-	{
-		source_dirs_vec.push_back( unsafe( U1::StringToArrayView( $>( source_dirs + i ) ) ) );
-	}
+	auto string_view_to_string=
+		lambda( U1_StringView s ) : ust::string8 { return unsafe( U1::StringToArrayView( s ) ); };
 
 	auto mut vfs_opt=
 		U1::VfsOverSystemFS::Create(
-			prefixed_include_dirs_vec, move(source_dirs_vec), prevent_imports_outside_given_directories );
+			ust::make_vector_from_mapped_range(
+				unsafe( ust::array_view_imut</ U1_StringView />( prefixed_include_dirs, num_prefixed_include_dirs ) ),
+				string_view_to_string ),
+			ust::make_vector_from_mapped_range(
+				unsafe( ust::array_view_imut</ U1_StringView />( source_dirs, num_source_dirs ) ),
+				string_view_to_string ),
+			prevent_imports_outside_given_directories );
 
 	if( vfs_opt.empty() )
 	{
@@ -153,7 +150,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 		{
 			unsafe
 			{
-				var U1_StringView path_view{ .data= cast_mut(node.file_path_normalized).data(), .size= node.file_path_normalized.size() };
+				var U1_StringView path_view{ .data= node.file_path_normalized.range().data(), .size= node.file_path_normalized.range().size() };
 				result_source_file_path_callback( result_source_file_path_processing_data, path_view );
 			}
 		}
@@ -169,28 +166,28 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 		var U1::CodeBuilder mut code_builder( llvm_context, data_layout, target_triple, options, vfs );
 		var U1::CodeBuilder::BuildResult code_builder_res= code_builder.BuildProgram( source_graph );
 
-		if( tests_output )
+		if( !code_builder_res.errors.empty() )
 		{
-			U1::PrintCodeBuilderErrorsForTests( source_graph, code_builder_res.errors );
-		}
-		else
-		{
-			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors, errors_format );
+			success= false;
+
+			if( tests_output )
+			{
+				U1::PrintCodeBuilderErrorsForTests( source_graph, code_builder_res.errors );
+			}
+			else
+			{
+				U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors, errors_format );
+			}
 		}
 
 		unsafe
 		{
+			// Transfer ownership over the result module to the caller.
 			$>( out_modules + i )= code_builder_res.llvm_module;
-
-
-			if( !code_builder_res.errors.empty() )
-			{
-				success= false;
-			}
 
 			foreach( &embedded_file : code_builder_res.embedded_files )
 			{
-				var U1_StringView path_view{ .data= cast_mut(embedded_file).data(), .size= embedded_file.size() };
+				var U1_StringView path_view{ .data= embedded_file.range().data(), .size= embedded_file.range().size() };
 				result_source_file_path_callback( result_source_file_path_processing_data, path_view );
 			}
 		}
