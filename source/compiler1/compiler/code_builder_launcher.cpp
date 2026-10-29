@@ -18,10 +18,10 @@ const std::string StringViewToString( const U1_StringView view )
 }
 
 void SourceFilePathProcessingFunction(
-	const U1_UserHandle data, // should be "std::vector<IVfs::Path>*"
+	const U1_UserHandle data, // should be "std::vector<std::string>*"
 	const U1_StringView& file_path )
 {
-	reinterpret_cast< std::vector<IVfs::Path>* >(data)->push_back( StringViewToString(file_path) );
+	reinterpret_cast< std::vector<std::string>* >(data)->push_back( StringViewToString(file_path) );
 }
 
 } // namespace
