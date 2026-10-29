@@ -1,0 +1,37 @@
+import "vfs.iu"
+
+namespace U1
+{
+
+fn VfsOverSystemFS::NormalizeFilePath(
+	mut this,
+	ust::string_view8 file_path,
+	ust::string_view8 parent_file_path_normalized ) : ust::string8
+{
+	// TODO
+	ust::ignore_unused( parent_file_path_normalized );
+	return file_path;
+}
+
+fn VfsOverSystemFS::LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>
+{
+	// TODO
+	ust::ignore_unused( full_file_path );
+	return ust::null_optional;
+}
+
+fn VfsOverSystemFS::IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool
+{
+	// TODO
+	ust::ignore_unused( full_file_path );
+	return true;
+}
+
+fn VfsOverSystemFS::IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool
+{
+	// TODO
+	ust::ignore_unused( full_file_path );
+	return true;
+}
+
+} // namespace U1

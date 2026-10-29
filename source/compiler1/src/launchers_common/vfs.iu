@@ -1,0 +1,20 @@
+import "../lex_synt_lib/source_graph.iu"
+
+namespace U1
+{
+
+class VfsOverSystemFS final : IVfs
+{
+	fn virtual final NormalizeFilePath(
+		mut this,
+		ust::string_view8 file_path,
+		ust::string_view8 parent_file_path_normalized ) : ust::string8;
+
+	fn virtual final LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>;
+
+	fn virtual final IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool;
+
+	fn virtual final IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool;
+}
+
+} // namespace U1
