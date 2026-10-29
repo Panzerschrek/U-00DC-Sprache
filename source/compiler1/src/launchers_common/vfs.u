@@ -1,8 +1,122 @@
 import "/file_helpers.iu"
+import "/filesystem.iu"
+import "/path_utils.iu"
+import "/stdout_ext.iu"
 import "vfs.iu"
 
 namespace U1
 {
+
+fn VfsOverSystemFS::Create(
+	ust::array_view_imut</ ust::string8 /> include_dirs,
+	ust::vector</ ust::string8 /> mut source_dirs,
+	bool prevent_imports_outside_given_directories ) : ust::optional</VfsOverSystemFS/>
+{
+	auto& separator= "::";
+
+	var ust::vector</PrefixedIncludeDir/> mut prefixed_include_dirs;
+
+	var bool mut all_ok= true;
+
+	foreach( &include_dir : include_dirs )
+	{
+		var PrefixedIncludeDir mut prefixed_include_dir;
+
+		var bool mut is_prefixed= false;
+
+		for( auto mut i= 0s; i < include_dir.size(); ++i )
+		{
+			if( include_dir.range().subrange_start(i).starts_with( separator ) )
+			{
+				// Prefixed include dir.
+				is_prefixed= true;
+
+
+				// Make sure we have no other separator(s).
+				for( auto mut j= i + ust::array_size( separator ); j < include_dir.size(); ++j )
+				{
+					if( include_dir.range().subrange_start(j).starts_with( separator ) )
+					{
+						ust::stderr_print_line( "Duplicated separator \"", separator, "\" in include string \"", include_dir, "\"!" );
+						all_ok= false;
+						break;
+					}
+				}
+
+				prefixed_include_dir.host_fs_path= include_dir.range().subrange_end(i);
+				prefixed_include_dir.vfs_path= include_dir.range().subrange_start( i + ust::array_size( separator ) );
+
+				TrimTrailingSlashes( prefixed_include_dir.vfs_path );
+				TrimLeadingSlashes( prefixed_include_dir.vfs_path );
+
+				break;
+			}
+		}
+
+		if( !is_prefixed )
+		{
+			// No prefix - mount to VFS root.
+			prefixed_include_dir.host_fs_path= include_dir;
+			prefixed_include_dir.vfs_path= "";
+		}
+
+		// Make path absolute.
+		if( !ust::path::is_absolute( prefixed_include_dir.host_fs_path ) )
+		{
+			prefixed_include_dir.host_fs_path= ust::path::join( ust::get_current_directory(), prefixed_include_dir.host_fs_path );
+		}
+
+		// Check if given path is an existing directory.
+		result_match( ust::get_metadata_for_path( prefixed_include_dir.host_fs_path ) )
+		{
+			Ok( metadata ) ->
+			{
+				if( metadata.kind != ust::file_kind::directory )
+				{
+					ust::stderr_print_line( "\"", prefixed_include_dir.host_fs_path, "\" is not a directory!" );
+					all_ok= false;
+				}
+			},
+			Err( e ) ->
+			{
+				ust::stderr_print_line( "Can't access path \"", prefixed_include_dir.host_fs_path, "\", error: ", e, "!" );
+				all_ok= false;
+			},
+		}
+
+		prefixed_include_dir.host_fs_path= ust::path::normalize( prefixed_include_dir.host_fs_path );
+
+		prefixed_include_dirs.push_back( move( prefixed_include_dir ) );
+	}
+
+	foreach( &mut source_dir : source_dirs )
+	{
+		TrimTrailingSlashes( source_dir );
+		source_dir= ust::path::normalize( source_dir );
+	}
+
+	if( !all_ok )
+	{
+		return ust::null_optional;
+	}
+
+	return
+		VfsOverSystemFS(
+			move( prefixed_include_dirs ),
+			move( source_dirs ),
+			prevent_imports_outside_given_directories );
+}
+
+fn VfsOverSystemFS::constructor(
+	ust::vector</ PrefixedIncludeDir /> mut prefixed_include_dirs,
+	ust::vector</ ust::filesystem_path /> mut source_dirs,
+	bool prevent_imports_outside_given_directories )
+	(
+		prefixed_include_dirs_= move(prefixed_include_dirs),
+		source_dirs_= move(source_dirs),
+		prevent_imports_outside_given_directories_= prevent_imports_outside_given_directories,
+	)
+{}
 
 fn VfsOverSystemFS::NormalizeFilePath(
 	mut this,
@@ -35,6 +149,40 @@ fn VfsOverSystemFS::IsFileFromSourcesDirectory( this, ust::string_view8 full_fil
 	// TODO
 	ust::ignore_unused( full_file_path );
 	return true;
+}
+
+fn TrimTrailingSlashes( ust::string8 &mut s )
+{
+	while( !s.empty() && IsSlash( s.back() ) )
+	{
+		s.drop_back();
+	}
+}
+
+fn TrimLeadingSlashes( ust::string8 &mut s )
+{
+	var size_type mut num_leading_slashes= 0s;
+
+	while( num_leading_slashes < s.size() && IsSlash( s[ num_leading_slashes ] ) )
+	{
+		++num_leading_slashes;
+	}
+
+	if( num_leading_slashes > 0s )
+	{
+		var size_type new_size= s.size() - num_leading_slashes;
+		for( auto mut i= 0s; i < new_size; ++i )
+		{
+			var char8 c= s[ i + num_leading_slashes ];
+			s[i]= c;
+		}
+		s.resize( new_size, '\0' );
+	}
+}
+
+fn IsSlash( char8 c ) : bool
+{
+	return c == '/' | c == '\\';
 }
 
 } // namespace U1

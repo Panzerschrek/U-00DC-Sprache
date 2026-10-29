@@ -1,3 +1,4 @@
+import "/path.iu"
 import "../lex_synt_lib/source_graph.iu"
 
 namespace U1
@@ -5,6 +6,18 @@ namespace U1
 
 class VfsOverSystemFS final : IVfs
 {
+public:
+	fn Create(
+		ust::array_view_imut</ ust::string8 /> include_dirs,
+		ust::vector</ ust::string8 /> source_dirs,
+		bool prevent_imports_outside_given_directories ) : ust::optional</VfsOverSystemFS/>;
+
+	fn constructor(
+		ust::vector</ PrefixedIncludeDir /> prefixed_include_dirs,
+		ust::vector</ ust::filesystem_path /> source_dirs,
+		bool prevent_imports_outside_given_directories );
+
+public: // IVfs
 	fn virtual final NormalizeFilePath(
 		mut this,
 		ust::string_view8 file_path,
@@ -15,6 +28,18 @@ class VfsOverSystemFS final : IVfs
 	fn virtual final IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool;
 
 	fn virtual final IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool;
+
+private:
+	struct PrefixedIncludeDir
+	{
+		ust::filesystem_path vfs_path;
+		ust::filesystem_path host_fs_path;
+	}
+
+private:
+	ust::vector</ PrefixedIncludeDir /> imut prefixed_include_dirs_;
+	ust::vector</ ust::filesystem_path /> imut source_dirs_;
+	bool imut prevent_imports_outside_given_directories_;
 }
 
 } // namespace U1
