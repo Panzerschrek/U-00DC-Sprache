@@ -21,10 +21,21 @@ struct CodeBuilderLaunchResult
 	std::unique_ptr<llvm::Module> llvm_module;
 };
 
+class VfsHolder
+{
+public:
+	virtual ~VfsHolder()= default;
+};
+
+std::unique_ptr<VfsHolder> CreateVfsHolder(
+	llvm::ArrayRef<std::string> include_dirs,
+	llvm::ArrayRef<std::string> source_dirs,
+	bool prevent_imports_outside_given_directories );
+
 // There are different implementations of this function for different implementations of CodeBuilderLib.
 CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfs::Path& input_file,
-	const IVfsSharedPtr& vfs,
+	const VfsHolder& vfs_holder, // Should be an instance created by "CreateVfsHolder" call.
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,

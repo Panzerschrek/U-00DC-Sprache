@@ -41,7 +41,6 @@
 #include "../compilers_support_lib/div_builtins.hpp"
 #include "../compilers_support_lib/errors_print.hpp"
 #include "../compilers_support_lib/prelude.hpp"
-#include "../compilers_support_lib/vfs.hpp"
 #include "../lex_synt_lib_common/assert.hpp"
 #include "../sprache_version/sprache_version.hpp"
 #include  "code_builder_launcher.hpp"
@@ -632,13 +631,12 @@ int Main( int argc, const char* argv[] )
 	{
 		// Compile multiple input files and link them together.
 
-		const IVfsSharedPtr vfs=
-			CreateVfsOverSystemFS(
+		const std::unique_ptr<VfsHolder> vfs_holder=
+			CreateVfsHolder(
 				Options::include_dir,
 				Options::source_dir,
-				Options::prevent_imports_outside_given_directories,
-				false /* tolerate_errors */ );
-		if( vfs == nullptr )
+				Options::prevent_imports_outside_given_directories );
+		if( vfs_holder == nullptr )
 			return 1u;
 
 		const std::string prelude_code=
@@ -660,7 +658,7 @@ int Main( int argc, const char* argv[] )
 			CodeBuilderLaunchResult code_builder_launch_result=
 				LaunchCodeBuilder(
 					input_file,
-					vfs,
+					*vfs_holder,
 					llvm_context,
 					data_layout,
 					target_triple,

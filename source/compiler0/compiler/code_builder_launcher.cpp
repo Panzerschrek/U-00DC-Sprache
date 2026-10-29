@@ -1,14 +1,42 @@
 #include "../../code_builder_lib_common/long_stable_hash.hpp"
 #include "../../compilers_common_lib/code_builder_launcher.hpp"
+#include "../../compilers_support_lib/vfs.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../code_builder_lib/code_builder.hpp"
 
 namespace U
 {
 
+class VfsHolderImpl final : public VfsHolder
+{
+public:
+	IVfsSharedPtr vfs_;
+};
+
+std::unique_ptr<VfsHolder> CreateVfsHolder(
+	const llvm::ArrayRef<std::string> include_dirs,
+	const llvm::ArrayRef<std::string> source_dirs,
+	const bool prevent_imports_outside_given_directories )
+{
+	std::unique_ptr<IVfs> vfs=
+		CreateVfsOverSystemFS(
+			include_dirs,
+			source_dirs,
+			prevent_imports_outside_given_directories,
+			false /* tolerate_errors */ );
+
+	if( vfs == nullptr )
+		return nullptr;
+
+	VfsHolderImpl vfs_holder_impl;
+	vfs_holder_impl.vfs_= std::move(vfs);
+
+	return std::make_unique<VfsHolderImpl>( std::move(vfs_holder_impl) );
+}
+
 CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfs::Path& input_file,
-	const IVfsSharedPtr& vfs,
+	const VfsHolder& vfs_holder,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
@@ -18,6 +46,8 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const ManglingScheme mangling_scheme,
 	const std::string_view prelude_code )
 {
+	const IVfsSharedPtr& vfs= static_cast<const VfsHolderImpl&>( vfs_holder ).vfs_;
+
 	CodeBuilderLaunchResult result;
 
 	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, input_file, prelude_code );
