@@ -1,11 +1,27 @@
 #include "../../code_builder_lib_common/long_stable_hash.hpp"
 #include "../../compilers_common_lib/code_builder_launcher.hpp"
 #include "../../compilers_support_lib/vfs.hpp"
+#include "../../compilers_support_lib/errors_print.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../code_builder_lib/code_builder.hpp"
 
 namespace U
 {
+
+namespace
+{
+
+std::vector<std::string> BuildDependentFilesList( const SourceGraph& source_graph )
+{
+	std::vector<std::string> list;
+	list.reserve( source_graph.nodes_storage.size() );
+	for( const SourceGraph::Node& node : source_graph.nodes_storage )
+		list.push_back( node.file_path );
+
+	return list;
+}
+
+} // namespace
 
 CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::ArrayRef<std::string> include_dirs,
@@ -19,7 +35,9 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const bool generate_tbaa_metadata,
 	const bool allow_unused_names,
 	const ManglingScheme mangling_scheme,
-	const std::string_view prelude_code )
+	const std::string_view prelude_code,
+	const ErrorsFormat errors_format,
+	bool tests_output )
 {
 	CodeBuilderLaunchResult result;
 	result.llvm_modules.resize( input_files.size() );
@@ -48,8 +66,13 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 		for( const SourceGraph::Node& node : source_graph.nodes_storage )
 			result.dependent_files.push_back( node.file_path );
 
-		result.lex_synt_errors= std::move(source_graph.errors);
-		if( result.lex_synt_errors.empty() )
+		if( !source_graph.errors.empty() )
+		{
+			PrintLexSyntErrors( BuildDependentFilesList( source_graph ), source_graph.errors, errors_format );
+
+			result.has_errors= true;
+		}
+		else
 		{
 			CodeBuilder::BuildResult build_result=
 				CodeBuilder::BuildProgram(
@@ -62,9 +85,16 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 
 			result.llvm_modules[i]= std::move( build_result.module );
 
-			result.code_builder_errors.reserve( result.code_builder_errors.size() + build_result.errors.size() );
-			for( CodeBuilderError& e : build_result.errors )
-				result.code_builder_errors.push_back( std::move(e) );
+			if( !build_result.errors.empty() )
+			{
+				const auto dependent_files_list= BuildDependentFilesList( source_graph );
+				if( tests_output )
+					PrintErrorsForTests( dependent_files_list, build_result.errors );
+				else
+					PrintErrors( dependent_files_list, build_result.errors, errors_format );
+
+				result.has_errors= true;
+			}
 
 			// Add embedded files into the list of dependencies.
 			for( IVfs::Path& path : build_result.embedded_files )

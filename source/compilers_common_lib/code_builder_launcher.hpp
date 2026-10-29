@@ -13,8 +13,7 @@ namespace U
 
 struct CodeBuilderLaunchResult
 {
-	LexSyntErrors lex_synt_errors;
-	CodeBuilderErrorsContainer code_builder_errors;
+	bool has_errors= false;
 
 	// This list isn't ordered and may contain duplicates.
 	std::vector<IVfs::Path> dependent_files;
@@ -35,7 +34,9 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	bool generate_tbaa_metadata,
 	bool allow_unused_names,
 	ManglingScheme mangling_scheme,
-	std::string_view prelude_code );
+	std::string_view prelude_code,
+	const ErrorsFormat errors_format,
+	bool tests_output );
 
 // Contains value of current compiler generation (0, 1, 2, etc.).
 // Is constant, but not "constexpr", because this constant is defined outside this header.

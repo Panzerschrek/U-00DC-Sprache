@@ -39,7 +39,6 @@
 #include "../code_builder_lib_common/async_calls_inlining.hpp"
 #include "../compilers_support_lib/compiler_builtins.hpp"
 #include "../compilers_support_lib/div_builtins.hpp"
-#include "../compilers_support_lib/errors_print.hpp"
 #include "../compilers_support_lib/prelude.hpp"
 #include "../lex_synt_lib_common/assert.hpp"
 #include "../sprache_version/sprache_version.hpp"
@@ -657,20 +656,13 @@ int Main( int argc, const char* argv[] )
 				generate_tbaa_metadata,
 				Options::allow_unused_names,
 				mangling_scheme,
-				prelude_code );
+				prelude_code,
+				errors_format,
+				Options::tests_output );
 
 		deps_list= std::move( code_builder_launch_result.dependent_files );
 
-		PrintLexSyntErrors( code_builder_launch_result.dependent_files, code_builder_launch_result.lex_synt_errors, errors_format );
-
-		if( Options::tests_output )
-			PrintErrorsForTests( code_builder_launch_result.dependent_files, code_builder_launch_result.code_builder_errors );
-		else
-			PrintErrors( code_builder_launch_result.dependent_files, code_builder_launch_result.code_builder_errors, errors_format );
-
-		bool have_some_errors=
-			!code_builder_launch_result.lex_synt_errors.empty() ||
-			!code_builder_launch_result.code_builder_errors.empty();
+		bool have_some_errors= code_builder_launch_result.has_errors;
 
 		U_ASSERT( code_builder_launch_result.llvm_modules.size() == Options::input_files.size() );
 		for( size_t i= 0; i < Options::input_files.size(); ++i )
