@@ -108,3 +108,12 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	U1_UserHandle lex_synt_error_callback_data,
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle error_processing_data ) unsafe call_conv( "C" ) : LLVMModuleRef;
+
+fn nomangle nodiscard U1_CreateVFS(
+	$(U1_StringView) prefixed_include_dirs,
+	size_type num_prefixed_include_dirs,
+	$(U1_StringView) source_dirs,
+	size_type num_source_dirs,
+	bool prevent_imports_outside_given_directories ) unsafe call_conv( "C" ) : $(byte8);
+
+fn nomangle U1_DestroyVFS( $(byte8) vfs_ptr ) unsafe call_conv( "C" );

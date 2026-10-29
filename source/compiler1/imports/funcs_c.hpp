@@ -116,4 +116,13 @@ LLVMModuleRef U1_BuildProgramUsingVFS(
 	const U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle error_processing_data );
 
+void* U1_CreateVFS(
+	const U1_StringView* prefixed_include_dirs,
+	size_t num_prefixed_include_dirs,
+	const U1_StringView* source_dirs,
+	size_t num_source_dirs,
+	bool prevent_imports_outside_given_directories );
+
+void U1_DestroyVFS( void* vfs_ptr );
+
 } // extern "C"

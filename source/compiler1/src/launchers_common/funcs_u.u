@@ -4,6 +4,7 @@ import "../lex_synt_lib/source_graph.iu"
 import "../code_builder_lib/code_builder.iu"
 import "../code_builder_lib/long_stable_hash_wrapper.iu"
 import "../../imports/funcs_u.iu"
+import "vfs.iu"
 
 fn nomangle nodiscard U1_BuildProgram(
 	U1_StringView& program_text,
@@ -162,6 +163,63 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	}
 
 	return code_builder_res.llvm_module;
+}
+
+fn nomangle nodiscard U1_CreateVFS(
+	$(U1_StringView) prefixed_include_dirs,
+	size_type num_prefixed_include_dirs,
+	$(U1_StringView) source_dirs,
+	size_type num_source_dirs,
+	bool prevent_imports_outside_given_directories ) unsafe call_conv( "C" ) : $(byte8)
+{
+	var ust::vector</ ust::string8 /> mut prefixed_include_dirs_vec;
+	for( auto mut i= 0s; i < num_prefixed_include_dirs; ++i )
+	{
+		prefixed_include_dirs_vec.push_back( unsafe( U1::StringToArrayView( $>( prefixed_include_dirs + i ) ) ) );
+	}
+
+	var ust::vector</ ust::string8 /> mut source_dirs_vec;
+	for( auto mut i= 0s; i < num_source_dirs; ++i )
+	{
+		source_dirs_vec.push_back( unsafe( U1::StringToArrayView( $>( source_dirs + i ) ) ) );
+	}
+
+	auto mut vfs_opt=
+		U1::VfsOverSystemFS::Create(
+			prefixed_include_dirs_vec,
+			move(source_dirs_vec),
+			prevent_imports_outside_given_directories );
+
+	if( vfs_opt.empty() )
+	{
+		return ust::nullptr</byte8/>();
+	}
+
+	unsafe
+	{
+		var U1::VfsOverSystemFS mut vfs= vfs_opt.try_take();
+
+		var $(byte8) ptr= ust::memory_allocate( typeinfo</ typeof(vfs) />.size_of );
+		ust::move_into_uninitialized( $>( ust::byte_ptr_cast</ typeof(vfs) />( ptr ) ), move(vfs) );
+
+		return ptr;
+	}
+}
+
+fn nomangle U1_DestroyVFS( $(byte8) vfs_ptr ) unsafe call_conv( "C" )
+{
+	unsafe
+	{
+		var U1::VfsOverSystemFS mut vfs= uninitialized;
+		ust::memory_copy_aligned(
+			typeinfo</ typeof(vfs) />.align_of,
+			ust::ptr_cast_to_byte8( $<(vfs) ),
+			vfs_ptr,
+			typeinfo</ typeof(vfs) />.size_of );
+
+		// Destructor should be called here.
+	}
+	unsafe( ust::memory_free( vfs_ptr ) );
 }
 
 fn nomangle nodiscard U1_BuildMultisourceProgram(
