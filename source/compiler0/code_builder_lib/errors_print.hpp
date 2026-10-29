@@ -1,7 +1,7 @@
 #pragma once
-#include "../code_builder_lib_common/code_builder_errors.hpp"
-#include "../compiler0/lex_synt_lib/i_vfs.hpp"
-#include "../lex_synt_lib_common/lex_synt_error.hpp"
+#include "../../code_builder_lib_common/code_builder_errors.hpp"
+#include "../../lex_synt_lib_common/errors_format.hpp"
+#include "i_vfs.hpp"
 
 namespace U
 {

@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "../lex_synt_lib_common/assert.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "errors_print.hpp"
 
 namespace U

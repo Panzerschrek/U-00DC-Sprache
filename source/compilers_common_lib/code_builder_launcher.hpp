@@ -3,9 +3,8 @@
 #include <llvm/IR/Module.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../lex_synt_lib_common/lex_synt_error.hpp"
+#include "../lex_synt_lib_common/errors_format.hpp"
 #include "../code_builder_lib_common/mangling.hpp"
-#include "../compiler0/lex_synt_lib/i_vfs.hpp"
 #include "../code_builder_lib_common/code_builder_errors.hpp"
 
 namespace U
@@ -16,7 +15,7 @@ struct CodeBuilderLaunchResult
 	bool has_errors= false;
 
 	// This list isn't ordered and may contain duplicates.
-	std::vector<IVfs::Path> dependent_files;
+	std::vector<std::string> dependent_files;
 
 	std::vector< std::unique_ptr<llvm::Module> > llvm_modules; // Has size equal to given files. May contain nulls.
 };

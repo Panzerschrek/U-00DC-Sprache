@@ -3,7 +3,7 @@
 #include <llvm-c/Types.h>
 
 #include "../../code_builder_lib_common/mangling.hpp"
-#include "../../lex_synt_lib_common/lex_synt_error.hpp"
+#include "../../lex_synt_lib_common/errors_format.hpp"
 
 // If contents of this file changed, funcs_u.iu must be changed too!
 
