@@ -16,26 +16,18 @@ struct CodeBuilderLaunchResult
 	LexSyntErrors lex_synt_errors;
 	CodeBuilderErrorsContainer code_builder_errors;
 
+	// This list isn't ordered and may contain duplicates.
 	std::vector<IVfs::Path> dependent_files;
 
-	std::unique_ptr<llvm::Module> llvm_module;
+	std::vector< std::unique_ptr<llvm::Module> > llvm_modules; // Has size equal to given files. May contain nulls.
 };
-
-class VfsHolder
-{
-public:
-	virtual ~VfsHolder()= default;
-};
-
-std::unique_ptr<VfsHolder> CreateVfsHolder(
-	llvm::ArrayRef<std::string> include_dirs,
-	llvm::ArrayRef<std::string> source_dirs,
-	bool prevent_imports_outside_given_directories );
 
 // There are different implementations of this function for different implementations of CodeBuilderLib.
 CodeBuilderLaunchResult LaunchCodeBuilder(
-	const IVfs::Path& input_file,
-	const VfsHolder& vfs_holder, // Should be an instance created by "CreateVfsHolder" call.
+	llvm::ArrayRef<std::string> include_dirs,
+	llvm::ArrayRef<std::string> source_dirs,
+	bool prevent_imports_outside_given_directories,
+	llvm::ArrayRef<std::string> input_files,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
