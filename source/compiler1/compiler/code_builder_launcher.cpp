@@ -62,6 +62,8 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 
 	static_assert( sizeof(LLVMModuleRef) == sizeof( std::unique_ptr<llvm::Module> ), "Unexpected size!" );
 
+	const std::string target_triple_str= target_triple.normalize();
+
 	result.has_errors=
 		!U1_BuildProgramUsingVFS(
 			inciude_dir_views.data(),
@@ -71,12 +73,12 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			prevent_imports_outside_given_directories,
 			input_file_views.data(),
 			input_file_views.size(),
-			// Pas result array containing unique_ptr instances as array containing raw pointers.
+			// Pass the result array containing unique_ptr instances as array containing raw pointers.
 			// This should work fine, assuming their layout is identical.
 			reinterpret_cast<LLVMModuleRef*>( result.llvm_modules.data() ),
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),
-			StringToStringView(target_triple.normalize()),
+			StringToStringView(target_triple_str),
 			generate_debug_info,
 			generate_tbaa_metadata,
 			allow_unused_names,
