@@ -216,13 +216,9 @@ fn VfsOverSystemFS::NormalizeFilePath(
 	}
 }
 
-fn VfsOverSystemFS::LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>
+fn VfsOverSystemFS::LoadFile( mut this, ust::string_view8 full_file_path ) : ust::io_result</ust::string8/>
 {
-	result_match( ust::read_file_to_string( full_file_path ) )
-	{
-		Ok( mut file_contents ) -> { return move( file_contents) ; },
-		Err( e ) -> { ust::ignore_unused(e); return ust::null_optional; }
-	}
+	return ust::read_file_to_string( full_file_path );
 }
 
 fn VfsOverSystemFS::IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool

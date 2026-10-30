@@ -21,7 +21,7 @@ fn TestVfs::NormalizeFilePath(
 	return file_path;
 }
 
-fn TestVfs::LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>
+fn TestVfs::LoadFile( mut this, ust::string_view8 full_file_path ) : ust::io_result</ust::string8/>
 {
 	foreach( &entry : source_entries_ )
 	{
@@ -30,7 +30,7 @@ fn TestVfs::LoadFile( mut this, ust::string_view8 full_file_path ) : ust::option
 			return entry.file_content;
 		}
 	}
-	return ust::null_optional;
+	return ust::io_error::not_found;
 }
 
 fn TestVfs::IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool

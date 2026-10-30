@@ -24,7 +24,7 @@ public: // IVfs
 		ust::string_view8 file_path,
 		ust::string_view8 parent_file_path_normalized ) : ust::string8;
 
-	fn virtual final LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>;
+	fn virtual final LoadFile( mut this, ust::string_view8 full_file_path ) : ust::io_result</ust::string8/>;
 
 	fn virtual final IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool;
 

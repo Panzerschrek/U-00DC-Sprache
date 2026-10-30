@@ -1,4 +1,5 @@
 import "/assert.iu"
+import "/enum_string_conversions.iu"
 import "source_graph.iu"
 
 namespace U1
@@ -121,12 +122,17 @@ fn LoadSourceGraph_r(
 		}
 	}
 
-	auto file_content_opt= vfs.LoadFile( file_path_normalized );
-	if( file_content_opt.empty() )
+	auto file_content_res= vfs.LoadFile( file_path_normalized );
+	if_var( e : file_content_res.as_error_ref() )
 	{
-		source_graph.errors.push_back( LexSyntError( import_src_loc, ust::concat( "Error, can not read file: \"", file_path, "\"" ) ) );
+		source_graph.errors.push_back(
+			LexSyntError(
+				import_src_loc,
+				ust::concat( "Error, can not read file: \"", file_path, "\", error: ", ust::enum_to_string(e) ) ) );
 		return ~0s;
 	}
+
+	var ust::string_view8 file_content_view= file_content_res.try_deref().range();
 
 	// Check for allowing import after checking for file existence - in order to generate "file not found" error first.
 	if( !vfs.IsImportingFileAllowed( file_path_normalized ) )
@@ -134,8 +140,6 @@ fn LoadSourceGraph_r(
 		source_graph.errors.push_back( LexSyntError( import_src_loc, ust::concat( "Importing file \"", file_path, "\" isn't allowed." ) ) );
 		return ~0s;
 	}
-
-	auto file_content_view= file_content_opt.try_deref().range();
 
 	var Synt::MacrosPtr node_macros_ptr( Synt::MacrosByContextMap() );
 

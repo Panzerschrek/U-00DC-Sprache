@@ -1,3 +1,4 @@
+import "/io_result.iu"
 import "/shared_ptr.iu"
 import "/string.iu"
 
@@ -12,7 +13,7 @@ class IVfs interface
 		ust::string_view8 parent_file_path_normalized ) : ust::string8;
 
 	// Empty "full_parent_file_path" means root file.
-	fn virtual pure LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>;
+	fn virtual pure LoadFile( mut this, ust::string_view8 full_file_path ) : ust::io_result</ust::string8/>;
 
 	// Returns "false" if it isn't allowed to import file given.
 	fn virtual pure IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool;
