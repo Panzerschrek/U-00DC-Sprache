@@ -106,9 +106,7 @@ fn VfsOverSystemFS::Create(
 
 	return
 		VfsOverSystemFS(
-			move( prefixed_include_dirs ),
-			move( source_dirs ),
-			prevent_imports_outside_given_directories );
+			move( prefixed_include_dirs ), move( source_dirs ), prevent_imports_outside_given_directories );
 }
 
 fn VfsOverSystemFS::constructor(
