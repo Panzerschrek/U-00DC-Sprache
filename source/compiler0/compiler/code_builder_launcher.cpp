@@ -21,7 +21,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const bool allow_unused_names,
 	const ManglingScheme mangling_scheme,
 	const ErrorsFormat errors_format,
-	bool tests_output,
+	const bool tests_output,
 	const std::string_view prelude_code )
 {
 	CodeBuilderLaunchResult result;

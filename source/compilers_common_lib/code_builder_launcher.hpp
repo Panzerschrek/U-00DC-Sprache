@@ -17,7 +17,7 @@ struct CodeBuilderLaunchResult
 	std::vector<std::string> dependent_files;
 
 	// Has size equal to the number of given files. May contain nulls in failure cases.
-	std::vector< std::unique_ptr<llvm::Module> > llvm_modules;
+	llvm::SmallVector< std::unique_ptr<llvm::Module>, 4 > llvm_modules;
 };
 
 // There are different implementations of this function for different implementations of CodeBuilderLib.
