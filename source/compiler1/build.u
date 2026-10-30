@@ -101,7 +101,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 		"code_builder_lib/tbaa_metadata_builder.u",
 		"launchers_common/error_printing.u",
 		"launchers_common/funcs_u.u",
-		"launchers_common/vfs.u",
+		"launchers_common/vfs_over_system_fs.u",
 		"lex_synt_lib/keywords.u",
 		"lex_synt_lib/lexical_analyzer.u",
 		"lex_synt_lib/operators.u",

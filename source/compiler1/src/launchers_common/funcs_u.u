@@ -5,7 +5,7 @@ import "../code_builder_lib/code_builder.iu"
 import "../code_builder_lib/long_stable_hash_wrapper.iu"
 import "../../imports/funcs_u.iu"
 import "error_printing.iu"
-import "vfs.iu"
+import "vfs_over_system_fs.iu"
 
 fn nomangle nodiscard U1_BuildProgram(
 	U1_StringView& program_text,

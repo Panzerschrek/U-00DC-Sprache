@@ -2,7 +2,7 @@ import "/file_helpers.iu"
 import "/filesystem.iu"
 import "/path_utils.iu"
 import "/stdout_ext.iu"
-import "vfs.iu"
+import "vfs_over_system_fs.iu"
 
 namespace U1
 {
