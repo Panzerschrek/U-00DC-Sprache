@@ -14,9 +14,9 @@ public:
 	}
 	type SourceEntries= ust::vector</SourceEntry/>;
 
-	fn constructor( ust::string8 mut file_content );
+	fn constructor( ust::string8 file_content );
 
-	fn constructor( SourceEntries mut source_entries );
+	fn constructor( SourceEntries source_entries );
 
 public: // IVfs
 	fn virtual final NormalizeFilePath(
@@ -31,7 +31,7 @@ public: // IVfs
 	fn virtual final IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool;
 
 private:
-	SourceEntries source_entries_;
+	SourceEntries imut source_entries_;
 }
 
 } // namespace U1

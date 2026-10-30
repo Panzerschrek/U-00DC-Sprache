@@ -4,12 +4,11 @@ namespace U1
 {
 
 fn TestVfs::constructor( ust::string8 mut file_content )
-{
-	source_entries_.push_back( SourceEntry{ .file_path= "_", .file_content= move(file_content) } );
-}
+	( source_entries_= ust::make_array( SourceEntry{ .file_path= "_", .file_content= move(file_content) } ) )
+{}
 
 fn TestVfs::constructor( SourceEntries mut source_entries )
-	( source_entries_(move(source_entries)) )
+	( source_entries_= move(source_entries) )
 {}
 
 fn TestVfs::NormalizeFilePath(
