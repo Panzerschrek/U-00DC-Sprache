@@ -6,19 +6,19 @@ namespace U1
 
 fn PrintLexSyntErrors( SourceGraph& source_graph )
 {
-	PrintLexSyntErrorsFormatGCC( source_graph);
+	PrintLexSyntErrorsGCC( source_graph);
 }
 
 fn PrintLexSyntErrors( SourceGraph& source_graph, ErrorsFormat errors_format )
 {
 	switch( errors_format )
 	{
-	ErrorsFormat::GCC -> { PrintLexSyntErrorsFormatGCC( source_graph ); },
-	ErrorsFormat::MSVC -> { PrintLexSyntErrorsFormatMSVC( source_graph ); },
+	ErrorsFormat::GCC -> { PrintLexSyntErrorsGCC( source_graph ); },
+	ErrorsFormat::MSVC -> { PrintLexSyntErrorsMSVC( source_graph ); },
 	}
 }
 
-fn PrintLexSyntErrorsFormatGCC( SourceGraph& source_graph )
+fn PrintLexSyntErrorsGCC( SourceGraph& source_graph )
 {
 	foreach( &err : source_graph.errors )
 	{
@@ -35,7 +35,7 @@ fn PrintLexSyntErrorsFormatGCC( SourceGraph& source_graph )
 	}
 }
 
-fn PrintLexSyntErrorsFormatMSVC( SourceGraph& source_graph )
+fn PrintLexSyntErrorsMSVC( SourceGraph& source_graph )
 {
 	foreach( &err : source_graph.errors )
 	{
