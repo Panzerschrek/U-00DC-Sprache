@@ -1,0 +1,48 @@
+import "test_vfs.iu"
+
+namespace U1
+{
+
+fn TestVfs::constructor( ust::string8 mut file_content )
+{
+	source_entries_.push_back( SourceEntry{ .file_path= "_", .file_content= move(file_content) } );
+}
+
+fn TestVfs::constructor( SourceEntries mut source_entries )
+	( source_entries_(move(source_entries)) )
+{}
+
+fn TestVfs::NormalizeFilePath(
+	mut this,
+	ust::string_view8 file_path,
+	ust::string_view8 parent_file_path_normalized ) : ust::string8
+{
+	ust::ignore_unused(parent_file_path_normalized);
+	return file_path;
+}
+
+fn TestVfs::LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>
+{
+	foreach( &entry : source_entries_ )
+	{
+		if( full_file_path == entry.file_path )
+		{
+			return entry.file_content;
+		}
+	}
+	return ust::null_optional;
+}
+
+fn TestVfs::IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool
+{
+	ust::ignore_unused(full_file_path);
+	return true;
+}
+
+fn TestVfs::IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool
+{
+	ust::ignore_unused(full_file_path);
+	return true;
+}
+
+} // namespace U1

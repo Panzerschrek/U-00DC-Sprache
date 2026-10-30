@@ -5,6 +5,7 @@ import "../code_builder_lib/code_builder.iu"
 import "../code_builder_lib/long_stable_hash_wrapper.iu"
 import "../../imports/funcs_u.iu"
 import "error_printing.iu"
+import "test_vfs.iu"
 import "vfs_over_system_fs.iu"
 
 fn nomangle nodiscard U1_BuildProgram(
@@ -439,63 +440,6 @@ fn TransformSourceFiles( $(U1_SourceFile) source_files, size_type source_file_co
 					.file_content= unsafe( StringToArrayView( source_file.file_content ) ),
 				};
 			} ) );
-}
-
-class TestVfs final : IVfs
-{
-public:
-	struct SourceEntry
-	{
-		ust::string8 file_path;
-		ust::string8 file_content;
-	}
-	type SourceEntries= ust::vector</SourceEntry/>;
-
-	fn constructor( ust::string8 mut file_content )
-	{
-		source_entries_.push_back( SourceEntry{ .file_path= "_", .file_content= move(file_content) } );
-	}
-
-	fn constructor( SourceEntries mut source_entries )
-		( source_entries_(move(source_entries)) )
-	{}
-
-public:
-	fn virtual override NormalizeFilePath(
-		mut this,
-		ust::string_view8 file_path,
-		ust::string_view8 parent_file_path_normalized ) : ust::string8
-	{
-		ust::ignore_unused(parent_file_path_normalized);
-		return file_path;
-	}
-
-	fn virtual override LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>
-	{
-		foreach( &entry : source_entries_ )
-		{
-			if( full_file_path == entry.file_path )
-			{
-				return entry.file_content;
-			}
-		}
-		return ust::null_optional;
-	}
-
-	fn virtual override IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool
-	{
-		ust::ignore_unused(full_file_path);
-		return true;
-	}
-
-	fn virtual override IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool
-	{
-		ust::ignore_unused(full_file_path);
-		return true;
-	}
-
-private:
-	SourceEntries source_entries_;
 }
 
 } // namespace U1

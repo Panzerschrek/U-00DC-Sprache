@@ -64,7 +64,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 		.generated_private_header_files= ust::make_array</ust::filesystem_path/>( keywords_file, code_builder_error_code_file ),
 	};
 
-	var [ ust::filesystem_path_view, 43 ] source_files
+	var [ ust::filesystem_path_view, 44 ] source_files
 	[
 		"code_builder_lib/calling_convention_info.u",
 		"code_builder_lib/cb_block_elements.u",
@@ -101,6 +101,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 		"code_builder_lib/tbaa_metadata_builder.u",
 		"launchers_common/error_printing.u",
 		"launchers_common/funcs_u.u",
+		"launchers_common/test_vfs.u",
 		"launchers_common/vfs_over_system_fs.u",
 		"lex_synt_lib/keywords.u",
 		"lex_synt_lib/lexical_analyzer.u",

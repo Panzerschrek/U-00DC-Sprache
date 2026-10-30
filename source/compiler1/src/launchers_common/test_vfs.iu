@@ -1,0 +1,36 @@
+import "../lex_synt_lib/source_graph.iu"
+
+namespace U1
+{
+
+class TestVfs final : IVfs
+{
+public:
+	struct SourceEntry
+	{
+		ust::string8 file_path;
+		ust::string8 file_content;
+	}
+	type SourceEntries= ust::vector</SourceEntry/>;
+
+	fn constructor( ust::string8 mut file_content );
+
+	fn constructor( SourceEntries mut source_entries );
+
+public: // IVfs
+	fn virtual final NormalizeFilePath(
+		mut this,
+		ust::string_view8 file_path,
+		ust::string_view8 parent_file_path_normalized ) : ust::string8;
+
+	fn virtual final LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>;
+
+	fn virtual final IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool;
+
+	fn virtual final IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool;
+
+private:
+	SourceEntries source_entries_;
+}
+
+} // namespace U1
