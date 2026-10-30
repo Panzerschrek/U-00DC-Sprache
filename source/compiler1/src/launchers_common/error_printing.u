@@ -215,7 +215,8 @@ fn PrintCodeBuilderErrorsForTests( SourceGraph& source_graph, ErrorsContainer& e
 		var ust::string_view8 file_path=
 			( file_index < source_graph.nodes.size() ? source_graph.nodes[file_index].file_path_normalized.range() : ust::string_view8() );
 
-		ust::stderr_print_line( file_path, " ", error.src_loc.GetLine(), error.code );
+		// Print to "stdout" (Compiler0 does this too).
+		ust::stdout_print_line( file_path, " ", error.src_loc.GetLine(), " ", error.code );
 	}
 }
 
