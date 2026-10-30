@@ -183,6 +183,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 			// Transfer ownership over the result module to the caller.
 			$>( out_modules + i )= code_builder_res.llvm_module;
 
+			// Add embedded files into the list of dependencies.
 			foreach( &embedded_file : code_builder_res.embedded_files )
 			{
 				var U1_StringView path_view{ .data= embedded_file.range().data(), .size= embedded_file.range().size() };

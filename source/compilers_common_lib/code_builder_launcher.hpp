@@ -16,7 +16,8 @@ struct CodeBuilderLaunchResult
 	// This list isn't ordered and may contain duplicates.
 	std::vector<std::string> dependent_files;
 
-	std::vector< std::unique_ptr<llvm::Module> > llvm_modules; // Has size equal to given files. May contain nulls.
+	// Has size equal to the number of given files. May contain nulls in failure cases.
+	std::vector< std::unique_ptr<llvm::Module> > llvm_modules;
 };
 
 // There are different implementations of this function for different implementations of CodeBuilderLib.

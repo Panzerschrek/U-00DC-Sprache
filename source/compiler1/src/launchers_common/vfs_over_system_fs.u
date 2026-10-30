@@ -141,7 +141,7 @@ fn VfsOverSystemFS::NormalizeFilePath(
 	}
 	else if( file_path.starts_with( "/" ) )
 	{
-		// If given path is absolute (like "/some_lib/some_file.u"0, search for a file in include dirs.
+		// If given path is absolute (like "/some_lib/some_file.u"), search for a file in include dirs.
 		// Return real file system path for first existing file.
 		foreach( & prefixed_include_dir : prefixed_include_dirs_ )
 		{
@@ -180,6 +180,8 @@ fn VfsOverSystemFS::NormalizeFilePath(
 				{
 					ust::path::append( full_file_path, component );
 				}
+
+				// Make sure this file exists. If no - try other include directories.
 
 				result_match( ust::get_metadata_for_path( full_file_path ) )
 				{

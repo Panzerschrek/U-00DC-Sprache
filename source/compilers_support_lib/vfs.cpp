@@ -95,7 +95,7 @@ public: // IVfs
 		}
 		else if( !file_path.empty() && file_path[0] == '/' )
 		{
-			// If given path is absolute (like "/some_lib/some_file.u"0, search for a file in include dirs.
+			// If given path is absolute (like "/some_lib/some_file.u"), search for a file in include dirs.
 			// Return real file system path for first existing file.
 			for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
 			{

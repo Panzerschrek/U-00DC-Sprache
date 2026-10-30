@@ -8,11 +8,14 @@ namespace U1
 class VfsOverSystemFS final : IVfs
 {
 public:
+	// Use this method for creating VFS.
+	// It checks for validity of given include dirs.
 	fn Create(
 		ust::array_view_imut</ ust::string8 /> include_dirs,
 		ust::vector</ ust::string8 /> source_dirs,
 		bool prevent_imports_outside_given_directories ) : ust::optional</VfsOverSystemFS/>;
 
+	// Constructor for internal usage.
 	fn constructor(
 		ust::vector</ PrefixedIncludeDir /> prefixed_include_dirs,
 		ust::vector</ ust::filesystem_path /> source_dirs,
