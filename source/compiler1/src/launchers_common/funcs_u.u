@@ -123,6 +123,8 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 
 	var U1::IVfsSharedPtr vfs= ust::make_shared_ptr( vfs_opt.try_take() );
 
+	var ust::string_view8 prelude_code_view= unsafe( U1::StringToArrayView( prelude_code ) );
+
 	var ust::string8 target_triple= ust::concat( unsafe( U1::StringToArrayView( target_triple_str ) ), "\0" );
 
 	var U1::CodeBuilderOptions options
@@ -142,7 +144,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 				vfs,
 				U1::CalculateLongStableHash,
 				unsafe( U1::StringToArrayView( $>( root_file_paths + i ) ) ),
-				unsafe( U1::StringToArrayView( prelude_code ) ) );
+				prelude_code_view );
 
 		foreach( &node : source_graph.nodes )
 		{
