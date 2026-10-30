@@ -19,10 +19,10 @@
 #include "../code_builder_lib_common/interpreter.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../compiler0/code_builder_lib/errors_print.hpp"
+#include "../compiler0/code_builder_lib/vfs_over_system_fs.hpp"
 #include "../compiler0/lex_synt_lib/error_printing.hpp"
 #include "../compilers_support_lib/compiler_builtins.hpp"
 #include "../compilers_support_lib/prelude.hpp"
-#include "../compilers_support_lib/vfs.hpp"
 #include "../tests/tests_common.hpp"
 
 namespace U

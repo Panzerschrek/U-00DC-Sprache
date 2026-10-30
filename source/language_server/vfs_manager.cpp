@@ -4,7 +4,7 @@
 #include <llvm/Support/Path.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../compilers_support_lib/vfs.hpp"
+#include "../compiler0/code_builder_lib/vfs_over_system_fs.hpp"
 #include "options.hpp"
 #include "vfs_manager.hpp"
 

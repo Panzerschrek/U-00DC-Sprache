@@ -1,6 +1,6 @@
 #include "../../tests/tests_lib/funcs_registrator.hpp"
 #include "../../tests/tests_lib/tests.hpp"
-#include "../../compilers_support_lib/vfs.hpp"
+#include "../../compiler0/code_builder_lib/vfs_over_system_fs.hpp"
 
 namespace U
 {

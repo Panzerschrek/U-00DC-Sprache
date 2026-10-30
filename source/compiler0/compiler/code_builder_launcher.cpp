@@ -1,8 +1,8 @@
 #include "../../code_builder_lib_common/long_stable_hash.hpp"
 #include "../../compilers_common_lib/code_builder_launcher.hpp"
-#include "../../compilers_support_lib/vfs.hpp"
 #include "../code_builder_lib/code_builder.hpp"
 #include "../code_builder_lib/errors_print.hpp"
+#include "../code_builder_lib/vfs_over_system_fs.hpp"
 #include "../lex_synt_lib/error_printing.hpp"
 
 namespace U
