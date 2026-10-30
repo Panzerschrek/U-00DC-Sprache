@@ -1,10 +1,10 @@
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <llvm/TargetParser/Triple.h>
 #include <llvm/IR/Module.h>
+#include <llvm/TargetParser/Triple.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../lex_synt_lib_common/errors_format.hpp"
 #include "../code_builder_lib_common/mangling.hpp"
+#include "../lex_synt_lib_common/errors_format.hpp"
 
 namespace U
 {

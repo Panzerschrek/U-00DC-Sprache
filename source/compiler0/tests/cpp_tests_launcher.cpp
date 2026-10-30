@@ -8,7 +8,6 @@
 #include "../../code_builder_lib_common/async_calls_inlining.hpp"
 #include "../../code_builder_lib_common/long_stable_hash.hpp"
 #include "../lex_synt_lib/error_printing.hpp"
-#include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/syntax_analyzer.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../tests/tests_common.hpp"
