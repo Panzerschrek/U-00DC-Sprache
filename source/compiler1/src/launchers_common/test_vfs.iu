@@ -1,4 +1,5 @@
-import "../lex_synt_lib/source_graph.iu"
+import "/vector.iu"
+import "../lex_synt_lib/i_vfs.iu"
 
 namespace U1
 {
