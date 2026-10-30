@@ -621,7 +621,7 @@ int Main( int argc, const char* argv[] )
 	llvm::LLVMContext llvm_context;
 
 	std::unique_ptr<llvm::Module> result_module;
-	std::vector<IVfs::Path> deps_list;
+	std::vector<std::string> deps_list;
 	std::vector<std::string> external_functions_for_internalization;
 
 	const auto time_point_start_frontend_work= Clock::now();
