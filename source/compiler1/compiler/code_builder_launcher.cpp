@@ -24,6 +24,16 @@ void SourceFilePathProcessingFunction(
 	reinterpret_cast< std::vector<std::string>* >(data)->push_back( StringViewToString(file_path) );
 }
 
+std::vector<U1_StringView> MakeVectorOfStringViews( const llvm::ArrayRef<std::string> strings )
+{
+	std::vector<U1_StringView> result( strings.size() );
+
+	for( size_t i= 0; i < strings.size(); ++i )
+		result[i]= StringToStringView( strings[i] );
+
+	return result;
+}
+
 } // namespace
 
 CodeBuilderLaunchResult LaunchCodeBuilder(
@@ -45,20 +55,9 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	CodeBuilderLaunchResult result;
 	result.llvm_modules.resize( input_files.size() );
 
-	std::vector<U1_StringView> inciude_dir_views;
-	inciude_dir_views.reserve( include_dirs.size() );
-	for( const std::string& s : include_dirs )
-		inciude_dir_views.push_back( StringToStringView(s) );
-
-	std::vector<U1_StringView> source_dir_views;
-	source_dir_views.reserve( source_dirs.size() );
-	for( const std::string& s : source_dirs )
-		source_dir_views.push_back( StringToStringView(s) );
-
-	std::vector<U1_StringView> input_file_views;
-	input_file_views.reserve( input_files.size() );
-	for( const std::string& s : input_files )
-		input_file_views.push_back( StringToStringView(s) );
+	const std::vector<U1_StringView> inciude_dir_views= MakeVectorOfStringViews( include_dirs );
+	const std::vector<U1_StringView> source_dir_views= MakeVectorOfStringViews( source_dirs );
+	const std::vector<U1_StringView> input_file_views= MakeVectorOfStringViews( input_files );
 
 	static_assert( sizeof(LLVMModuleRef) == sizeof( std::unique_ptr<llvm::Module> ), "Unexpected size!" );
 

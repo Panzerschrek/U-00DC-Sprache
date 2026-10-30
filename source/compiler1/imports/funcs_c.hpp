@@ -12,8 +12,8 @@ extern "C"
 
 struct U1_StringView
 {
-	const char* data;
-	size_t size;
+	const char* data= nullptr;
+	size_t size= 0;
 };
 
 struct U1_SourceFile
