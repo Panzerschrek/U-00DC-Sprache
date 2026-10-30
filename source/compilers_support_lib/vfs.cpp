@@ -89,13 +89,14 @@ public: // IVfs
 
 		if( full_parent_file_path.empty() )
 		{
+			// It's a root file. Make sure it's absolute.
 			result_path= file_path_r;
 			fs::make_absolute(result_path);
 		}
 		else if( !file_path.empty() && file_path[0] == '/' )
 		{
-			// If file path is absolute, like "/some_lib/some_file.u" search file in include dirs.
-			// Return real file system path to first existent file.
+			// If given path is absolute (like "/some_lib/some_file.u"0, search for a file in include dirs.
+			// Return real file system path for first existing file.
 			for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
 			{
 				auto given_path_it= fsp::begin(file_path);
@@ -128,6 +129,7 @@ public: // IVfs
 		}
 		else
 		{
+			// Relative import.
 			result_path= fsp::parent_path( full_parent_file_path );
 			fsp::append( result_path, file_path_r );
 		}

@@ -142,8 +142,8 @@ fn VfsOverSystemFS::NormalizeFilePath(
 	}
 	else if( file_path.starts_with( "/" ) )
 	{
-		// If file path is absolute, like "/some_lib/some_file.u" search file in include dirs.
-		// Return real file system path to first existent file.
+		// If given path is absolute (like "/some_lib/some_file.u"0, search for a file in include dirs.
+		// Return real file system path for first existing file.
 		foreach( & prefixed_include_dir : prefixed_include_dirs_ )
 		{
 			auto mut given_path_it= ust::path::components_iter( file_path.subrange_start( 1s ) /* skip first "/" */ );
