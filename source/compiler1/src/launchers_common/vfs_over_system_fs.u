@@ -31,7 +31,6 @@ fn VfsOverSystemFS::Create(
 				// Prefixed include dir.
 				is_prefixed= true;
 
-
 				// Make sure we have no other separator(s).
 				for( auto mut j= i + ust::array_size( separator ); j < include_dir.size(); ++j )
 				{
@@ -66,6 +65,8 @@ fn VfsOverSystemFS::Create(
 			prefixed_include_dir.host_fs_path= ust::path::join( ust::get_current_directory(), prefixed_include_dir.host_fs_path );
 		}
 
+		prefixed_include_dir.host_fs_path= ust::path::normalize( prefixed_include_dir.host_fs_path );
+
 		// Check if given path is an existing directory.
 		result_match( ust::get_metadata_for_path( prefixed_include_dir.host_fs_path ) )
 		{
@@ -83,8 +84,6 @@ fn VfsOverSystemFS::Create(
 				all_ok= false;
 			},
 		}
-
-		prefixed_include_dir.host_fs_path= ust::path::normalize( prefixed_include_dir.host_fs_path );
 
 		prefixed_include_dirs.push_back( move( prefixed_include_dir ) );
 	}
