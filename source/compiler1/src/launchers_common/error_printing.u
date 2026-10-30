@@ -109,12 +109,12 @@ fn PrintCodeBuilderErrorsGCC( SourceGraph& source_graph, ErrorsContainer& errors
 
 				if( errors_context.context_name == "mixin" )
 				{
-					ust::stderr_print_line( context_file_path, ": In expansion of mixin" );
+					ust::stderr_print_line( context_file_path, ": In expansion of mixin:" );
 				}
 				else
 				{
 					ust::stderr_print_line(
-						context_file_path, ": In expansion of macro \"", errors_context.context_name, "\"" );
+						context_file_path, ": In expansion of macro \"", errors_context.context_name, "\":" );
 				}
 
 				ust::stderr_print_line(
@@ -123,8 +123,7 @@ fn PrintCodeBuilderErrorsGCC( SourceGraph& source_graph, ErrorsContainer& errors
 					error.src_loc.GetLine(),
 					":",
 					error.src_loc.GetColumn(),
-					": required from here: ",
-					error.text );
+					": required from here" );
 
 				PrintCodeBuilderErrorsGCC( source_graph, errors_context.errors.lock_imut().deref() );
 			}

@@ -33,13 +33,13 @@ void PrintErrorsGCC( const SourceGraph& source_graph, const CodeBuilderErrorsCon
 
 			if( error.template_context->context_name == "mixin" )
 				std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_src_loc.GetFileIndex() ].file_path << ": "
-					<< "In expansion of mixin\n";
+					<< "In expansion of mixin:\n";
 			else
 				std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_src_loc.GetFileIndex() ].file_path << ": "
-					<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
+					<< "In expansion of macro \"" << error.template_context->context_name << "\":\n";
 
 			std::cerr << source_graph.nodes_storage[ error.src_loc.GetFileIndex() ].file_path
-				<< ":" << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << ": required from here: " << "\n";
+				<< ":" << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << ": required from here\n";
 
 			PrintErrorsGCC( source_graph, error.template_context->errors );
 		}
