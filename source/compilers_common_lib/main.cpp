@@ -39,9 +39,7 @@
 #include "../code_builder_lib_common/async_calls_inlining.hpp"
 #include "../compilers_support_lib/compiler_builtins.hpp"
 #include "../compilers_support_lib/div_builtins.hpp"
-#include "../compilers_support_lib/errors_print.hpp"
 #include "../compilers_support_lib/prelude.hpp"
-#include "../compilers_support_lib/vfs.hpp"
 #include "../lex_synt_lib_common/assert.hpp"
 #include "../sprache_version/sprache_version.hpp"
 #include  "code_builder_launcher.hpp"
@@ -623,7 +621,7 @@ int Main( int argc, const char* argv[] )
 	llvm::LLVMContext llvm_context;
 
 	std::unique_ptr<llvm::Module> result_module;
-	std::vector<IVfs::Path> deps_list;
+	std::vector<std::string> deps_list;
 	std::vector<std::string> external_functions_for_internalization;
 
 	const auto time_point_start_frontend_work= Clock::now();
@@ -631,15 +629,6 @@ int Main( int argc, const char* argv[] )
 	if( Options::input_files_type == Options::InputFileType::Source )
 	{
 		// Compile multiple input files and link them together.
-
-		const IVfsSharedPtr vfs=
-			CreateVfsOverSystemFS(
-				Options::include_dir,
-				Options::source_dir,
-				Options::prevent_imports_outside_given_directories,
-				false /* tolerate_errors */ );
-		if( vfs == nullptr )
-			return 1u;
 
 		const std::string prelude_code=
 			GenerateCompilerPreludeCode(
@@ -654,47 +643,47 @@ int Main( int argc, const char* argv[] )
 		if( Options::print_prelude_code )
 			std::cout << prelude_code << std::endl;
 
-		bool have_some_errors= false;
-		for( const std::string& input_file : Options::input_files )
+		CodeBuilderLaunchResult code_builder_launch_result=
+			LaunchCodeBuilder(
+				Options::include_dir,
+				Options::source_dir,
+				Options::prevent_imports_outside_given_directories,
+				Options::input_files,
+				llvm_context,
+				data_layout,
+				target_triple,
+				Options::generate_debug_info,
+				generate_tbaa_metadata,
+				Options::allow_unused_names,
+				mangling_scheme,
+				errors_format,
+				Options::tests_output,
+				prelude_code );
+
+		deps_list= std::move( code_builder_launch_result.dependent_files );
+
+		bool have_some_errors= code_builder_launch_result.has_errors;
+
+		U_ASSERT( code_builder_launch_result.llvm_modules.size() == Options::input_files.size() );
+		for( size_t i= 0; i < Options::input_files.size(); ++i )
 		{
-			CodeBuilderLaunchResult code_builder_launch_result=
-				LaunchCodeBuilder(
-					input_file,
-					vfs,
-					llvm_context,
-					data_layout,
-					target_triple,
-					Options::generate_debug_info,
-					generate_tbaa_metadata,
-					Options::allow_unused_names,
-					mangling_scheme,
-					prelude_code );
+			const auto& input_file= Options::input_files[i];
 
-			deps_list.insert( deps_list.end(), code_builder_launch_result.dependent_files.begin(), code_builder_launch_result.dependent_files.end() );
-
-			PrintLexSyntErrors( code_builder_launch_result.dependent_files, code_builder_launch_result.lex_synt_errors, errors_format );
-
-			if( Options::tests_output )
-				PrintErrorsForTests( code_builder_launch_result.dependent_files, code_builder_launch_result.code_builder_errors );
-			else
-				PrintErrors( code_builder_launch_result.dependent_files, code_builder_launch_result.code_builder_errors, errors_format );
-
-			if( !code_builder_launch_result.lex_synt_errors.empty() ||
-				!code_builder_launch_result.code_builder_errors.empty() ||
-				code_builder_launch_result.llvm_module == nullptr )
+			std::unique_ptr<llvm::Module> llvm_module= std::move( code_builder_launch_result.llvm_modules[i] );
+			if( llvm_module == nullptr )
 			{
 				have_some_errors= true;
 				continue;
 			}
 
 			CollectExternalFunctionsForInternalization(
-				*code_builder_launch_result.llvm_module, input_file, external_functions_for_internalization );
+				*llvm_module, input_file, external_functions_for_internalization );
 
 			if( result_module == nullptr )
-				result_module= std::move( code_builder_launch_result.llvm_module );
+				result_module= std::move( llvm_module );
 			else
 			{
-				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(code_builder_launch_result.llvm_module) );
+				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(llvm_module) );
 				if( not_ok )
 				{
 					std::cerr << "Error, linking file \"" << input_file << "\"" << std::endl;

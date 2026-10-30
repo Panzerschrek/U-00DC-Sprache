@@ -921,7 +921,11 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				full_file_path_ref,
 				lambda[&]() : ust::optional</ust::string8/>
 				{
-					return vfs.LoadFile( full_file_path_ref );
+					result_match( vfs.LoadFile( full_file_path_ref ) )
+					{
+						Ok( contents ) -> { return contents; },
+						Err( e ) -> { ust::ignore_unused(e); return ust::null_optional; },
+					}
 				} );
 	}
 

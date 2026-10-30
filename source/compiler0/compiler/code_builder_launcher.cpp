@@ -1,14 +1,18 @@
 #include "../../code_builder_lib_common/long_stable_hash.hpp"
 #include "../../compilers_common_lib/code_builder_launcher.hpp"
-#include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../code_builder_lib/code_builder.hpp"
+#include "../code_builder_lib/errors_print.hpp"
+#include "../code_builder_lib/vfs_over_system_fs.hpp"
+#include "../lex_synt_lib/error_printing.hpp"
 
 namespace U
 {
 
 CodeBuilderLaunchResult LaunchCodeBuilder(
-	const IVfs::Path& input_file,
-	const IVfsSharedPtr& vfs,
+	const llvm::ArrayRef<std::string> include_dirs,
+	const llvm::ArrayRef<std::string> source_dirs,
+	const bool prevent_imports_outside_given_directories,
+	const llvm::ArrayRef<std::string> input_files,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
@@ -16,18 +20,21 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const bool generate_tbaa_metadata,
 	const bool allow_unused_names,
 	const ManglingScheme mangling_scheme,
+	const ErrorsFormat errors_format,
+	const bool tests_output,
 	const std::string_view prelude_code )
 {
 	CodeBuilderLaunchResult result;
+	result.llvm_modules.resize( input_files.size() );
 
-	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, input_file, prelude_code );
+	const IVfsSharedPtr vfs=
+		CreateVfsOverSystemFS(
+			include_dirs,
+			source_dirs,
+			prevent_imports_outside_given_directories,
+			false /* tolerate_errors */ );
 
-	result.dependent_files.reserve( source_graph.nodes_storage.size() );
-	for( const SourceGraph::Node& node : source_graph.nodes_storage )
-		result.dependent_files.push_back( node.file_path );
-
-	result.lex_synt_errors= std::move(source_graph.errors);
-	if( !result.lex_synt_errors.empty() )
+	if( vfs == nullptr )
 		return result;
 
 	CodeBuilderOptions options;
@@ -36,21 +43,50 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	options.generate_tbaa_metadata= generate_tbaa_metadata;
 	options.report_about_unused_names= !allow_unused_names;
 
-	CodeBuilder::BuildResult build_result=
-		CodeBuilder::BuildProgram(
-			llvm_context,
-			data_layout,
-			target_triple,
-			options,
-			MakeRcPtr( std::move(source_graph) ),
-			vfs );
+	for( size_t i= 0; i < input_files.size(); ++i )
+	{
+		SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, input_files[i], prelude_code );
 
-	result.code_builder_errors= std::move( build_result.errors );
-	result.llvm_module= std::move( build_result.module );
+		result.dependent_files.reserve( result.dependent_files.size() + source_graph.nodes_storage.size() );
+		for( const SourceGraph::Node& node : source_graph.nodes_storage )
+			result.dependent_files.push_back( node.file_path );
 
-	// Add embedded files into the list of dependencies.
-	for( IVfs::Path& path : build_result.embedded_files )
-		result.dependent_files.push_back( std::move(path) );
+		if( !source_graph.errors.empty() )
+		{
+			PrintLexSyntErrors( source_graph, errors_format );
+
+			result.has_errors= true;
+		}
+		else
+		{
+			const auto source_graph_ptr= MakeRcPtr( std::move(source_graph) );
+
+			CodeBuilder::BuildResult build_result=
+				CodeBuilder::BuildProgram(
+					llvm_context,
+					data_layout,
+					target_triple,
+					options,
+					source_graph_ptr,
+					vfs );
+
+			result.llvm_modules[i]= std::move( build_result.module );
+
+			if( !build_result.errors.empty() )
+			{
+				if( tests_output )
+					PrintErrorsForTests( *source_graph_ptr, build_result.errors );
+				else
+					PrintErrors( *source_graph_ptr, build_result.errors, errors_format );
+
+				result.has_errors= true;
+			}
+
+			// Add embedded files into the list of dependencies.
+			for( IVfs::Path& path : build_result.embedded_files )
+				result.dependent_files.push_back( std::move(path) );
+		}
+	}
 
 	return result;
 }

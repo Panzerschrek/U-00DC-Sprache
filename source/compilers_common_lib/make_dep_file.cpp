@@ -12,7 +12,7 @@ namespace U
 namespace
 {
 
-std::string QuoteDepTargetString( const std::string& str )
+std::string QuoteDepTargetString( const std::string_view str )
 {
 	std::string result;
 	result.reserve( str.size() * 2u );
@@ -31,7 +31,7 @@ std::string QuoteDepTargetString( const std::string& str )
 
 } // namespace
 
-void DeduplicateAndFilterDepsList( std::vector<IVfs::Path>& deps_list )
+void DeduplicateAndFilterDepsList( std::vector<std::string>& deps_list )
 {
 	std::sort( deps_list.begin(), deps_list.end() );
 	deps_list.erase( std::unique( deps_list.begin(), deps_list.end() ), deps_list.end() );
@@ -52,11 +52,11 @@ void DeduplicateAndFilterDepsList( std::vector<IVfs::Path>& deps_list )
 
 bool WriteDepFile(
 	const std::string& out_file_path,
-	const std::vector<IVfs::Path>& deps_list, // Files list should not contain duplicates.
+	const llvm::ArrayRef<std::string> deps_list, // Files list should not contain duplicates.
 	const std::string& dep_file_path )
 {
 	std::string str= QuoteDepTargetString(out_file_path) + ":";
-	for( const IVfs::Path& path : deps_list )
+	for( const std::string& path : deps_list )
 	{
 		str+= " ";
 		str+= QuoteDepTargetString(path);

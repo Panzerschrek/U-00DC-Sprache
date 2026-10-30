@@ -1,0 +1,11 @@
+namespace U1
+{
+
+// This enum must match same enum in Compiler0 code!
+enum ErrorsFormat
+{
+	GCC,
+	MSVC,
+}
+
+} // namespace U1

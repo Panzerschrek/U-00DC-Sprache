@@ -1,9 +1,9 @@
-import "/stdout_ext.iu"
-import "/stringification.iu"
-import "../lex_synt_lib/source_graph.iu"
 import "../code_builder_lib/code_builder.iu"
 import "../code_builder_lib/long_stable_hash_wrapper.iu"
 import "../../imports/funcs_u.iu"
+import "error_printing.iu"
+import "test_vfs.iu"
+import "vfs_over_system_fs.iu"
 
 fn nomangle nodiscard U1_BuildProgram(
 	U1_StringView& program_text,
@@ -82,8 +82,14 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 }
 
 fn nomangle nodiscard U1_BuildProgramUsingVFS(
-	U1_IVfsInterface& vfs_interface,
-	U1_StringView& root_file_path,
+	$(U1_StringView) prefixed_include_dirs,
+	size_type num_prefixed_include_dirs,
+	$(U1_StringView) source_dirs,
+	size_type num_source_dirs,
+	bool prevent_imports_outside_given_directories,
+	$(U1_StringView) root_file_paths,
+	size_type num_root_file_paths,
+	$(LLVMModuleRef) out_modules,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
 	U1_StringView& target_triple_str,
@@ -91,48 +97,35 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	bool generate_tbaa_metadata,
 	bool allow_unused_names,
 	U1::ManglingScheme mangling_scheme,
+	U1::ErrorsFormat errors_format,
+	bool tests_output,
 	U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
-	U1_UserHandle result_source_file_path_processing_data,
-	U1_LexSyntErrorCallback lex_synt_error_callback,
-	U1_UserHandle lex_synt_error_callback_data,
-	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
-	U1_UserHandle error_processing_data ) unsafe call_conv( "C" ) : LLVMModuleRef
+	U1_UserHandle result_source_file_path_processing_data ) unsafe call_conv( "C" ) : bool
 {
-	var U1::IVfsSharedPtr vfs= ust::make_shared_ptr( U1::ExternalVfsWrapper( vfs_interface ) );
+	auto string_view_to_string=
+		lambda( U1_StringView s ) : ust::string8 { return unsafe( U1::StringToArrayView( s ) ); };
 
-	auto source_graph=
-		U1::LoadSourceGraph(
-			vfs,
-			U1::CalculateLongStableHash,
-			unsafe( U1::StringToArrayView( root_file_path ) ),
-			unsafe( U1::StringToArrayView( prelude_code ) ) );
+	auto mut vfs_opt=
+		U1::VfsOverSystemFS::Create(
+			ust::make_vector_from_mapped_range(
+				unsafe( ust::array_view_imut</ U1_StringView />( prefixed_include_dirs, num_prefixed_include_dirs ) ),
+				string_view_to_string ),
+			ust::make_vector_from_mapped_range(
+				unsafe( ust::array_view_imut</ U1_StringView />( source_dirs, num_source_dirs ) ),
+				string_view_to_string ),
+			prevent_imports_outside_given_directories );
 
-	foreach( &node : source_graph.nodes )
+	if( vfs_opt.empty() )
 	{
-		unsafe
-		{
-			var U1_StringView path_view{ .data= cast_mut(node.file_path_normalized).data(), .size= node.file_path_normalized.size() };
-			result_source_file_path_callback( result_source_file_path_processing_data, path_view );
-		}
+		return false;
 	}
 
-	foreach( &err : source_graph.errors )
-	{
-		unsafe
-		{
-			var U1_StringView text{ .data= cast_mut(err.text).data(), .size= err.text.size() };
-			lex_synt_error_callback( lex_synt_error_callback_data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), text );
-		}
-	}
+	var U1::IVfsSharedPtr vfs= ust::make_shared_ptr( vfs_opt.try_take() );
 
-	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
-	{
-		return Null::LLVMModuleRef;
-	}
+	var ust::string_view8 prelude_code_view= unsafe( U1::StringToArrayView( prelude_code ) );
 
-	var ust::string8 mut target_triple= unsafe( U1::StringToArrayView( target_triple_str ) );
-	target_triple+= "\0";
+	var ust::string8 target_triple= ust::concat( unsafe( U1::StringToArrayView( target_triple_str ) ), "\0" );
 
 	var U1::CodeBuilderOptions options
 	{
@@ -142,26 +135,66 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 		.report_about_unused_names= !allow_unused_names,
 	};
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, target_triple, options, vfs );
-	auto code_builder_res= code_builder.BuildProgram( source_graph );
+	var bool mut success= true;
 
-	if( !code_builder_res.errors.empty() )
+	for( auto mut i= 0s; i < num_root_file_paths; ++i )
 	{
-		unsafe( U1::ProcessCodeBuilderErrors( errors_handling_callbacks, error_processing_data, code_builder_res.errors ) );
-		unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
-		return Null::LLVMModuleRef;
-	}
+		auto source_graph=
+			U1::LoadSourceGraph(
+				vfs,
+				U1::CalculateLongStableHash,
+				unsafe( U1::StringToArrayView( $>( root_file_paths + i ) ) ),
+				prelude_code_view );
 
-	foreach( &embedded_file : code_builder_res.embedded_files )
-	{
+		foreach( &node : source_graph.nodes )
+		{
+			unsafe
+			{
+				var U1_StringView path_view{ .data= node.file_path_normalized.range().data(), .size= node.file_path_normalized.range().size() };
+				result_source_file_path_callback( result_source_file_path_processing_data, path_view );
+			}
+		}
+
+		U1::PrintLexSyntErrors( source_graph, errors_format );
+
+		if( !source_graph.errors.empty() || source_graph.nodes.empty() )
+		{
+			success= false;
+			continue;
+		}
+
+		var U1::CodeBuilder mut code_builder( llvm_context, data_layout, target_triple, options, vfs );
+		var U1::CodeBuilder::BuildResult code_builder_res= code_builder.BuildProgram( source_graph );
+
+		if( !code_builder_res.errors.empty() )
+		{
+			success= false;
+
+			if( tests_output )
+			{
+				U1::PrintCodeBuilderErrorsForTests( source_graph, code_builder_res.errors );
+			}
+			else
+			{
+				U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors, errors_format );
+			}
+		}
+
 		unsafe
 		{
-			var U1_StringView path_view{ .data= cast_mut(embedded_file).data(), .size= embedded_file.size() };
-			result_source_file_path_callback( result_source_file_path_processing_data, path_view );
+			// Transfer ownership over the result module to the caller.
+			$>( out_modules + i )= code_builder_res.llvm_module;
+
+			// Add embedded files into the list of dependencies.
+			foreach( &embedded_file : code_builder_res.embedded_files )
+			{
+				var U1_StringView path_view{ .data= embedded_file.range().data(), .size= embedded_file.range().size() };
+				result_source_file_path_callback( result_source_file_path_processing_data, path_view );
+			}
 		}
 	}
 
-	return code_builder_res.llvm_module;
+	return success;
 }
 
 fn nomangle nodiscard U1_BuildMultisourceProgram(
@@ -407,176 +440,6 @@ fn TransformSourceFiles( $(U1_SourceFile) source_files, size_type source_file_co
 					.file_content= unsafe( StringToArrayView( source_file.file_content ) ),
 				};
 			} ) );
-}
-
-fn PrintLexSyntErrors( SourceGraph& source_graph )
-{
-	foreach( &err : source_graph.errors )
-	{
-		auto file_index= size_type(err.src_loc.GetFileIndex());
-
-		ust::stderr_print_line(
-			( file_index < source_graph.nodes.size() ? source_graph.nodes[file_index].file_path_normalized.range() : ust::string_view8() ),
-			":",
-			err.src_loc.GetLine(),
-			":",
-			err.src_loc.GetColumn(),
-			": error: ",
-			err.text );
-	}
-}
-
-fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
-{
-	foreach( & err : errors )
-	{
-		auto file_index= size_type(err.src_loc.GetFileIndex());
-
-		ust::stderr_print_line(
-			( file_index < source_graph.nodes.size() ? source_graph.nodes[file_index].file_path_normalized.range() : ust::string_view8() ),
-			":",
-			err.src_loc.GetLine(),
-			":",
-			err.src_loc.GetColumn(),
-			": error: ",
-			err.text );
-	}
-}
-
-class TestVfs final : IVfs
-{
-public:
-	struct SourceEntry
-	{
-		ust::string8 file_path;
-		ust::string8 file_content;
-	}
-	type SourceEntries= ust::vector</SourceEntry/>;
-
-	fn constructor( ust::string8 mut file_content )
-	{
-		source_entries_.push_back( SourceEntry{ .file_path= "_", .file_content= move(file_content) } );
-	}
-
-	fn constructor( SourceEntries mut source_entries )
-		( source_entries_(move(source_entries)) )
-	{}
-
-public:
-	fn virtual override NormalizeFilePath(
-		mut this,
-		ust::string_view8 file_path,
-		ust::string_view8 parent_file_path_normalized ) : ust::string8
-	{
-		ust::ignore_unused(parent_file_path_normalized);
-		return file_path;
-	}
-
-	fn virtual override LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>
-	{
-		foreach( &entry : source_entries_ )
-		{
-			if( full_file_path == entry.file_path )
-			{
-				return entry.file_content;
-			}
-		}
-		return ust::null_optional;
-	}
-
-	fn virtual override IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool
-	{
-		ust::ignore_unused(full_file_path);
-		return true;
-	}
-
-	fn virtual override IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool
-	{
-		ust::ignore_unused(full_file_path);
-		return true;
-	}
-
-private:
-	SourceEntries source_entries_;
-}
-
-class ExternalVfsWrapper final : IVfs
-{
-public:
-	fn constructor( U1_IVfsInterface mut vfs_interface )
-		( vfs_interface_= move(vfs_interface) )
-	{}
-
-public:
-	fn virtual override NormalizeFilePath(
-		mut this,
-		ust::string_view8 file_path,
-		ust::string_view8 parent_file_path_normalized ) : ust::string8
-	{
-		unsafe
-		{
-			var ust::string8 mut result;
-
-			var U1_StringView file_path_view{ .data= file_path.data(), .size= file_path.size() };
-			var U1_StringView parent_file_path_normalized_view{ .data= parent_file_path_normalized.data(), .size= parent_file_path_normalized.size() };
-
-			vfs_interface_.normalize_path_function(
-				vfs_interface_.this_,
-				file_path_view,
-				parent_file_path_normalized_view,
-				FillStringCallback,
-				ust::ref_to_int( result ) );
-			return result;
-		}
-	}
-
-	fn virtual override LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>
-	{
-		unsafe
-		{
-			var ust::string8 mut result;
-
-			var U1_StringView full_file_path_view{ .data= full_file_path.data(), .size= full_file_path.size() };
-
-			var bool ok= vfs_interface_.load_file_content_function(
-				vfs_interface_.this_,
-				full_file_path_view,
-				FillStringCallback,
-				ust::ref_to_int( result ) );
-			if( ok )
-			{
-				return result;
-			}
-		}
-		return ust::null_optional;
-	}
-
-	fn virtual override IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool
-	{
-		return unsafe( vfs_interface_.is_importing_file_allowed_function(
-			vfs_interface_.this_,
-			U1_StringView{ .data= full_file_path.data(), .size= full_file_path.size() } ) );
-	}
-
-	fn virtual override IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool
-	{
-		return unsafe( vfs_interface_.is_file_from_sources_directory_function(
-			vfs_interface_.this_,
-			U1_StringView{ .data= full_file_path.data(), .size= full_file_path.size() } ) );
-	}
-
-private:
-	fn FillStringCallback( U1_UserHandle user_data, U1_StringView& result_path_normalized ) unsafe call_conv( "C" )
-	{
-		unsafe
-		{
-			auto &mut str= cast_mut( ust::int_to_ref</ust::string8/>(user_data) );
-			str= StringToArrayView( result_path_normalized );
-		}
-	}
-
-private:
-	U1_IVfsInterface vfs_interface_;
 }
 
 } // namespace U1

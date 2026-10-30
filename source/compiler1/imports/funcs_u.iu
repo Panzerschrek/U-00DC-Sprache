@@ -1,3 +1,4 @@
+import "errors_format.iu"
 import "mangling_scheme.iu"
 import "llvm.iu"
 
@@ -21,17 +22,6 @@ struct U1_ErrorsHandlingCallbacks ordered
 {
 	( fn( U1_UserHandle data, u32 file_index, u32 line, u32 column, u32 error_code, U1_StringView& error_text ) unsafe call_conv( "C" ) : U1_UserHandle ) error_callback;
 	( fn( U1_UserHandle data, u32 file_index, u32 line, u32 column, U1_StringView& context_name, U1_StringView& args_description ) unsafe call_conv( "C" ) : U1_UserHandle ) template_errors_context_callback;
-}
-
-struct U1_IVfsInterface ordered
-{
-	type FillStringCallback= fn( U1_UserHandle user_data, U1_StringView& result_path_normalized ) unsafe call_conv( "C" );
-
-	U1_UserHandle this_;
-	( fn( U1_UserHandle this_, U1_StringView& file_path, U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, U1_UserHandle user_data ) unsafe call_conv( "C" ) ) normalize_path_function;
-	( fn( U1_UserHandle this_, U1_StringView& full_file_path, FillStringCallback result_callback, U1_UserHandle user_data ) unsafe call_conv( "C" ) : bool ) load_file_content_function;
-	( fn( U1_UserHandle this_, U1_StringView& full_file_path ) unsafe call_conv( "C" ) : bool ) is_importing_file_allowed_function;
-	( fn( U1_UserHandle this_, U1_StringView& full_file_path ) unsafe call_conv( "C" ) : bool ) is_file_from_sources_directory_function;
 }
 
 type U1_SourceFilePathCallback= fn( U1_UserHandle data, U1_StringView& file_path_normalized ) unsafe call_conv( "C" );
@@ -91,9 +81,16 @@ fn nomangle nodiscard U1_BuildProgramForAsyncCallsInliningTest(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout ) unsafe call_conv( "C" ) : LLVMModuleRef;
 
+// Returns "true" on success.
 fn nomangle nodiscard U1_BuildProgramUsingVFS(
-	U1_IVfsInterface& vfs_interface,
-	U1_StringView& root_file_path,
+	$(U1_StringView) prefixed_include_dirs,
+	size_type num_prefixed_include_dirs,
+	$(U1_StringView) source_dirs,
+	size_type num_source_dirs,
+	bool prevent_imports_outside_given_directories,
+	$(U1_StringView) root_file_paths,
+	size_type num_root_file_paths,
+	$(LLVMModuleRef) out_modules, // Has size equal to number of root file paths. Ownership is transferred.
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
 	U1_StringView& target_triple_str,
@@ -101,10 +98,8 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	bool generate_tbaa_metadata,
 	bool allow_unused_names,
 	U1::ManglingScheme mangling_scheme,
+	U1::ErrorsFormat errors_format,
+	bool tests_output,
 	U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
-	U1_UserHandle result_source_file_path_processing_data,
-	U1_LexSyntErrorCallback lex_synt_error_callback,
-	U1_UserHandle lex_synt_error_callback_data,
-	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
-	U1_UserHandle error_processing_data ) unsafe call_conv( "C" ) : LLVMModuleRef;
+	U1_UserHandle result_source_file_path_processing_data ) unsafe call_conv( "C" ) : bool;

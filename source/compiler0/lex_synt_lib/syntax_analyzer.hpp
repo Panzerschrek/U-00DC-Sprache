@@ -2,7 +2,6 @@
 #include <memory>
 #include <vector>
 
-#include "../../lex_synt_lib_common/lex_synt_error.hpp"
 #include "macro.hpp"
 #include "syntax_elements.hpp"
 

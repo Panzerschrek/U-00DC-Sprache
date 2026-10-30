@@ -3,6 +3,7 @@
 #include <llvm-c/Types.h>
 
 #include "../../code_builder_lib_common/mangling.hpp"
+#include "../../lex_synt_lib_common/errors_format.hpp"
 
 // If contents of this file changed, funcs_u.iu must be changed too!
 
@@ -11,8 +12,8 @@ extern "C"
 
 struct U1_StringView
 {
-	const char* data;
-	size_t size;
+	const char* data= nullptr;
+	size_t size= 0;
 };
 
 struct U1_SourceFile
@@ -27,17 +28,6 @@ struct U1_ErrorsHandlingCallbacks
 {
 	U1_UserHandle (*error_callback)( U1_UserHandle data, uint32_t file_index, uint32_t line, uint32_t column, uint32_t error_code, const U1_StringView& error_text );
 	U1_UserHandle (*template_errors_context_callback)( U1_UserHandle data, uint32_t file_index, uint32_t line, uint32_t column, const U1_StringView& context_name, const U1_StringView& args_description );
-};
-
-struct U1_IVfsInterface
-{
-	using FillStringCallback= void(*)( U1_UserHandle user_data, const U1_StringView& result_path_normalized );
-
-	U1_UserHandle this_;
-	void (*normalize_path_function)( U1_UserHandle this_, const U1_StringView& file_path, const U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, U1_UserHandle user_data );
-	bool (*load_file_content_function)( U1_UserHandle this_, const U1_StringView& full_file_path, FillStringCallback result_callback, U1_UserHandle user_data );
-	bool (*is_importing_file_allowed_function)( U1_UserHandle this_, const U1_StringView& full_file_path );
-	bool (*is_file_from_sources_directory_function)( U1_UserHandle this_, const U1_StringView& full_file_path );
 };
 
 using U1_SourceFilePathCallback= void(*)( U1_UserHandle data, const U1_StringView& file_path_normalized );
@@ -98,9 +88,15 @@ LLVMModuleRef U1_BuildProgramForAsyncCallsInliningTest(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout );
 
-LLVMModuleRef U1_BuildProgramUsingVFS(
-	const U1_IVfsInterface& vfs_interface,
-	const U1_StringView& root_file_path,
+bool U1_BuildProgramUsingVFS(
+	const U1_StringView* prefixed_include_dirs,
+	size_t num_prefixed_include_dirs,
+	const U1_StringView* source_dirs,
+	size_t num_source_dirs,
+	bool prevent_imports_outside_given_directories,
+	const U1_StringView* root_file_paths,
+	size_t num_root_file_paths,
+	LLVMModuleRef* out_modules, // Has size equal to number of root file paths. Ownership is transferred.
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
 	const U1_StringView& target_triple_str,
@@ -108,12 +104,10 @@ LLVMModuleRef U1_BuildProgramUsingVFS(
 	bool generate_tbaa_metadata,
 	bool allow_unused_names,
 	U::ManglingScheme mangling_scheme,
+	U::ErrorsFormat errros_format,
+	bool tests_output,
 	const U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
-	U1_UserHandle result_source_file_path_processing_data,
-	U1_LexSyntErrorCallback lex_synt_error_callback,
-	U1_UserHandle lex_synt_error_callback_data,
-	const U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
-	U1_UserHandle error_processing_data );
+	U1_UserHandle result_source_file_path_processing_data );
 
 } // extern "C"

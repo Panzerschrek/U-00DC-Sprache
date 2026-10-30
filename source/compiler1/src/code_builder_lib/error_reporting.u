@@ -110,8 +110,8 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 				.code= CodeBuilderErrorCode::MacroExpansionContext,
 				.src_loc= macro_expansion_context.src_loc,
 				.text = ( macro_expansion_context.macro_name == KeywordToString( Keyword::mixin_ )
-					? ( ust::concat( "in expansion of macro \"", macro_expansion_context.macro_name, "\"" ) )
-					: ust::string8("in expansion of mixin") ),
+					? ust::string8( "in expansion of mixin" )
+					: ust::concat( "in expansion of macro \"", macro_expansion_context.macro_name, "\"" ) ),
 				.errors_context(
 					TemplateErrorsContext
 					{

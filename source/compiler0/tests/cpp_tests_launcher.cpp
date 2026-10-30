@@ -7,7 +7,7 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../../code_builder_lib_common/async_calls_inlining.hpp"
 #include "../../code_builder_lib_common/long_stable_hash.hpp"
-#include "../lex_synt_lib/lexical_analyzer.hpp"
+#include "../lex_synt_lib/error_printing.hpp"
 #include "../lex_synt_lib/syntax_analyzer.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../tests/tests_common.hpp"
@@ -71,16 +71,6 @@ public:
 private:
 	const std::vector<SourceEntry> sources_;
 };
-
-void PrintLexSyntErrors( const SourceGraph& source_graph )
-{
-	std::vector<std::string> source_files;
-	source_files.reserve( source_graph.nodes_storage.size() );
-	for( const auto& node : source_graph.nodes_storage )
-		source_files.push_back( node.file_path );
-
-	PrintLexSyntErrors( source_files, source_graph.errors );
-}
 
 // Returns "true" if should enable test.
 bool FilterTest( const std::string& test_name )

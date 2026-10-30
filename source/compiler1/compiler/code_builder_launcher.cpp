@@ -17,112 +17,30 @@ const std::string StringViewToString( const U1_StringView view )
 	return std::string( view.data, view.data + view.size );
 }
 
-void GetFullFilePath(
-	const U1_UserHandle this_,
-	const U1_StringView& file_path,
-	const U1_StringView& parent_file_path_normalized,
-	const  U1_IVfsInterface::FillStringCallback result_callback,
-	const U1_UserHandle user_data )
-{
-	const std::string path=
-		reinterpret_cast<IVfs*>(this_)->GetFullFilePath(
-			StringViewToString(file_path),
-			StringViewToString(parent_file_path_normalized) );
-
-	result_callback( user_data, StringToStringView(path) );
-}
-
-bool LoadFileContent(
-	const U1_UserHandle this_,
-	const U1_StringView& path_normalized,
-	const U1_IVfsInterface::FillStringCallback result_callback,
-	const U1_UserHandle user_data )
-{
-	const std::optional<IVfs::FileContent> file_content=
-		reinterpret_cast<IVfs*>(this_)->LoadFileContent( StringViewToString(path_normalized) );
-
-	if( file_content == std::nullopt )
-		return false;
-
-	result_callback( user_data, StringToStringView( *file_content ) );
-	return true;
-}
-
-bool IsImportingFileAllowed(
-	const U1_UserHandle this_,
-	const U1_StringView& path_normalized )
-{
-	return reinterpret_cast<IVfs*>(this_)->IsImportingFileAllowed( StringViewToString(path_normalized) );
-}
-
-bool IsFileFromSourcesDirectory(
-	const U1_UserHandle this_,
-	const U1_StringView& path_normalized )
-{
-	return reinterpret_cast<IVfs*>(this_)->IsFileFromSourcesDirectory( StringViewToString(path_normalized) );
-}
-
-U1_UserHandle ErrorHanlder(
-	const U1_UserHandle data, // should be "CodeBuilderErrorsContainer"
-	const uint32_t file_index,
-	const uint32_t line,
-	const uint32_t column,
-	const uint32_t error_code,
-	const U1_StringView& error_text )
-{
-	CodeBuilderError error;
-	error.src_loc= SrcLoc( file_index, line, column );
-	error.code= CodeBuilderErrorCode(error_code);
-	error.text= StringViewToString( error_text );
-
-	const auto errors_container= reinterpret_cast<CodeBuilderErrorsContainer*>(data);
-	errors_container->push_back( std::move(error) );
-	return reinterpret_cast<U1_UserHandle>(&errors_container->back());
-}
-
-U1_UserHandle TemplateErrorsContextHandler(
-	const U1_UserHandle data, // should be "CodeBuilderError*"
-	const uint32_t file_index,
-	const uint32_t line,
-	const uint32_t column,
-	const U1_StringView& context_name,
-	const U1_StringView& args_description )
-{
-	const auto out_error= reinterpret_cast<CodeBuilderError*>(data);
-	out_error->template_context= std::make_shared<TemplateErrorsContext>();
-	out_error->template_context->context_declaration_src_loc= SrcLoc( file_index, line, column );
-	out_error->template_context->context_name= StringViewToString( context_name );
-	out_error->template_context->parameters_description= StringViewToString( args_description );
-
-	return reinterpret_cast<U1_UserHandle>(&out_error->template_context->errors);
-}
-
 void SourceFilePathProcessingFunction(
-	const U1_UserHandle data, // should be "std::vector<IVfs::Path>*"
+	const U1_UserHandle data, // should be "std::vector<std::string>*"
 	const U1_StringView& file_path )
 {
-	reinterpret_cast< std::vector<IVfs::Path>* >(data)->push_back( StringViewToString(file_path) );
+	reinterpret_cast< std::vector<std::string>* >(data)->push_back( StringViewToString(file_path) );
 }
 
-void LexSyntErrorProcessingFunction(
-	const U1_UserHandle data, // Should be "LexSyntErrors*"
-	const uint32_t file_index,
-	const uint32_t line,
-	const uint32_t column,
-	const U1_StringView& text )
+std::vector<U1_StringView> MakeVectorOfStringViews( const llvm::ArrayRef<std::string> strings )
 {
-	LexSyntError out_error;
-	out_error.src_loc= SrcLoc( file_index, line, column );
-	out_error.text= StringViewToString(text);
+	std::vector<U1_StringView> result( strings.size() );
 
-	reinterpret_cast< LexSyntErrors* >(data)->push_back( std::move(out_error) );
+	for( size_t i= 0; i < strings.size(); ++i )
+		result[i]= StringToStringView( strings[i] );
+
+	return result;
 }
 
 } // namespace
 
 CodeBuilderLaunchResult LaunchCodeBuilder(
-	const IVfs::Path& input_file,
-	const IVfsSharedPtr& vfs,
+	const llvm::ArrayRef<std::string> include_dirs,
+	const llvm::ArrayRef<std::string> source_dirs,
+	const bool prevent_imports_outside_given_directories,
+	const llvm::ArrayRef<std::string> input_files,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
@@ -130,38 +48,45 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const bool generate_tbaa_metadata,
 	const bool allow_unused_names,
 	const ManglingScheme mangling_scheme,
+	const ErrorsFormat errors_format,
+	const bool tests_output,
 	const std::string_view prelude_code )
 {
 	CodeBuilderLaunchResult result;
+	result.llvm_modules.resize( input_files.size() );
 
-	const LLVMModuleRef llvm_module=
-		U1_BuildProgramUsingVFS(
-			U1_IVfsInterface{
-				reinterpret_cast<U1_UserHandle>(vfs.get()),
-				GetFullFilePath,
-				LoadFileContent,
-				IsImportingFileAllowed,
-				IsFileFromSourcesDirectory },
-			StringToStringView(input_file),
+	const std::vector<U1_StringView> inciude_dir_views= MakeVectorOfStringViews( include_dirs );
+	const std::vector<U1_StringView> source_dir_views= MakeVectorOfStringViews( source_dirs );
+	const std::vector<U1_StringView> input_file_views= MakeVectorOfStringViews( input_files );
+
+	static_assert( sizeof(LLVMModuleRef) == sizeof( std::unique_ptr<llvm::Module> ), "Unexpected size!" );
+
+	const std::string target_triple_str= target_triple.normalize();
+
+	result.has_errors=
+		!U1_BuildProgramUsingVFS(
+			inciude_dir_views.data(),
+			inciude_dir_views.size(),
+			source_dir_views.data(),
+			source_dir_views.size(),
+			prevent_imports_outside_given_directories,
+			input_file_views.data(),
+			input_file_views.size(),
+			// Pass the result array containing unique_ptr instances as array containing raw pointers.
+			// This should work fine, assuming their layout is identical.
+			reinterpret_cast<LLVMModuleRef*>( result.llvm_modules.data() ),
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),
-			StringToStringView(target_triple.normalize()),
+			StringToStringView(target_triple_str),
 			generate_debug_info,
 			generate_tbaa_metadata,
 			allow_unused_names,
 			mangling_scheme,
+			errors_format,
+			tests_output,
 			StringToStringView(prelude_code),
 			SourceFilePathProcessingFunction,
-			reinterpret_cast<U1_UserHandle>(&result.dependent_files),
-			LexSyntErrorProcessingFunction,
-			reinterpret_cast<U1_UserHandle>(&result.lex_synt_errors),
-			U1_ErrorsHandlingCallbacks{ ErrorHanlder, TemplateErrorsContextHandler },
-			reinterpret_cast<U1_UserHandle>(&result.code_builder_errors) );
-
-	if( llvm_module == nullptr )
-		return result;
-
-	result.llvm_module.reset( llvm::unwrap(llvm_module) ); // Take ownership over module.
+			reinterpret_cast<U1_UserHandle>(&result.dependent_files) );
 
 	return result;
 }

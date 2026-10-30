@@ -1,0 +1,16 @@
+import "../../imports/errors_format.iu"
+import "../code_builder_lib/code_builder_errors.iu"
+import "../lex_synt_lib/source_graph.iu"
+
+namespace U1
+{
+
+fn PrintLexSyntErrors( SourceGraph& source_graph );
+fn PrintLexSyntErrors( SourceGraph& source_graph, ErrorsFormat errors_format );
+
+fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors );
+fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors, ErrorsFormat errors_format );
+
+fn PrintCodeBuilderErrorsForTests( SourceGraph& source_graph, ErrorsContainer& errors );
+
+} // namespace U1

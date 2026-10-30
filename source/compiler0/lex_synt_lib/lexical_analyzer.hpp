@@ -2,7 +2,7 @@
 #include <array>
 #include <cstdint>
 #include <optional>
-#include "../../lex_synt_lib_common/lex_synt_error.hpp"
+#include "lex_synt_error.hpp"
 
 
 namespace U

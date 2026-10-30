@@ -18,10 +18,11 @@
 #include "../code_builder_lib_common/long_stable_hash.hpp"
 #include "../code_builder_lib_common/interpreter.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
+#include "../compiler0/code_builder_lib/errors_print.hpp"
+#include "../compiler0/code_builder_lib/vfs_over_system_fs.hpp"
+#include "../compiler0/lex_synt_lib/error_printing.hpp"
 #include "../compilers_support_lib/compiler_builtins.hpp"
-#include "../compilers_support_lib/errors_print.hpp"
 #include "../compilers_support_lib/prelude.hpp"
-#include "../compilers_support_lib/vfs.hpp"
 #include "../tests/tests_common.hpp"
 
 namespace U
@@ -361,12 +362,7 @@ int Main( int argc, const char* argv[] )
 	{
 		SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, input_file, prelude_code );
 
-		std::vector<IVfs::Path> dependent_files;
-		dependent_files.reserve( source_graph.nodes_storage.size() );
-		for( const SourceGraph::Node& node : source_graph.nodes_storage )
-			dependent_files.push_back( node.file_path );
-
-		PrintLexSyntErrors( dependent_files, source_graph.errors, errors_format );
+		PrintLexSyntErrors( source_graph, errors_format );
 		if( !source_graph.errors.empty() )
 		{
 			have_some_errors= true;
@@ -377,16 +373,18 @@ int Main( int argc, const char* argv[] )
 		options.report_about_unused_names= false; // Do not require generating extra errors in interpreter.
 		options.mangling_scheme= ManglingScheme::ItaniumABI; // For simplicity use it even on Windows.
 
+		const auto source_graph_ptr= MakeRcPtr( std::move(source_graph) );
+
 		CodeBuilder::BuildResult build_result=
 			CodeBuilder::BuildProgram(
 				llvm_context,
 				data_layout,
 				target_triple,
 				options,
-				MakeRcPtr( std::move(source_graph) ),
+				source_graph_ptr,
 				vfs );
 
-		PrintErrors( dependent_files, build_result.errors, errors_format );
+		PrintErrors( *source_graph_ptr, build_result.errors, errors_format );
 
 		if( !build_result.errors.empty() || build_result.module == nullptr )
 		{
