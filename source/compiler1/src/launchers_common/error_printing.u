@@ -85,7 +85,8 @@ fn PrintCodeBuilderErrorsGCC( SourceGraph& source_graph, ErrorsContainer& errors
 					": In instantiation of \"",
 					errors_context.context_name,
 					"\" ",
-					errors_context.args_description );
+					errors_context.args_description,
+					":" );
 
 				ust::stderr_print_line(
 					file_path,
@@ -93,8 +94,7 @@ fn PrintCodeBuilderErrorsGCC( SourceGraph& source_graph, ErrorsContainer& errors
 					error.src_loc.GetLine(),
 					":",
 					error.src_loc.GetColumn(),
-					": required from here: ",
-					error.text );
+					": required from here" );
 
 				PrintCodeBuilderErrorsGCC( source_graph, errors_context.errors.lock_imut().deref() );
 			}
