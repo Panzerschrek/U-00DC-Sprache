@@ -193,7 +193,7 @@ public:
 
 // Used for displaying of template args.
 struct TemplateVariableArg;
-std::string ConstantVariableToString( const TemplateVariableArg& variable );
+void AppendConstantVariableToString( const TemplateVariableArg& variable, std::string& s );
 
 struct ClassField
 {

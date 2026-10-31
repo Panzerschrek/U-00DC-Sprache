@@ -45,7 +45,7 @@ void CreateTemplateErrorsContext(
 				if( const Type* const type= value->value.GetTypeName() )
 					args_description+= type->ToString();
 				else if( const auto variable= value->value.GetVariable() )
-					args_description+= ConstantVariableToString( TemplateVariableArg( *variable ) );
+					AppendConstantVariableToString( TemplateVariableArg( *variable ), args_description );
 				else if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
 				{
 					if( type_templates_set->type_templates.size() == 1 )

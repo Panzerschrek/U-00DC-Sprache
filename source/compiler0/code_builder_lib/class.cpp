@@ -69,7 +69,7 @@ void Class::AppendToString( std::string& s ) const
 			if( const Type* const param_as_type = std::get_if<Type>( &arg ) )
 				param_as_type->AppendToString( s );
 			else if( const auto param_as_variable= std::get_if<TemplateVariableArg>( &arg ) )
-				s+= ConstantVariableToString( *param_as_variable );
+				AppendConstantVariableToString( *param_as_variable, s );
 			else if( const auto param_as_type_template= std::get_if<TypeTemplatePtr>( &arg ) )
 				(*param_as_type_template)->AppendToString( s );
 			else U_ASSERT(false);

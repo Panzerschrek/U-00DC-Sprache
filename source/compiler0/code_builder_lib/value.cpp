@@ -123,74 +123,66 @@ VariableMutPtr Variable::CreateChildNode(
 	return result;
 }
 
-std::string ConstantVariableToString( const TemplateVariableArg& variable )
+void AppendConstantVariableToString( const TemplateVariableArg& variable, std::string& s )
 {
 	if( variable.constexpr_value == nullptr )
-		return "";
+		return;
 
 	if( const auto fundamental_type= variable.type.GetFundamentalType() )
 	{
 		if( fundamental_type->fundamental_type == U_FundamentalType::bool_ )
-			return variable.constexpr_value->getUniqueInteger().isZero() ? "false" : "true";
+			s+= variable.constexpr_value->getUniqueInteger().isZero() ? "false" : "true";
 		else if( IsFloatingPoint( fundamental_type->fundamental_type ) )
 		{
 			if( const auto constant_fp= llvm::dyn_cast<llvm::ConstantFP>( variable.constexpr_value ) )
 			{
 				llvm::SmallString<256> str;
 				constant_fp->getValueAPF().toString(str);
+				s+= str;
 				if( fundamental_type->fundamental_type == U_FundamentalType::f32_ )
-					str+= "f";
-				return str.str().str();
+					s+= "f";
 			}
 		}
 		else if( IsSignedInteger( fundamental_type->fundamental_type ) )
 		{
-			std::string res= std::to_string( variable.constexpr_value->getUniqueInteger().getSExtValue() );
-			res+=
+			s+= std::to_string( variable.constexpr_value->getUniqueInteger().getSExtValue() );
+			s+=
 				fundamental_type->fundamental_type == U_FundamentalType::i32_
 					? ""
-					: GetFundamentalTypeName( fundamental_type->fundamental_type );
-
-			return res;
+					: GetFundamentalTypeName( fundamental_type->fundamental_type );;
 		}
 		else if( IsUnsignedInteger( fundamental_type->fundamental_type ) )
 		{
-			std::string res= std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
-			res+=
+			std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
+			s+=
 				fundamental_type->fundamental_type == U_FundamentalType::u32_
 					? "u"
 					: GetFundamentalTypeName( fundamental_type->fundamental_type );
-
-			return res;
 		}
 		else if( IsChar( fundamental_type->fundamental_type ) )
 		{
-			std::string res;
-			res+= GetFundamentalTypeName( fundamental_type->fundamental_type );
-			res.push_back( '(' );
-			res+= std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
-			res.push_back( ')' );
-			return res;
+			s+= GetFundamentalTypeName( fundamental_type->fundamental_type );
+			s.push_back( '(' );
+			s+= std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
+			s.push_back( ')' );
 		}
 		else if( IsByte( fundamental_type->fundamental_type ) )
 		{
-			std::string res;
-			res+= GetFundamentalTypeName( fundamental_type->fundamental_type );
-			res+= "( ";
+			s+= GetFundamentalTypeName( fundamental_type->fundamental_type );
+			s+= "( ";
 
-			res+= std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
+			s+= std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
 			switch( fundamental_type->fundamental_type )
 			{
-			case U_FundamentalType::byte8_  : res+= GetFundamentalTypeName( U_FundamentalType::u8_   ); break;
-			case U_FundamentalType::byte16_ : res+= GetFundamentalTypeName( U_FundamentalType::u16_  ); break;
-			case U_FundamentalType::byte32_ : res+= GetFundamentalTypeName( U_FundamentalType::u32_  ); break;
-			case U_FundamentalType::byte64_ : res+= GetFundamentalTypeName( U_FundamentalType::u64_  ); break;
-			case U_FundamentalType::byte128_: res+= GetFundamentalTypeName( U_FundamentalType::u128_ ); break;
+			case U_FundamentalType::byte8_  : s+= GetFundamentalTypeName( U_FundamentalType::u8_   ); break;
+			case U_FundamentalType::byte16_ : s+= GetFundamentalTypeName( U_FundamentalType::u16_  ); break;
+			case U_FundamentalType::byte32_ : s+= GetFundamentalTypeName( U_FundamentalType::u32_  ); break;
+			case U_FundamentalType::byte64_ : s+= GetFundamentalTypeName( U_FundamentalType::u64_  ); break;
+			case U_FundamentalType::byte128_: s+= GetFundamentalTypeName( U_FundamentalType::u128_ ); break;
 			default: U_ASSERT(false); break;
 			}
 
-			res+= " )";
-			return res;
+			s+= " )";
 		}
 	}
 	else if( const auto enum_type= variable.type.GetEnumType() )
@@ -208,54 +200,46 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 				}
 			});
 
-		std::string res;
-		variable.type.AppendToString( res );
-		res+= "::";
-		res+= enum_member_name;
-		return res;
+		variable.type.AppendToString( s );
+		s+= "::";
+		s+= enum_member_name;
 	}
 	else if( const auto array_type= variable.type.GetArrayType() )
 	{
 		// For now we have no special syntax for array literals. So, use just a comma-separated list in [].
-		std::string res;
-		res+= variable.type.ToString();
-		res+= "[ ";
+		s+= variable.type.ToString();
+		s+= "[ ";
 
+		TemplateVariableArg element;
+		element.type= array_type->element_type;
 		for( uint64_t i= 0; i < array_type->element_count; ++i )
 		{
-			TemplateVariableArg element;
-			element.type= array_type->element_type;
 			element.constexpr_value= variable.constexpr_value->getAggregateElement( uint32_t(i) );
-			res+= ConstantVariableToString( element );
+			AppendConstantVariableToString( element, s );
 			if( i + 1 < array_type->element_count )
-				res+= ", ";
+				s+= ", ";
 		}
 
-		res+= "]";
-		return res;
+		s+= "]";
 	}
 	else if( const auto tuple_type= variable.type.GetTupleType() )
 	{
 		// For now we have no special syntax for tuple literals. So, use just a comma-separated list in [].
-		std::string res;
-		res+= variable.type.ToString();
-		res+= "[ ";
+		s+= variable.type.ToString();
+		s+= "[ ";
 
 		for( size_t i= 0; i < tuple_type->element_types.size(); ++i )
 		{
 			TemplateVariableArg element;
 			element.type= tuple_type->element_types[i];
 			element.constexpr_value= variable.constexpr_value->getAggregateElement( uint32_t(i) );
-			res+= ConstantVariableToString( element );
+			AppendConstantVariableToString( element, s );
 			if( i + 1 < tuple_type->element_types.size() )
-				res+= ", ";
+				s+= ", ";
 		}
 
-		res+= "]";
-		return res;
+		s+= "]";
 	}
-
-	return "";
 }
 
 //
