@@ -73,6 +73,8 @@ struct TypeTemplate final : TemplateBase
 
 	// Convert type template name to human-readable format.
 	std::string ToString() const;
+
+	void AppendToString( std::string& s ) const;
 };
 
 struct FunctionTemplate final : public TemplateBase

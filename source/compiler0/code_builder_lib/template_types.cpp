@@ -50,15 +50,19 @@ bool operator==( const TemplateVariableArg& l, const TemplateVariableArg& r )
 
 std::string TypeTemplate::ToString() const
 {
-	std::string result;
+	std::string s;
+	AppendToString( s );
+	return s;
+}
+
+void TypeTemplate::AppendToString( std::string& s ) const
+{
 	if( parent_namespace->GetParent() != nullptr )
 	{
-		parent_namespace->ToString();
-		result+= "::";
+		parent_namespace->AppendToString( s );
+		s+= "::";
 	}
-	result+= syntax_element->name;
-
-	return result;
+	s+= syntax_element->name;
 }
 
 size_t TemplateKey::Hash() const

@@ -593,7 +593,7 @@ void Type::AppendToString( std::string& s ) const
 					else if( const auto param_as_variable= std::get_if<TemplateVariableArg>( &arg ) )
 						result+= ConstantVariableToString( *param_as_variable );
 					else if( const auto param_as_type_template= std::get_if<TypeTemplatePtr>( &arg ) )
-						result+= (*param_as_type_template)->ToString();
+						(*param_as_type_template)->AppendToString( result );
 					else U_ASSERT(false);
 
 					if( &arg != &base_template->signature_args.back() )
