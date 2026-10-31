@@ -76,7 +76,7 @@ void TemplateVariableArg::AppendToString( std::string& s ) const
 			s+=
 				fundamental_type->fundamental_type == U_FundamentalType::i32_
 					? ""
-					: GetFundamentalTypeName( fundamental_type->fundamental_type );;
+					: GetFundamentalTypeName( fundamental_type->fundamental_type );
 		}
 		else if( IsUnsignedInteger( fundamental_type->fundamental_type ) )
 		{
@@ -114,8 +114,11 @@ void TemplateVariableArg::AppendToString( std::string& s ) const
 	}
 	else if( const auto enum_type= type.GetEnumType() )
 	{
+		enum_type->AppendToString( s );
+		s+= "::";
+
 		const llvm::APInt num_value= constexpr_value->getUniqueInteger();
-		std::string_view enum_member_name;
+
 		enum_type->members.ForEachInThisScope(
 			[&]( const std::string_view name, const NamesScopeValue& enum_member )
 			{
@@ -123,13 +126,9 @@ void TemplateVariableArg::AppendToString( std::string& s ) const
 				{
 					U_ASSERT( enum_variable->constexpr_value != nullptr );
 					if( enum_variable->constexpr_value->getUniqueInteger() == num_value )
-						enum_member_name= name;
+						s+= name;
 				}
-			});
-
-		type.AppendToString( s );
-		s+= "::";
-		s+= enum_member_name;
+			} );
 	}
 	else if( const auto array_type= type.GetArrayType() )
 	{

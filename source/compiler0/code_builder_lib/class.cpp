@@ -54,15 +54,14 @@ void Class::AppendToString( std::string& s ) const
 	else if( const auto base_template= std::get_if< Class::BaseTemplate >( &generated_class_data ) )
 	{
 		// Skip template parameters namespace.
-		const NamesScope* parent_scope= members->GetParent()->GetParent();
-		if( parent_scope->GetParent() != nullptr )
+		const NamesScope& parent_scope= *members->GetParent()->GetParent();
+		if( parent_scope.GetParent() != nullptr )
 		{
-			parent_scope->AppendToString( s );
+			parent_scope.AppendToString( s );
 			s+= "::";
 		}
 
-		const std::string& class_name= base_template->class_template->syntax_element->name;
-		s+= class_name;
+		s+= base_template->class_template->syntax_element->name;
 		s+= "</";
 		for( const TemplateArg& arg : base_template->signature_args )
 		{

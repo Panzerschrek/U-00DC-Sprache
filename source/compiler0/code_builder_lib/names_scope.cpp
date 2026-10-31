@@ -26,7 +26,7 @@ void NamesScope::AppendToString( std::string& s ) const
 		s+= name_;
 	}
 	else if( class_ != nullptr && std::holds_alternative<Class::BaseTemplate>(class_->generated_class_data) )
-		Type(class_).AppendToString( s );
+		class_->AppendToString( s );
 	else
 	{
 		parent_->AppendToString( s );
