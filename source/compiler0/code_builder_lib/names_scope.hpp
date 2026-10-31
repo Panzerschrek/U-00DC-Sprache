@@ -23,6 +23,8 @@ public:
 	// Get full name (with enclosing namespaces) un human-readable format.
 	std::string ToString() const;
 
+	void AppendToString( std::string& s ) const;
+
 	// Returns nullptr, if name already exists in this scope.
 	NamesScopeValue* AddName( std::string_view name, NamesScopeValue value );
 

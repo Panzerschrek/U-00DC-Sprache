@@ -639,12 +639,12 @@ void Type::AppendToString( std::string& s ) const
 				else U_ASSERT(false);
 			}
 			else
-				result+= class_->members->ToString();
+				class_->members->AppendToString( result );
 		}
 
 		void operator()( const EnumPtr enum_ ) const
 		{
-			result+= enum_->members.GetThisNamespaceName();
+			enum_->members.AppendToString( result );
 		}
 
 		void operator()( const FunctionPointerPtr& function_pointer ) const
