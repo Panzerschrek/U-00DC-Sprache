@@ -134,7 +134,7 @@ void TemplateVariableArg::AppendToString( std::string& s ) const
 	else if( const auto array_type= type.GetArrayType() )
 	{
 		// For now we have no special syntax for array literals. So, use just a comma-separated list in [].
-		s+= type.ToString();
+		array_type->AppendToString( s );
 		s+= "[ ";
 
 		TemplateVariableArg element;
@@ -152,7 +152,7 @@ void TemplateVariableArg::AppendToString( std::string& s ) const
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
 		// For now we have no special syntax for tuple literals. So, use just a comma-separated list in [].
-		s+= type.ToString();
+		tuple_type->AppendToString( s );
 		s+= "[ ";
 
 		for( size_t i= 0; i < tuple_type->element_types.size(); ++i )
