@@ -23,6 +23,9 @@ struct TemplateVariableArg
 	TemplateVariableArg( TemplateVariableArg&& )= default;
 	TemplateVariableArg& operator=( const TemplateVariableArg& )= default;
 	TemplateVariableArg& operator=( TemplateVariableArg&& )= default;
+
+	// Convert to human-readable format.
+	void AppendToString( std::string& s ) const;
 };
 
 bool operator==( const TemplateVariableArg& l, const TemplateVariableArg& r );
