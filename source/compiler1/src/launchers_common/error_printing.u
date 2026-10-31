@@ -182,7 +182,7 @@ fn PrintCodeBuilderErrorsMSVC( SourceGraph& source_graph, ErrorsContainer& error
 					"\" ",
 					errors_context.args_description );
 
-				ust::stderr_print_line( file_path, "(", error.src_loc.GetLine(), "): note: ", error.text );
+				ust::stderr_print_line( file_path, "(", error.src_loc.GetLine(), "): note: required from here" );
 			}
 		}
 		else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )

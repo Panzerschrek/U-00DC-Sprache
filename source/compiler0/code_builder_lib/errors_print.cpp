@@ -74,7 +74,7 @@ void PrintErrorsMSVC( const SourceGraph& source_graph, const CodeBuilderErrorsCo
 				<< "\n";
 
 			std::cerr << source_graph.nodes_storage[ error.src_loc.GetFileIndex() ].file_path
-				<< "(" << error.src_loc.GetLine() << "): note: " << error.text << "\n";
+				<< "(" << error.src_loc.GetLine() << "): note: required from here\n";
 		}
 		else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
 		{
