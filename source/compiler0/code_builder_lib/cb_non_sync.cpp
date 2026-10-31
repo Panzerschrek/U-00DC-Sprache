@@ -27,14 +27,14 @@ bool CodeBuilder::GetTypeNonSync( const Type& type, NamesScope& names_scope, con
 		{
 			description += Keyword( Keywords::non_sync_ );
 			description += "</";
-			description += non_sync_expression_stack_[i].ToString();
+			non_sync_expression_stack_[i].AppendToString( description );
 			description += "/>";
 			description += " -> ";
 		}
 
 		description += Keyword( Keywords::non_sync_ );
 		description += "</";
-		description += type.ToString();
+		type.AppendToString( description );
 		description += "/>";
 
 		REPORT_ERROR( GlobalsLoopDetected, *global_errors_, src_loc, description );

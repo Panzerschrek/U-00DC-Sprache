@@ -72,12 +72,18 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace )
 {
 	const ClassPtr typeinfo_class= CreateTypeinfoClass( root_namespace, type, g_typeinfo_root_class_name );
+
+	std::string typeinfo_variable_name;
+	typeinfo_variable_name+= "typeinfo</";
+	type.AppendToString( typeinfo_variable_name );
+	typeinfo_variable_name+= "/>";
+
 	const VariableMutPtr result=
 		Variable::Create(
 			typeinfo_class,
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,
-			"typeinfo</" + type.ToString() + "/>" );
+			std::move( typeinfo_variable_name ) );
 
 	result->constexpr_value= llvm::UndefValue::get( typeinfo_class->llvm_type ); // Currently uninitialized.
 	result->llvm_value= CreateGlobalConstantVariable( result->type, "", result->constexpr_value );

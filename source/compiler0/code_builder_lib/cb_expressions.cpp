@@ -3915,12 +3915,19 @@ Value CodeBuilder::DoReferenceCast(
 
 	const bool types_are_compatible= ReferenceIsConvertible( var->type, type, names_scope.GetErrors(), src_loc );
 
+	std::string result_variable_name;
+	result_variable_name+= "cast</";
+	type.AppendToString( result_variable_name );
+	result_variable_name+= "/>(";
+	result_variable_name+= var->name;
+	result_variable_name+= ")";
+
 	const VariableMutPtr result=
 		Variable::Create(
 			type,
 			var->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut, // "ValueType" here converts into ConstReference
 			Variable::Location::Pointer,
-			"cast</" + type.ToString() + "/>(" + var->name + ")" );
+			std::move( result_variable_name ) );
 	function_context.variables_state.AddNode( result );
 	function_context.variables_state.TryAddLink( var, result, names_scope.GetErrors(), src_loc );
 
