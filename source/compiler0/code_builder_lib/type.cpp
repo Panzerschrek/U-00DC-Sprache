@@ -579,9 +579,12 @@ void Type::AppendToString( std::string& s ) const
 			else if( const auto base_template= std::get_if< Class::BaseTemplate >( &class_->generated_class_data ) )
 			{
 				// Skip template parameters namespace.
-				const std::string template_namespace_name= class_->members->GetParent()->GetParent()->ToString();
-				if( !template_namespace_name.empty() )
-					result+= template_namespace_name + "::";
+				const NamesScope* parent_scope= class_->members->GetParent()->GetParent();
+				if( parent_scope->GetParent() != nullptr )
+				{
+					parent_scope->AppendToString( result );
+					result+= "::";
+				}
 
 				const std::string& class_name= base_template->class_template->syntax_element->name;
 				result+= class_name;

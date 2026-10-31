@@ -208,7 +208,9 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 				}
 			});
 
-		std::string res= enum_type->members.ToString() + "::";
+		std::string res;
+		variable.type.AppendToString( res );
+		res+= "::";
 		res+= enum_member_name;
 		return res;
 	}

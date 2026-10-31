@@ -17,14 +17,6 @@ const std::string& NamesScope::GetThisNamespaceName() const
 	return name_;
 }
 
-
-std::string NamesScope::ToString() const
-{
-	std::string s;
-	AppendToString( s );
-	return s;
-}
-
 void NamesScope::AppendToString( std::string& s ) const
 {
 	if( parent_ == nullptr ) // Global namespace has no name.

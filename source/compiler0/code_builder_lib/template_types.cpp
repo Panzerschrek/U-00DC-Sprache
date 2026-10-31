@@ -48,13 +48,6 @@ bool operator==( const TemplateVariableArg& l, const TemplateVariableArg& r )
 		l.constexpr_value == r.constexpr_value;
 }
 
-std::string TypeTemplate::ToString() const
-{
-	std::string s;
-	AppendToString( s );
-	return s;
-}
-
 void TypeTemplate::AppendToString( std::string& s ) const
 {
 	if( parent_namespace->GetParent() != nullptr )
@@ -63,6 +56,16 @@ void TypeTemplate::AppendToString( std::string& s ) const
 		s+= "::";
 	}
 	s+= syntax_element->name;
+}
+
+void FunctionTemplate::AppendToString( std::string& s ) const
+{
+	if( parent_namespace->GetParent() != nullptr )
+	{
+		parent_namespace->AppendToString( s );
+		s+= "::";
+	}
+	s+= syntax_element->function->name.back().name;
 }
 
 size_t TemplateKey::Hash() const

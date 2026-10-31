@@ -838,7 +838,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 				const auto& visibility= classes_visibility[ size_t( item - matched_functions.data() ) ];
 				const ClassPtr class_= visibility.first;
 				if( names_scope.GetAccessFor( class_ ) < visibility.second )
-					REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), src_loc, op_name, class_->members->ToString() );
+					REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), src_loc, op_name, Type( class_ ).ToString() );
 				return func;
 			}
 		}

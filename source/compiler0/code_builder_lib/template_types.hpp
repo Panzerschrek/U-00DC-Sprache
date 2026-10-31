@@ -52,6 +52,9 @@ struct TemplateBase
 {
 	virtual ~TemplateBase()= default;
 
+	// Convert type template name to human-readable format.
+	virtual void AppendToString( std::string& s ) const = 0;
+
 	std::vector<TemplateParameter> template_params;
 	std::vector<TemplateSignatureParam> signature_params; // Function params for function templates.
 
@@ -72,9 +75,7 @@ struct TypeTemplate final : TemplateBase
 	mutable bool used= false;
 
 	// Convert type template name to human-readable format.
-	std::string ToString() const;
-
-	void AppendToString( std::string& s ) const;
+	virtual void AppendToString( std::string& s ) const override;
 };
 
 struct FunctionTemplate final : public TemplateBase
@@ -87,6 +88,9 @@ struct FunctionTemplate final : public TemplateBase
 	// In case of manual parameters specifying, like foo</A, B, C/> we create new template and store known arguments and reference to base template.
 	TemplateArgs known_template_args;
 	FunctionTemplatePtr parent;
+
+	// Convert type template name to human-readable format.
+	virtual void AppendToString( std::string& s ) const override;
 };
 
 struct TemplateKey
