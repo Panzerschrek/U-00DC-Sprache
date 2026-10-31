@@ -5,6 +5,6 @@
 namespace U
 {
 
-void PrintLexSyntErrors( const SourceGraph& source_graph, ErrorsFormat format= ErrorsFormat::GCC, std::ostream& errors_stream= std::cerr );
+void PrintLexSyntErrors( const SourceGraph& source_graph, ErrorsFormat format= ErrorsFormat::GCC );
 
 } // namespace U

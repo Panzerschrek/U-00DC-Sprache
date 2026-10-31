@@ -3,7 +3,7 @@
 namespace U
 {
 
-void PrintLexSyntErrors( const SourceGraph& source_graph, const ErrorsFormat format, std::ostream& errors_stream )
+void PrintLexSyntErrors( const SourceGraph& source_graph, const ErrorsFormat format )
 {
 	for( const LexSyntError& error : source_graph.errors )
 	{
@@ -14,11 +14,11 @@ void PrintLexSyntErrors( const SourceGraph& source_graph, const ErrorsFormat for
 		switch(format)
 		{
 		case ErrorsFormat::GCC:
-			errors_stream << file_path << ":" << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << ": error: " << error.text << "\n";
+			std::cerr << file_path << ":" << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << ": error: " << error.text << "\n";
 			break;
 
 		case ErrorsFormat::MSVC:
-			errors_stream << file_path << "(" << error.src_loc.GetLine() << "): error: " << error.text << "\n";
+			std::cerr << file_path << "(" << error.src_loc.GetLine() << "): error: " << error.text << "\n";
 			break;
 		};
 	}
