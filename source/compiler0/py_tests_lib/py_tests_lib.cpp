@@ -128,7 +128,7 @@ PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
 			PyDict_SetItemString( template_context_dict, "errors", BuildErrorsList( error.template_context->errors ) );
 			PyDict_SetItemString( template_context_dict, "src_loc", BuildSrcLoc( error.template_context->context_declaration_src_loc ) );
 			PyDict_SetItemString( template_context_dict, "template_name", BuildString( error.template_context->context_name ) );
-			PyDict_SetItemString( template_context_dict, "parameters_description", BuildString( error.template_context->parameters_description ) );
+			PyDict_SetItemString( template_context_dict, "parameters_description", BuildString( error.template_context->args_description ) );
 
 			PyDict_SetItemString( dict, "template_context", template_context_dict );
 		}

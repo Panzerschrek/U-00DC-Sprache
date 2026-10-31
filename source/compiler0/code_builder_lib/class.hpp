@@ -21,6 +21,9 @@ public:
 
 	bool HasAncestor( ClassPtr class_ ) const;
 
+	// Convert to human-readable format.
+	void AppendToString( std::string& s ) const;
+
 public:
 	enum class Kind : uint8_t
 	{

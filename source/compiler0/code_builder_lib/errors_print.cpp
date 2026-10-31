@@ -22,7 +22,7 @@ void PrintErrorsGCC( const SourceGraph& source_graph, const CodeBuilderErrorsCon
 				<< error.template_context->context_declaration_src_loc.GetLine() << ":"
 				<< error.template_context->context_declaration_src_loc.GetColumn() << ": "
 				<< "In instantiation of \"" << error.template_context->context_name
-				<< "\" " << error.template_context->parameters_description
+				<< "\" " << error.template_context->args_description
 				<< ":\n";
 
 			std::cerr << source_graph.nodes_storage[error.src_loc.GetFileIndex() ].file_path
@@ -70,7 +70,7 @@ void PrintErrorsMSVC( const SourceGraph& source_graph, const CodeBuilderErrorsCo
 			std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_src_loc.GetFileIndex() ].file_path
 				<< "(" << error.template_context->context_declaration_src_loc.GetLine() << "): note: "
 				<< "In instantiation of \"" << error.template_context->context_name
-				<< "\" " << error.template_context->parameters_description
+				<< "\" " << error.template_context->args_description
 				<< "\n";
 
 			std::cerr << source_graph.nodes_storage[ error.src_loc.GetFileIndex() ].file_path

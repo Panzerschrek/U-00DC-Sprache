@@ -1,8 +1,10 @@
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/ADT/Hashing.h>
+#include <llvm/ADT/SmallString.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 
+#include "enum.hpp"
 #include "template_types.hpp"
 
 namespace U
@@ -48,17 +50,142 @@ bool operator==( const TemplateVariableArg& l, const TemplateVariableArg& r )
 		l.constexpr_value == r.constexpr_value;
 }
 
-std::string TypeTemplate::ToString() const
+void TemplateVariableArg::AppendToString( std::string& s ) const
 {
-	std::string result;
+	if( constexpr_value == nullptr )
+		return;
+
+	if( const auto fundamental_type= type.GetFundamentalType() )
+	{
+		if( fundamental_type->fundamental_type == U_FundamentalType::bool_ )
+			s+= constexpr_value->getUniqueInteger().isZero() ? "false" : "true";
+		else if( IsFloatingPoint( fundamental_type->fundamental_type ) )
+		{
+			if( const auto constant_fp= llvm::dyn_cast<llvm::ConstantFP>( constexpr_value ) )
+			{
+				llvm::SmallString<64> str;
+				constant_fp->getValueAPF().toString(str);
+				s+= str;
+				if( fundamental_type->fundamental_type == U_FundamentalType::f32_ )
+					s+= "f";
+			}
+		}
+		else if( IsSignedInteger( fundamental_type->fundamental_type ) )
+		{
+			s+= std::to_string( constexpr_value->getUniqueInteger().getSExtValue() );
+			s+=
+				fundamental_type->fundamental_type == U_FundamentalType::i32_
+					? ""
+					: GetFundamentalTypeName( fundamental_type->fundamental_type );
+		}
+		else if( IsUnsignedInteger( fundamental_type->fundamental_type ) )
+		{
+			s+= std::to_string( constexpr_value->getUniqueInteger().getZExtValue() );
+			s+=
+				fundamental_type->fundamental_type == U_FundamentalType::u32_
+					? "u"
+					: GetFundamentalTypeName( fundamental_type->fundamental_type );
+		}
+		else if( IsChar( fundamental_type->fundamental_type ) )
+		{
+			s+= GetFundamentalTypeName( fundamental_type->fundamental_type );
+			s.push_back( '(' );
+			s+= std::to_string( constexpr_value->getUniqueInteger().getZExtValue() );
+			s.push_back( ')' );
+		}
+		else if( IsByte( fundamental_type->fundamental_type ) )
+		{
+			s+= GetFundamentalTypeName( fundamental_type->fundamental_type );
+			s+= "( ";
+
+			s+= std::to_string( constexpr_value->getUniqueInteger().getZExtValue() );
+			switch( fundamental_type->fundamental_type )
+			{
+			case U_FundamentalType::byte8_  : s+= GetFundamentalTypeName( U_FundamentalType::u8_   ); break;
+			case U_FundamentalType::byte16_ : s+= GetFundamentalTypeName( U_FundamentalType::u16_  ); break;
+			case U_FundamentalType::byte32_ : s+= GetFundamentalTypeName( U_FundamentalType::u32_  ); break;
+			case U_FundamentalType::byte64_ : s+= GetFundamentalTypeName( U_FundamentalType::u64_  ); break;
+			case U_FundamentalType::byte128_: s+= GetFundamentalTypeName( U_FundamentalType::u128_ ); break;
+			default: U_ASSERT(false); break;
+			}
+
+			s+= " )";
+		}
+	}
+	else if( const auto enum_type= type.GetEnumType() )
+	{
+		enum_type->AppendToString( s );
+		s+= "::";
+
+		const llvm::APInt num_value= constexpr_value->getUniqueInteger();
+
+		enum_type->members.ForEachInThisScope(
+			[&]( const std::string_view name, const NamesScopeValue& enum_member )
+			{
+				if( const VariablePtr enum_variable= enum_member.value.GetVariable() )
+				{
+					U_ASSERT( enum_variable->constexpr_value != nullptr );
+					if( enum_variable->constexpr_value->getUniqueInteger() == num_value )
+						s+= name;
+				}
+			} );
+	}
+	else if( const auto array_type= type.GetArrayType() )
+	{
+		// For now we have no special syntax for array literals. So, use just a comma-separated list in [].
+		array_type->AppendToString( s );
+		s+= "[ ";
+
+		TemplateVariableArg element;
+		element.type= array_type->element_type;
+		for( uint64_t i= 0; i < array_type->element_count; ++i )
+		{
+			element.constexpr_value= constexpr_value->getAggregateElement( uint32_t(i) );
+			element.AppendToString( s );
+			if( i + 1 < array_type->element_count )
+				s+= ", ";
+		}
+
+		s+= "]";
+	}
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+		// For now we have no special syntax for tuple literals. So, use just a comma-separated list in [].
+		tuple_type->AppendToString( s );
+		s+= "[ ";
+
+		for( size_t i= 0; i < tuple_type->element_types.size(); ++i )
+		{
+			TemplateVariableArg element;
+			element.type= tuple_type->element_types[i];
+			element.constexpr_value= constexpr_value->getAggregateElement( uint32_t(i) );
+			element.AppendToString( s );
+			if( i + 1 < tuple_type->element_types.size() )
+				s+= ", ";
+		}
+
+		s+= "]";
+	}
+}
+
+void TypeTemplate::AppendToString( std::string& s ) const
+{
 	if( parent_namespace->GetParent() != nullptr )
 	{
-		parent_namespace->ToString();
-		result+= "::";
+		parent_namespace->AppendToString( s );
+		s+= "::";
 	}
-	result+= syntax_element->name;
+	s+= syntax_element->name;
+}
 
-	return result;
+void FunctionTemplate::AppendToString( std::string& s ) const
+{
+	if( parent_namespace->GetParent() != nullptr )
+	{
+		parent_namespace->AppendToString( s );
+		s+= "::";
+	}
+	s+= syntax_element->function->name.back().name;
 }
 
 size_t TemplateKey::Hash() const

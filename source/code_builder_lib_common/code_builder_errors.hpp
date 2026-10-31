@@ -27,7 +27,7 @@ struct TemplateErrorsContext
 	SrcLoc context_declaration_src_loc; // Declaration position of context, macro.
 
 	std::string context_name; // Name of template, macro.
-	std::string parameters_description;
+	std::string args_description;
 };
 using TemplateErrorsContextPtr= std::shared_ptr<TemplateErrorsContext>;
 

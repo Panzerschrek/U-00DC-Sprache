@@ -164,7 +164,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		{
 			const auto class_value= ResolveClassValue( class_, names_scope_fetch.name );
 			if( names_scope.GetAccessFor( class_ ) < class_value.second )
-				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), names_scope_fetch.src_loc, names_scope_fetch.name, class_->members->ToString() );
+				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), names_scope_fetch.src_loc, names_scope_fetch.name, class_ );
 
 			if( ( names_scope_fetch.name == Keywords::constructor_ || names_scope_fetch.name == Keywords::destructor_ ) && !function_context.is_in_unsafe_block )
 				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), names_scope_fetch.src_loc, names_scope_fetch.name );
@@ -179,11 +179,13 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		}
 	}
 	else if( const auto type_templates_set= base.GetTypeTemplatesSet() )
-		REPORT_ERROR(
-			TemplateInstantiationRequired,
-			names_scope.GetErrors(),
-			names_scope_fetch.src_loc,
-			type_templates_set->type_templates.empty() ? "" : type_templates_set->type_templates.front()->ToString() );
+	{
+		std::string template_name;
+		if( !type_templates_set->type_templates.empty() )
+			type_templates_set->type_templates.front()->AppendToString( template_name );
+
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), names_scope_fetch.src_loc, template_name );
+	}
 
 	if( value == nullptr )
 	{

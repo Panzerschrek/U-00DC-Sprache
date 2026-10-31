@@ -191,10 +191,6 @@ public:
 		llvm::Constant* constexpr_value= nullptr );
 };
 
-// Used for displaying of template args.
-struct TemplateVariableArg;
-std::string ConstantVariableToString( const TemplateVariableArg& variable );
-
 struct ClassField
 {
 	Type type;

@@ -1123,7 +1123,7 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 				item.detail+= " ";
 			}
 
-			item.detail+= class_field->type.ToString();
+			class_field->type.AppendToString( item.detail );
 		}
 		else if( value.GetNamespace() != nullptr )
 			item.kind= CompletionItemKind::NamesScope;
@@ -1182,15 +1182,19 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 		if( function.is_deleted )
 			continue;
 
-		std::stringstream ss;
+		std::string s;
 
 		if( function.syntax_element != nullptr )
 		{
+			std::stringstream ss;
+
 			if( !function.syntax_element->name.empty() )
 				ss << function.syntax_element->name.back().name;
 
 			Synt::WriteFunctionParamsList( function.syntax_element->type, ss );
 			Synt::WriteFunctionTypeEnding( function.syntax_element->type, ss );
+
+			s= ss.str();
 		}
 		else
 		{
@@ -1206,52 +1210,73 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 						name= member_name;
 				} );
 
-				ss << name;
+				s+= name;
 
 				// Stringify params list, based on function type.
-				ss << "( ";
+				s+= "( ";
 				for( const FunctionType::Param& param : function.type.params )
 				{
 					if( function.is_this_call && &param == &function.type.params.front() )
 					{
 						if( param.value_type == ValueType::Value )
-							ss << Keyword( Keywords::byval_ ) << " " << Keyword( Keywords::this_ );
+							s+= Keyword( Keywords::byval_ );
 						else
-							ss << Keyword( param.value_type == ValueType::ReferenceMut ? Keywords::mut_ : Keywords::imut_ ) << " " << Keyword( Keywords::this_ );
+							s+= Keyword( param.value_type == ValueType::ReferenceMut ? Keywords::mut_ : Keywords::imut_ );
+						s+= " ";
+						s+= Keyword( Keywords::this_ );
 					}
 					else
 					{
-						ss << param.type.ToString() << " ";
+						param.type.AppendToString( s );
+						s+= " ";
 						if( param.value_type == ValueType::Value )
 						{}
 						else if( param.value_type == ValueType::ReferenceMut )
-							ss << "&" << Keyword( Keywords::mut_ ) << " ";
+						{
+							s+= "&";
+							s+= Keyword( Keywords::mut_ );
+							s+= " ";
+						}
 						else if( param.value_type == ValueType::ReferenceImut )
-							ss << "&" << Keyword( Keywords::imut_ ) << " ";
+						{
+							s+= "&";
+							s+= Keyword( Keywords::imut_ );
+							s+= " ";
+						}
 
-						ss << "other"; // Give some dummy name to this param.
+						s+= "other"; // Give some dummy name to this param.
 					}
 
 					if( &param != &function.type.params.back() )
-						ss << ", ";
+						s+= ", ";
 				}
-				ss << " ) ";
+				s+= " ) ";
 
 				if( function.type.unsafe )
-					ss << Keyword( Keywords::unsafe_ ) << " ";
-				ss << ": " << function.type.return_type.ToString();
+				{
+					s+= Keyword( Keywords::unsafe_ );
+					s+= " ";
+				}
+				s+= ": ";
+				function.type.return_type.AppendToString( s );
 
 				if( function.type.return_value_type == ValueType::Value )
 				{}
 				else if( function.type.return_value_type == ValueType::ReferenceMut )
-					ss << " &" << Keyword( Keywords::mut_ );
+				{
+					s+= " &";
+					s+= Keyword( Keywords::mut_ );
+				}
 				else if( function.type.return_value_type == ValueType::ReferenceImut )
-					ss << " &" << Keyword( Keywords::imut_ );
+				{
+					s+= " &";
+					s+= Keyword( Keywords::imut_ );
+				}
 			}
 		}
 
 		SignatureHelpItem item;
-		item.label= ss.str();
+		item.label= std::move(s);
 		signature_help_items_.push_back( std::move(item) );
 	}
 

@@ -426,7 +426,7 @@ const llvm::ConstantDataArray* CodeBuilder::EvaluateMixinExpression( NamesScope&
 	if( array_type == nullptr ||
 		array_type->element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ )  )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), mixin.src_loc, "char8 array", variable->type.ToString() );
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), mixin.src_loc, "char8 array", variable->type );
 		return nullptr;
 	}
 

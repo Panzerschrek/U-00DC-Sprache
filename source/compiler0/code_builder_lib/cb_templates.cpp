@@ -22,8 +22,7 @@ void CreateTemplateErrorsContext(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	const NamesScopePtr& template_args_namespace,
-	const TemplateBase& template_,
-	const std::string_view template_name )
+	const TemplateBase& template_ )
 {
 	REPORT_ERROR( TemplateContext, errors_container, src_loc );
 	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
@@ -46,11 +45,11 @@ void CreateTemplateErrorsContext(
 				if( const Type* const type= value->value.GetTypeName() )
 					args_description+= type->ToString();
 				else if( const auto variable= value->value.GetVariable() )
-					args_description+= ConstantVariableToString( TemplateVariableArg( *variable ) );
+					TemplateVariableArg( *variable ).AppendToString( args_description );
 				else if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
 				{
 					if( type_templates_set->type_templates.size() == 1 )
-						args_description+= type_templates_set->type_templates.front()->ToString();
+						type_templates_set->type_templates.front()->AppendToString( args_description );
 				}
 
 				if( &param != &template_.template_params.back() )
@@ -59,13 +58,11 @@ void CreateTemplateErrorsContext(
 		}
 
 		args_description+= " ]";
-		template_error_context->parameters_description= std::move(args_description);
+		template_error_context->args_description= std::move(args_description);
 	}
 	{
-		std::string name= template_.parent_namespace->ToString();
-		if( !name.empty() )
-			name+= "::";
-		name+= template_name;
+		std::string name;
+		template_.AppendToString( name );
 
 		template_error_context->context_name= std::move(name);
 	}
@@ -1168,8 +1165,7 @@ std::optional<Type> CodeBuilder::FinishTemplateTypeGeneration(
 		arguments_names_scope.GetErrors(),
 		src_loc,
 		template_args_namespace,
-		type_template,
-		type_template.syntax_element->name );
+		type_template );
 
 	if( const auto class_ptr= std::get_if< RcPtr<Synt::Class> >( &type_template.syntax_element->something ) )
 	{
@@ -1368,7 +1364,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	}
 	AddNewTemplateThing( std::move(template_key), template_args_namespace );
 
-	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name );
+	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template );
 
 	// First, prepare only as prototype.
 	NamesScopeFillFunction( *template_args_namespace, function_template.syntax_element->function, func_name_in_namespace, function_template.base_class, ClassMemberVisibility::Public );

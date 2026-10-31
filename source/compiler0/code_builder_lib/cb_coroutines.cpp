@@ -97,7 +97,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				std::string field_name= "param ";
 				field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
 				field_name+= " of type ";
-				field_name+= param.type.ToString();
+				param.type.AppendToString( field_name );
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
 			}
 
@@ -127,7 +127,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 				std::string field_name= "param ";
 				field_name+= std::to_string( size_t( &param - coroutine_function_type.params.data() ) );
 				field_name+= " of type ";
-				field_name+= param.type.ToString();
+				param.type.AppendToString( field_name );
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope.GetErrors(), src_loc, 1, field_name ); // TODO - use separate error code.
 			}
 

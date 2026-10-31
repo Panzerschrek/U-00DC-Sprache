@@ -17,18 +17,22 @@ const std::string& NamesScope::GetThisNamespaceName() const
 	return name_;
 }
 
-std::string NamesScope::ToString() const
+void NamesScope::AppendToString( std::string& s ) const
 {
 	if( parent_ == nullptr ) // Global namespace has no name.
-		return "";
-	if( parent_->parent_ == nullptr )
-		return name_;
-
-	// Process template class namespaces specially.
-	if( class_ != nullptr && std::holds_alternative<Class::BaseTemplate>(class_->generated_class_data) )
-		return Type(class_).ToString();
-
-	return parent_->ToString() + "::" + name_;
+	{}
+	else if( parent_->parent_ == nullptr )
+	{
+		s+= name_;
+	}
+	else if( class_ != nullptr && std::holds_alternative<Class::BaseTemplate>(class_->generated_class_data) )
+		class_->AppendToString( s );
+	else
+	{
+		parent_->AppendToString( s );
+		s+= "::";
+		s+= name_;
+	}
 }
 
 NamesScopeValue* NamesScope::AddName( const std::string_view name, NamesScopeValue value )

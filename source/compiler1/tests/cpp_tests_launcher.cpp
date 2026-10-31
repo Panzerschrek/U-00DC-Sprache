@@ -48,7 +48,7 @@ U1_UserHandle TemplateErrorsContextHandler(
 	out_error->template_context= std::make_shared<TemplateErrorsContext>();
 	out_error->template_context->context_declaration_src_loc= SrcLoc( file_index, line, column );
 	out_error->template_context->context_name= std::string( context_name.data, context_name.data + context_name.size );
-	out_error->template_context->parameters_description= std::string( args_description.data, args_description.data + args_description.size );
+	out_error->template_context->args_description= std::string( args_description.data, args_description.data + args_description.size );
 
 	return reinterpret_cast<U1_UserHandle>( & out_error->template_context->errors );
 }

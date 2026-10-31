@@ -14,6 +14,9 @@ struct Enum
 	FundamentalType underlying_type; // must be integer
 
 	RcPtr<Synt::Enum> syntax_element; // Null if completed
+
+	// Convert to human-readable format.
+	void AppendToString( std::string& s ) const;
 };
 
 } // namespace U
