@@ -542,49 +542,13 @@ std::string Type::ToString() const
 	return result;
 }
 
+template<typename T> void TypeAppendToStringImpl( const T& t, std::string& s ) { t.AppendToString(s); }
+template<typename T> void TypeAppendToStringImpl( T* const t, std::string& s ) { t->AppendToString(s); }
+template<typename T> void TypeAppendToStringImpl( const RcPtr<T>& t, std::string& s ) { t->AppendToString(s); }
+
 void Type::AppendToString( std::string& s ) const
 {
-	struct Visitor
-	{
-		std::string& result;
-
-		void operator()( const FundamentalType& fundamental ) const
-		{
-			fundamental.AppendToString( result );
-		}
-
-		void operator()( const ArrayPtr& array ) const
-		{
-			array->AppendToString( result );
-		}
-
-		void operator()( const RawPointerPtr& raw_pointer ) const
-		{
-			raw_pointer->AppendToString( result );
-		}
-
-		void operator()( const TupleTypePtr& tuple ) const
-		{
-			tuple->AppendToString( result );
-		}
-
-		void operator()( const ClassPtr class_ ) const
-		{
-			class_->AppendToString( result );
-		}
-
-		void operator()( const EnumPtr enum_ ) const
-		{
-			enum_->AppendToString( result );
-		}
-
-		void operator()( const FunctionPointerPtr& function_pointer ) const
-		{
-			function_pointer->AppendToString( result );
-		}
-	};
-
-	return std::visit( Visitor{ s }, something_ );
+	std::visit( [&]( const auto& t ) { TypeAppendToStringImpl( t, s ); }, something_ );
 }
 
 size_t Type::Hash() const
