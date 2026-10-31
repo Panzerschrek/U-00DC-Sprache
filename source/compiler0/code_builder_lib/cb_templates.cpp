@@ -58,7 +58,7 @@ void CreateTemplateErrorsContext(
 		}
 
 		args_description+= " ]";
-		template_error_context->parameters_description= std::move(args_description);
+		template_error_context->args_description= std::move(args_description);
 	}
 	{
 		std::string name;
