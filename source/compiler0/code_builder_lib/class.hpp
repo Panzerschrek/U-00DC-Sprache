@@ -21,7 +21,7 @@ public:
 
 	bool HasAncestor( ClassPtr class_ ) const;
 
-	// Convert type name to human-readable format.
+	// Convert to human-readable format.
 	void AppendToString( std::string& s ) const;
 
 public:

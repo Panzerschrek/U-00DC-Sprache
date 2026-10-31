@@ -15,7 +15,7 @@ struct Enum
 
 	RcPtr<Synt::Enum> syntax_element; // Null if completed
 
-	// Convert type name to human-readable format.
+	// Convert to human-readable format.
 	void AppendToString( std::string& s ) const;
 };
 

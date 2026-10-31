@@ -20,7 +20,7 @@ public:
 
 	const std::string& GetThisNamespaceName() const;
 
-	// Get full name (with enclosing namespaces) un human-readable format.
+	// Convert to human-readable format.
 	void AppendToString( std::string& s ) const;
 
 	// Returns nullptr, if name already exists in this scope.

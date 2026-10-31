@@ -72,7 +72,7 @@ struct FundamentalType
 
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::void_, llvm::Type* llvm_type= nullptr );
 
-	// Convert type name to human-readable format.
+	// Convert to human-readable format.
 	void AppendToString( std::string& s ) const;
 };
 
@@ -84,7 +84,7 @@ struct TupleType
 	std::vector<Type> element_types;
 	llvm::StructType* llvm_type= nullptr;
 
-	// Convert type name to human-readable format.
+	// Convert to human-readable format.
 	void AppendToString( std::string& s ) const;
 };
 
@@ -139,9 +139,8 @@ public:
 
 	llvm::Type* GetLLVMType() const;
 
-	// Convert type name to human-readable format.
+	// Convert to human-readable format.
 	std::string ToString() const;
-
 	void AppendToString( std::string& s ) const;
 
 	size_t Hash() const;
@@ -180,7 +179,7 @@ struct ArrayType
 
 	llvm::ArrayType* llvm_type= nullptr;
 
-	// Convert type name to human-readable format.
+	// Convert to human-readable format.
 	void AppendToString( std::string& s ) const;
 };
 
@@ -192,7 +191,7 @@ struct RawPointerType
 	Type element_type;
 	llvm::PointerType* llvm_type= nullptr;
 
-	// Convert type name to human-readable format.
+	// Convert to human-readable format.
 	void AppendToString( std::string& s ) const;
 };
 
@@ -251,7 +250,7 @@ public:
 	bool PointerCanBeConvertedTo( const FunctionType& other ) const;
 	bool ReturnsCompositeValue() const;
 
-	// Convert type name to human-readable format.
+	// Convert to human-readable format.
 	void AppendToString( std::string& s ) const;
 
 public:
@@ -288,7 +287,7 @@ struct FunctionPointerType
 	FunctionType function_type;
 	llvm::PointerType* llvm_type= nullptr;
 
-	// Convert type name to human-readable format.
+	// Convert to human-readable format.
 	void AppendToString( std::string& s ) const;
 };
 

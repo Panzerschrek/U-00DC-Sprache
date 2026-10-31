@@ -55,7 +55,7 @@ struct TemplateBase
 {
 	virtual ~TemplateBase()= default;
 
-	// Convert type template name to human-readable format.
+	// Convert to human-readable format.
 	virtual void AppendToString( std::string& s ) const = 0;
 
 	std::vector<TemplateParameter> template_params;
@@ -77,7 +77,7 @@ struct TypeTemplate final : TemplateBase
 	// Set to "true" if this type template was instantiated at least once.
 	mutable bool used= false;
 
-	// Convert type template name to human-readable format.
+	// Convert to human-readable format.
 	virtual void AppendToString( std::string& s ) const override;
 };
 
@@ -92,7 +92,7 @@ struct FunctionTemplate final : public TemplateBase
 	TemplateArgs known_template_args;
 	FunctionTemplatePtr parent;
 
-	// Convert type template name to human-readable format.
+	// Convert to human-readable format.
 	virtual void AppendToString( std::string& s ) const override;
 };
 
