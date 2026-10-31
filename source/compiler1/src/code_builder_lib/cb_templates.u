@@ -31,7 +31,7 @@ fn CreateTemplateErrorsContext(
 	var TemplateErrorsContext mut result
 	{
 		.errors= errors_container,
-		.context_declaration_src_loc= instantiation_src_loc,
+		.context_declaration_src_loc= template_.syntax_element.deref().src_loc,
 		.context_name= move(context_name),
 	};
 

@@ -56,11 +56,6 @@ CodeBuilderErrorsContainer ExpandErrorsInMacros_r(
 	{
 		CodeBuilderError macro_context_error;
 
-		if( macro_expansion_context.macro_name == Keyword( Keywords::mixin_ ) )
-			macro_context_error.text = "in expansion of mixin";
-		else
-			macro_context_error.text = "in expansion of macro \"" + macro_expansion_context.macro_name + "\"";
-
 		macro_context_error.src_loc= macro_expansion_context.src_loc;
 		macro_context_error.code= CodeBuilderErrorCode::MacroExpansionContext;
 		macro_context_error.template_context= std::make_shared<TemplateErrorsContext>();

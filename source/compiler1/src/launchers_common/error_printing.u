@@ -1,4 +1,5 @@
 import "/stdout_ext.iu"
+import "/stringification.iu"
 import "error_printing.iu"
 
 namespace U1
@@ -80,12 +81,18 @@ fn PrintCodeBuilderErrorsGCC( SourceGraph& source_graph, ErrorsContainer& errors
 				var ust::string_view8 context_file_path=
 					( context_file_index < source_graph.nodes.size() ? source_graph.nodes[context_file_index].file_path_normalized.range() : ust::string_view8() );
 
-				ust::stderr_print_line(
-					context_file_path,
-					": In instantiation of \"",
-					errors_context.context_name,
-					"\" ",
-					errors_context.args_description );
+				ust::stderr_print(
+					ust::stringify8(
+						context_file_path,
+						":",
+						errors_context.context_declaration_src_loc.GetLine(),
+						":",
+						errors_context.context_declaration_src_loc.GetColumn(),
+						": In instantiation of \"",
+						errors_context.context_name,
+						"\" ",
+						errors_context.args_description,
+						":\n" ) );
 
 				ust::stderr_print_line(
 					file_path,
@@ -93,8 +100,7 @@ fn PrintCodeBuilderErrorsGCC( SourceGraph& source_graph, ErrorsContainer& errors
 					error.src_loc.GetLine(),
 					":",
 					error.src_loc.GetColumn(),
-					": required from here: ",
-					error.text );
+					": required from here" );
 
 				PrintCodeBuilderErrorsGCC( source_graph, errors_context.errors.lock_imut().deref() );
 			}
@@ -109,12 +115,25 @@ fn PrintCodeBuilderErrorsGCC( SourceGraph& source_graph, ErrorsContainer& errors
 
 				if( errors_context.context_name == "mixin" )
 				{
-					ust::stderr_print_line( context_file_path, ": In expansion of mixin" );
+					ust::stderr_print_line(
+						context_file_path,
+						":",
+						errors_context.context_declaration_src_loc.GetLine(),
+						":",
+						errors_context.context_declaration_src_loc.GetColumn(),
+						": In expansion of mixin:" );
 				}
 				else
 				{
 					ust::stderr_print_line(
-						context_file_path, ": In expansion of macro \"", errors_context.context_name, "\"" );
+						context_file_path,
+						":",
+						errors_context.context_declaration_src_loc.GetLine(),
+						":",
+						errors_context.context_declaration_src_loc.GetColumn(),
+						": In expansion of macro \"",
+						errors_context.context_name,
+						"\":" );
 				}
 
 				ust::stderr_print_line(
@@ -123,8 +142,7 @@ fn PrintCodeBuilderErrorsGCC( SourceGraph& source_graph, ErrorsContainer& errors
 					error.src_loc.GetLine(),
 					":",
 					error.src_loc.GetColumn(),
-					": required from here: ",
-					error.text );
+					": required from here" );
 
 				PrintCodeBuilderErrorsGCC( source_graph, errors_context.errors.lock_imut().deref() );
 			}
@@ -164,7 +182,7 @@ fn PrintCodeBuilderErrorsMSVC( SourceGraph& source_graph, ErrorsContainer& error
 					"\" ",
 					errors_context.args_description );
 
-				ust::stderr_print_line( file_path, "(", error.src_loc.GetLine(), "): note: ", error.text );
+				ust::stderr_print_line( file_path, "(", error.src_loc.GetLine(), "): note: required from here" );
 			}
 		}
 		else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
