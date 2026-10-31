@@ -10,4 +10,9 @@ Enum::Enum( std::string in_name, NamesScope* const parent_scope )
 	: members( std::move(in_name), parent_scope )
 {}
 
+void Enum::AppendToString( std::string& s ) const
+{
+	members.AppendToString( s );
+}
+
 } // namespace U

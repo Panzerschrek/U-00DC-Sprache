@@ -55,6 +55,11 @@ FundamentalType::FundamentalType(
 	, llvm_type(in_llvm_type)
 {}
 
+void FundamentalType::AppendToString( std::string& s ) const
+{
+	s+= GetFundamentalTypeName( fundamental_type );
+}
+
 bool operator==( const FundamentalType& l, const FundamentalType& r )
 {
 	return l.fundamental_type == r.fundamental_type;
@@ -63,6 +68,24 @@ bool operator==( const FundamentalType& l, const FundamentalType& r )
 //
 // Tuple
 //
+
+void TupleType::AppendToString( std::string& s ) const
+{
+	if( element_types.empty() )
+		s+= "tup[]";
+	else
+	{
+		s+= "tup[ ";
+
+		for( const Type& element_type : element_types )
+		{
+			element_type.AppendToString( s );
+			if( &element_type != & element_types.back() )
+				s+= ", ";
+		}
+		s+= " ]";
+	}
+}
 
 bool operator==( const TupleType& l, const TupleType& r )
 {
@@ -527,176 +550,37 @@ void Type::AppendToString( std::string& s ) const
 
 		void operator()( const FundamentalType& fundamental ) const
 		{
-			result+= GetFundamentalTypeName( fundamental.fundamental_type );
+			fundamental.AppendToString( result );
 		}
 
 		void operator()( const ArrayPtr& array ) const
 		{
-			result+= "[ ";
-			array->element_type.AppendToString( result );
-			result+= ", ";
-			result+= std::to_string( array->element_count );
-			result+= " ]";
+			array->AppendToString( result );
 		}
 
 		void operator()( const RawPointerPtr& raw_pointer ) const
 		{
-			result+= "$( ";
-			raw_pointer->element_type.AppendToString( result );
-			result+= " )";
+			raw_pointer->AppendToString( result );
 		}
 
 		void operator()( const TupleTypePtr& tuple ) const
 		{
-			if( tuple->element_types.empty() )
-				result+= "tup[]";
-			else
-			{
-				result+= "tup[ ";
-
-				for( const Type& element_type : tuple->element_types )
-				{
-					element_type.AppendToString( result );
-					if( &element_type != & tuple->element_types.back() )
-						result+= ", ";
-				}
-				result+= " ]";
-			}
+			tuple->AppendToString( result );
 		}
 
 		void operator()( const ClassPtr class_ ) const
 		{
-			if( const auto typeinfo_class_description= std::get_if<TypeinfoClassDescription>( &class_->generated_class_data ) )
-			{
-				result+= Keyword(Keywords::typeof_);
-				result+= "(";
-				result+= Keyword(Keywords::typeinfo_);
-				result+= "</";
-				typeinfo_class_description->source_type.AppendToString( result );
-				result+= "/>";
-				result+=")";
-			}
-			else if( const auto base_template= std::get_if< Class::BaseTemplate >( &class_->generated_class_data ) )
-			{
-				// Skip template parameters namespace.
-				const NamesScope* parent_scope= class_->members->GetParent()->GetParent();
-				if( parent_scope->GetParent() != nullptr )
-				{
-					parent_scope->AppendToString( result );
-					result+= "::";
-				}
-
-				const std::string& class_name= base_template->class_template->syntax_element->name;
-				result+= class_name;
-				result+= "</";
-				for( const TemplateArg& arg : base_template->signature_args )
-				{
-					if( const Type* const param_as_type = std::get_if<Type>( &arg ) )
-						param_as_type->AppendToString( result );
-					else if( const auto param_as_variable= std::get_if<TemplateVariableArg>( &arg ) )
-						result+= ConstantVariableToString( *param_as_variable );
-					else if( const auto param_as_type_template= std::get_if<TypeTemplatePtr>( &arg ) )
-						(*param_as_type_template)->AppendToString( result );
-					else U_ASSERT(false);
-
-					if( &arg != &base_template->signature_args.back() )
-						result+= ", ";
-				}
-				result+= "/>";
-			}
-			else if( const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &class_->generated_class_data ) )
-			{
-				switch( coroutine_type_description->kind )
-				{
-				case CoroutineKind::Generator:
-					result+= Keyword( Keywords::generator_ );
-					break;
-				case CoroutineKind::AsyncFunc:
-					result+= Keyword( Keywords::async_ );
-					break;
-				}
-
-				// TODO - print inner references here.
-
-				result+= " ";
-
-				if( coroutine_type_description->non_sync )
-					result+= Keyword( Keywords::non_sync_ );
-
-				result+= ": ";
-
-				coroutine_type_description->return_type.AppendToString( result );
-
-				if( coroutine_type_description->return_value_type == ValueType::Value )
-				{}
-				else if( coroutine_type_description->return_value_type == ValueType::ReferenceImut )
-				{
-					result+= " &";
-					result+= Keyword( Keywords::imut_ );
-				}
-				else if( coroutine_type_description->return_value_type == ValueType::ReferenceMut )
-				{
-					result+= " &";
-					result+= Keyword( Keywords::mut_ );
-				}
-				else U_ASSERT(false);
-			}
-			else
-				class_->members->AppendToString( result );
+			class_->AppendToString( result );
 		}
 
 		void operator()( const EnumPtr enum_ ) const
 		{
-			enum_->members.AppendToString( result );
+			enum_->AppendToString( result );
 		}
 
 		void operator()( const FunctionPointerPtr& function_pointer ) const
 		{
-			const FunctionType& function= function_pointer->function_type;
-			// TODO - add references pollution/return references
-
-			result+= "fn";
-
-			if( function.params.empty() )
-				result+= "()";
-			else
-			{
-				result+= "( ";
-				result+= FunctionParamsToString( function.params );
-
-				if( function.is_variadic )
-					result+= ", ...";
-
-				result+= " )";
-			}
-			if( function.unsafe )
-				result+= " unsafe";
-
-			switch( function.calling_convention )
-			{
-			case CallingConvention::Default:
-				break;
-			case CallingConvention::C:
-				result+= " call_conv(\"C\")";
-				break;
-			case CallingConvention::Fast:
-				result+= " call_conv(\"fast\")";
-				break;
-			case CallingConvention::Cold:
-				result+= " call_conv(\"cold\")";
-				break;
-			case CallingConvention::System:
-				result+= " call_conv(\"system\")";
-				break;
-			}
-
-			result+= " : ";
-			function.return_type.AppendToString( result );
-
-			if( function.return_value_type == ValueType::ReferenceMut )
-				result += " &mut";
-			if( function.return_value_type == ValueType::ReferenceImut )
-				result += " &imut";
+			function_pointer->AppendToString( result );
 		}
 	};
 
@@ -798,6 +682,15 @@ bool operator==( const Type& l, const Type& r )
 // Array
 //
 
+void ArrayType::AppendToString( std::string& s ) const
+{
+	s+= "[ ";
+	element_type.AppendToString( s );
+	s+= ", ";
+	s+= std::to_string( element_count );
+	s+= " ]";
+}
+
 bool operator==( const ArrayType& l, const ArrayType& r )
 {
 	return l.element_type == r.element_type && l.element_count == r.element_count;
@@ -806,6 +699,13 @@ bool operator==( const ArrayType& l, const ArrayType& r )
 //
 // RawPointerType
 //
+
+void RawPointerType::AppendToString( std::string& s ) const
+{
+	s+= "$( ";
+	element_type.AppendToString( s );
+	s+= " )";
+}
 
 bool operator==( const RawPointerType& l, const RawPointerType& r )
 {
@@ -933,6 +833,57 @@ bool FunctionType::ReturnsCompositeValue() const
 		( return_type.GetClassType() != nullptr || return_type.GetArrayType() != nullptr || return_type.GetTupleType() != nullptr );
 }
 
+void FunctionType::AppendToString( std::string& s ) const
+{
+	s+= "fn";
+
+	if( params.empty() )
+	{
+		if( is_variadic )
+			s+= "( ... )";
+		else
+			s+= "()";
+	}
+	else
+	{
+		s+= "( ";
+		s+= FunctionParamsToString( params );
+
+		if( is_variadic )
+			s+= ", ...";
+
+		s+= " )";
+	}
+	if( unsafe )
+		s+= " unsafe";
+
+	switch( calling_convention )
+	{
+	case CallingConvention::Default:
+		break;
+	case CallingConvention::C:
+		s+= " call_conv(\"C\")";
+		break;
+	case CallingConvention::Fast:
+		s+= " call_conv(\"fast\")";
+		break;
+	case CallingConvention::Cold:
+		s+= " call_conv(\"cold\")";
+		break;
+	case CallingConvention::System:
+		s+= " call_conv(\"system\")";
+		break;
+	}
+
+	s+= " : ";
+	return_type.AppendToString( s );
+
+	if( return_value_type == ValueType::ReferenceMut )
+		s += " &mut";
+	if( return_value_type == ValueType::ReferenceImut )
+		s += " &imut";
+}
+
 bool operator==( const FunctionType::Param& l, const FunctionType::Param& r )
 {
 	return l.type == r.type && l.value_type == r.value_type;
@@ -990,6 +941,11 @@ std::string FunctionParamsToString( const llvm::ArrayRef<FunctionType::Param> pa
 //
 // FunctionPointer
 //
+
+void FunctionPointerType::AppendToString( std::string& s ) const
+{
+	function_type.AppendToString( s );
+}
 
 bool operator==( const FunctionPointerType& l, const FunctionPointerType& r )
 {

@@ -71,6 +71,9 @@ struct FundamentalType
 	llvm::Type* llvm_type;
 
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::void_, llvm::Type* llvm_type= nullptr );
+
+	// Convert type name to human-readable format.
+	void AppendToString( std::string& s ) const;
 };
 
 bool operator==( const FundamentalType& l, const FundamentalType& r );
@@ -80,6 +83,9 @@ struct TupleType
 {
 	std::vector<Type> element_types;
 	llvm::StructType* llvm_type= nullptr;
+
+	// Convert type name to human-readable format.
+	void AppendToString( std::string& s ) const;
 };
 
 bool operator==( const TupleType& l, const TupleType& r );
@@ -173,6 +179,9 @@ struct ArrayType
 	uint64_t element_count= 0u;
 
 	llvm::ArrayType* llvm_type= nullptr;
+
+	// Convert type name to human-readable format.
+	void AppendToString( std::string& s ) const;
 };
 
 bool operator==( const ArrayType& l, const ArrayType& r );
@@ -182,6 +191,9 @@ struct RawPointerType
 {
 	Type element_type;
 	llvm::PointerType* llvm_type= nullptr;
+
+	// Convert type name to human-readable format.
+	void AppendToString( std::string& s ) const;
 };
 
 bool operator==( const RawPointerType& l, const RawPointerType& r );
@@ -239,6 +251,9 @@ public:
 	bool PointerCanBeConvertedTo( const FunctionType& other ) const;
 	bool ReturnsCompositeValue() const;
 
+	// Convert type name to human-readable format.
+	void AppendToString( std::string& s ) const;
+
 public:
 	// If this changed, virtual functions compare function must be changed too!
 	ArgsVector<Param> params;
@@ -271,6 +286,9 @@ struct FunctionPointerType
 {
 	FunctionType function_type;
 	llvm::PointerType* llvm_type= nullptr;
+
+	// Convert type name to human-readable format.
+	void AppendToString( std::string& s ) const;
 };
 
 bool operator==( const FunctionPointerType& l, const FunctionPointerType& r );
