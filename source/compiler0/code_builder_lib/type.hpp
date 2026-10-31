@@ -136,6 +136,8 @@ public:
 	// Convert type name to human-readable format.
 	std::string ToString() const;
 
+	void AppendToString( std::string& s ) const;
+
 	size_t Hash() const;
 
 private:

@@ -514,60 +514,65 @@ llvm::Type* Type::GetLLVMType() const
 
 std::string Type::ToString() const
 {
+	std::string result;
+	AppendToString( result );
+	return result;
+}
+
+void Type::AppendToString( std::string& s ) const
+{
 	struct Visitor
 	{
-		std::string operator()( const FundamentalType& fundamental ) const
+		std::string& result;
+
+		void operator()( const FundamentalType& fundamental ) const
 		{
-			return std::string( GetFundamentalTypeName( fundamental.fundamental_type ) );
+			result+= GetFundamentalTypeName( fundamental.fundamental_type );
 		}
 
-		std::string operator()( const ArrayPtr& array ) const
+		void operator()( const ArrayPtr& array ) const
 		{
-			std::string result;
 			result+= "[ ";
-			result+= array->element_type.ToString();
+			array->element_type.AppendToString( result );
 			result+= ", ";
 			result+= std::to_string( array->element_count );
 			result+= " ]";
-			return result;
 		}
 
-		std::string operator()( const RawPointerPtr& raw_pointer ) const
+		void operator()( const RawPointerPtr& raw_pointer ) const
 		{
-			std::string result;
 			result+= "$( ";
-			result+= raw_pointer->element_type.ToString();
+			raw_pointer->element_type.AppendToString( result );
 			result+= " )";
-			return result;
 		}
 
-		std::string operator()( const TupleTypePtr& tuple ) const
+		void operator()( const TupleTypePtr& tuple ) const
 		{
 			if( tuple->element_types.empty() )
-				return "tup[]";
-
-			std::string result= "tup[ ";
-
-			for( const Type& element_type : tuple->element_types )
+				result+= "tup[]";
+			else
 			{
-				result+= element_type.ToString();
-				if( &element_type != & tuple->element_types.back() )
-					result+= ", ";
+				result+= "tup[ ";
+
+				for( const Type& element_type : tuple->element_types )
+				{
+					element_type.AppendToString( result );
+					if( &element_type != & tuple->element_types.back() )
+						result+= ", ";
+				}
+				result+= " ]";
 			}
-			result+= " ]";
-			return result;
 		}
 
-		std::string operator()( const ClassPtr class_ ) const
+		void operator()( const ClassPtr class_ ) const
 		{
-			std::string result;
 			if( const auto typeinfo_class_description= std::get_if<TypeinfoClassDescription>( &class_->generated_class_data ) )
 			{
-				result= Keyword(Keywords::typeof_);
+				result+= Keyword(Keywords::typeof_);
 				result+= "(";
 				result+= Keyword(Keywords::typeinfo_);
 				result+= "</";
-				result+= typeinfo_class_description->source_type.ToString();
+				typeinfo_class_description->source_type.AppendToString( result );
 				result+= "/>";
 				result+=")";
 			}
@@ -584,7 +589,7 @@ std::string Type::ToString() const
 				for( const TemplateArg& arg : base_template->signature_args )
 				{
 					if( const Type* const param_as_type = std::get_if<Type>( &arg ) )
-						result+= param_as_type->ToString();
+						param_as_type->AppendToString( result );
 					else if( const auto param_as_variable= std::get_if<TemplateVariableArg>( &arg ) )
 						result+= ConstantVariableToString( *param_as_variable );
 					else if( const auto param_as_type_template= std::get_if<TypeTemplatePtr>( &arg ) )
@@ -617,7 +622,7 @@ std::string Type::ToString() const
 
 				result+= ": ";
 
-				result+= coroutine_type_description->return_type.ToString();
+				coroutine_type_description->return_type.AppendToString( result );
 
 				if( coroutine_type_description->return_value_type == ValueType::Value )
 				{}
@@ -635,20 +640,18 @@ std::string Type::ToString() const
 			}
 			else
 				result+= class_->members->ToString();
-			return result;
 		}
 
-		std::string operator()( const EnumPtr enum_ ) const
+		void operator()( const EnumPtr enum_ ) const
 		{
-			return enum_->members.GetThisNamespaceName();
+			result+= enum_->members.GetThisNamespaceName();
 		}
 
-		std::string operator()( const FunctionPointerPtr& function_pointer ) const
+		void operator()( const FunctionPointerPtr& function_pointer ) const
 		{
 			const FunctionType& function= function_pointer->function_type;
 			// TODO - add references pollution/return references
 
-			std::string result;
 			result+= "fn";
 
 			if( function.params.empty() )
@@ -685,18 +688,16 @@ std::string Type::ToString() const
 			}
 
 			result+= " : ";
-			result+= function.return_type.ToString();
+			function.return_type.AppendToString( result );
 
 			if( function.return_value_type == ValueType::ReferenceMut )
 				result += " &mut";
 			if( function.return_value_type == ValueType::ReferenceImut )
 				result += " &imut";
-
-			return result;
 		}
 	};
 
-	return std::visit( Visitor(), something_ );
+	return std::visit( Visitor{ s }, something_ );
 }
 
 size_t Type::Hash() const
