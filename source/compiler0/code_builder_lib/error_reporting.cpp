@@ -1,6 +1,7 @@
 #include <sstream>
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
+#include "class.hpp"
 #include "type.hpp"
 #include "error_reporting.hpp"
 
@@ -136,6 +137,34 @@ const char* GetErrorMessagePattern( const CodeBuilderErrorCode code )
 std::string PreprocessArg( const Type& type )
 {
 	return type.ToString();
+}
+
+std::string PreprocessArg( Class* const class_ )
+{
+	std::string s;
+	class_->AppendToString( s );
+	return s;
+}
+
+std::string PreprocessArg( Class& class_ )
+{
+	std::string s;
+	class_.AppendToString( s );
+	return s;
+}
+
+std::string PreprocessArg( const Class* const class_ )
+{
+	std::string s;
+	class_->AppendToString( s );
+	return s;
+}
+
+std::string PreprocessArg( const Class& class_ )
+{
+	std::string s;
+	class_.AppendToString( s );
+	return s;
 }
 
 } // namespace ErrorReportingImpl

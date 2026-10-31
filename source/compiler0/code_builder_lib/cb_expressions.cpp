@@ -568,7 +568,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), member_access_operator.src_loc,  member_access_operator.member_name );
 
 	if( names_scope.GetAccessFor( variable->type.GetClassType() ) < class_value.second )
-		REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), member_access_operator.src_loc, member_access_operator.member_name, variable->type.ToString() );
+		REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), member_access_operator.src_loc, member_access_operator.member_name, variable->type );
 
 	if( const OverloadedFunctionsSetPtr functions_set= class_member->value.GetFunctionsSet() )
 	{
@@ -1910,7 +1910,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( array_type == nullptr ||
 		array_type->element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ) )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), embed.src_loc, "char8 array", variable->type.ToString() );
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), embed.src_loc, "char8 array", variable->type );
 		return ErrorValue();
 	}
 
@@ -1971,7 +1971,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		const auto fundamental_type= t->GetFundamentalType();
 		if( fundamental_type == nullptr || GetFundamentalTypeSize( fundamental_type->fundamental_type ) != 1 )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetSrcLoc( *embed.element_type ), "any fundamental 8-bit type", t->ToString() );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetSrcLoc( *embed.element_type ), "any fundamental 8-bit type", *t );
 			return ErrorValue();
 		}
 
