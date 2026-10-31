@@ -281,6 +281,7 @@ bool operator==( const FunctionType& l, const FunctionType& r );
 inline bool operator!=( const FunctionType& l, const FunctionType& r ) { return !( l == r ); }
 
 std::string FunctionParamsToString( llvm::ArrayRef<FunctionType::Param> params );
+void AppendFunctionParamsToString( llvm::ArrayRef<FunctionType::Param> params, std::string& s );
 
 struct FunctionPointerType
 {

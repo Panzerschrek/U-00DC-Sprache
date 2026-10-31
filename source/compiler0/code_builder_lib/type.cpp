@@ -811,7 +811,7 @@ void FunctionType::AppendToString( std::string& s ) const
 	else
 	{
 		s+= "( ";
-		s+= FunctionParamsToString( params );
+		AppendFunctionParamsToString( params, s );
 
 		if( is_variadic )
 			s+= ", ...";
@@ -882,24 +882,28 @@ bool operator==( const FunctionType& l, const FunctionType& r )
 
 std::string FunctionParamsToString( const llvm::ArrayRef<FunctionType::Param> params )
 {
-	std::string result;
+	std::string s;
+	AppendFunctionParamsToString( params, s );
+	return s;
+}
+
+void AppendFunctionParamsToString( const llvm::ArrayRef<FunctionType::Param> params, std::string& s )
+{
 	for( const FunctionType::Param& param : params )
 	{
-		result+= param.type.ToString();
-		result+= " ";
+		param.type.AppendToString( s );
+		s+= " ";
 
 		if( param.value_type == ValueType::ReferenceMut )
-			result+= "&mut ";
+			s+= "&mut ";
 		if( param.value_type == ValueType::ReferenceImut )
-			result+= "&imut ";
+			s+= "&imut ";
 
-		result+= "_"; // use some dummy for param name.
+		s+= "_"; // use some dummy for param name.
 
 		if( &param != &params.back() )
-			result+= ", ";
+			s+= ", ";
 	}
-
-	return result;
 }
 
 //
