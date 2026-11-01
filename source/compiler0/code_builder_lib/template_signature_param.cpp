@@ -5,7 +5,11 @@
 namespace U
 {
 
-SIZE_ASSERT( TemplateSignatureParam, 56u )
+SIZE_ASSERT(
+	TemplateSignatureParam,
+		std::max(
+			size_t(56),
+			sizeof( std::vector<TemplateSignatureParam> ) * 2 + sizeof(void*) ) )
 
 bool TemplateSignatureParam::Type::operator==( const Type& other ) const
 {
