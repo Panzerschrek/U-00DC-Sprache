@@ -351,7 +351,7 @@ type Expression= ust::variant</ tup[
 	ust::box</RawPointerType/>,
 	ust::box</FunctionType/>,
 	ust::box</CoroutineType/>,
-	ust::shared_ptr_final</Mixin/>
+	ust::box</Mixin/>
 	] />;
 
 struct ArrayType
@@ -428,7 +428,7 @@ type TypeName= ust::variant</ tup[
 	ust::box</RawPointerType/>,
 	ust::box</FunctionType/>,
 	ust::box</CoroutineType/>,
-	ust::shared_ptr_final</Mixin/>
+	ust::box</Mixin/>
 	] />;
 
 struct SequenceInitializer
@@ -804,7 +804,7 @@ type BlockElement = ust::variant</ tup[
 	ust::shared_ptr_final</TypeAlias/>,
 	Halt,
 	HaltIf,
-	ust::shared_ptr_final</Mixin/>
+	Mixin
 	] />;
 
 type BlockElements= ust::vector</BlockElement/>;

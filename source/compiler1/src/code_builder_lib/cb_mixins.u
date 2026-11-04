@@ -55,7 +55,11 @@ fn CodeBuilder::EvaluateMixinsExpressions_r( mut this, NamesScopePtr& names_scop
 
 					foreach( &mut mixin_ : lock.deref() )
 					{
-						EvaluateMixinExpression( names_scope_ptr, function_context, mixin_ );
+						if( !mixin_.syntax_element.empty() && mixin_.string_constant == Null::LLVMValueRef )
+						{
+							mixin_.string_constant= EvaluateMixinExpression( names_scope_ptr, function_context, mixin_.syntax_element.try_deref() );
+							mixin_.syntax_element.reset();
+						}
 					}
 				}
 			}
@@ -275,23 +279,21 @@ fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut
 	}
 }
 
-fn CodeBuilder::ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : ust::shared_ptr_final_nullable</ Synt::BlockElements />
+fn CodeBuilder::ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::Mixin& mixin_ ) : ust::shared_ptr_final_nullable</ Synt::BlockElements />
 {
-	var Mixin mut temp_mixin{ .syntax_element= mixin_, .src_loc= mixin_.deref().src_loc };
+	var LLVMValueRef string_constant= EvaluateMixinExpression( names_scope_ptr, function_context, mixin_ );
 
-	EvaluateMixinExpression( names_scope_ptr, function_context, temp_mixin );
-
-	if( temp_mixin.string_constant == Null::LLVMValueRef )
+	if( string_constant == Null::LLVMValueRef )
 	{
 		return ust::shared_ptr_final_nullable</Synt::BlockElements/>();
 	}
 
 	var size_type mut str_length= 0s;
-	var $(char8) str_start= unsafe( LLVMGetAsString( temp_mixin.string_constant, str_length ) );
+	var $(char8) str_start= unsafe( LLVMGetAsString( string_constant, str_length ) );
 
 	auto mixin_text= unsafe( ust::string_view8( str_start, str_length ) );
 
-	var MixinExpansionKey key{ .mixin_src_loc= temp_mixin.src_loc, .mixin_text= mixin_text };
+	var MixinExpansionKey key{ .mixin_src_loc= mixin_.src_loc, .mixin_text= mixin_text };
 
 	if_var( &prev_value : block_mixin_expansions_.find( key ) )
 	{
@@ -299,14 +301,14 @@ fn CodeBuilder::ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, Func
 		return prev_value;
 	}
 
-	auto lexems= PrepareMixinLexems( names_scope_ptr, temp_mixin.src_loc, mixin_text );
+	auto lexems= PrepareMixinLexems( names_scope_ptr, mixin_.src_loc, mixin_text );
 	if( lexems.empty() )
 	{
 		return ust::shared_ptr_final_nullable</Synt::BlockElements/>();
 	}
 
 	var SourceGraph& source_graph= source_graph_.try_deref();
-	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( temp_mixin.src_loc.GetFileIndex() ) ];
+	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
 
 	auto { mut block_elements, errors } = Synt::ParseBlockElements(
 		lexems.try_deref(),
@@ -330,22 +332,20 @@ fn CodeBuilder::ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, Func
 	return result_ptr;
 }
 
-fn CodeBuilder::ExpandTypeNameMixin( mut this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : ust::shared_ptr_final_nullable</ Synt::TypeName />
+fn CodeBuilder::ExpandTypeNameMixin( mut this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::Mixin& mixin_ ) : ust::shared_ptr_final_nullable</ Synt::TypeName />
 {
-	var Mixin mut temp_mixin{ .syntax_element= mixin_, .src_loc= mixin_.deref().src_loc };
-
-	EvaluateMixinExpression( names_scope_ptr, function_context, temp_mixin );
+	var LLVMValueRef string_constant= EvaluateMixinExpression( names_scope_ptr, function_context, mixin_ );
 
 	var ust::string_view8 mut mixin_text;
-	if( temp_mixin.string_constant != Null::LLVMValueRef )
+	if( string_constant != Null::LLVMValueRef )
 	{
 		var size_type mut str_length= 0s;
-		var $(char8) str_start= unsafe( LLVMGetAsString( temp_mixin.string_constant, str_length ) );
+		var $(char8) str_start= unsafe( LLVMGetAsString( string_constant, str_length ) );
 
 		mixin_text= unsafe( ust::string_view8( str_start, str_length ) );
 	}
 
-	var MixinExpansionKey key{ .mixin_src_loc= temp_mixin.src_loc, .mixin_text= mixin_text };
+	var MixinExpansionKey key{ .mixin_src_loc= mixin_.src_loc, .mixin_text= mixin_text };
 
 	if_var( &prev_value : type_name_mixin_expansions_.find( key ) )
 	{
@@ -353,14 +353,14 @@ fn CodeBuilder::ExpandTypeNameMixin( mut this, NamesScopePtr& names_scope_ptr, F
 		return prev_value;
 	}
 
-	auto lexems= PrepareMixinLexems( names_scope_ptr, temp_mixin.src_loc, mixin_text );
+	auto lexems= PrepareMixinLexems( names_scope_ptr, mixin_.src_loc, mixin_text );
 	if( lexems.empty() )
 	{
 		return ust::shared_ptr_final_nullable</Synt::TypeName/>();
 	}
 
 	var SourceGraph& source_graph= source_graph_.try_deref();
-	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( temp_mixin.src_loc.GetFileIndex() ) ];
+	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
 
 	auto { mut type_name, errors } = Synt::ParseTypeName(
 		lexems.try_deref(),
@@ -384,22 +384,20 @@ fn CodeBuilder::ExpandTypeNameMixin( mut this, NamesScopePtr& names_scope_ptr, F
 	return result_ptr;
 }
 
-fn CodeBuilder::ExpandExpressionMixin( mut this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : ust::shared_ptr_final_nullable</ Synt::Expression />
+fn CodeBuilder::ExpandExpressionMixin( mut this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::Mixin& mixin_ ) : ust::shared_ptr_final_nullable</ Synt::Expression />
 {
-	var Mixin mut temp_mixin{ .syntax_element= mixin_, .src_loc= mixin_.deref().src_loc };
-
-	EvaluateMixinExpression( names_scope_ptr, function_context, temp_mixin );
+	var LLVMValueRef string_constant= EvaluateMixinExpression( names_scope_ptr, function_context, mixin_ );
 
 	var ust::string_view8 mut mixin_text;
-	if( temp_mixin.string_constant != Null::LLVMValueRef )
+	if( string_constant != Null::LLVMValueRef )
 	{
 		var size_type mut str_length= 0s;
-		var $(char8) str_start= unsafe( LLVMGetAsString( temp_mixin.string_constant, str_length ) );
+		var $(char8) str_start= unsafe( LLVMGetAsString( string_constant, str_length ) );
 
 		mixin_text= unsafe( ust::string_view8( str_start, str_length ) );
 	}
 
-	var MixinExpansionKey key{ .mixin_src_loc= temp_mixin.src_loc, .mixin_text= mixin_text };
+	var MixinExpansionKey key{ .mixin_src_loc= mixin_.src_loc, .mixin_text= mixin_text };
 
 	if_var( &prev_value : expression_mixin_expansions_.find( key ) )
 	{
@@ -407,14 +405,14 @@ fn CodeBuilder::ExpandExpressionMixin( mut this, NamesScopePtr& names_scope_ptr,
 		return prev_value;
 	}
 
-	auto lexems= PrepareMixinLexems( names_scope_ptr, temp_mixin.src_loc, mixin_text );
+	auto lexems= PrepareMixinLexems( names_scope_ptr, mixin_.src_loc, mixin_text );
 	if( lexems.empty() )
 	{
 		return ust::shared_ptr_final_nullable</Synt::Expression/>();
 	}
 
 	var SourceGraph& source_graph= source_graph_.try_deref();
-	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( temp_mixin.src_loc.GetFileIndex() ) ];
+	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
 
 	auto { mut expression, errors } = Synt::ParseExpression(
 		lexems.try_deref(),
@@ -438,36 +436,29 @@ fn CodeBuilder::ExpandExpressionMixin( mut this, NamesScopePtr& names_scope_ptr,
 	return result_ptr;
 }
 
-fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Mixin &mut mixin_ )
+fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::Mixin& mixin_ ) : LLVMValueRef
 {
-	if( mixin_.syntax_element.empty() )
-	{
-		return;
-	}
-	auto syntax_element= mixin_.syntax_element.try_to_non_nullable();
+	var VariableLite variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, mixin_.expression );
 
-	var VariableLite variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, syntax_element.deref().expression );
-
-	mixin_.syntax_element.reset();
 
 	if( variable.constexpr_value == Null::LLVMValueRef )
 	{
-		REPORT_ERROR( ExpectedConstantExpression, names_scope_ptr, syntax_element.deref().src_loc )
-		return;
+		REPORT_ERROR( ExpectedConstantExpression, names_scope_ptr, mixin_.src_loc )
+		return Null::LLVMValueRef;
 	}
 
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
 		if( array_type.element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ) )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope_ptr, syntax_element.deref().src_loc, "char8 array", variable.t )
-			return;
+			REPORT_ERROR( TypesMismatch, names_scope_ptr, mixin_.src_loc, "char8 array", variable.t )
+			return Null::LLVMValueRef;
 		}
 	}
 	else
 	{
-		REPORT_ERROR( TypesMismatch, names_scope_ptr, syntax_element.deref().src_loc, "char8 array", variable.t )
-		return;
+		REPORT_ERROR( TypesMismatch, names_scope_ptr, mixin_.src_loc, "char8 array", variable.t )
+		return Null::LLVMValueRef;
 	}
 
 	if( unsafe( LLVMIsAConstantDataArray( variable.constexpr_value ) ) != Null::LLVMValueRef )
@@ -478,20 +469,22 @@ fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_pt
 			var $(char8) str_start= unsafe( LLVMGetAsString( variable.constexpr_value, str_length ) );
 			if( !U1_IsLegalUTF8String( str_start, str_length ) )
 			{
-				REPORT_ERROR( MixinInvalidUTF8, names_scope_ptr, syntax_element.deref().src_loc )
-				return;
+				REPORT_ERROR( MixinInvalidUTF8, names_scope_ptr, mixin_.src_loc )
+				return Null::LLVMValueRef;
 			}
 		}
 
-		mixin_.string_constant= variable.constexpr_value;
+		return variable.constexpr_value;
 	}
 	else if( unsafe( LLVMIsAConstantAggregateZero( variable.constexpr_value ) ) != Null::LLVMValueRef )
 	{
 		// Ignore mixins containing zeros. Their expansion leads to nothing.
+		return Null::LLVMValueRef;
 	}
 	else
 	{
-		REPORT_ERROR( NotImplemented, names_scope_ptr, syntax_element.deref().src_loc, "non-trivial mixin constants" )
+		REPORT_ERROR( NotImplemented, names_scope_ptr, mixin_.src_loc, "non-trivial mixin constants" )
+		return Null::LLVMValueRef;
 	}
 }
 

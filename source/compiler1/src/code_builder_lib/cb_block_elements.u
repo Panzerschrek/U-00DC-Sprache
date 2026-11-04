@@ -3295,7 +3295,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::Mixin& mixin_ ) : BlockElementBuildInfo
 {
 	auto block_elements_ptr= WithVariablesFrame(
 		function_context,
@@ -4036,7 +4036,7 @@ fn SingleExpressionIsUseless( Synt::Expression& expression ) : bool
 		( ust::box</Synt::TupleType/>& e ) -> { ust::ignore_unused(e); return true; },
 		( ust::box</Synt::RawPointerType/>& e ) -> { ust::ignore_unused(e); return true; },
 		( ust::box</Synt::CoroutineType/>& e ) -> { ust::ignore_unused(e); return true; },
-		( ust::shared_ptr_final</Synt::Mixin/>& e ) -> { ust::ignore_unused(e); return true; }
+		( ust::box</Synt::Mixin/>& e ) -> { ust::ignore_unused(e); return true; }
 	}
 }
 

@@ -2630,7 +2630,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	return PrepareTypeImpl( names_scope, function_context, coroutine_type );
 }
 
-fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Value
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Mixin& mixin_ ) : Value
 {
 	if_var( &expression : ExpandExpressionMixin( names_scope, function_context, mixin_ ) )
 	{

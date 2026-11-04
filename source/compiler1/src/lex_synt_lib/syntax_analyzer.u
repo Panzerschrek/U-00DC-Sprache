@@ -1237,7 +1237,7 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 	}
 	if( IsKeyword( it_.front(), Keyword::mixin_ ) )
 	{
-		return ust::make_shared_ptr_final( ParseExpressionMixin() );
+		return ust::make_box( ParseExpressionMixin() );
 	}
 	if( it_.front().lexem_type == Lexem::Type::Identifier )
 	{
@@ -1278,7 +1278,7 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 	}
 	else if( IsKeyword( it_.front(), Keyword::mixin_ ) )
 	{
-		return ust::make_shared_ptr_final( ParseExpressionMixin() );
+		return ust::make_box( ParseExpressionMixin() );
 	}
 	else if( it_.front().lexem_type == Lexem::Type::Dollar )
 	{
@@ -2476,7 +2476,7 @@ fn SyntaxAnalyzer::ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : B
 		}
 		else if( IsKeyword( it_.front(), Keyword::mixin_ ) )
 		{
-			block_elements.push_back( ust::make_shared_ptr_final( ParseMixin() ) );
+			block_elements.push_back( ParseMixin() );
 		}
 		else if( it_.front().lexem_type == Lexem::Type::DoublePlus )
 		{
