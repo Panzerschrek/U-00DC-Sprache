@@ -53,12 +53,10 @@ fn LoadSourceGraph(
 
 		auto mut file_path_hash= source_file_contents_hashing_function( file_path_normalized );
 
-		var Synt::MacrosByContext mut macros_by_context;
-
 		var Synt::SyntaxAnalysisResult mut synt_result=
 			Synt::SyntaxAnalysis(
 				lexems,
-				Synt::MacrosPtr( move( macros_by_context ) ), // Prelude macros list is empty.
+				Synt::MacrosPtr( Synt::MacrosByContext() ), // Prelude macros list is empty.
 				source_graph.macro_expansion_contexts,
 				file_path_hash );
 
@@ -143,8 +141,7 @@ fn LoadSourceGraph_r(
 		return ~0s;
 	}
 
-	var Synt::MacrosByContext mut macros_by_context;
-	var Synt::MacrosPtr node_macros_ptr( move( macros_by_context ) );
+	var Synt::MacrosPtr node_macros_ptr( Synt::MacrosByContext() );
 
 	auto node_category=
 		( vfs.IsFileFromSourcesDirectory( file_path_normalized )
