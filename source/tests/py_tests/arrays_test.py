@@ -126,7 +126,7 @@ def DefaultConstructorForArray_Test0():
 		struct S{ i32 x= 12554; }
 		fn Foo()
 		{
-			var [ S, 3 ] mut arr; // Call explicit default constructor for elements.
+			var [ S, 3 ] mut arr; // Call implicit default constructor for elements.
 			halt if( arr[0].x != 12554 );
 			halt if( arr[1].x != 12554 );
 			halt if( arr[2].x != 12554 );
@@ -141,7 +141,7 @@ def DefaultConstructorForArray_Test1():
 		struct S{ i32 x; fn constructor() ( x= -286 ) {} }
 		fn Foo()
 		{
-			var [ S, 3 ] mut arr; // Explicitly call default constructor for elements.
+			var [ S, 3 ] mut arr; // Call explicit default constructor for elements.
 			halt if( arr[0].x != -286 );
 			halt if( arr[1].x != -286 );
 			halt if( arr[2].x != -286 );
@@ -156,7 +156,7 @@ def DefaultConstructorForArray_Test2():
 		struct S{ i32 x= 25125; }
 		fn Foo()
 		{
-			var [ S, 3 ] mut arr(); // Implicitly Call default constructor for elements.
+			var [ S, 3 ] mut arr(); // Explicitly call default constructor for elements.
 			halt if( arr[0].x != 25125 );
 			halt if( arr[1].x != 25125 );
 			halt if( arr[2].x != 25125 );
@@ -171,7 +171,7 @@ def DefaultConstructorForArray_Test3():
 		struct S{ f32 x= -37247.3f; }
 		fn Foo()
 		{
-			Bar( [ S, 4 ]() ); // Implicitly Call default constructor for temporary array.
+			Bar( [ S, 4 ]() ); // Explicitly call default constructor for temporary array.
 		}
 		fn Bar( [ S, 4 ]& arr )
 		{

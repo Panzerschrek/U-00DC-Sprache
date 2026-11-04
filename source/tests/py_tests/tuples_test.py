@@ -387,7 +387,7 @@ def DefaultConstructorForTuple_Test0():
 		struct T{ f32 y= -25.5f; }
 		fn Foo()
 		{
-			var tup[ S, T ] mut t; // Call explicit default constructors for elements.
+			var tup[ S, T ] mut t; // Call implicit default constructors for elements.
 			halt if( t[0].x != 12554 );
 			halt if( t[1].y != -25.5f );
 		}
@@ -402,7 +402,7 @@ def DefaultConstructorForTuple_Test1():
 		struct T{ f32 y= 2584.521f; }
 		fn Foo()
 		{
-			var tup[ S, T ] mut t(); // Implicitly call default constructors for elements.
+			var tup[ S, T ] mut t(); // Explicitly call default constructors for elements.
 			halt if( t[0].x != -362363 );
 			halt if( t[1].y != 2584.521f );
 		}
@@ -417,7 +417,7 @@ def DefaultConstructorForTuple_Test2():
 		struct T{ f32 y= 0.125f; }
 		fn Foo()
 		{
-			Bar( tup[ S, T ]() ); // Implicitly Call default constructor for temporary tuple.
+			Bar( tup[ S, T ]() ); // Explicitly call default constructor for temporary tuple.
 		}
 		fn Bar( tup[ S, T ]& t )
 		{
