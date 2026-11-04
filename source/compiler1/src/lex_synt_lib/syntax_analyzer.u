@@ -3500,15 +3500,8 @@ fn SyntaxAnalyzer::ParseStaticAssert( mut this ) : StaticAssert
 
 fn SyntaxAnalyzer::ParseMixin( mut this ) : Mixin
 {
-	debug_assert( IsKeyword( it_.front(), Keyword::mixin_ ) );
-
-	var Mixin mut mixin_{ .src_loc= it_.front().src_loc };
-	NextLexem();
-
-	mixin_.expression= ParseExpressionInBrackets();
-
+	var Mixin mixin_= ParseExpressionMixin();
 	ExpectSemicolon();
-
 	return mixin_;
 }
 

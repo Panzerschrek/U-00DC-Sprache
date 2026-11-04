@@ -4494,15 +4494,8 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 
 Mixin SyntaxAnalyzer::ParseMixin()
 {
-	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mixin_ );
-
-	Mixin mixin( it_->src_loc );
-
-	NextLexem();
-
-	mixin.expression= ParseExpressionInBrackets();
+	Mixin mixin= ParseExpressionMixin();
 	ExpectSemicolon();
-
 	return mixin;
 }
 
