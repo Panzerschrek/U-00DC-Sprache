@@ -9,14 +9,7 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 		ust::shared_ptr_imut</CallingConventionInfoDefault/>(
 			ust::make_shared_ptr( CallingConventionInfoDefault( data_layout ) ) );
 
-	var CallingConventionInfos mut calling_convention_infos
-	[
-		default_info,
-		default_info,
-		default_info,
-		default_info,
-		default_info,
-	];
+	var CallingConventionInfos mut calling_convention_infos[ default_info ... ];
 
 	// TODO - imporve this, perform proper target triple parsing instead of string matching.
 
