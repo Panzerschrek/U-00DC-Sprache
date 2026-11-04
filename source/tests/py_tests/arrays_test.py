@@ -121,6 +121,121 @@ def ArraysAreCopyConstructible_Test7():
 	assert( errors_list[0].src_loc.line == 6 )
 
 
+def DefaultConstructorForArray_Test0():
+	c_program_text= """
+		struct S{ i32 x= 12554; }
+		fn Foo()
+		{
+			var [ S, 3 ] mut arr; // Call implicit default constructor for elements.
+			halt if( arr[0].x != 12554 );
+			halt if( arr[1].x != 12554 );
+			halt if( arr[2].x != 12554 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def DefaultConstructorForArray_Test1():
+	c_program_text= """
+		struct S{ i32 x; fn constructor() ( x= -286 ) {} }
+		fn Foo()
+		{
+			var [ S, 3 ] mut arr; // Call explicit default constructor for elements.
+			halt if( arr[0].x != -286 );
+			halt if( arr[1].x != -286 );
+			halt if( arr[2].x != -286 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def DefaultConstructorForArray_Test2():
+	c_program_text= """
+		struct S{ i32 x= 25125; }
+		fn Foo()
+		{
+			var [ S, 3 ] mut arr(); // Explicitly call default constructor for elements.
+			halt if( arr[0].x != 25125 );
+			halt if( arr[1].x != 25125 );
+			halt if( arr[2].x != 25125 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def DefaultConstructorForArray_Test3():
+	c_program_text= """
+		struct S{ f32 x= -37247.3f; }
+		fn Foo()
+		{
+			Bar( [ S, 4 ]() ); // Explicitly call default constructor for temporary array.
+		}
+		fn Bar( [ S, 4 ]& arr )
+		{
+			halt if( arr[0].x != -37247.3f );
+			halt if( arr[1].x != -37247.3f );
+			halt if( arr[2].x != -37247.3f );
+			halt if( arr[3].x != -37247.3f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def DefaultConstructorForArray_Test4():
+	c_program_text= """
+		struct S{ f64 x; } // Is not default-constructible.
+		fn Foo()
+		{
+			var [ S, 8 ] arr(); // Try using default intitializer via (), which isn't possible, since element type isn't default-constructible.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedInitializer", 5 ) )
+
+
+def DefaultConstructorForArray_Test5():
+	c_program_text= """
+		struct S{ f64 x; } // Is not default-constructible.
+		fn Foo()
+		{
+			Bar( [ S, 8 ]() ); // Try using default intitializer via (), which isn't possible, since element type isn't default-constructible.
+		}
+		fn Bar( [ f64, 7 ]& arr );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedInitializer", 5 ) )
+
+
+def DefaultConstructorForArray_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 16 ] arr; // Implicitly try using default intitializer, which isn't possible, since element type isn't default-constructible.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedInitializer", 4 ) )
+
+
+def DefaultConstructorForArray_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 16 ] arr(); // Explicitly try using default intitializer via (), which isn't possible, since element type isn't default-constructible.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedInitializer", 4 ) )
+
+
 def ArrayAsValueArgument_Test0():
 	c_program_text= """
 		fn Dot( [ f32, 2 ] a, [ f32, 2 ] b ) : f32
