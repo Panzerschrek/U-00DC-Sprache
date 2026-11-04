@@ -1147,6 +1147,15 @@ fn CodeBuilder::ApplyConstructorInitializer( mut this, NamesScopePtr& names_scop
 	}
 	if( !variable.t.GetArrayType().empty() || !variable.t.GetTupleType().empty() )
 	{
+		if( args.empty() )
+		{
+			// It's an explicit usage of default constructor for array or tuple.
+			// Apply emty initializer in such case.
+			// It checks internally that the given variable is of a default-constructible type.
+			var ust::string8 variable_name= variable_ptr.lock_imut().deref().name;
+			return ApplyEmptyInitializer( names_scope, function_context, variable_ptr, variable_name, src_loc );
+		}
+
 		if( args.size() != 1s )
 		{
 			REPORT_ERROR( ConstructorInitializerForUnsupportedType, names_scope, src_loc )
