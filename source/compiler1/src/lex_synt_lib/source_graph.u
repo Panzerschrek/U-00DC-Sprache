@@ -53,10 +53,12 @@ fn LoadSourceGraph(
 
 		auto mut file_path_hash= source_file_contents_hashing_function( file_path_normalized );
 
+		var Synt::MacrosByContext mut macros_by_context;
+
 		var Synt::SyntaxAnalysisResult mut synt_result=
 			Synt::SyntaxAnalysis(
 				lexems,
-				Synt::MacrosPtr( Synt::MacrosByContextMap() ), // Prelude macros list is empty.
+				Synt::MacrosPtr( move( macros_by_context ) ), // Prelude macros list is empty.
 				source_graph.macro_expansion_contexts,
 				file_path_hash );
 
@@ -141,7 +143,8 @@ fn LoadSourceGraph_r(
 		return ~0s;
 	}
 
-	var Synt::MacrosPtr node_macros_ptr( Synt::MacrosByContextMap() );
+	var Synt::MacrosByContext mut macros_by_context;
+	var Synt::MacrosPtr node_macros_ptr( move( macros_by_context ) );
 
 	auto node_category=
 		( vfs.IsFileFromSourcesDirectory( file_path_normalized )
@@ -194,30 +197,30 @@ fn LoadSourceGraph_r(
 	// Merge macros.
 	with( mut lock : node_macros_ptr.lock_mut() )
 	{
-		var Synt::MacrosByContextMap &mut macros= lock.deref();
+		var Synt::MacrosByContext &mut dst_macros= lock.deref();
+
 		foreach( &child_index : node_children )
 		{
-			var SourceGraph::Node& src_node= source_graph.nodes[child_index];
-			foreach( &context_and_macro : src_node.synt_result.macros.lock_imut().deref() )
+			with( &src_maps : source_graph.nodes[ child_index ].synt_result.macros.lock_imut().deref() )
 			{
-				if( !macros.exists( context_and_macro.key() ) )
+				for( auto mut context_index= 0s; context_index < ust::array_size( dst_macros ); ++context_index )
 				{
-					macros.insert_new( context_and_macro.key(), context_and_macro.value() );
-					continue;
-				}
+					var Synt::MacroMap &mut dst_map= dst_macros[ context_index ];
 
-				var Synt::MacroMap &mut dst_map= macros[context_and_macro.key()];
-				foreach( &macro : context_and_macro.value() )
-				{
-					if( !dst_map.exists( macro.key() ) )
+					foreach( &macro : src_maps[ context_index ] )
 					{
+						if_var( &prev_macro : dst_map.find( macro.key() ) )
+						{
+							if( prev_macro != macro.value() ) // It's the same macro if shared pointers are equal.
+							{
+								source_graph.errors.push_back( LexSyntError(
+									macro.value().deref().src_loc,
+									ust::concat( "Macro \"", macro.key(), "\" redefinition." ) ) );
+							}
+							continue;
+						}
+
 						dst_map.insert_new( macro.key(), macro.value() );
-					}
-					else if( dst_map[ macro.key() ].deref().src_loc != macro.value().deref().src_loc )
-					{
-						source_graph.errors.push_back( LexSyntError(
-							macro.value().deref().src_loc,
-							ust::concat( "Macro \"", macro.key(), "\" redefinition." ) ) );
 					}
 				}
 			}

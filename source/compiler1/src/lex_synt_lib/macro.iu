@@ -72,10 +72,12 @@ struct Macro
 	ResultElements result_template_elements;
 }
 
+// Store macros using "shared_ptr_final" in order to share them across different imported files.
 type MacroMap= ust::hash_map</ ust::string8, ust::shared_ptr_final</Macro/> />;
-type MacrosByContextMap= ust::hash_map</ Macro::Context, MacroMap />;
 
-type MacrosPtr= ust::shared_ptr_mut</MacrosByContextMap/>;
+type MacrosByContext= [ MacroMap, typeinfo</ Macro::Context />.element_count ]; // A hash-map for each context.
+
+type MacrosPtr= ust::shared_ptr_mut</MacrosByContext/>;
 
 } // namespace Synt
 

@@ -4239,9 +4239,9 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	// Inset result macro.
 	auto macros_copy= macros_;
 	auto mut macros_lock= macros_copy.lock_mut();
-	var MacrosByContextMap &mut macros_by_context= macros_lock.deref();
+	var MacrosByContext &mut macros_by_context= macros_lock.deref();
 
-	var MacroMap &mut macro_map= macros_by_context.find_or_construct_default( macro_context );
+	var MacroMap &mut macro_map= macros_by_context[ size_type( macro_context ) ];
 
 	if( !macro_map.exists( macro.name ) )
 	{
@@ -4501,12 +4501,9 @@ fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : Macro::ResultElements
 
 fn SyntaxAnalyzer::FetchMacro( this, ust::string_view8 name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>
 {
-	if_var( &macro_map : macros_.lock_imut().deref().find( context ) )
+	if_var( &macro : macros_.lock_imut().deref()[ size_type( context ) ].find( name ) )
 	{
-		if_var( &macro : macro_map.find( name ) )
-		{
-			return macro;
-		}
+		return macro;
 	}
 
 	return ust::shared_ptr_final_nullable</Macro/>();
@@ -5006,9 +5003,11 @@ fn ParseExpression(
 
 fn ParseImports( Lexems& lexems ) : ImportsList
 {
+	var MacrosByContext mut macros_by_context;
+
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
-		MacrosPtr( MacrosByContextMap() ),
+		MacrosPtr( move( macros_by_context ) ),
 		MacroExpansionContextsPtr( MacroExpansionContexts() ),
 		"",
 		0s );
