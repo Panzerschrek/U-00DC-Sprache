@@ -381,6 +381,54 @@ def TupleMoveAsignment_Test0():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def DefaultConstructorForTuple_Test0():
+	c_program_text= """
+		struct S{ i32 x= 12554; }
+		struct T{ f32 y= -25.5f; }
+		fn Foo()
+		{
+			var tup[ S, T ] mut t; // Call explicit default constructors for elements.
+			halt if( t[0].x != 12554 );
+			halt if( t[1].y != -25.5f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def DefaultConstructorForTuple_Test1():
+	c_program_text= """
+		struct S{ i32 x= -362363; }
+		struct T{ f32 y= 2584.521f; }
+		fn Foo()
+		{
+			var tup[ S, T ] mut t(); // Implicitly call default constructors for elements.
+			halt if( t[0].x != -362363 );
+			halt if( t[1].y != 2584.521f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def DefaultConstructorForTuple_Test2():
+	c_program_text= """
+		struct S{ i32 x= 3236; }
+		struct T{ f32 y= 0.125f; }
+		fn Foo()
+		{
+			Bar( tup[ S, T ]() ); // Implicitly Call default constructor for temporary tuple.
+		}
+		fn Bar( tup[ S, T ]& t )
+		{
+			halt if( t[0].x != 3236 );
+			halt if( t[1].y != 0.125f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
 def TupleFor_Test0():
 	c_program_text= """
 		fn Foo() : i32
