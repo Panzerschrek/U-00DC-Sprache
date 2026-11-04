@@ -1080,6 +1080,14 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	}
 	else if( variable->type.GetArrayType() != nullptr || variable->type.GetTupleType() != nullptr )
 	{
+		if( synt_args.empty() )
+		{
+			// It's an explicit usage of default constructor for array or tuple.
+			// Apply emty initializer in such case.
+			// It checks internally that the given variable is of a default-constructible type.
+			return ApplyEmptyInitializer( variable->name, src_loc, variable, names_scope, function_context );
+		}
+
 		if( synt_args.size() != 1u )
 		{
 			REPORT_ERROR( ConstructorInitializerForUnsupportedType, names_scope.GetErrors(), src_loc );
