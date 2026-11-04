@@ -121,6 +121,70 @@ def ArraysAreCopyConstructible_Test7():
 	assert( errors_list[0].src_loc.line == 6 )
 
 
+def DefaultConstructorForArray_Test0():
+	c_program_text= """
+		struct S{ i32 x= 12554; }
+		fn Foo()
+		{
+			var [ S, 3 ] mut arr; // Call explicit default constructor for elements.
+			halt if( arr[0].x != 12554 );
+			halt if( arr[1].x != 12554 );
+			halt if( arr[2].x != 12554 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def DefaultConstructorForArray_Test1():
+	c_program_text= """
+		struct S{ i32 x; fn constructor() ( x= -286 ) {} }
+		fn Foo()
+		{
+			var [ S, 3 ] mut arr; // Explicitly call default constructor for elements.
+			halt if( arr[0].x != -286 );
+			halt if( arr[1].x != -286 );
+			halt if( arr[2].x != -286 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def DefaultConstructorForArray_Test2():
+	c_program_text= """
+		struct S{ i32 x= 25125; }
+		fn Foo()
+		{
+			var [ S, 3 ] mut arr(); // Implicitly Call default constructor for elements.
+			halt if( arr[0].x != 25125 );
+			halt if( arr[1].x != 25125 );
+			halt if( arr[2].x != 25125 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def DefaultConstructorForArray_Test3():
+	c_program_text= """
+		struct S{ f32 x= -37247.3f; }
+		fn Foo()
+		{
+			Bar( [ S, 4 ]() ); // Implicitly Call default constructor for temporary array.
+		}
+		fn Bar( [ S, 4 ]& arr )
+		{
+			halt if( arr[0].x != -37247.3f );
+			halt if( arr[1].x != -37247.3f );
+			halt if( arr[2].x != -37247.3f );
+			halt if( arr[3].x != -37247.3f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
 def ArrayAsValueArgument_Test0():
 	c_program_text= """
 		fn Dot( [ f32, 2 ] a, [ f32, 2 ] b ) : f32
