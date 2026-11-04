@@ -277,7 +277,7 @@ private:
 	Mixin ParseMixin();
 	Mixin ParseExpressionMixin();
 
-	const Macro* FetchMacro( const std::string& macro_name, const Macro::Context context );
+	RcPtr<Macro> FetchMacro( const std::string& macro_name, const Macro::Context context );
 
 	template<typename ParseFnResult>
 	ParseFnResult ExpandMacro( const Macro& macro, ParseFnResult (SyntaxAnalyzer::*parse_fn)() );
@@ -443,6 +443,7 @@ void SyntaxAnalyzer::ParseMacro()
 		PushErrorMessage();
 		return;
 	}
+
 	macro.name= it_->text;
 	macro.src_loc= it_->src_loc;
 	NextLexem();
@@ -493,8 +494,8 @@ void SyntaxAnalyzer::ParseMacro()
 
 	ExpectLexem( Lexem::Type::MacroBracketRight );
 
-	MacroMap& macro_map= (*macros_)[macro_context];
-	if( macro_map.find( macro.name ) != macro_map.end() )
+	RcPtr<Macro>& dst_macro_ptr= (*macros_)[ macro_context ][ macro.name ];
+	if( !dst_macro_ptr.empty() )
 	{
 		LexSyntError msg;
 		msg.src_loc= macro.src_loc;
@@ -502,7 +503,7 @@ void SyntaxAnalyzer::ParseMacro()
 		error_messages_.push_back(std::move(msg));
 	}
 	else
-		macro_map[macro.name]= std::move(macro);
+		dst_macro_ptr= MakeRcPtr( std::move(macro) );
 }
 
 Macro::MatchElements SyntaxAnalyzer::ParseMacroMatchBlock()
@@ -829,7 +830,7 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 		{
 			if( it_->type == Lexem::Type::Identifier )
 			{
-				if( const Macro* const macro= FetchMacro( it_->text, Macro::Context::Namespace ) )
+				if( const RcPtr<Macro> macro= FetchMacro( it_->text, Macro::Context::Namespace ); macro != nullptr )
 				{
 					for( ProgramElement& element : ExpandMacro( *macro, &SyntaxAnalyzer::ParseNamespaceBodyToFileEnd )  )
 						result.push_back( std::move(element) );
@@ -1411,7 +1412,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			it_->text == Keywords::generator_ ||
 			it_->text == Keywords::async_ )
 			return TypeNameToExpression( ParseTypeName() );
-		if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
+		if( const RcPtr<Macro> macro= FetchMacro( it_->text, Macro::Context::Expression ); macro != nullptr )
 		{
 			Expression macro_expression= ExpandMacro( *macro, &SyntaxAnalyzer::ParseExpression );
 			if( std::holds_alternative<EmptyVariant>( macro_expression ) )
@@ -3372,7 +3373,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 		{
 			if( it_->type == Lexem::Type::Identifier )
 			{
-				if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )
+				if( const RcPtr<Macro> macro= FetchMacro( it_->text, Macro::Context::Block ); macro != nullptr )
 				{
 					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElementsToFileEnd ) );
 					continue;
@@ -3478,7 +3479,7 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 	// Accept macros, producing single element of if-alternative kind, as if-alternative.
 	if( it_->type == Lexem::Type::Identifier )
 	{
-		if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )
+		if( const RcPtr<Macro> macro= FetchMacro( it_->text, Macro::Context::Block ); macro != nullptr )
 		{
 			BlockElementsList list= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElementsToFileEnd );
 
@@ -4152,7 +4153,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 		{
 			if( it_->type == Lexem::Type::Identifier )
 			{
-				if( const Macro* const macro= FetchMacro( it_->text, Macro::Context::Class ) )
+				if( const RcPtr<Macro> macro= FetchMacro( it_->text, Macro::Context::Class ); macro != nullptr )
 				{
 					for( ClassElement& element : ExpandMacro( *macro, &SyntaxAnalyzer::ParseClassBodyElementsToFileEnd ) )
 						result.push_back( std::move( element ) );
@@ -4512,12 +4513,12 @@ Mixin SyntaxAnalyzer::ParseExpressionMixin()
 	return mixin;
 }
 
-const Macro* SyntaxAnalyzer::FetchMacro( const std::string& macro_name, const Macro::Context context )
+RcPtr<Macro> SyntaxAnalyzer::FetchMacro( const std::string& macro_name, const Macro::Context context )
 {
 	const MacroMap& macro_map= (*macros_)[context];
 	const auto it= macro_map.find(macro_name);
 	if( it != macro_map.end() )
-		return &it->second;
+		return it->second;
 
 	return nullptr;
 }

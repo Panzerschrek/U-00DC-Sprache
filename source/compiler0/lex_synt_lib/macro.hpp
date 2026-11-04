@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
-#include <set>
 #include "lexical_analyzer.hpp"
 #include "program_string.hpp"
+#include "rc_ptr.hpp"
 
 namespace U
 {
@@ -74,7 +74,9 @@ struct Macro
 	ResultElements result_template_elements;
 };
 
-using MacroMap= ProgramStringMap< Macro >;
+// Store macros using "RcPtr" in order to share them across different imported files.
+using MacroMap= ProgramStringMap< RcPtr<Macro> >;
+
 using MacrosByContextMap= std::unordered_map< Macro::Context, MacroMap >;
 
 using MacrosPtr= std::shared_ptr<MacrosByContextMap>;

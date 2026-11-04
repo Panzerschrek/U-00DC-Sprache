@@ -118,12 +118,12 @@ size_t LoadNode_r(
 			Synt::MacroMap& dst_map= merged_macroses[context_macro_map_pair.first];
 			for( const auto& macro_map_pair : context_macro_map_pair.second )
 			{
-				if( dst_map.find(macro_map_pair.first) != dst_map.end() &&
-					macro_map_pair.second.src_loc != dst_map.find(macro_map_pair.first)->second.src_loc )
+				if( const auto it= dst_map.find(macro_map_pair.first); it != dst_map.end() )
 				{
-					result.errors.emplace_back(
-						"Macro \"" + macro_map_pair.first + "\" redefinition.",
-						SrcLoc( uint32_t(node_index), 0u, 0u ) );
+					if( it->second != macro_map_pair.second ) // It's the same macro if shared pointers are equal.
+						result.errors.emplace_back(
+							"Macro \"" + macro_map_pair.first + "\" redefinition.",
+							SrcLoc( uint32_t(node_index), 0u, 0u ) );
 				}
 				else
 					dst_map[macro_map_pair.first]= macro_map_pair.second;

@@ -39,7 +39,7 @@ Symbols BuildMacrosSymbols(
 	{
 		for( const auto& name_macro_pair : constex_macro_map_pair.second )
 		{
-			const Synt::Macro& macro= name_macro_pair.second;
+			const Synt::Macro& macro= *name_macro_pair.second;
 			if( macro.src_loc.GetFileIndex() != 0 )
 				continue; // Ignore imported macros.
 
