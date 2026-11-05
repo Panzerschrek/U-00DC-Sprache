@@ -81,7 +81,7 @@ private:
 	struct CallFrame
 	{
 		InstructionsMap instructions_map;
-		CoroutineData* coroutine_data= nullptr; // observer ptr
+		std::shared_ptr<CoroutineData> coroutine_data;
 		bool is_coroutine= false;
 	};
 
@@ -182,7 +182,7 @@ private:
 
 	// Allocate coroutine data here and provide user code only handle value.
 	uint32_t next_coroutine_id_= 1u;
-	std::unordered_map<uint32_t, CoroutineData> coroutines_data_;
+	llvm::DenseMap<uint32_t, std::shared_ptr<CoroutineData>> coroutines_data_;
 
 	llvm::DenseMap<const llvm::Constant*, size_t> external_constant_mapping_;
 

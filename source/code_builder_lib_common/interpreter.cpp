@@ -252,6 +252,12 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 
 llvm::GenericValue Interpreter::ExecuteFunctionBody( const llvm::Instruction* instruction )
 {
+	if( instruction == nullptr )
+	{
+		ReportError( "Reached null instruction!" );
+		return llvm::GenericValue();
+	}
+
 	const size_t prev_stack_size= stack_.size();
 
 	const llvm::BasicBlock* prev_basic_block= nullptr;
@@ -1418,14 +1424,14 @@ void Interpreter::ProcessCoroId( const llvm::CallInst* const instruction )
 	(void)coroaddr;
 	(void)fnaddrs;
 
-	CoroutineData coroutine_data;
-	coroutine_data.promise= promise;
+	auto coroutine_data= std::make_shared<CoroutineData>();
+	coroutine_data->promise= promise;
 
 	const auto coroutine_id= next_coroutine_id_;
 	++next_coroutine_id_;
-	coroutines_data_[coroutine_id]= std::move(coroutine_data);
+	coroutines_data_[coroutine_id]= coroutine_data;
 
-	current_function_frame_.coroutine_data= &coroutines_data_[coroutine_id];
+	current_function_frame_.coroutine_data= coroutine_data;
 
 	llvm::GenericValue val;
 	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t( coroutine_id ) );
@@ -1536,7 +1542,15 @@ void Interpreter::ProcessCoroDone( const llvm::CallInst* const instruction )
 
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
 	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
-	const CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
+
+	const auto it= coroutines_data_.find( coroutine_id );
+	if( it == coroutines_data_.end() )
+	{
+		ReportError( "Can't fetch coroutine data" );
+		return;
+	}
+
+	const CoroutineData& coroutine_data= *it->second;
 
 	llvm::GenericValue val;
 	val.IntVal= llvm::APInt( 1u, coroutine_data.done ? uint64_t(1) : uint64_t(0) );
@@ -1553,7 +1567,15 @@ void Interpreter::ProcessCoroPromise( const llvm::CallInst* const instruction )
 
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
 	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
-	const CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
+
+	const auto it= coroutines_data_.find( coroutine_id );
+	if( it == coroutines_data_.end() )
+	{
+		ReportError( "Can't fetch coroutine data" );
+		return;
+	}
+
+	const CoroutineData& coroutine_data= *it->second;
 
 	current_function_frame_.instructions_map[ instruction ]= coroutine_data.promise;
 }
@@ -1744,11 +1766,25 @@ void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const bool
 
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
 	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
-	CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
+
+	const auto it= coroutines_data_.find( coroutine_id );
+	if( it == coroutines_data_.end() )
+	{
+		ReportError( "Can't fetch coroutine data" );
+		return;
+	}
+
+	const std::shared_ptr<CoroutineData>& coroutine_data= it->second;
+
+	if( coroutine_data->suspend_instruction == nullptr )
+	{
+		ReportError( "Can't resume coroutine - suspend instruction is null" );
+		return;
+	}
 
 	CallFrame call_frame;
-	call_frame.instructions_map= coroutine_data.instructions_map;
-	call_frame.coroutine_data= &coroutine_data;
+	call_frame.instructions_map= coroutine_data->instructions_map;
+	call_frame.coroutine_data= coroutine_data;
 	call_frame.is_coroutine= true;
 
 	const size_t prev_stack_size= stack_.size();
@@ -1758,10 +1794,10 @@ void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const bool
 	{ // Set result of "suspend" instriction.
 		llvm::GenericValue val;
 		val.IntVal= llvm::APInt( 8u, destroy ? uint64_t(1) : uint64_t(0) );
-		current_function_frame_.instructions_map[ coroutine_data.suspend_instruction ]= val;
+		current_function_frame_.instructions_map[ coroutine_data->suspend_instruction ]= val;
 	}
 	// Continue execution starting with next instruction.
-	ExecuteFunctionBody( coroutine_data.suspend_instruction->getNextNode() );
+	ExecuteFunctionBody( coroutine_data->suspend_instruction->getNextNode() );
 
 	std::swap( call_frame, current_function_frame_ );
 
