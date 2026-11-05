@@ -1223,6 +1223,12 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessMemmove( const llvm::Instruction* const instruction )
 {
+	if( instruction->getNumOperands() < 3 )
+	{
+		ReportError( "Incorrect number of operands for \"memcpy\"/\"memmove\"!" );
+		return;
+	}
+
 	const size_t dst_offset= size_t( GetVal( instruction->getOperand(0u) ).IntVal.getLimitedValue() );
 	const size_t src_offset= size_t( GetVal( instruction->getOperand(1u) ).IntVal.getLimitedValue() );
 	const size_t size= size_t( GetVal( instruction->getOperand(2u) ).IntVal.getLimitedValue() );
@@ -1243,6 +1249,12 @@ constexpr size_t g_malloc_header_size= sizeof(size_t);
 
 void Interpreter::ProcessMalloc( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 1 )
+	{
+		ReportError( "Incorrect number of operands for \"malloc\"!" );
+		return;
+	}
+
 	const size_t size= size_t( GetVal( instruction->getOperand(0u) ).IntVal.getLimitedValue() );
 
 	const size_t offset= heap_.size();
@@ -1265,6 +1277,12 @@ void Interpreter::ProcessMalloc( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessRealloc( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 2 )
+	{
+		ReportError( "Incorrect number of operands for \"realloc\"!" );
+		return;
+	}
+
 	// Just allocate new memory block and copy contents of old one into new.
 
 	const llvm::GenericValue op0= GetVal( instruction->getOperand(0u) );
@@ -1316,6 +1334,12 @@ void Interpreter::ProcessFree( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroId( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 4 )
+	{
+		ReportError( "Incorrect number of operands for \"coro.id\"!" );
+		return;
+	}
+
 	const llvm::GenericValue alignment= GetVal( instruction->getOperand(0u) );
 	const llvm::GenericValue promise= GetVal( instruction->getOperand(1u) );
 	const llvm::GenericValue coroaddr= GetVal( instruction->getOperand(2u) );
@@ -1349,6 +1373,12 @@ void Interpreter::ProcessCoroAlloc( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroFree( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 1 )
+	{
+		ReportError( "Incorrect number of operands for \"coro.free\"!" );
+		return;
+	}
+
 	const llvm::GenericValue token= GetVal( instruction->getOperand(0u) );
 	const uint32_t coroutine_id= uint32_t(token.IntVal.getLimitedValue());
 	coroutines_data_.erase( coroutine_id );
@@ -1369,6 +1399,12 @@ void Interpreter::ProcessCoroSize( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroBegin( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 2 )
+	{
+		ReportError( "Incorrect number of operands for \"coro.begin\"!" );
+		return;
+	}
+
 	const llvm::GenericValue token= GetVal( instruction->getOperand(0u) );
 	const llvm::GenericValue memory= GetVal( instruction->getOperand(1u) );
 
@@ -1386,6 +1422,12 @@ void Interpreter::ProcessCoroEnd( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroSuspend( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 2 )
+	{
+		ReportError( "Incorrect number of operands for \"coro.suspend\"!" );
+		return;
+	}
+
 	U_ASSERT( current_function_frame_.coroutine_data != nullptr );
 
 	// const llvm::GenericValue token_save= GetVal( instruction->getOperand(0u) );
@@ -1412,6 +1454,12 @@ void Interpreter::ProcessCoroDestroy( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroDone( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 1 )
+	{
+		ReportError( "Incorrect number of operands for \"coro.done\"!" );
+		return;
+	}
+
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
 	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
 	const CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
@@ -1423,6 +1471,12 @@ void Interpreter::ProcessCoroDone( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroPromise( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 1 )
+	{
+		ReportError( "Incorrect number of operands for \"coro.promise\"!" );
+		return;
+	}
+
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
 	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
 	const CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
@@ -1432,6 +1486,12 @@ void Interpreter::ProcessCoroPromise( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessSAddWithOverflow( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 2 )
+	{
+		ReportError( "Incorrect number of operands for \"sadd.with.overflow\"!" );
+		return;
+	}
+
 	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
 	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
 
@@ -1451,6 +1511,12 @@ void Interpreter::ProcessSAddWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessUAddWithOverflow( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 2 )
+	{
+		ReportError( "Incorrect number of operands for \"uadd.with.overflow\"!" );
+		return;
+	}
+
 	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
 	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
 
@@ -1470,6 +1536,12 @@ void Interpreter::ProcessUAddWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessSSubWithOverflow( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 2 )
+	{
+		ReportError( "Incorrect number of operands for \"ssub.with.overflow\"!" );
+		return;
+	}
+
 	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
 	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
 
@@ -1489,6 +1561,11 @@ void Interpreter::ProcessSSubWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessUSubWithOverflow( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 2 )
+	{
+		ReportError( "Incorrect number of operands for \"usub.with.overflow\"!" );
+		return;
+	}
 	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
 	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
 
@@ -1508,6 +1585,12 @@ void Interpreter::ProcessUSubWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessSMulWithOverflow( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 2 )
+	{
+		ReportError( "Incorrect number of operands for \"smul.with.overflow\"!" );
+		return;
+	}
+
 	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
 	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
 
@@ -1527,6 +1610,12 @@ void Interpreter::ProcessSMulWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessUMulWithOverflow( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 2 )
+	{
+		ReportError( "Incorrect number of operands for \"umul.with.overflow\"!" );
+		return;
+	}
+
 	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
 	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
 
@@ -1560,6 +1649,12 @@ void Interpreter::ProcessStackrestore( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessThreadLocalAddress( const llvm::CallInst* const instruction )
 {
+	if( instruction->getNumOperands() < 1 )
+	{
+		ReportError( "Incorrect number of operands for \"threadlocal.address\"!" );
+		return;
+	}
+
 	// Just return variable itself. For now we don't support handling thread-local variables properly (with TLS creation).
 	llvm::GenericValue val= GetVal( instruction->getArgOperand(0) );
 	current_function_frame_.instructions_map[ instruction ]= std::move(val);
@@ -1567,6 +1662,12 @@ void Interpreter::ProcessThreadLocalAddress( const llvm::CallInst* const instruc
 
 void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const bool destroy )
 {
+	if( instruction->getNumOperands() < 1 )
+	{
+		ReportError( "Incorrect number of operands for coroutine resume!" );
+		return;
+	}
+
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
 	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
 	CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
