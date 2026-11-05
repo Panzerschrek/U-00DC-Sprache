@@ -1296,9 +1296,9 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction )
 	stack_.resize( prev_stack_size ); // Drop temporary byval arguments.
 }
 
-void Interpreter::ProcessMemmove( const llvm::Instruction* const instruction )
+void Interpreter::ProcessMemmove( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 3 )
+	if( instruction->arg_size() < 3 )
 	{
 		ReportError( "Incorrect number of operands for \"memcpy\"/\"memmove\"!" );
 		return;
@@ -1324,7 +1324,7 @@ constexpr size_t g_malloc_header_size= sizeof(size_t);
 
 void Interpreter::ProcessMalloc( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 1 )
+	if( instruction->arg_size() != 1 )
 	{
 		ReportError( "Incorrect number of operands for \"malloc\"!" );
 		return;
@@ -1352,7 +1352,7 @@ void Interpreter::ProcessMalloc( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessRealloc( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 2 )
+	if( instruction->arg_size() != 2 )
 	{
 		ReportError( "Incorrect number of operands for \"realloc\"!" );
 		return;
@@ -1409,7 +1409,7 @@ void Interpreter::ProcessFree( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroId( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 4 )
+	if( instruction->arg_size() != 4 )
 	{
 		ReportError( "Incorrect number of operands for \"coro.id\"!" );
 		return;
@@ -1448,7 +1448,7 @@ void Interpreter::ProcessCoroAlloc( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroFree( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 1 )
+	if( instruction->arg_size() != 2 )
 	{
 		ReportError( "Incorrect number of operands for \"coro.free\"!" );
 		return;
@@ -1474,7 +1474,7 @@ void Interpreter::ProcessCoroSize( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroBegin( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 2 )
+	if( instruction->arg_size() != 2 )
 	{
 		ReportError( "Incorrect number of operands for \"coro.begin\"!" );
 		return;
@@ -1497,7 +1497,7 @@ void Interpreter::ProcessCoroEnd( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroSuspend( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 2 )
+	if( instruction->arg_size() != 2 )
 	{
 		ReportError( "Incorrect number of operands for \"coro.suspend\"!" );
 		return;
@@ -1534,7 +1534,7 @@ void Interpreter::ProcessCoroDestroy( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroDone( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 1 )
+	if( instruction->arg_size() != 1 )
 	{
 		ReportError( "Incorrect number of operands for \"coro.done\"!" );
 		return;
@@ -1559,7 +1559,7 @@ void Interpreter::ProcessCoroDone( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroPromise( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 1 )
+	if( instruction->arg_size() != 3 )
 	{
 		ReportError( "Incorrect number of operands for \"coro.promise\"!" );
 		return;
@@ -1582,7 +1582,7 @@ void Interpreter::ProcessCoroPromise( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessSAddWithOverflow( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 2 )
+	if( instruction->arg_size() != 2 )
 	{
 		ReportError( "Incorrect number of operands for \"sadd.with.overflow\"!" );
 		return;
@@ -1607,7 +1607,7 @@ void Interpreter::ProcessSAddWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessUAddWithOverflow( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 2 )
+	if( instruction->arg_size() != 2 )
 	{
 		ReportError( "Incorrect number of operands for \"uadd.with.overflow\"!" );
 		return;
@@ -1632,7 +1632,7 @@ void Interpreter::ProcessUAddWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessSSubWithOverflow( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 2 )
+	if( instruction->arg_size() != 2 )
 	{
 		ReportError( "Incorrect number of operands for \"ssub.with.overflow\"!" );
 		return;
@@ -1657,7 +1657,7 @@ void Interpreter::ProcessSSubWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessUSubWithOverflow( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 2 )
+	if( instruction->arg_size() != 2 )
 	{
 		ReportError( "Incorrect number of operands for \"usub.with.overflow\"!" );
 		return;
@@ -1681,7 +1681,7 @@ void Interpreter::ProcessUSubWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessSMulWithOverflow( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 2 )
+	if( instruction->arg_size() != 2 )
 	{
 		ReportError( "Incorrect number of operands for \"smul.with.overflow\"!" );
 		return;
@@ -1706,7 +1706,7 @@ void Interpreter::ProcessSMulWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessUMulWithOverflow( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 2 )
+	if( instruction->arg_size() != 2 )
 	{
 		ReportError( "Incorrect number of operands for \"umul.with.overflow\"!" );
 		return;
@@ -1745,7 +1745,7 @@ void Interpreter::ProcessStackrestore( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessThreadLocalAddress( const llvm::CallInst* const instruction )
 {
-	if( instruction->getNumOperands() < 1 )
+	if( instruction->arg_size() != 1 )
 	{
 		ReportError( "Incorrect number of operands for \"threadlocal.address\"!" );
 		return;
@@ -1758,7 +1758,7 @@ void Interpreter::ProcessThreadLocalAddress( const llvm::CallInst* const instruc
 
 void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const bool destroy )
 {
-	if( instruction->getNumOperands() < 1 )
+	if( instruction->arg_size() != 1 )
 	{
 		ReportError( "Incorrect number of operands for coroutine resume!" );
 		return;

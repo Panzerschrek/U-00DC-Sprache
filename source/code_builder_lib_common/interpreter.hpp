@@ -126,7 +126,7 @@ private:
 
 	void ProcessGEP( const llvm::Instruction* instruction );
 	void ProcessCall( const llvm::CallInst* instruction );
-	void ProcessMemmove( const llvm::Instruction* instruction );
+	void ProcessMemmove( const llvm::CallInst* instruction );
 	void ProcessMalloc( const llvm::CallInst* instruction );
 	void ProcessRealloc( const llvm::CallInst* instruction );
 	void ProcessFree( const llvm::CallInst* instruction );
