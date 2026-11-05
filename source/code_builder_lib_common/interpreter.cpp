@@ -217,10 +217,10 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		return llvm::GenericValue();
 	}
 
-	return CallFunctionImpl( &*bb.begin() );
+	return ExecuteFunctionBody( &*bb.begin() );
 }
 
-llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instruction )
+llvm::GenericValue Interpreter::ExecuteFunctionBody( const llvm::Instruction* instruction )
 {
 	const size_t prev_stack_size= stack_.size();
 
@@ -1693,7 +1693,7 @@ void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const bool
 		current_function_frame_.instructions_map[ coroutine_data.suspend_instruction ]= val;
 	}
 	// Continue execution starting with next instruction.
-	CallFunctionImpl( coroutine_data.suspend_instruction->getNextNode() );
+	ExecuteFunctionBody( coroutine_data.suspend_instruction->getNextNode() );
 
 	std::swap( call_frame, current_function_frame_ );
 

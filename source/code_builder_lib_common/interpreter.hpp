@@ -103,7 +103,7 @@ private:
 	ResultConstexpr PrepareResultAndClear();
 
 	llvm::GenericValue CallFunction( const llvm::Function& llvm_function );
-	llvm::GenericValue CallFunctionImpl( const llvm::Instruction* instruction );
+	llvm::GenericValue ExecuteFunctionBody( const llvm::Instruction* instruction );
 
 	// Returns offset
 	size_t MoveConstantToStack( const llvm::Constant& constant );
