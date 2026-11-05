@@ -204,6 +204,11 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		ReportError( "Max call stack depth (" + std::to_string( options_.max_call_stack_depth ) + ") reached" );
 		return llvm::GenericValue();
 	}
+	if( llvm_function.empty() )
+	{
+		ReportError( "executing function \"" + std::string(llvm_function.getName()) + "\" with empty body" );
+		return llvm::GenericValue();
+	}
 
 	const llvm::BasicBlock& bb= llvm_function.front();
 	if( bb.empty() )
