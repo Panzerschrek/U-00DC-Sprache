@@ -66,7 +66,12 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 		{
 			if( param.hasStructRetAttr() )
 			{
-				U_ASSERT(i == 0u);
+				if( i != 0 )
+				{
+					ResultConstexpr result;
+					result.errors.push_back( "\"sret\" attribute for non-first argument" );
+					return result;
+				}
 
 				s_ret_ptr= stack_.size();
 				const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize( &return_type ) );
@@ -174,13 +179,19 @@ Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
 	size_t i= 0u;
 	for( const llvm::Argument& param : llvm_function->args() )
 	{
-		U_ASSERT( ! param.getType()->isPointerTy() );
+		if( param.getType()->isPointerTy() )
+		{
+			ResultGeneric result;
+			result.errors.push_back( "Evaluating a function with pointer-typed param" );
+			return result;
+		}
+
 		current_function_frame_.instructions_map[ &param ]= args[i];
 
 		++i;
 	}
 
-	Interpreter::ResultGeneric res;
+	ResultGeneric res;
 	res.result= CallFunction( *llvm_function );
 
 	res.errors= std::move(errors_);
@@ -2290,7 +2301,9 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		case llvm::CmpInst::ICMP_SGE: val.IntVal= op0.IntVal.sge(op1.IntVal); break;
 		case llvm::CmpInst::ICMP_SLT: val.IntVal= op0.IntVal.slt(op1.IntVal); break;
 		case llvm::CmpInst::ICMP_SLE: val.IntVal= op0.IntVal.sle(op1.IntVal); break;
-		default: U_ASSERT(false); break;
+		default:
+			ReportError( "unhandled compare predicate", *instruction );
+			return;
 		};
 		break;
 
@@ -2314,7 +2327,6 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 			switch(llvm::dyn_cast<llvm::CmpInst>(instruction)->getPredicate())
 			{
 			// see llvm-3.7.1.src/lib/IR/ConstantFold.cpp:1752
-			default: U_ASSERT(false); break;
 			case llvm::FCmpInst::FCMP_FALSE: val.IntVal= llvm::APInt( 1u, 0u ); break;
 			case llvm::FCmpInst::FCMP_TRUE : val.IntVal= llvm::APInt( 1u, 1u ); break;
 			case llvm::FCmpInst::FCMP_UNO  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpUnordered ); break;
@@ -2331,6 +2343,9 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 			case llvm::FCmpInst::FCMP_OLE  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpLessThan || cmp_result == llvm::APFloat::cmpEqual ); break;
 			case llvm::FCmpInst::FCMP_UGE  : val.IntVal= llvm::APInt( 1u, cmp_result != llvm::APFloat::cmpLessThan ); break;
 			case llvm::FCmpInst::FCMP_OGE  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpGreaterThan || cmp_result == llvm::APFloat::cmpEqual ); break;
+			default:
+				ReportError( "unhandled compare predicate", *instruction );
+				return;
 			}
 		}
 		break;
