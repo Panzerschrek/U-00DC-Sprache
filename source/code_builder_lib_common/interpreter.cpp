@@ -1778,17 +1778,29 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 		break;
 
 	case llvm::Instruction::SExt:
-		U_ASSERT(dst_type->isIntegerTy());
+		if( !dst_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"sext\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op.IntVal.sext(dst_type->getIntegerBitWidth());
 		break;
 
 	case llvm::Instruction::ZExt:
-		U_ASSERT(dst_type->isIntegerTy());
+		if( !dst_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"zext\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op.IntVal.zext(dst_type->getIntegerBitWidth());
 		break;
 
 	case llvm::Instruction::Trunc:
-		U_ASSERT(dst_type->isIntegerTy());
+		if( !dst_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"trunc\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op.IntVal.trunc(dst_type->getIntegerBitWidth());
 		break;
 
@@ -1833,10 +1845,20 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 		break;
 
 	case llvm::Instruction::IntToPtr:
+		if( !dst_type->isPointerTy() )
+		{
+			ReportError( "Unsupported type for \"inttoptr\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= llvm::APInt( pointer_size_in_bits_, op.IntVal.getLimitedValue() );
 		break;
 
 	case llvm::Instruction::PtrToInt:
+		if( !dst_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"ptrtoint\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= llvm::APInt( pointer_size_in_bits_, op.IntVal.getLimitedValue() );
 		break;
 
@@ -1850,7 +1872,11 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 		break;
 
 	case llvm::Instruction::SIToFP:
-		U_ASSERT(src_type->isIntegerTy());
+		if( !src_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"sitofp\" instruction", *instruction );
+			return;
+		}
 		if( dst_type->isFloatTy() )
 			val.FloatVal= llvm::APIntOps::RoundSignedAPIntToFloat(op.IntVal);
 		else if( dst_type->isDoubleTy() )
@@ -1860,7 +1886,11 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 		break;
 
 	case llvm::Instruction::UIToFP:
-		U_ASSERT(src_type->isIntegerTy());
+		if( !src_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"uitofp\" instruction", *instruction );
+			return;
+		}
 		if( dst_type->isFloatTy() )
 			val.FloatVal= llvm::APIntOps::RoundAPIntToFloat(op.IntVal);
 		else if( dst_type->isDoubleTy() )
@@ -1871,7 +1901,11 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 
 	// TODO - is this correct way to convert floats to ints?
 	case llvm::Instruction::FPToSI:
-		U_ASSERT(dst_type->isIntegerTy());
+		if( !dst_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"fptosi\" instruction", *instruction );
+			return;
+		}
 		if( src_type->isFloatTy() )
 			val.IntVal= llvm::APIntOps::RoundFloatToAPInt( op.FloatVal, dst_type->getIntegerBitWidth() );
 		else if( src_type->isDoubleTy() )
@@ -1881,7 +1915,11 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 		break;
 
 	case llvm::Instruction::FPToUI:
-		U_ASSERT(dst_type->isIntegerTy());
+		if( !dst_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"fptoui\" instruction", *instruction );
+			return;
+		}
 		if( src_type->isFloatTy() )
 			val.IntVal= llvm::APIntOps::RoundFloatToAPInt( op.FloatVal, dst_type->getIntegerBitWidth() );
 		else if( src_type->isDoubleTy() )
@@ -1951,27 +1989,64 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 	const llvm::GenericValue op0= GetVal( instruction->getOperand(0u) );
 	const llvm::GenericValue op1= GetVal( instruction->getOperand(1u) );
 
-	llvm::Type* const type= instruction->getOperand(0u)->getType();
+	llvm::Type* const type0= instruction->getOperand(0u)->getType();
+	llvm::Type* const type1= instruction->getOperand(1u)->getType();
 	llvm::GenericValue val;
 	switch(instruction->getOpcode())
 	{
 	case llvm::Instruction::Add:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"add\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"add\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal + op1.IntVal;
 		break;
 
 	case llvm::Instruction::Sub:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"sub\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"sub\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal - op1.IntVal;
 		break;
 
 	case llvm::Instruction::Mul:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"mul\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"mul\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal * op1.IntVal;
 		break;
 
 	case llvm::Instruction::SDiv:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"sdiv\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"sdiv\" instruction", *instruction );
+			return;
+		}
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.sdiv(op1.IntVal);
 		else
@@ -1979,7 +2054,17 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 
 	case llvm::Instruction::UDiv:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"udiv\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy())
+		{
+			ReportError( "unsupported type for \"lshr\" instruction", *instruction );
+			return;
+		}
+
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.udiv(op1.IntVal);
 		else
@@ -1987,7 +2072,16 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 
 	case llvm::Instruction::SRem:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"srem\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"srem\" instruction", *instruction );
+			return;
+		}
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.srem(op1.IntVal);
 		else
@@ -1995,7 +2089,16 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 
 	case llvm::Instruction::URem:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"urem\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"urem\" instruction", *instruction );
+			return;
+		}
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.urem(op1.IntVal);
 		else
@@ -2003,79 +2106,158 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 
 	case llvm::Instruction::And:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"and\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"and\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal & op1.IntVal;
 		break;
 
 	case llvm::Instruction::Or:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"or\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"or\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal | op1.IntVal;
 		break;
 
 	case llvm::Instruction::Xor:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"xor\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy())
+		{
+			ReportError( "unsupported type for \"xor\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal ^ op1.IntVal;
 		break;
 
 	case llvm::Instruction::Shl:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"shl\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"shl\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal.shl(op1.IntVal);
 		break;
 
 	case llvm::Instruction::AShr:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"ashr\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"ashr\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal.ashr(op1.IntVal);
 		break;
 
 	case llvm::Instruction::LShr:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"lshr\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"lshr\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal.lshr(op1.IntVal);
 		break;
 
 	case llvm::Instruction::FAdd:
-		if( type->isFloatTy() )
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"fadd\" instruction", *instruction );
+			return;
+		}
+		if( type0->isFloatTy() )
 			val.FloatVal= ( llvm::APFloat(op0.FloatVal) + llvm::APFloat(op1.FloatVal) ).convertToFloat();
-		else if( type->isDoubleTy() )
+		else if( type0->isDoubleTy() )
 			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) + llvm::APFloat(op1.DoubleVal) ).convertToDouble();
 		else
 			ReportError( "unsupported type for \"fadd\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FSub:
-		if( type->isFloatTy() )
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"fsub\" instruction", *instruction );
+			return;
+		}
+		if( type0->isFloatTy() )
 			val.FloatVal= ( llvm::APFloat(op0.FloatVal) - llvm::APFloat(op1.FloatVal) ).convertToFloat();
-		else if( type->isDoubleTy() )
+		else if( type0->isDoubleTy() )
 			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) - llvm::APFloat(op1.DoubleVal) ).convertToDouble();
 		else
 			ReportError( "unsupported type for \"fsub\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FMul:
-		if( type->isFloatTy() )
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"fmul\" instruction", *instruction );
+			return;
+		}
+		if( type0->isFloatTy() )
 			val.FloatVal= ( llvm::APFloat(op0.FloatVal) * llvm::APFloat(op1.FloatVal) ).convertToFloat();
-		else if( type->isDoubleTy() )
+		else if( type0->isDoubleTy() )
 			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) * llvm::APFloat(op1.DoubleVal) ).convertToDouble();
 		else
 			ReportError( "unsupported type for \"fmul\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FDiv:
-		if( type->isFloatTy() )
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"fdiv\" instruction", *instruction );
+			return;
+		}
+		if( type0->isFloatTy() )
 			val.FloatVal= ( llvm::APFloat(op0.FloatVal) / llvm::APFloat(op1.FloatVal) ).convertToFloat();
-		else if( type->isDoubleTy() )
+		else if( type0->isDoubleTy() )
 			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) / llvm::APFloat(op1.DoubleVal) ).convertToDouble();
 		else
 			ReportError( "unsupported type for \"fdiv\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FRem:
-		if( type->isFloatTy() )
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"frem\" instruction", *instruction );
+			return;
+		}
+		if( type0->isFloatTy() )
 		{
 			llvm::APFloat result_val(op0.FloatVal);
 			result_val.mod( llvm::APFloat(op1.FloatVal));
 			val.FloatVal= result_val.convertToFloat();
 		}
-		else if( type->isDoubleTy() )
+		else if( type0->isDoubleTy() )
 		{
 			llvm::APFloat result_val(op0.DoubleVal);
 			result_val.mod( llvm::APFloat(op1.DoubleVal) );
@@ -2086,7 +2268,16 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 
 	case llvm::Instruction::ICmp:
-		U_ASSERT(type->isIntegerTy() || type->isPointerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"icmp\" instruction", *instruction );
+			return;
+		}
+		if( !( type0->isIntegerTy() || type0->isPointerTy() ) )
+		{
+			ReportError( "unsupported type for \"icmp\" instruction", *instruction );
+			return;
+		}
 		switch(llvm::dyn_cast<llvm::CmpInst>(instruction)->getPredicate())
 		{
 		case llvm::CmpInst::ICMP_EQ : val.IntVal= op0.IntVal.eq (op1.IntVal); break;
@@ -2104,10 +2295,19 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 
 	case llvm::Instruction::FCmp:
-		U_ASSERT(type->isFloatingPointTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"fcmp\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isFloatingPointTy() )
+		{
+			ReportError( "unsupported type for \"fcmp\" instruction", *instruction );
+			return;
+		}
 		{
 			llvm::APFloat::cmpResult cmp_result;
-			if( type->isFloatTy() )
+			if( type0->isFloatTy() )
 				cmp_result= llvm::APFloat(op0.FloatVal).compare(llvm::APFloat(op1.FloatVal));
 			else
 				cmp_result= llvm::APFloat(op0.DoubleVal).compare(llvm::APFloat(op1.DoubleVal));
