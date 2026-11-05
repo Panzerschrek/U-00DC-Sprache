@@ -24,7 +24,8 @@ General:
 	execution in order to check no UB or non-determinism is possible, like uninitialized memory usage, pointer
 	comparison across allocation boundaries, etc.
 *) Allow "auto-constexpr" for any function/method with body known
-*) A way to hide some names in common (imported) files - for implementation details
+*) A way to hide some names in common (imported) files (for implementation details), or at least to forbid accessing
+	them (like for private class members)
 *) A way to disable structs, type aliases, static asserts, other stuff in namespaces - similar to "enable_if"
 *) Investigate possibility of conditional imports
 *) Consider adding ways to obtain some debug information within a program - get current function name, current file
@@ -50,9 +51,11 @@ General:
 	specified and redirects all method calls to corresponding implementation method calls. A reference to an
 	implementation class can be converted to reference to one of its static interfaces.
 *) Consider supporting sequence filler initializer ( ... ) for tuples
+*) Consider allowing using sequence filler initializer ( ... ) in coroutines, but prevent usage of "yield" in it
 *) Consider adding some syntax sugar allowing expression syntax nodes in type name syntax nodes, so that it's possible
 	to use something like "typeinfo</T/>.src_type"
 *) Consider allowing using {} initializer for structs having explicit non-copy constructors, at least in some cases
+*) Consider adding a syntax for creating a temporary variable with "zero_init", "uninitialized", "[]" initializers
 
 References:
 *) Consider adding some sort of explicit reference notation for structs/classes. This can allow specifying reference
@@ -91,7 +94,8 @@ Standart library:
 *) Support casting "shared_ptr_final</A/>" to "shared_ptr_final</B/>" if A and B are polymorph related types
 *) More type traits
 *) More math functions
-*) "ref" container - like "optional_ref", but always containing a reference
+*) "ref" container - like "optional_ref", but always containing a reference, which can be used in places where
+	it's needed to reassign a reference or to process it as a value
 *) "result"-like container for reference results
 *) Optimize size of the "result" container for storing an enum-like error and "void" succes type
 *) Support opening files with appending
@@ -115,7 +119,7 @@ Standart library:
 *) String/vector-like containers with limited number of elements (32-bit or 16-bit sizes)
 *) Compact vector-like container - with size/capacity stored in allocated memory block
 *) Optimize quicksort implementation - use faster algorithm for small number of elements, select median element wisely
-*) Detachable thread
+*) Detachable thread or a way to make a regular thread detached
 *) More binary search functions - index of last element less than given (or equal to it), index of given element,
 	range partition
 *) Adapter-container for binary heap (min_heap/max_heap)
@@ -132,8 +136,8 @@ Compiler:
 *) Prevent infinite or near-infinite templates instantiation, possibly via a hard limit for total number of template
 	instantiations. This may prevent stack overflow in some cases.
 *) Limit number of lex/synt errors printed - to avoid printing too many of them
-*) Generate a parsing error if line count/line length limits are reached
-*) Add hard limit for input file size (like 10MB)
+*) Add a hard limit for input file size (like 10MB) - in order to prevent generating millions of lexical errors in case
+	if a non-source file (a binary file) unintentionally is provided to the compiler
 *) Investigate optimization possibility - avoid mangling private functions
 *) Try to optimize SrcLoc size (use only 4 bytes)
 *) In Compiler0 parse floating-point numeric literals in syntax analyzer and avoid storing literal string in AST. It
@@ -193,7 +197,7 @@ Language server:
 *) SignatureHelp - filter suggested functions based on already provided arguments
 *) SignatureHelp - return ranges of arguments and active range
 *) Improve "go to definition" for templates - fix some cases where templates processing doesn't work
-*) Go to definition for non-value names - loop labels, macro names, etc.
+*) Go to definition for loop labels
 *) Go to definition for macros
 *) Backup completion for non-compiled documents
 *) Filter-out some symbol kinds in completion, depending on context
