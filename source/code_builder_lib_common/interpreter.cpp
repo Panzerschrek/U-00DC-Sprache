@@ -85,8 +85,8 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 			// Assume we have a constant of type compatible with parameter type.
 			// Convert it into expected type, using load-store, which is effectively equivalent to bitcast.
 			const size_t offset= MoveConstantToStack( *args[i] );
-			const std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
-			current_function_frame_.instructions_map[ &param ]= DoLoad( data_ptr, param.getType() );
+			const MemoryRegionView memory_region= GetMemoryForVirtualAddress( offset );
+			current_function_frame_.instructions_map[ &param ]= DoLoad( memory_region, param.getType() );
 		}
 
 		++i;
@@ -182,8 +182,8 @@ void Interpreter::RegisterCustomFunction( const llvm::StringRef name, const Cust
 
 void Interpreter::ReadExecutinEngineData( void* const dst, const uint64_t address, const size_t size ) const
 {
-	const std::byte* const data_ptr= const_cast<Interpreter*>(this)->GetMemoryForVirtualAddress( size_t(address ) );
-	std::memcpy( dst, data_ptr, size );
+	const MemoryRegionView memory_region= const_cast<Interpreter*>(this)->GetMemoryForVirtualAddress( size_t(address ) );
+	std::memcpy( dst, memory_region.ptr, std::min( size, memory_region.size ) );
 }
 
 llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_function )
@@ -406,13 +406,13 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 				const llvm::GenericValue op2= GetVal(instruction->getOperand(2u));
 				llvm::Type* const read_type= instruction->getOperand(1u)->getType();
 
-				std::byte* const data_ptr= GetMemoryForVirtualAddress( size_t(op0.IntVal.getLimitedValue()) );
-				const llvm::GenericValue load_result= DoLoad( data_ptr, read_type );
+				const MemoryRegionView memory_region= GetMemoryForVirtualAddress( size_t(op0.IntVal.getLimitedValue()) );
+				const llvm::GenericValue load_result= DoLoad( memory_region, read_type );
 
 				bool success= false;
 				if( load_result.IntVal == op1.IntVal )
 				{
-					DoStore( data_ptr, op2, read_type );
+					DoStore( memory_region, op2, read_type );
 					success= true;
 				}
 
@@ -751,6 +751,7 @@ void Interpreter::ProcessAlloca( const llvm::Instruction* const instruction )
 {
 	const auto alloca_instruction= llvm::dyn_cast<llvm::AllocaInst>(instruction);
 	llvm::Type* const element_type= alloca_instruction->getAllocatedType();
+
 	const size_t element_size= size_t(data_layout_.getTypeAllocSize( element_type ));
 
 	size_t address= 0u;
@@ -784,15 +785,31 @@ void Interpreter::ProcessAlloca( const llvm::Instruction* const instruction )
 	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
-std::byte* Interpreter::GetMemoryForVirtualAddress( const size_t offset )
+Interpreter::MemoryRegionView Interpreter::GetMemoryForVirtualAddress( const size_t offset )
 {
 	// Map virtual memory addresses to one of existing segments.
 	// TODO - produce error if address is wrong.
 	if( offset >= g_heap_segment_offset )
-		return heap_.data() + ( offset - g_heap_segment_offset );
+	{
+		const size_t heap_offset= offset - g_heap_segment_offset;
+		if( heap_offset > heap_.size() )
+			return MemoryRegionView{ nullptr, 0 };
+
+		return MemoryRegionView{ heap_.data() + heap_offset, heap_.size() - heap_offset };
+	}
 	if( offset >= g_globals_segment_offset )
-		return globals_stack_.data() + ( offset - g_globals_segment_offset );
-	return stack_.data() + offset;
+	{
+		const size_t globals_offset= offset - g_globals_segment_offset;
+		if( globals_offset > globals_stack_.size() )
+			return MemoryRegionView{ nullptr, 0 };
+
+		return MemoryRegionView{ globals_stack_.data() + globals_offset, globals_stack_.size() - globals_offset };
+	}
+
+	if( offset > stack_.size() )
+		return MemoryRegionView{ nullptr, 0 };
+
+	return MemoryRegionView{ stack_.data() + offset, stack_.size() - offset };
 }
 
 void Interpreter::ProcessLoad( const llvm::Instruction* const instruction )
@@ -800,27 +817,59 @@ void Interpreter::ProcessLoad( const llvm::Instruction* const instruction )
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(0u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
-	const std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
-	current_function_frame_.instructions_map[ instruction ]= DoLoad( data_ptr, instruction->getType() );
+	const MemoryRegionView memory_region= GetMemoryForVirtualAddress( offset );
+	current_function_frame_.instructions_map[ instruction ]= DoLoad( memory_region, instruction->getType() );
 }
 
-llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const t )
+llvm::GenericValue Interpreter::DoLoad( const MemoryRegionView memory_region, llvm::Type* const t )
 {
 	llvm::GenericValue val;
 	if( t->isIntegerTy() )
 	{
 		uint64_t buff[4];
-		std::memcpy( buff, ptr, size_t(data_layout_.getTypeStoreSize( t )) );
+		const size_t load_size= size_t(data_layout_.getTypeStoreSize( t ));
+		if( load_size > memory_region.size )
+		{
+			ReportError( "Out of bounds load!" );
+			return val;
+		}
+
+		std::memcpy( buff, memory_region.ptr, load_size );
 		val.IntVal= llvm::APInt( t->getIntegerBitWidth() , buff );
 	}
 	else if( t->isFloatTy() )
-		std::memcpy( &val.FloatVal, ptr, sizeof(float) );
+	{
+		if( sizeof( val.FloatVal ) > memory_region.size )
+		{
+			ReportError( "Out of bounds load!" );
+			return val;
+		}
+
+		std::memcpy( &val.FloatVal, memory_region.ptr, sizeof(float) );
+	}
+
 	else if( t->isDoubleTy() )
-		std::memcpy( &val.DoubleVal, ptr, sizeof(double) );
+	{
+		if( sizeof( val.DoubleVal ) > memory_region.size )
+		{
+			ReportError( "Out of bounds load!" );
+			return val;
+		}
+
+		std::memcpy( &val.DoubleVal, memory_region.ptr, sizeof(double) );
+	}
 	else if( t->isPointerTy() )
 	{
 		uint64_t int_ptr;
-		std::memcpy( &int_ptr, ptr, size_t(data_layout_.getTypeAllocSize( t ) ) );
+
+		const size_t load_size= size_t(data_layout_.getTypeAllocSize( t ) );
+		if( load_size > memory_region.size )
+		{
+			ReportError( "Out of bounds load!" );
+			return val;
+		}
+
+		std::memcpy( &int_ptr, memory_region.ptr, load_size );
 		val.IntVal= llvm::APInt( pointer_size_in_bits_, int_ptr );
 	}
 	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(t) )
@@ -830,10 +879,19 @@ llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const 
 
 		val.AggregateVal.resize(num_elements);
 		for (uint32_t i= 0; i < num_elements; ++i)
+		{
+			const size_t offset= size_t( struct_layout->getElementOffset(i) );
+			if( offset > memory_region.size )
+			{
+				ReportError( "Out of bounds load!" );
+				return val;
+			}
+
 			val.AggregateVal[i]=
 				DoLoad(
-					ptr + size_t( struct_layout->getElementOffset(i) ),
+					MemoryRegionView{ memory_region.ptr + offset, memory_region.size - offset },
 					struct_type->getElementType(i));
+		}
 
 	}
 	else if( const auto array_type= llvm::cast<llvm::ArrayType>(t) )
@@ -844,10 +902,19 @@ llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const 
 
 		val.AggregateVal.resize(size_t(num_elements));
 		for( uint64_t i= 0; i < num_elements; ++i)
+		{
+			const size_t offset= size_t(i * element_size);
+			if( offset > memory_region.size )
+			{
+				ReportError( "Out of bounds load!" );
+				return val;
+			}
+
 			val.AggregateVal[size_t(i)]=
 				DoLoad(
-					ptr + size_t(i * element_size),
+					MemoryRegionView{ memory_region.ptr + offset, memory_region.size - offset },
 					element_type );
+		}
 	}
 	else U_ASSERT(false);
 
@@ -859,33 +926,68 @@ void Interpreter::ProcessStore( const llvm::Instruction* const instruction )
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(1u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
-	std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
+	const MemoryRegionView memory_region= GetMemoryForVirtualAddress( offset );
 
 	const auto value_operand= instruction->getOperand(0u);
-	DoStore( data_ptr, GetVal( value_operand ), value_operand->getType() );
+	DoStore( memory_region, GetVal( value_operand ), value_operand->getType() );
 }
 
-void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, llvm::Type* const t )
+void Interpreter::DoStore( const MemoryRegionView memory_region, const llvm::GenericValue& val, llvm::Type* const t )
 {
 	if( t->isIntegerTy() )
 	{
-		if( t->getIntegerBitWidth() <= 64 )
+		const uint32_t integer_bit_width= t->getIntegerBitWidth();
+
+		if( integer_bit_width / 8u > memory_region.size )
+		{
+			ReportError( "Out of bounds store!" );
+			return;
+		}
+
+		if( integer_bit_width <= 64 )
 		{
 			const uint64_t limited_value= val.IntVal.getLimitedValue();
-			std::memcpy( ptr, &limited_value, size_t(data_layout_.getTypeStoreSize( t )) );
+			std::memcpy( memory_region.ptr, &limited_value, size_t(data_layout_.getTypeStoreSize( t )) );
 		}
-		else if( t->getIntegerBitWidth() % 64u == 0 )
-			std::memcpy( ptr, val.IntVal.getRawData(), t->getIntegerBitWidth() / 8u );
-		else U_ASSERT(false); // Not implemented yet.
+		else if( integer_bit_width % 64u == 0 )
+			std::memcpy( memory_region.ptr, val.IntVal.getRawData(), integer_bit_width / 8u );
+		else
+		{
+			ReportError( "Storing an integer of unsupported size!" );
+			return;
+		}
 	}
 	else if( t->isFloatTy() )
-		std::memcpy( ptr, &val.FloatVal, size_t(data_layout_.getTypeAllocSize( t )) );
+	{
+		if( sizeof( val.FloatVal ) > memory_region.size )
+		{
+			ReportError( "Out of bounds store!" );
+			return;
+		}
+
+		std::memcpy( memory_region.ptr, &val.FloatVal, sizeof( val.FloatVal ) );
+	}
 	else if( t->isDoubleTy() )
-		std::memcpy( ptr, &val.DoubleVal, size_t(data_layout_.getTypeAllocSize( t )) );
+	{
+		if( sizeof( val.DoubleVal ) > memory_region.size )
+		{
+			ReportError( "Out of bounds store!" );
+			return;
+		}
+
+		std::memcpy( memory_region.ptr, &val.DoubleVal, sizeof( val.DoubleVal ) );
+	}
 	else if( t->isPointerTy() )
 	{
+		const size_t store_size= size_t(data_layout_.getTypeAllocSize( t ));
+		if( store_size > memory_region.size )
+		{
+			ReportError( "Out of bounds store!" );
+			return;
+		}
+
 		const uint64_t int_ptr= val.IntVal.getLimitedValue();
-		std::memcpy( ptr, &int_ptr, size_t(data_layout_.getTypeAllocSize( t )) );
+		std::memcpy( memory_region.ptr, &int_ptr, store_size );
 	}
 	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(t) )
 	{
@@ -894,10 +996,19 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 
 		U_ASSERT( val.AggregateVal.size() == num_elements );
 		for (uint32_t i= 0; i < num_elements; ++i)
+		{
+			const size_t offset= size_t( struct_layout->getElementOffset(i) );
+			if( offset > memory_region.size )
+			{
+				ReportError( "Out of bounds store!" );
+				return;
+			}
+
 			DoStore(
-				ptr + size_t( struct_layout->getElementOffset(i) ),
+				MemoryRegionView{ memory_region.ptr + offset, memory_region.size - offset },
 				val.AggregateVal[i],
 				struct_type->getElementType(i));
+		}
 
 	}
 	else if( const auto array_type= llvm::cast<llvm::ArrayType>(t) )
@@ -908,10 +1019,19 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 
 		U_ASSERT( val.AggregateVal.size() == num_elements );
 		for( uint64_t i= 0; i < num_elements; ++i)
-				DoStore(
-					ptr + size_t(i * element_size),
-					val.AggregateVal[size_t(i)],
-					element_type );
+		{
+			const size_t offset= size_t(i * element_size);
+			if( offset > memory_region.size )
+			{
+				ReportError( "Out of bounds store!" );
+				return;
+			}
+
+			DoStore(
+				MemoryRegionView{ memory_region.ptr + offset, memory_region.size - offset },
+				val.AggregateVal[size_t(i)],
+				element_type );
+		}
 	}
 	else U_ASSERT(false);
 }
@@ -1097,10 +1217,16 @@ void Interpreter::ProcessMemmove( const llvm::Instruction* const instruction )
 	const size_t src_offset= size_t( GetVal( instruction->getOperand(1u) ).IntVal.getLimitedValue() );
 	const size_t size= size_t( GetVal( instruction->getOperand(2u) ).IntVal.getLimitedValue() );
 
-	std::byte* const dst_ptr= GetMemoryForVirtualAddress( dst_offset );
-	const std::byte* const src_ptr= GetMemoryForVirtualAddress( src_offset );
+	const MemoryRegionView dst_memory_region= GetMemoryForVirtualAddress( dst_offset );
+	const MemoryRegionView src_memory_region= GetMemoryForVirtualAddress( src_offset );
 
-	std::memmove( dst_ptr, src_ptr, size );
+	if( size > std::min( dst_memory_region.size, src_memory_region.size ) )
+	{
+		ReportError( "Out of bounds memmove!" );
+		return;
+	}
+
+	std::memmove( dst_memory_region.ptr, src_memory_region.ptr, size );
 }
 
 constexpr size_t g_malloc_header_size= sizeof(size_t);
@@ -1814,8 +1940,8 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 
 	case llvm::Instruction::AtomicRMW:
 		{
-			std::byte* const data_ptr= GetMemoryForVirtualAddress( size_t(op0.IntVal.getLimitedValue()) );
-			const llvm::GenericValue load_result= DoLoad( data_ptr, instruction->getType() );
+			const MemoryRegionView memory_region= GetMemoryForVirtualAddress( size_t(op0.IntVal.getLimitedValue()) );
+			const llvm::GenericValue load_result= DoLoad( memory_region, instruction->getType() );
 			val= load_result;
 
 			llvm::GenericValue new_value;
@@ -1848,7 +1974,7 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 				new_value= op1;
 				break;
 			}
-			DoStore( data_ptr, new_value, instruction->getType() );
+			DoStore( memory_region, new_value, instruction->getType() );
 		}
 		break;
 

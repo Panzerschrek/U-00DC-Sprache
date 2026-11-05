@@ -74,6 +74,32 @@ public:
 	void ReadExecutinEngineData( void* dst, uint64_t address, size_t size ) const;
 
 private:
+	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
+
+	struct CoroutineData;
+
+	struct CallFrame
+	{
+		InstructionsMap instructions_map;
+		CoroutineData* coroutine_data= nullptr; // observer ptr
+		bool is_coroutine= false;
+	};
+
+	struct CoroutineData
+	{
+		InstructionsMap instructions_map; // Save here all instruction in case of suspend.
+		llvm::GenericValue promise;
+		const llvm::CallInst* suspend_instruction= nullptr;
+		bool done= false;
+	};
+
+	struct MemoryRegionView
+	{
+		std::byte* ptr= nullptr;
+		size_t size= 0;
+	};
+
+private:
 	ResultConstexpr PrepareResultAndClear();
 
 	llvm::GenericValue CallFunction( const llvm::Function& llvm_function );
@@ -90,13 +116,13 @@ private:
 	llvm::GenericValue GetVal( const llvm::Value* val );
 	void ProcessAlloca( const llvm::Instruction* instruction );
 
-	std::byte* GetMemoryForVirtualAddress( size_t offset );
+	MemoryRegionView GetMemoryForVirtualAddress( size_t offset );
 
 	void ProcessLoad( const llvm::Instruction* instruction );
-	llvm::GenericValue DoLoad( const std::byte* ptr, llvm::Type* t );
+	llvm::GenericValue DoLoad( MemoryRegionView memory_region, llvm::Type* t );
 
 	void ProcessStore( const llvm::Instruction* instruction );
-	void DoStore( std::byte* ptr, const llvm::GenericValue& val, llvm::Type* t );
+	void DoStore( MemoryRegionView memory_region, const llvm::GenericValue& val, llvm::Type* t );
 
 	void ProcessGEP( const llvm::Instruction* instruction );
 	void ProcessCall( const llvm::CallInst* instruction );
@@ -140,26 +166,6 @@ private:
 	void ReportError(std::string_view text, const llvm::Instruction& instruction );
 	void ReportError(std::string_view text );
 	std::string GetCurrentCallStackDescription();
-
-private:
-	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
-
-	struct CoroutineData;
-
-	struct CallFrame
-	{
-		InstructionsMap instructions_map;
-		CoroutineData* coroutine_data= nullptr; // observer ptr
-		bool is_coroutine= false;
-	};
-
-	struct CoroutineData
-	{
-		InstructionsMap instructions_map; // Save here all instruction in case of suspend.
-		llvm::GenericValue promise;
-		const llvm::CallInst* suspend_instruction= nullptr;
-		bool done= false;
-	};
 
 private:
 	const llvm::DataLayout data_layout_;
