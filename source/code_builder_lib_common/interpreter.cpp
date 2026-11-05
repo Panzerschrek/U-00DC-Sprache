@@ -129,7 +129,8 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 	}
 	else if( return_type.isPointerTy() )
 		ReportError( "returning pointer in constexpr function" );
-	else U_ASSERT(false);
+	else
+		ReportError( "returning unsupported type" );
 
 	current_function_frame_.instructions_map.clear();
 	stack_.clear();
@@ -506,7 +507,8 @@ void Interpreter::CopyConstantToStack( const llvm::Constant& constant, const siz
 				{
 					if( constant_expression->getOpcode() == llvm::Instruction::GetElementPtr )
 						element_ptr= size_t( BuildGEP( constant_expression ).IntVal.getLimitedValue() );
-					else U_ASSERT(false);
+					else
+						ReportError( "storing unsupported constant expression" );
 				}
 				else if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
 					element_ptr= MoveConstantToStack( *global_variable->getInitializer() );
@@ -514,7 +516,8 @@ void Interpreter::CopyConstantToStack( const llvm::Constant& constant, const siz
 					element_ptr= 0;
 				else if( const auto function= llvm::dyn_cast<llvm::Function>(element) )
 					element_ptr= GetFunctionIndex( function );
-				else U_ASSERT(false);
+				else
+					ReportError( "storing constant pointer of unsupported kind" );
 
 				std::memcpy( globals_stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
 			}
@@ -536,7 +539,8 @@ void Interpreter::CopyConstantToStack( const llvm::Constant& constant, const siz
 		const llvm::APInt val = constant.getUniqueInteger();
 		if( val.getBitWidth() <= 64 || val.getBitWidth() % 64u == 0 )
 			std::memcpy( globals_stack_.data() + stack_offset, val.getRawData(), size_t(data_layout_.getTypeAllocSize( constant_type )) );
-		else U_ASSERT(false);
+		else
+			ReportError( "stroring integer constant of unsupported size" );
 	}
 	else if( constant_type->isFloatTy() )
 	{
@@ -558,7 +562,8 @@ void Interpreter::CopyConstantToStack( const llvm::Constant& constant, const siz
 		else
 			std::memset( globals_stack_.data() + stack_offset, 0, size_t( data_layout_.getTypeAllocSize( constant_type ) ) );
 	}
-	else U_ASSERT(false);
+	else
+		ReportError( "storing constant of unsupported type" );
 }
 
 llvm::Constant* Interpreter::ReadConstantFromStack( llvm::Type* const type, const size_t value_ptr )
@@ -579,7 +584,11 @@ llvm::Constant* Interpreter::ReadConstantFromStack( llvm::Type* const type, cons
 						uint32_t(integer_type->getBitWidth()),
 						uint32_t(integer_type->getBitWidth() / sizeof(uint64_t)),
 						reinterpret_cast<uint64_t*>(stack_.data() + value_ptr) ) );
-		else U_ASSERT(false);
+		else
+		{
+			ReportError( "loading integer constant of unsupported size" );
+			return llvm::UndefValue::get( type );
+		}
 	}
 	else if( type->isFloatTy() )
 	{
@@ -615,12 +624,14 @@ llvm::Constant* Interpreter::ReadConstantFromStack( llvm::Type* const type, cons
 	}
 	else if( type->isPointerTy() )
 	{
-		ReportError( "building constant pointer" );
+		ReportError( "loading constant pointer" );
 		return llvm::UndefValue::get( type );
 	}
-	else U_ASSERT(false);
-
-	return nullptr;
+	else
+	{
+		ReportError( "loading constant of unsupported type" );
+		return llvm::UndefValue::get( type );
+	}
 }
 
 llvm::GenericValue Interpreter::BuildGEP( const llvm::User* const instruction )
@@ -684,7 +695,8 @@ llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 			res.FloatVal= constant_fp->getValueAPF().convertToFloat();
 		else if( val->getType()->isDoubleTy() )
 			res.DoubleVal= constant_fp->getValueAPF().convertToDouble();
-		else U_ASSERT(false);
+		else
+			ReportError( "Accessing floating-point constant of unsupported type" );
 	}
 	else if( const auto constant_int= llvm::dyn_cast<llvm::ConstantInt>(val) )
 		res.IntVal= constant_int->getValue();
@@ -739,7 +751,7 @@ llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 				res.AggregateVal[i]= GetVal( undef_value->getElementValue(i) );
 		}
 		else
-			ReportError( "Building unknown undef value" );
+			ReportError( "Accessing unsupported undef value" );
 	}
 	else if( const auto function= llvm::dyn_cast<llvm::Function>(val) )
 		res.IntVal= llvm::APInt( pointer_size_in_bits_, GetFunctionIndex( function ) );
@@ -747,12 +759,16 @@ llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 	{
 		if( constant_expression->getOpcode() == llvm::Instruction::GetElementPtr )
 			res= BuildGEP( constant_expression );
-		else U_ASSERT(false);
+		else
+			ReportError( "Accessing unsupported constant expression" );
 	}
 	else
 	{
-		U_ASSERT( current_function_frame_.instructions_map.find( val ) != current_function_frame_.instructions_map.end() );
-		res= current_function_frame_.instructions_map[val];
+		const auto it= current_function_frame_.instructions_map.find( val );
+		if( it != current_function_frame_.instructions_map.end() )
+			res= it->second;
+		else
+			ReportError( "Accessing unknown value not present in instructions map" );
 	}
 	return res;
 }
@@ -857,7 +873,6 @@ llvm::GenericValue Interpreter::DoLoad( const MemoryRegionView memory_region, ll
 
 		std::memcpy( &val.FloatVal, memory_region.ptr, sizeof(float) );
 	}
-
 	else if( t->isDoubleTy() )
 	{
 		if( sizeof( val.DoubleVal ) > memory_region.size )
@@ -902,7 +917,6 @@ llvm::GenericValue Interpreter::DoLoad( const MemoryRegionView memory_region, ll
 					MemoryRegionView{ memory_region.ptr + offset, memory_region.size - offset },
 					struct_type->getElementType(i));
 		}
-
 	}
 	else if( const auto array_type= llvm::cast<llvm::ArrayType>(t) )
 	{
@@ -926,7 +940,8 @@ llvm::GenericValue Interpreter::DoLoad( const MemoryRegionView memory_region, ll
 					element_type );
 		}
 	}
-	else U_ASSERT(false);
+	else
+		ReportError( "Loading value of unsupported type!" );
 
 	return val;
 }
@@ -1004,7 +1019,12 @@ void Interpreter::DoStore( const MemoryRegionView memory_region, const llvm::Gen
 		const uint32_t num_elements= struct_type->getNumElements();
 		const llvm::StructLayout *const struct_layout= data_layout_.getStructLayout(struct_type);
 
-		U_ASSERT( val.AggregateVal.size() == num_elements );
+		if( val.AggregateVal.size() != num_elements )
+		{
+			ReportError( "Storing aggregate value with unexpected size!" );
+			return;
+		}
+
 		for (uint32_t i= 0; i < num_elements; ++i)
 		{
 			const size_t offset= size_t( struct_layout->getElementOffset(i) );
@@ -1027,7 +1047,12 @@ void Interpreter::DoStore( const MemoryRegionView memory_region, const llvm::Gen
 		const auto element_type= array_type->getElementType();
 		const uint64_t element_size= data_layout_.getTypeAllocSize(element_type);
 
-		U_ASSERT( val.AggregateVal.size() == num_elements );
+		if( val.AggregateVal.size() != num_elements )
+		{
+			ReportError( "Storing aggregate value with unexpected size!" );
+			return;
+		}
+
 		for( uint64_t i= 0; i < num_elements; ++i)
 		{
 			const size_t offset= size_t(i * element_size);
@@ -1043,7 +1068,8 @@ void Interpreter::DoStore( const MemoryRegionView memory_region, const llvm::Gen
 				element_type );
 		}
 	}
-	else U_ASSERT(false);
+	else
+		ReportError( "Loading value of unsupported type!" );
 }
 
 void Interpreter::ProcessGEP( const llvm::Instruction* const instruction )
@@ -1725,7 +1751,12 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 		val= op;
 		for( const auto index : llvm::dyn_cast<llvm::ExtractValueInst>(instruction)->indices() )
 		{
-			U_ASSERT( index < val.AggregateVal.size() );
+			if( index >= val.AggregateVal.size() )
+			{
+				ReportError( "Extracting value with incorrect index!" );
+				return;
+			}
+
 			val= val.AggregateVal[index];
 		}
 		break;
@@ -1748,30 +1779,41 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 	case llvm::Instruction::FPExt:
 		if( dst_type->isFloatTy() )
 		{
-			if( src_type->isFloatTy() ) val.FloatVal= op.FloatVal;
-			else U_ASSERT(false);
+			if( src_type->isFloatTy() )
+				val.FloatVal= op.FloatVal;
+			else
+				ReportError( "unsupported src type for \"fpext\" instruction", *instruction );
 		}
 		else if( dst_type->isDoubleTy() )
 		{
-			if( src_type->isFloatTy() ) val.DoubleVal= double(op.FloatVal);
-			else U_ASSERT(false);
+			if( src_type->isFloatTy() )
+				val.DoubleVal= double(op.FloatVal);
+			else
+				ReportError( "unsupported src type for \"fpext\" instruction", *instruction );
 		}
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported dst type for \"fpext\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FPTrunc:
 		if( dst_type->isFloatTy() )
 		{
-			if( src_type->isFloatTy() ) val.FloatVal= op.FloatVal;
-			else if( src_type->isDoubleTy() ) val.FloatVal= float(op.DoubleVal);
-			else U_ASSERT(false);
+			if( src_type->isFloatTy() )
+				val.FloatVal= op.FloatVal;
+			else if( src_type->isDoubleTy() )
+				val.FloatVal= float(op.DoubleVal);
+			else
+				ReportError( "unsupported src type for \"fptrunc\" instruction", *instruction );
 		}
 		else if( dst_type->isDoubleTy() )
 		{
-			if( src_type->isDoubleTy() ) val.DoubleVal= op.DoubleVal;
-			else U_ASSERT(false);
+			if( src_type->isDoubleTy() )
+				val.DoubleVal= op.DoubleVal;
+			else
+				ReportError( "unsupported src type for \"fptrunc\" instruction", *instruction );
 		}
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported dst type for \"fptrunc\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::IntToPtr:
@@ -1783,9 +1825,12 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 		break;
 
 	case llvm::Instruction::FNeg:
-		if( src_type->isFloatTy() ) val.FloatVal= -op.FloatVal;
-		else if( src_type->isDoubleTy() ) val.DoubleVal = -op.DoubleVal;
-		else U_ASSERT(false);
+		if( src_type->isFloatTy() )
+			val.FloatVal= -op.FloatVal;
+		else if( src_type->isDoubleTy() )
+			val.DoubleVal = -op.DoubleVal;
+		else
+			ReportError( "unsupported type for \"fneg\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::SIToFP:
@@ -1794,7 +1839,8 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 			val.FloatVal= llvm::APIntOps::RoundSignedAPIntToFloat(op.IntVal);
 		else if( dst_type->isDoubleTy() )
 			val.DoubleVal= llvm::APIntOps::RoundSignedAPIntToDouble(op.IntVal);
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"sitofp\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::UIToFP:
@@ -1803,7 +1849,8 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 			val.FloatVal= llvm::APIntOps::RoundAPIntToFloat(op.IntVal);
 		else if( dst_type->isDoubleTy() )
 			val.DoubleVal= llvm::APIntOps::RoundAPIntToDouble(op.IntVal);
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"uitofp\" instruction", *instruction );
 		break;
 
 	// TODO - is this correct way to convert floats to ints?
@@ -1813,7 +1860,8 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 			val.IntVal= llvm::APIntOps::RoundFloatToAPInt( op.FloatVal, dst_type->getIntegerBitWidth() );
 		else if( src_type->isDoubleTy() )
 			val.IntVal= llvm::APIntOps::RoundDoubleToAPInt( op.DoubleVal, dst_type->getIntegerBitWidth() );
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"fptosi\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FPToUI:
@@ -1822,7 +1870,8 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 			val.IntVal= llvm::APIntOps::RoundFloatToAPInt( op.FloatVal, dst_type->getIntegerBitWidth() );
 		else if( src_type->isDoubleTy() )
 			val.IntVal= llvm::APIntOps::RoundDoubleToAPInt( op.DoubleVal, dst_type->getIntegerBitWidth() );
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"fptoui\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::BitCast:
@@ -1972,7 +2021,8 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 			val.FloatVal= ( llvm::APFloat(op0.FloatVal) + llvm::APFloat(op1.FloatVal) ).convertToFloat();
 		else if( type->isDoubleTy() )
 			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) + llvm::APFloat(op1.DoubleVal) ).convertToDouble();
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"fadd\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FSub:
@@ -1980,7 +2030,8 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 			val.FloatVal= ( llvm::APFloat(op0.FloatVal) - llvm::APFloat(op1.FloatVal) ).convertToFloat();
 		else if( type->isDoubleTy() )
 			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) - llvm::APFloat(op1.DoubleVal) ).convertToDouble();
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"fsub\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FMul:
@@ -1988,7 +2039,8 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 			val.FloatVal= ( llvm::APFloat(op0.FloatVal) * llvm::APFloat(op1.FloatVal) ).convertToFloat();
 		else if( type->isDoubleTy() )
 			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) * llvm::APFloat(op1.DoubleVal) ).convertToDouble();
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"fmul\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FDiv:
@@ -1996,7 +2048,8 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 			val.FloatVal= ( llvm::APFloat(op0.FloatVal) / llvm::APFloat(op1.FloatVal) ).convertToFloat();
 		else if( type->isDoubleTy() )
 			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) / llvm::APFloat(op1.DoubleVal) ).convertToDouble();
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"fdiv\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FRem:
@@ -2012,7 +2065,8 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 			result_val.mod( llvm::APFloat(op1.DoubleVal) );
 			val.DoubleVal= result_val.convertToDouble();
 		}
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"frem\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::ICmp:
