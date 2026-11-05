@@ -511,7 +511,7 @@ void Interpreter::CopyConstantToStack( const llvm::Constant& constant, const siz
 				else if( element->isNullValue() )
 					element_ptr= 0;
 				else if( const auto function= llvm::dyn_cast<llvm::Function>(element) )
-					element_ptr= reinterpret_cast<size_t>( function );
+					element_ptr= GetFunctionIndex( function );
 				else U_ASSERT(false);
 
 				std::memcpy( globals_stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
@@ -550,7 +550,7 @@ void Interpreter::CopyConstantToStack( const llvm::Constant& constant, const siz
 	{
 		if( const auto function= llvm::dyn_cast<llvm::Function>(&constant) )
 		{
-			const uint64_t val= reinterpret_cast<size_t>(function);
+			const uint64_t val= GetFunctionIndex( function );
 			std::memcpy( globals_stack_.data() + stack_offset, &val, pointer_size_in_bits_ / 8 );
 		}
 		else
@@ -732,7 +732,7 @@ llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 			ReportError( "Building unknown undef value" );
 	}
 	else if( const auto function= llvm::dyn_cast<llvm::Function>(val) )
-		res.IntVal= llvm::APInt( pointer_size_in_bits_, reinterpret_cast<size_t>( function ) );
+		res.IntVal= llvm::APInt( pointer_size_in_bits_, GetFunctionIndex( function ) );
 	else if( const auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( val ) )
 	{
 		if( constant_expression->getOpcode() == llvm::Instruction::GetElementPtr )
@@ -1044,13 +1044,23 @@ void Interpreter::ProcessGEP( const llvm::Instruction* const instruction )
 void Interpreter::ProcessCall( const llvm::CallInst* const instruction )
 {
 	const llvm::Value* const calle= instruction->getCalledOperand();
+
 	const llvm::Function* function= llvm::dyn_cast<llvm::Function>(calle);
 	if( function == nullptr )
-		function= reinterpret_cast<const llvm::Function*>( size_t( GetVal( calle ).IntVal.getLimitedValue() ) );
+	{
+		const size_t index= size_t( GetVal( calle ).IntVal.getLimitedValue() );
+		if( index >= function_pointers_mapping_vec_.size() )
+		{
+			ReportError( "Calling unknown function pointer", *instruction );
+			return;
+		}
+
+		function= function_pointers_mapping_vec_[ index ];
+	}
 
 	if( function == nullptr )
 	{
-		ReportError( "Calling zero functon pointer", *instruction );
+		ReportError( "Calling zero function pointer", *instruction );
 		return;
 	}
 
@@ -1984,6 +1994,22 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 	};
 
 	current_function_frame_.instructions_map[instruction]= val;
+}
+
+size_t Interpreter::GetFunctionIndex( const llvm::Function* const function )
+{
+	// Maintain bidirectional mapping of function pointers to their indices.
+
+	if( const auto it= function_pointers_map_.find( function ); it != function_pointers_map_.end() )
+		return it->second; // This function is already known.
+
+	// Create new entry in both containers.
+
+	const size_t index= function_pointers_mapping_vec_.size();
+	function_pointers_mapping_vec_.push_back( function );
+	function_pointers_map_.insert( std::make_pair( function, index ) );
+
+	return index;
 }
 
 void Interpreter::ReportDataStackOverflow()

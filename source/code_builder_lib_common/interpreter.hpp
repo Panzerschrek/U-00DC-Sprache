@@ -160,6 +160,8 @@ private:
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
 	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );
 
+	size_t GetFunctionIndex( const llvm::Function* function );
+
 	void ReportDataStackOverflow();
 	void ReportGlobalsStackOverflow();
 
@@ -183,6 +185,12 @@ private:
 	std::unordered_map<uint32_t, CoroutineData> coroutines_data_;
 
 	llvm::DenseMap<const llvm::Constant*, size_t> external_constant_mapping_;
+
+	// Store just sequential integers for values for function pointers.
+	// Use this container to obtain functions for such integers.
+	// Doing so we can make sure, that no arbitrary address can be casted to llvm::Function*.
+	llvm::DenseMap<const llvm::Function*, size_t> function_pointers_map_;
+	llvm::SmallVector<const llvm::Function*> function_pointers_mapping_vec_;
 
 	llvm::StringMap<CustomFunction> custom_functions_;
 
