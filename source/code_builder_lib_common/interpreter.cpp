@@ -625,7 +625,11 @@ llvm::Constant* Interpreter::ReadConstantFromStack( llvm::Type* const type, cons
 
 llvm::GenericValue Interpreter::BuildGEP( const llvm::User* const instruction )
 {
-	U_ASSERT( instruction->getNumOperands() >= 2u );
+	if( instruction->getNumOperands() < 2u )
+	{
+		ReportError( "Invalid \"getelementptr\" instruction - too few operands!" );
+		return llvm::GenericValue();
+	}
 
 	llvm::User::const_op_iterator op= instruction->op_begin();
 	const llvm::User::const_op_iterator op_end= instruction->op_end();
@@ -636,7 +640,7 @@ llvm::GenericValue Interpreter::BuildGEP( const llvm::User* const instruction )
 	const llvm::GenericValue first_index= GetVal( op->get() );
 	++op;
 
-	// TODO - check if this is correct cast.
+	// LLVM uses some magic with "GEPOperator", so that casting both "GetElementPtrInst" and "ConstantExpr" work fine.
 	llvm::Type* const ptr_element_type= llvm::dyn_cast<llvm::GEPOperator>(instruction)->getSourceElementType();
 
 	uint64_t offset_accumulated= first_index.IntVal.getLimitedValue() * data_layout_.getTypeAllocSize( ptr_element_type );
@@ -659,7 +663,11 @@ llvm::GenericValue Interpreter::BuildGEP( const llvm::User* const instruction )
 			offset_accumulated+= struct_layout.getElementOffset( element_index );
 			aggregate_type= aggregate_type->getStructElementType( element_index );
 		}
-		else U_ASSERT(false);
+		else
+		{
+			ReportError( "Unsupported type kind in \"getelementptr\" instruction!" );
+			return llvm::GenericValue();
+		}
 	}
 
 	llvm::GenericValue new_ptr;
