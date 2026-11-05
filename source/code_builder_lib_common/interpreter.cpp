@@ -137,6 +137,8 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 	heap_.clear();
 	coroutines_data_.clear();
 	external_constant_mapping_.clear();
+	function_pointers_map_.clear();
+	function_pointers_mapping_vec_.clear();
 
 	return result;
 }
