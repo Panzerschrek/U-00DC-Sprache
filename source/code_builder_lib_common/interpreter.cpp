@@ -1064,8 +1064,14 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction )
 		return;
 	}
 
-	// It is possible to call function by providing more arguments, than needed.
-	U_ASSERT( function->arg_size() <= instruction->getNumOperands() - 1u );
+
+	if( function->arg_size() > instruction->arg_size() )
+	{
+		ReportError( "Not enough arguments are provided for function call", *instruction );
+		return;
+	}
+
+	// Allow providing more than needed arguments. It's necessary for variadic functions and some other tricky cases.
 
 	const llvm::StringRef function_name= function->getName();
 
