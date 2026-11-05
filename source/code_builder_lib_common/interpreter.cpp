@@ -42,8 +42,19 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 
 	stack_.resize(16u); // reserve null pointer
 
-	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
-	U_ASSERT( !return_type.isPointerTy() ); // Currently can return only values.
+	if( args.size() < llvm_function->arg_size() )
+	{
+		ResultConstexpr result;
+		result.errors.push_back( "Too few arguments for function" );
+		return result;
+	}
+
+	if( return_type.isPointerTy() )
+	{
+		ResultConstexpr result;
+		result.errors.push_back( "Evaluation result of pointer type - it's not supported" );
+		return result;
+	}
 
 	size_t s_ret_ptr= 0u;
 
@@ -152,7 +163,12 @@ Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
 
 	stack_.resize(16u); // reserve null pointer
 
-	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
+	if( args.size() < llvm_function->arg_size() )
+	{
+		ResultGeneric result;
+		result.errors.push_back( "Too few arguments for function" );
+		return result;
+	}
 
 	// Fill arguments
 	size_t i= 0u;
