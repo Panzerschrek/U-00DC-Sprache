@@ -227,19 +227,25 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 	const llvm::BasicBlock* prev_basic_block= nullptr;
 	const llvm::BasicBlock* current_basic_block= instruction->getParent();
 
+	if( current_basic_block == nullptr )
+	{
+		ReportError( "Current basic block is empty!" );
+		return llvm::GenericValue();
+	}
+
 	while( errors_.empty() )
 	{
 		if( instruction == nullptr )
 		{
 			ReportError( "Reached null instruction!" );
-			break;
+			return llvm::GenericValue();
 		}
 
 		++instructions_executed_;
 		if( instructions_executed_ >= options_.max_instructions_executed )
 		{
 			ReportError( "Interpreter instructions limit (" + std::to_string( instructions_executed_ ) + ") reached", *instruction );
-			break;
+			return llvm::GenericValue();
 		}
 
 		switch( instruction->getOpcode() )
@@ -266,31 +272,77 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 				call_stack_.push_back( call_instruction );
 				ProcessCall( call_instruction );
 				call_stack_.pop_back();
+
+				// If there are some errors, abort execution.
+				if( !errors_.empty() )
+					return llvm::GenericValue();
 			}
 			break;
 
 		case llvm::Instruction::Br:
 			prev_basic_block= current_basic_block;
 			if( instruction->getNumOperands() == 1u ) // Unconditional
+			{
 				current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(0u));
-			else
+
+				if( current_basic_block == nullptr )
+				{
+					ReportError( "Incorrect basic block in \"br\" instruction!" );
+					return llvm::GenericValue();
+				}
+			}
+			else if( instruction->getNumOperands() == 3u ) // Conditional
 			{
 				const llvm::GenericValue val= GetVal(instruction->getOperand(0u));
 				current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand( val.IntVal.getBoolValue() ? 2u : 1u ));
+
+				if( current_basic_block == nullptr )
+				{
+					ReportError( "Incorrect basic block in \"br\" instruction!" );
+					return llvm::GenericValue();
+				}
 			}
+			else
+			{
+				ReportError( "Incorrect number of operands in \"br\" instruction!" );
+				return llvm::GenericValue();
+			}
+
 			instruction= current_basic_block->empty() ? nullptr : &current_basic_block->front();
 			continue; // Continue loop without advancing instruction.
 
 		case llvm::Instruction::Switch:
 			{
+				const uint32_t num_operands= instruction->getNumOperands();
+				if( num_operands < 2 )
+				{
+					ReportError( "Incorrect number of operands in \"switch\" instruction!" );
+					return llvm::GenericValue();
+				}
+
 				prev_basic_block= current_basic_block;
 				const uint64_t index= GetVal(instruction->getOperand(0u)).IntVal.getLimitedValue();
+
 				current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(1u));
-				for( uint32_t i = 2; i < instruction->getNumOperands(); i+= 2 )
+
+				if( current_basic_block == nullptr )
+				{
+					ReportError( "Incorrect basic block in \"switch\" instruction!" );
+					return llvm::GenericValue();
+				}
+
+				for( uint32_t i = 2; i < num_operands; i+= 2 )
 				{
 					if( GetVal( instruction->getOperand(i) ).IntVal.getLimitedValue() == index )
 					{
 						current_basic_block= llvm::dyn_cast<llvm::BasicBlock>( instruction->getOperand( i + 1 ) );
+
+						if( current_basic_block == nullptr )
+						{
+							ReportError( "Incorrect basic block in \"switch\" instruction!" );
+							return llvm::GenericValue();
+						}
+
 						break;
 					}
 				}
@@ -304,12 +356,16 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 
 				for (uint32_t i= 0u; i < phi_node->getNumIncomingValues(); ++i )
 				{
-					if( phi_node->getIncomingBlock(i) == prev_basic_block)
+					if( phi_node->getIncomingBlock(i) == prev_basic_block )
 					{
 						current_function_frame_.instructions_map[instruction]= GetVal( phi_node->getIncomingValue(i) );
 						break;
 					}
-					U_ASSERT( i + 1u != phi_node->getNumIncomingValues() );
+					if( i + 1u == phi_node->getNumIncomingValues() )
+					{
+						ReportError( "Previous basic block isn't found in \"phi\" instruction!" );
+						return llvm::GenericValue();
+					}
 				}
 			}
 			break;
@@ -326,6 +382,12 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 
 		case llvm::Instruction::Select:
 			{
+				if( instruction->getNumOperands() != 3 )
+				{
+					ReportError( "Incorrect number of operands in \"select\" instruction!" );
+					return llvm::GenericValue();
+				}
+
 				const llvm::GenericValue bool_val= GetVal(instruction->getOperand(0u));
 				current_function_frame_.instructions_map[instruction]= GetVal( instruction->getOperand( bool_val.IntVal.getBoolValue() ? 1u : 2u ) );
 			}
@@ -333,6 +395,12 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 
 		case llvm::Instruction::AtomicCmpXchg:
 			{
+				if( instruction->getNumOperands() != 3 )
+				{
+					ReportError( "Incorrect number of operands in \"atomiccmpxchg\" instruction!" );
+					return llvm::GenericValue();
+				}
+
 				const llvm::GenericValue op0= GetVal(instruction->getOperand(0u));
 				const llvm::GenericValue op1= GetVal(instruction->getOperand(1u));
 				const llvm::GenericValue op2= GetVal(instruction->getOperand(2u));
