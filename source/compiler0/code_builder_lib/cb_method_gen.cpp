@@ -1169,7 +1169,7 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 
 		const Interpreter::ResultConstexpr evaluation_result=
 			constexpr_function_evaluator_.EvaluateConstexpr(
-				EnsureLLVMFunctionCreated( *op ),
+				*EnsureLLVMFunctionCreated( *op ),
 				{ l, r },
 				*op->type.return_type.GetLLVMType() );
 

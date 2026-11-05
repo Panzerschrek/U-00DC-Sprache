@@ -34,7 +34,7 @@ Interpreter::Interpreter( const llvm::DataLayout& data_layout, InterpreterOption
 {}
 
 Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
-	llvm::Function* const llvm_function,
+	const llvm::Function& llvm_function,
 	const llvm::ArrayRef<const llvm::Constant*> args,
 	llvm::Type& return_type )
 {
@@ -42,7 +42,7 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 
 	stack_.resize(16u); // reserve null pointer
 
-	if( args.size() < llvm_function->arg_size() )
+	if( args.size() < llvm_function.arg_size() )
 	{
 		ResultConstexpr result;
 		result.errors.push_back( "Too few arguments for function" );
@@ -60,7 +60,7 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 
 	// Fill arguments
 	size_t i= 0u;
-	for( const llvm::Argument& param : llvm_function->args() )
+	for( const llvm::Argument& param : llvm_function.args() )
 	{
 		if( param.getType()->isPointerTy() )
 		{
@@ -108,7 +108,7 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 		++i;
 	}
 
-	const llvm::GenericValue res= CallFunction( *llvm_function );
+	const llvm::GenericValue res= CallFunction( llvm_function );
 
 	ResultConstexpr result;
 	result.errors= std::move(errors_);
@@ -139,7 +139,7 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 			}
 			stack_.resize( new_stack_size );
 
-			DoStore( GetMemoryForVirtualAddress( address ), res, llvm_function->getReturnType() );
+			DoStore( GetMemoryForVirtualAddress( address ), res, llvm_function.getReturnType() );
 			result.result_constant= ReadConstantFromStack( &return_type, address );
 		}
 	}
@@ -161,14 +161,14 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 }
 
 Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
-	llvm::Function* const llvm_function,
+	const llvm::Function& llvm_function,
 	const llvm::ArrayRef<llvm::GenericValue> args )
 {
 	instructions_executed_= 0;
 
 	stack_.resize(16u); // reserve null pointer
 
-	if( args.size() < llvm_function->arg_size() )
+	if( args.size() < llvm_function.arg_size() )
 	{
 		ResultGeneric result;
 		result.errors.push_back( "Too few arguments for function" );
@@ -177,7 +177,7 @@ Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
 
 	// Fill arguments
 	size_t i= 0u;
-	for( const llvm::Argument& param : llvm_function->args() )
+	for( const llvm::Argument& param : llvm_function.args() )
 	{
 		if( param.getType()->isPointerTy() )
 		{
@@ -192,7 +192,7 @@ Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
 	}
 
 	ResultGeneric res;
-	res.result= CallFunction( *llvm_function );
+	res.result= CallFunction( llvm_function );
 
 	res.errors= std::move(errors_);
 	errors_= {};
