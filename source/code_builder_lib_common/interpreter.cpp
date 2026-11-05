@@ -1497,7 +1497,12 @@ void Interpreter::ProcessCoroSuspend( const llvm::CallInst* const instruction )
 		return;
 	}
 
-	U_ASSERT( current_function_frame_.coroutine_data != nullptr );
+	// If coroutine data is null, something is broken.
+	if( current_function_frame_.coroutine_data == nullptr )
+	{
+		ReportError( "No coroutine data is present - can't suspend" );
+		return;
+	}
 
 	// const llvm::GenericValue token_save= GetVal( instruction->getOperand(0u) );
 	const llvm::GenericValue is_final= GetVal( instruction->getOperand(1u) );
@@ -1761,7 +1766,8 @@ void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const bool
 	std::swap( call_frame, current_function_frame_ );
 
 	// Coroutine should not allocate anything on stack.
-	U_ASSERT( stack_.size() == prev_stack_size );
+	if( stack_.size() != prev_stack_size )
+		ReportError( "Detected a stack allocation for a coroutine, which shouldn't happen" );
 }
 
 void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )
