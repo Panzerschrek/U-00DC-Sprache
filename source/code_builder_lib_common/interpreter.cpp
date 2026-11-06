@@ -856,7 +856,7 @@ void Interpreter::ProcessAlloca( const llvm::AllocaInst* const instruction )
 Interpreter::MemoryRegionView Interpreter::GetMemoryForVirtualAddress( const size_t offset )
 {
 	// Map virtual memory addresses to one of existing segments.
-	// TODO - produce error if address is wrong.
+
 	if( offset >= g_heap_segment_offset )
 	{
 		const size_t heap_offset= offset - g_heap_segment_offset;
@@ -882,6 +882,12 @@ Interpreter::MemoryRegionView Interpreter::GetMemoryForVirtualAddress( const siz
 
 void Interpreter::ProcessLoad( const llvm::Instruction* const instruction )
 {
+	if( instruction->getNumOperands() != 1u )
+	{
+		ReportError( "incorrect number of operands for \"load\" instruction", *instruction );
+		return;
+	}
+
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(0u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
@@ -990,6 +996,12 @@ llvm::GenericValue Interpreter::DoLoad( const MemoryRegionView memory_region, ll
 
 void Interpreter::ProcessStore( const llvm::Instruction* const instruction )
 {
+	if( instruction->getNumOperands() != 2u )
+	{
+		ReportError( "incorrect number of operands for \"store\" instruction", *instruction );
+		return;
+	}
+
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(1u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
@@ -1081,7 +1093,6 @@ void Interpreter::DoStore( const MemoryRegionView memory_region, const llvm::Gen
 				val.AggregateVal[i],
 				struct_type->getElementType(i));
 		}
-
 	}
 	else if( const auto array_type= llvm::cast<llvm::ArrayType>(t) )
 	{
@@ -1141,7 +1152,6 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction )
 		ReportError( "Calling zero function pointer", *instruction );
 		return;
 	}
-
 
 	if( function->arg_size() > instruction->arg_size() )
 	{
