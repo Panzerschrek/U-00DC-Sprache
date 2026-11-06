@@ -34,7 +34,7 @@ Interpreter::Interpreter( const llvm::DataLayout& data_layout, InterpreterOption
 {}
 
 Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
-	llvm::Function* const llvm_function,
+	const llvm::Function& llvm_function,
 	const llvm::ArrayRef<const llvm::Constant*> args,
 	llvm::Type& return_type )
 {
@@ -42,20 +42,36 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 
 	stack_.resize(16u); // reserve null pointer
 
-	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
-	U_ASSERT( !return_type.isPointerTy() ); // Currently can return only values.
+	if( args.size() < llvm_function.arg_size() )
+	{
+		ResultConstexpr result;
+		result.errors.push_back( "Too few arguments for function" );
+		return result;
+	}
+
+	if( return_type.isPointerTy() )
+	{
+		ResultConstexpr result;
+		result.errors.push_back( "Evaluation result of pointer type - it's not supported" );
+		return result;
+	}
 
 	size_t s_ret_ptr= 0u;
 
 	// Fill arguments
 	size_t i= 0u;
-	for( const llvm::Argument& param : llvm_function->args() )
+	for( const llvm::Argument& param : llvm_function.args() )
 	{
 		if( param.getType()->isPointerTy() )
 		{
 			if( param.hasStructRetAttr() )
 			{
-				U_ASSERT(i == 0u);
+				if( i != 0 )
+				{
+					ResultConstexpr result;
+					result.errors.push_back( "\"sret\" attribute for non-first argument" );
+					return result;
+				}
 
 				s_ret_ptr= stack_.size();
 				const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize( &return_type ) );
@@ -85,14 +101,14 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 			// Assume we have a constant of type compatible with parameter type.
 			// Convert it into expected type, using load-store, which is effectively equivalent to bitcast.
 			const size_t offset= MoveConstantToStack( *args[i] );
-			const std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
-			current_function_frame_.instructions_map[ &param ]= DoLoad( data_ptr, param.getType() );
+			const MemoryRegionView memory_region= GetMemoryForVirtualAddress( offset );
+			current_function_frame_.instructions_map[ &param ]= DoLoad( memory_region, param.getType() );
 		}
 
 		++i;
 	}
 
-	const llvm::GenericValue res= CallFunction( *llvm_function );
+	const llvm::GenericValue res= CallFunction( llvm_function );
 
 	ResultConstexpr result;
 	result.errors= std::move(errors_);
@@ -123,13 +139,14 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 			}
 			stack_.resize( new_stack_size );
 
-			DoStore( GetMemoryForVirtualAddress( address ), res, llvm_function->getReturnType() );
+			DoStore( GetMemoryForVirtualAddress( address ), res, llvm_function.getReturnType() );
 			result.result_constant= ReadConstantFromStack( &return_type, address );
 		}
 	}
 	else if( return_type.isPointerTy() )
 		ReportError( "returning pointer in constexpr function" );
-	else U_ASSERT(false);
+	else
+		ReportError( "returning unsupported type" );
 
 	current_function_frame_.instructions_map.clear();
 	stack_.clear();
@@ -137,32 +154,45 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 	heap_.clear();
 	coroutines_data_.clear();
 	external_constant_mapping_.clear();
+	function_pointers_map_.clear();
+	function_pointers_mapping_vec_.clear();
 
 	return result;
 }
 
 Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
-	llvm::Function* const llvm_function,
+	const llvm::Function& llvm_function,
 	const llvm::ArrayRef<llvm::GenericValue> args )
 {
 	instructions_executed_= 0;
 
 	stack_.resize(16u); // reserve null pointer
 
-	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
+	if( args.size() < llvm_function.arg_size() )
+	{
+		ResultGeneric result;
+		result.errors.push_back( "Too few arguments for function" );
+		return result;
+	}
 
 	// Fill arguments
 	size_t i= 0u;
-	for( const llvm::Argument& param : llvm_function->args() )
+	for( const llvm::Argument& param : llvm_function.args() )
 	{
-		U_ASSERT( ! param.getType()->isPointerTy() );
+		if( param.getType()->isPointerTy() )
+		{
+			ResultGeneric result;
+			result.errors.push_back( "Evaluating a function with pointer-typed param" );
+			return result;
+		}
+
 		current_function_frame_.instructions_map[ &param ]= args[i];
 
 		++i;
 	}
 
-	Interpreter::ResultGeneric res;
-	res.result= CallFunction( *llvm_function );
+	ResultGeneric res;
+	res.result= CallFunction( llvm_function );
 
 	res.errors= std::move(errors_);
 	errors_= {};
@@ -182,8 +212,8 @@ void Interpreter::RegisterCustomFunction( const llvm::StringRef name, const Cust
 
 void Interpreter::ReadExecutinEngineData( void* const dst, const uint64_t address, const size_t size ) const
 {
-	const std::byte* const data_ptr= const_cast<Interpreter*>(this)->GetMemoryForVirtualAddress( size_t(address ) );
-	std::memcpy( dst, data_ptr, size );
+	const MemoryRegionView memory_region= const_cast<Interpreter*>(this)->GetMemoryForVirtualAddress( size_t(address ) );
+	std::memcpy( dst, memory_region.ptr, std::min( size, memory_region.size ) );
 }
 
 llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_function )
@@ -204,6 +234,11 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		ReportError( "Max call stack depth (" + std::to_string( options_.max_call_stack_depth ) + ") reached" );
 		return llvm::GenericValue();
 	}
+	if( llvm_function.empty() )
+	{
+		ReportError( "executing function \"" + std::string(llvm_function.getName()) + "\" with empty body" );
+		return llvm::GenericValue();
+	}
 
 	const llvm::BasicBlock& bb= llvm_function.front();
 	if( bb.empty() )
@@ -212,35 +247,47 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		return llvm::GenericValue();
 	}
 
-	return CallFunctionImpl( &*bb.begin() );
+	return ExecuteFunctionBody( &*bb.begin() );
 }
 
-llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instruction )
+llvm::GenericValue Interpreter::ExecuteFunctionBody( const llvm::Instruction* instruction )
 {
+	if( instruction == nullptr )
+	{
+		ReportError( "Reached null instruction!" );
+		return llvm::GenericValue();
+	}
+
 	const size_t prev_stack_size= stack_.size();
 
 	const llvm::BasicBlock* prev_basic_block= nullptr;
 	const llvm::BasicBlock* current_basic_block= instruction->getParent();
+
+	if( current_basic_block == nullptr )
+	{
+		ReportError( "Current basic block is empty!" );
+		return llvm::GenericValue();
+	}
 
 	while( errors_.empty() )
 	{
 		if( instruction == nullptr )
 		{
 			ReportError( "Reached null instruction!" );
-			break;
+			return llvm::GenericValue();
 		}
 
 		++instructions_executed_;
 		if( instructions_executed_ >= options_.max_instructions_executed )
 		{
 			ReportError( "Interpreter instructions limit (" + std::to_string( instructions_executed_ ) + ") reached", *instruction );
-			break;
+			return llvm::GenericValue();
 		}
 
 		switch( instruction->getOpcode() )
 		{
 		case llvm::Instruction::Alloca:
-			ProcessAlloca(instruction);
+			ProcessAlloca( llvm::dyn_cast<llvm::AllocaInst>(instruction) );
 			break;
 
 		case llvm::Instruction::Load:
@@ -261,31 +308,77 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 				call_stack_.push_back( call_instruction );
 				ProcessCall( call_instruction );
 				call_stack_.pop_back();
+
+				// If there are some errors, abort execution.
+				if( !errors_.empty() )
+					return llvm::GenericValue();
 			}
 			break;
 
 		case llvm::Instruction::Br:
 			prev_basic_block= current_basic_block;
 			if( instruction->getNumOperands() == 1u ) // Unconditional
+			{
 				current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(0u));
-			else
+
+				if( current_basic_block == nullptr )
+				{
+					ReportError( "Incorrect basic block in \"br\" instruction!" );
+					return llvm::GenericValue();
+				}
+			}
+			else if( instruction->getNumOperands() == 3u ) // Conditional
 			{
 				const llvm::GenericValue val= GetVal(instruction->getOperand(0u));
 				current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand( val.IntVal.getBoolValue() ? 2u : 1u ));
+
+				if( current_basic_block == nullptr )
+				{
+					ReportError( "Incorrect basic block in \"br\" instruction!" );
+					return llvm::GenericValue();
+				}
 			}
+			else
+			{
+				ReportError( "Incorrect number of operands in \"br\" instruction!" );
+				return llvm::GenericValue();
+			}
+
 			instruction= current_basic_block->empty() ? nullptr : &current_basic_block->front();
 			continue; // Continue loop without advancing instruction.
 
 		case llvm::Instruction::Switch:
 			{
+				const uint32_t num_operands= instruction->getNumOperands();
+				if( num_operands < 2 )
+				{
+					ReportError( "Incorrect number of operands in \"switch\" instruction!" );
+					return llvm::GenericValue();
+				}
+
 				prev_basic_block= current_basic_block;
 				const uint64_t index= GetVal(instruction->getOperand(0u)).IntVal.getLimitedValue();
+
 				current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(1u));
-				for( uint32_t i = 2; i < instruction->getNumOperands(); i+= 2 )
+
+				if( current_basic_block == nullptr )
+				{
+					ReportError( "Incorrect basic block in \"switch\" instruction!" );
+					return llvm::GenericValue();
+				}
+
+				for( uint32_t i = 2; i < num_operands; i+= 2 )
 				{
 					if( GetVal( instruction->getOperand(i) ).IntVal.getLimitedValue() == index )
 					{
 						current_basic_block= llvm::dyn_cast<llvm::BasicBlock>( instruction->getOperand( i + 1 ) );
+
+						if( current_basic_block == nullptr )
+						{
+							ReportError( "Incorrect basic block in \"switch\" instruction!" );
+							return llvm::GenericValue();
+						}
+
 						break;
 					}
 				}
@@ -299,12 +392,16 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 
 				for (uint32_t i= 0u; i < phi_node->getNumIncomingValues(); ++i )
 				{
-					if( phi_node->getIncomingBlock(i) == prev_basic_block)
+					if( phi_node->getIncomingBlock(i) == prev_basic_block )
 					{
 						current_function_frame_.instructions_map[instruction]= GetVal( phi_node->getIncomingValue(i) );
 						break;
 					}
-					U_ASSERT( i + 1u != phi_node->getNumIncomingValues() );
+					if( i + 1u == phi_node->getNumIncomingValues() )
+					{
+						ReportError( "Previous basic block isn't found in \"phi\" instruction!" );
+						return llvm::GenericValue();
+					}
 				}
 			}
 			break;
@@ -321,6 +418,12 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 
 		case llvm::Instruction::Select:
 			{
+				if( instruction->getNumOperands() != 3 )
+				{
+					ReportError( "Incorrect number of operands in \"select\" instruction!" );
+					return llvm::GenericValue();
+				}
+
 				const llvm::GenericValue bool_val= GetVal(instruction->getOperand(0u));
 				current_function_frame_.instructions_map[instruction]= GetVal( instruction->getOperand( bool_val.IntVal.getBoolValue() ? 1u : 2u ) );
 			}
@@ -328,18 +431,24 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 
 		case llvm::Instruction::AtomicCmpXchg:
 			{
+				if( instruction->getNumOperands() != 3 )
+				{
+					ReportError( "Incorrect number of operands in \"atomiccmpxchg\" instruction!" );
+					return llvm::GenericValue();
+				}
+
 				const llvm::GenericValue op0= GetVal(instruction->getOperand(0u));
 				const llvm::GenericValue op1= GetVal(instruction->getOperand(1u));
 				const llvm::GenericValue op2= GetVal(instruction->getOperand(2u));
 				llvm::Type* const read_type= instruction->getOperand(1u)->getType();
 
-				std::byte* const data_ptr= GetMemoryForVirtualAddress( size_t(op0.IntVal.getLimitedValue()) );
-				const llvm::GenericValue load_result= DoLoad( data_ptr, read_type );
+				const MemoryRegionView memory_region= GetMemoryForVirtualAddress( size_t(op0.IntVal.getLimitedValue()) );
+				const llvm::GenericValue load_result= DoLoad( memory_region, read_type );
 
 				bool success= false;
 				if( load_result.IntVal == op1.IntVal )
 				{
-					DoStore( data_ptr, op2, read_type );
+					DoStore( memory_region, op2, read_type );
 					success= true;
 				}
 
@@ -431,15 +540,17 @@ void Interpreter::CopyConstantToStack( const llvm::Constant& constant, const siz
 				{
 					if( constant_expression->getOpcode() == llvm::Instruction::GetElementPtr )
 						element_ptr= size_t( BuildGEP( constant_expression ).IntVal.getLimitedValue() );
-					else U_ASSERT(false);
+					else
+						ReportError( "storing unsupported constant expression" );
 				}
 				else if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
 					element_ptr= MoveConstantToStack( *global_variable->getInitializer() );
 				else if( element->isNullValue() )
 					element_ptr= 0;
 				else if( const auto function= llvm::dyn_cast<llvm::Function>(element) )
-					element_ptr= reinterpret_cast<size_t>( function );
-				else U_ASSERT(false);
+					element_ptr= GetFunctionIndex( function );
+				else
+					ReportError( "storing constant pointer of unsupported kind" );
 
 				std::memcpy( globals_stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
 			}
@@ -461,29 +572,41 @@ void Interpreter::CopyConstantToStack( const llvm::Constant& constant, const siz
 		const llvm::APInt val = constant.getUniqueInteger();
 		if( val.getBitWidth() <= 64 || val.getBitWidth() % 64u == 0 )
 			std::memcpy( globals_stack_.data() + stack_offset, val.getRawData(), size_t(data_layout_.getTypeAllocSize( constant_type )) );
-		else U_ASSERT(false);
+		else
+			ReportError( "stroring integer constant of unsupported size" );
 	}
 	else if( constant_type->isFloatTy() )
 	{
-		const float val= llvm::dyn_cast<llvm::ConstantFP>(&constant)->getValueAPF().convertToFloat();
-		std::memcpy( globals_stack_.data() + stack_offset, &val, sizeof(float) );
+		if( const auto fp_constant= llvm::dyn_cast<llvm::ConstantFP>(&constant) )
+		{
+			const float val= fp_constant->getValueAPF().convertToFloat();
+			std::memcpy( globals_stack_.data() + stack_offset, &val, sizeof(float) );
+		}
+		else
+			ReportError( "unexpected floating-point constant kind" );
 	}
 	else if( constant_type->isDoubleTy() )
 	{
-		const double val= llvm::dyn_cast<llvm::ConstantFP>(&constant)->getValueAPF().convertToDouble();
-		std::memcpy( globals_stack_.data() + stack_offset, &val, sizeof(double) );
+		if( const auto fp_constant= llvm::dyn_cast<llvm::ConstantFP>(&constant) )
+		{
+			const double val= fp_constant->getValueAPF().convertToDouble();
+			std::memcpy( globals_stack_.data() + stack_offset, &val, sizeof(double) );
+		}
+		else
+			ReportError( "unexpected floating-point constant kind" );
 	}
 	else if( constant_type->isPointerTy() )
 	{
 		if( const auto function= llvm::dyn_cast<llvm::Function>(&constant) )
 		{
-			const uint64_t val= reinterpret_cast<size_t>(function);
+			const uint64_t val= GetFunctionIndex( function );
 			std::memcpy( globals_stack_.data() + stack_offset, &val, pointer_size_in_bits_ / 8 );
 		}
 		else
 			std::memset( globals_stack_.data() + stack_offset, 0, size_t( data_layout_.getTypeAllocSize( constant_type ) ) );
 	}
-	else U_ASSERT(false);
+	else
+		ReportError( "storing constant of unsupported type" );
 }
 
 llvm::Constant* Interpreter::ReadConstantFromStack( llvm::Type* const type, const size_t value_ptr )
@@ -504,7 +627,11 @@ llvm::Constant* Interpreter::ReadConstantFromStack( llvm::Type* const type, cons
 						uint32_t(integer_type->getBitWidth()),
 						uint32_t(integer_type->getBitWidth() / sizeof(uint64_t)),
 						reinterpret_cast<uint64_t*>(stack_.data() + value_ptr) ) );
-		else U_ASSERT(false);
+		else
+		{
+			ReportError( "loading integer constant of unsupported size" );
+			return llvm::UndefValue::get( type );
+		}
 	}
 	else if( type->isFloatTy() )
 	{
@@ -540,17 +667,23 @@ llvm::Constant* Interpreter::ReadConstantFromStack( llvm::Type* const type, cons
 	}
 	else if( type->isPointerTy() )
 	{
-		ReportError( "building constant pointer" );
+		ReportError( "loading constant pointer" );
 		return llvm::UndefValue::get( type );
 	}
-	else U_ASSERT(false);
-
-	return nullptr;
+	else
+	{
+		ReportError( "loading constant of unsupported type" );
+		return llvm::UndefValue::get( type );
+	}
 }
 
 llvm::GenericValue Interpreter::BuildGEP( const llvm::User* const instruction )
 {
-	U_ASSERT( instruction->getNumOperands() >= 2u );
+	if( instruction->getNumOperands() < 2u )
+	{
+		ReportError( "Invalid \"getelementptr\" instruction - too few operands!" );
+		return llvm::GenericValue();
+	}
 
 	llvm::User::const_op_iterator op= instruction->op_begin();
 	const llvm::User::const_op_iterator op_end= instruction->op_end();
@@ -561,7 +694,7 @@ llvm::GenericValue Interpreter::BuildGEP( const llvm::User* const instruction )
 	const llvm::GenericValue first_index= GetVal( op->get() );
 	++op;
 
-	// TODO - check if this is correct cast.
+	// LLVM uses some magic with "GEPOperator", so that casting both "GetElementPtrInst" and "ConstantExpr" work fine.
 	llvm::Type* const ptr_element_type= llvm::dyn_cast<llvm::GEPOperator>(instruction)->getSourceElementType();
 
 	uint64_t offset_accumulated= first_index.IntVal.getLimitedValue() * data_layout_.getTypeAllocSize( ptr_element_type );
@@ -584,7 +717,11 @@ llvm::GenericValue Interpreter::BuildGEP( const llvm::User* const instruction )
 			offset_accumulated+= struct_layout.getElementOffset( element_index );
 			aggregate_type= aggregate_type->getStructElementType( element_index );
 		}
-		else U_ASSERT(false);
+		else
+		{
+			ReportError( "Unsupported type kind in \"getelementptr\" instruction!" );
+			return llvm::GenericValue();
+		}
 	}
 
 	llvm::GenericValue new_ptr;
@@ -601,7 +738,8 @@ llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 			res.FloatVal= constant_fp->getValueAPF().convertToFloat();
 		else if( val->getType()->isDoubleTy() )
 			res.DoubleVal= constant_fp->getValueAPF().convertToDouble();
-		else U_ASSERT(false);
+		else
+			ReportError( "Accessing floating-point constant of unsupported type" );
 	}
 	else if( const auto constant_int= llvm::dyn_cast<llvm::ConstantInt>(val) )
 		res.IntVal= constant_int->getValue();
@@ -656,28 +794,32 @@ llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 				res.AggregateVal[i]= GetVal( undef_value->getElementValue(i) );
 		}
 		else
-			ReportError( "Building unknown undef value" );
+			ReportError( "Accessing unsupported undef value" );
 	}
 	else if( const auto function= llvm::dyn_cast<llvm::Function>(val) )
-		res.IntVal= llvm::APInt( pointer_size_in_bits_, reinterpret_cast<size_t>( function ) );
+		res.IntVal= llvm::APInt( pointer_size_in_bits_, GetFunctionIndex( function ) );
 	else if( const auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( val ) )
 	{
 		if( constant_expression->getOpcode() == llvm::Instruction::GetElementPtr )
 			res= BuildGEP( constant_expression );
-		else U_ASSERT(false);
+		else
+			ReportError( "Accessing unsupported constant expression" );
 	}
 	else
 	{
-		U_ASSERT( current_function_frame_.instructions_map.find( val ) != current_function_frame_.instructions_map.end() );
-		res= current_function_frame_.instructions_map[val];
+		const auto it= current_function_frame_.instructions_map.find( val );
+		if( it != current_function_frame_.instructions_map.end() )
+			res= it->second;
+		else
+			ReportError( "Accessing unknown value not present in instructions map" );
 	}
 	return res;
 }
 
-void Interpreter::ProcessAlloca( const llvm::Instruction* const instruction )
+void Interpreter::ProcessAlloca( const llvm::AllocaInst* const instruction )
 {
-	const auto alloca_instruction= llvm::dyn_cast<llvm::AllocaInst>(instruction);
-	llvm::Type* const element_type= alloca_instruction->getAllocatedType();
+	llvm::Type* const element_type= instruction->getAllocatedType();
+
 	const size_t element_size= size_t(data_layout_.getTypeAllocSize( element_type ));
 
 	size_t address= 0u;
@@ -711,43 +853,96 @@ void Interpreter::ProcessAlloca( const llvm::Instruction* const instruction )
 	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
-std::byte* Interpreter::GetMemoryForVirtualAddress( const size_t offset )
+Interpreter::MemoryRegionView Interpreter::GetMemoryForVirtualAddress( const size_t offset )
 {
 	// Map virtual memory addresses to one of existing segments.
-	// TODO - produce error if address is wrong.
+
 	if( offset >= g_heap_segment_offset )
-		return heap_.data() + ( offset - g_heap_segment_offset );
+	{
+		const size_t heap_offset= offset - g_heap_segment_offset;
+		if( heap_offset > heap_.size() )
+			return MemoryRegionView{ nullptr, 0 };
+
+		return MemoryRegionView{ heap_.data() + heap_offset, heap_.size() - heap_offset };
+	}
 	if( offset >= g_globals_segment_offset )
-		return globals_stack_.data() + ( offset - g_globals_segment_offset );
-	return stack_.data() + offset;
+	{
+		const size_t globals_offset= offset - g_globals_segment_offset;
+		if( globals_offset > globals_stack_.size() )
+			return MemoryRegionView{ nullptr, 0 };
+
+		return MemoryRegionView{ globals_stack_.data() + globals_offset, globals_stack_.size() - globals_offset };
+	}
+
+	if( offset > stack_.size() )
+		return MemoryRegionView{ nullptr, 0 };
+
+	return MemoryRegionView{ stack_.data() + offset, stack_.size() - offset };
 }
 
 void Interpreter::ProcessLoad( const llvm::Instruction* const instruction )
 {
+	if( instruction->getNumOperands() != 1u )
+	{
+		ReportError( "incorrect number of operands for \"load\" instruction", *instruction );
+		return;
+	}
+
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(0u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
-	const std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
-	current_function_frame_.instructions_map[ instruction ]= DoLoad( data_ptr, instruction->getType() );
+	const MemoryRegionView memory_region= GetMemoryForVirtualAddress( offset );
+	current_function_frame_.instructions_map[ instruction ]= DoLoad( memory_region, instruction->getType() );
 }
 
-llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const t )
+llvm::GenericValue Interpreter::DoLoad( const MemoryRegionView memory_region, llvm::Type* const t )
 {
 	llvm::GenericValue val;
 	if( t->isIntegerTy() )
 	{
 		uint64_t buff[4];
-		std::memcpy( buff, ptr, size_t(data_layout_.getTypeStoreSize( t )) );
+		const size_t load_size= size_t(data_layout_.getTypeStoreSize( t ));
+		if( load_size > memory_region.size )
+		{
+			ReportError( "Out of bounds load!" );
+			return val;
+		}
+
+		std::memcpy( buff, memory_region.ptr, load_size );
 		val.IntVal= llvm::APInt( t->getIntegerBitWidth() , buff );
 	}
 	else if( t->isFloatTy() )
-		std::memcpy( &val.FloatVal, ptr, sizeof(float) );
+	{
+		if( sizeof( val.FloatVal ) > memory_region.size )
+		{
+			ReportError( "Out of bounds load!" );
+			return val;
+		}
+
+		std::memcpy( &val.FloatVal, memory_region.ptr, sizeof(float) );
+	}
 	else if( t->isDoubleTy() )
-		std::memcpy( &val.DoubleVal, ptr, sizeof(double) );
+	{
+		if( sizeof( val.DoubleVal ) > memory_region.size )
+		{
+			ReportError( "Out of bounds load!" );
+			return val;
+		}
+
+		std::memcpy( &val.DoubleVal, memory_region.ptr, sizeof(double) );
+	}
 	else if( t->isPointerTy() )
 	{
 		uint64_t int_ptr;
-		std::memcpy( &int_ptr, ptr, size_t(data_layout_.getTypeAllocSize( t ) ) );
+
+		const size_t load_size= size_t(data_layout_.getTypeAllocSize( t ) );
+		if( load_size > memory_region.size )
+		{
+			ReportError( "Out of bounds load!" );
+			return val;
+		}
+
+		std::memcpy( &int_ptr, memory_region.ptr, load_size );
 		val.IntVal= llvm::APInt( pointer_size_in_bits_, int_ptr );
 	}
 	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(t) )
@@ -757,11 +952,19 @@ llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const 
 
 		val.AggregateVal.resize(num_elements);
 		for (uint32_t i= 0; i < num_elements; ++i)
+		{
+			const size_t offset= size_t( struct_layout->getElementOffset(i) );
+			if( offset > memory_region.size )
+			{
+				ReportError( "Out of bounds load!" );
+				return val;
+			}
+
 			val.AggregateVal[i]=
 				DoLoad(
-					ptr + size_t( struct_layout->getElementOffset(i) ),
+					MemoryRegionView{ memory_region.ptr + offset, memory_region.size - offset },
 					struct_type->getElementType(i));
-
+		}
 	}
 	else if( const auto array_type= llvm::cast<llvm::ArrayType>(t) )
 	{
@@ -771,61 +974,125 @@ llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const 
 
 		val.AggregateVal.resize(size_t(num_elements));
 		for( uint64_t i= 0; i < num_elements; ++i)
+		{
+			const size_t offset= size_t(i * element_size);
+			if( offset > memory_region.size )
+			{
+				ReportError( "Out of bounds load!" );
+				return val;
+			}
+
 			val.AggregateVal[size_t(i)]=
 				DoLoad(
-					ptr + size_t(i * element_size),
+					MemoryRegionView{ memory_region.ptr + offset, memory_region.size - offset },
 					element_type );
+		}
 	}
-	else U_ASSERT(false);
+	else
+		ReportError( "Loading value of unsupported type!" );
 
 	return val;
 }
 
 void Interpreter::ProcessStore( const llvm::Instruction* const instruction )
 {
+	if( instruction->getNumOperands() != 2u )
+	{
+		ReportError( "incorrect number of operands for \"store\" instruction", *instruction );
+		return;
+	}
+
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(1u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
-	std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
+	const MemoryRegionView memory_region= GetMemoryForVirtualAddress( offset );
 
 	const auto value_operand= instruction->getOperand(0u);
-	DoStore( data_ptr, GetVal( value_operand ), value_operand->getType() );
+	DoStore( memory_region, GetVal( value_operand ), value_operand->getType() );
 }
 
-void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, llvm::Type* const t )
+void Interpreter::DoStore( const MemoryRegionView memory_region, const llvm::GenericValue& val, llvm::Type* const t )
 {
 	if( t->isIntegerTy() )
 	{
-		if( t->getIntegerBitWidth() <= 64 )
+		const uint32_t integer_bit_width= t->getIntegerBitWidth();
+
+		if( integer_bit_width / 8u > memory_region.size )
+		{
+			ReportError( "Out of bounds store!" );
+			return;
+		}
+
+		if( integer_bit_width <= 64 )
 		{
 			const uint64_t limited_value= val.IntVal.getLimitedValue();
-			std::memcpy( ptr, &limited_value, size_t(data_layout_.getTypeStoreSize( t )) );
+			std::memcpy( memory_region.ptr, &limited_value, size_t(data_layout_.getTypeStoreSize( t )) );
 		}
-		else if( t->getIntegerBitWidth() % 64u == 0 )
-			std::memcpy( ptr, val.IntVal.getRawData(), t->getIntegerBitWidth() / 8u );
-		else U_ASSERT(false); // Not implemented yet.
+		else if( integer_bit_width % 64u == 0 )
+			std::memcpy( memory_region.ptr, val.IntVal.getRawData(), integer_bit_width / 8u );
+		else
+		{
+			ReportError( "Storing an integer of unsupported size!" );
+			return;
+		}
 	}
 	else if( t->isFloatTy() )
-		std::memcpy( ptr, &val.FloatVal, size_t(data_layout_.getTypeAllocSize( t )) );
+	{
+		if( sizeof( val.FloatVal ) > memory_region.size )
+		{
+			ReportError( "Out of bounds store!" );
+			return;
+		}
+
+		std::memcpy( memory_region.ptr, &val.FloatVal, sizeof( val.FloatVal ) );
+	}
 	else if( t->isDoubleTy() )
-		std::memcpy( ptr, &val.DoubleVal, size_t(data_layout_.getTypeAllocSize( t )) );
+	{
+		if( sizeof( val.DoubleVal ) > memory_region.size )
+		{
+			ReportError( "Out of bounds store!" );
+			return;
+		}
+
+		std::memcpy( memory_region.ptr, &val.DoubleVal, sizeof( val.DoubleVal ) );
+	}
 	else if( t->isPointerTy() )
 	{
+		const size_t store_size= size_t(data_layout_.getTypeAllocSize( t ));
+		if( store_size > memory_region.size )
+		{
+			ReportError( "Out of bounds store!" );
+			return;
+		}
+
 		const uint64_t int_ptr= val.IntVal.getLimitedValue();
-		std::memcpy( ptr, &int_ptr, size_t(data_layout_.getTypeAllocSize( t )) );
+		std::memcpy( memory_region.ptr, &int_ptr, store_size );
 	}
 	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(t) )
 	{
 		const uint32_t num_elements= struct_type->getNumElements();
 		const llvm::StructLayout *const struct_layout= data_layout_.getStructLayout(struct_type);
 
-		U_ASSERT( val.AggregateVal.size() == num_elements );
+		if( val.AggregateVal.size() != num_elements )
+		{
+			ReportError( "Storing aggregate value with unexpected size!" );
+			return;
+		}
+
 		for (uint32_t i= 0; i < num_elements; ++i)
+		{
+			const size_t offset= size_t( struct_layout->getElementOffset(i) );
+			if( offset > memory_region.size )
+			{
+				ReportError( "Out of bounds store!" );
+				return;
+			}
+
 			DoStore(
-				ptr + size_t( struct_layout->getElementOffset(i) ),
+				MemoryRegionView{ memory_region.ptr + offset, memory_region.size - offset },
 				val.AggregateVal[i],
 				struct_type->getElementType(i));
-
+		}
 	}
 	else if( const auto array_type= llvm::cast<llvm::ArrayType>(t) )
 	{
@@ -833,14 +1100,29 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 		const auto element_type= array_type->getElementType();
 		const uint64_t element_size= data_layout_.getTypeAllocSize(element_type);
 
-		U_ASSERT( val.AggregateVal.size() == num_elements );
+		if( val.AggregateVal.size() != num_elements )
+		{
+			ReportError( "Storing aggregate value with unexpected size!" );
+			return;
+		}
+
 		for( uint64_t i= 0; i < num_elements; ++i)
-				DoStore(
-					ptr + size_t(i * element_size),
-					val.AggregateVal[size_t(i)],
-					element_type );
+		{
+			const size_t offset= size_t(i * element_size);
+			if( offset > memory_region.size )
+			{
+				ReportError( "Out of bounds store!" );
+				return;
+			}
+
+			DoStore(
+				MemoryRegionView{ memory_region.ptr + offset, memory_region.size - offset },
+				val.AggregateVal[size_t(i)],
+				element_type );
+		}
 	}
-	else U_ASSERT(false);
+	else
+		ReportError( "Loading value of unsupported type!" );
 }
 
 void Interpreter::ProcessGEP( const llvm::Instruction* const instruction )
@@ -851,18 +1133,33 @@ void Interpreter::ProcessGEP( const llvm::Instruction* const instruction )
 void Interpreter::ProcessCall( const llvm::CallInst* const instruction )
 {
 	const llvm::Value* const calle= instruction->getCalledOperand();
+
 	const llvm::Function* function= llvm::dyn_cast<llvm::Function>(calle);
 	if( function == nullptr )
-		function= reinterpret_cast<const llvm::Function*>( size_t( GetVal( calle ).IntVal.getLimitedValue() ) );
+	{
+		const size_t index= size_t( GetVal( calle ).IntVal.getLimitedValue() );
+		if( index >= function_pointers_mapping_vec_.size() )
+		{
+			ReportError( "Calling unknown function pointer", *instruction );
+			return;
+		}
+
+		function= function_pointers_mapping_vec_[ index ];
+	}
 
 	if( function == nullptr )
 	{
-		ReportError( "Calling zero functon pointer", *instruction );
+		ReportError( "Calling zero function pointer", *instruction );
 		return;
 	}
 
-	// It is possible to call function by providing more arguments, than needed.
-	U_ASSERT( function->arg_size() <= instruction->getNumOperands() - 1u );
+	if( function->arg_size() > instruction->arg_size() )
+	{
+		ReportError( "Not enough arguments are provided for function call", *instruction );
+		return;
+	}
+
+	// Allow providing more than needed arguments. It's necessary for variadic functions and some other tricky cases.
 
 	const llvm::StringRef function_name= function->getName();
 
@@ -1018,22 +1315,40 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction )
 	stack_.resize( prev_stack_size ); // Drop temporary byval arguments.
 }
 
-void Interpreter::ProcessMemmove( const llvm::Instruction* const instruction )
+void Interpreter::ProcessMemmove( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() < 3 )
+	{
+		ReportError( "Incorrect number of operands for \"memcpy\"/\"memmove\"!" );
+		return;
+	}
+
 	const size_t dst_offset= size_t( GetVal( instruction->getOperand(0u) ).IntVal.getLimitedValue() );
 	const size_t src_offset= size_t( GetVal( instruction->getOperand(1u) ).IntVal.getLimitedValue() );
 	const size_t size= size_t( GetVal( instruction->getOperand(2u) ).IntVal.getLimitedValue() );
 
-	std::byte* const dst_ptr= GetMemoryForVirtualAddress( dst_offset );
-	const std::byte* const src_ptr= GetMemoryForVirtualAddress( src_offset );
+	const MemoryRegionView dst_memory_region= GetMemoryForVirtualAddress( dst_offset );
+	const MemoryRegionView src_memory_region= GetMemoryForVirtualAddress( src_offset );
 
-	std::memmove( dst_ptr, src_ptr, size );
+	if( size > std::min( dst_memory_region.size, src_memory_region.size ) )
+	{
+		ReportError( "Out of bounds memmove!" );
+		return;
+	}
+
+	std::memmove( dst_memory_region.ptr, src_memory_region.ptr, size );
 }
 
 constexpr size_t g_malloc_header_size= sizeof(size_t);
 
 void Interpreter::ProcessMalloc( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 1 )
+	{
+		ReportError( "Incorrect number of operands for \"malloc\"!" );
+		return;
+	}
+
 	const size_t size= size_t( GetVal( instruction->getOperand(0u) ).IntVal.getLimitedValue() );
 
 	const size_t offset= heap_.size();
@@ -1056,6 +1371,12 @@ void Interpreter::ProcessMalloc( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessRealloc( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 2 )
+	{
+		ReportError( "Incorrect number of operands for \"realloc\"!" );
+		return;
+	}
+
 	// Just allocate new memory block and copy contents of old one into new.
 
 	const llvm::GenericValue op0= GetVal( instruction->getOperand(0u) );
@@ -1107,6 +1428,12 @@ void Interpreter::ProcessFree( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroId( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 4 )
+	{
+		ReportError( "Incorrect number of operands for \"coro.id\"!" );
+		return;
+	}
+
 	const llvm::GenericValue alignment= GetVal( instruction->getOperand(0u) );
 	const llvm::GenericValue promise= GetVal( instruction->getOperand(1u) );
 	const llvm::GenericValue coroaddr= GetVal( instruction->getOperand(2u) );
@@ -1116,14 +1443,14 @@ void Interpreter::ProcessCoroId( const llvm::CallInst* const instruction )
 	(void)coroaddr;
 	(void)fnaddrs;
 
-	CoroutineData coroutine_data;
-	coroutine_data.promise= promise;
+	auto coroutine_data= std::make_shared<CoroutineData>();
+	coroutine_data->promise= promise;
 
 	const auto coroutine_id= next_coroutine_id_;
 	++next_coroutine_id_;
-	coroutines_data_[coroutine_id]= std::move(coroutine_data);
+	coroutines_data_[coroutine_id]= coroutine_data;
 
-	current_function_frame_.coroutine_data= &coroutines_data_[coroutine_id];
+	current_function_frame_.coroutine_data= coroutine_data;
 
 	llvm::GenericValue val;
 	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t( coroutine_id ) );
@@ -1140,6 +1467,12 @@ void Interpreter::ProcessCoroAlloc( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroFree( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 2 )
+	{
+		ReportError( "Incorrect number of operands for \"coro.free\"!" );
+		return;
+	}
+
 	const llvm::GenericValue token= GetVal( instruction->getOperand(0u) );
 	const uint32_t coroutine_id= uint32_t(token.IntVal.getLimitedValue());
 	coroutines_data_.erase( coroutine_id );
@@ -1160,6 +1493,12 @@ void Interpreter::ProcessCoroSize( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroBegin( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 2 )
+	{
+		ReportError( "Incorrect number of operands for \"coro.begin\"!" );
+		return;
+	}
+
 	const llvm::GenericValue token= GetVal( instruction->getOperand(0u) );
 	const llvm::GenericValue memory= GetVal( instruction->getOperand(1u) );
 
@@ -1177,7 +1516,18 @@ void Interpreter::ProcessCoroEnd( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroSuspend( const llvm::CallInst* const instruction )
 {
-	U_ASSERT( current_function_frame_.coroutine_data != nullptr );
+	if( instruction->arg_size() != 2 )
+	{
+		ReportError( "Incorrect number of operands for \"coro.suspend\"!" );
+		return;
+	}
+
+	// If coroutine data is null, something is broken.
+	if( current_function_frame_.coroutine_data == nullptr )
+	{
+		ReportError( "No coroutine data is present - can't suspend" );
+		return;
+	}
 
 	// const llvm::GenericValue token_save= GetVal( instruction->getOperand(0u) );
 	const llvm::GenericValue is_final= GetVal( instruction->getOperand(1u) );
@@ -1203,9 +1553,23 @@ void Interpreter::ProcessCoroDestroy( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroDone( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 1 )
+	{
+		ReportError( "Incorrect number of operands for \"coro.done\"!" );
+		return;
+	}
+
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
 	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
-	const CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
+
+	const auto it= coroutines_data_.find( coroutine_id );
+	if( it == coroutines_data_.end() )
+	{
+		ReportError( "Can't fetch coroutine data" );
+		return;
+	}
+
+	const CoroutineData& coroutine_data= *it->second;
 
 	llvm::GenericValue val;
 	val.IntVal= llvm::APInt( 1u, coroutine_data.done ? uint64_t(1) : uint64_t(0) );
@@ -1214,15 +1578,35 @@ void Interpreter::ProcessCoroDone( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroPromise( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 3 )
+	{
+		ReportError( "Incorrect number of operands for \"coro.promise\"!" );
+		return;
+	}
+
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
 	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
-	const CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
+
+	const auto it= coroutines_data_.find( coroutine_id );
+	if( it == coroutines_data_.end() )
+	{
+		ReportError( "Can't fetch coroutine data" );
+		return;
+	}
+
+	const CoroutineData& coroutine_data= *it->second;
 
 	current_function_frame_.instructions_map[ instruction ]= coroutine_data.promise;
 }
 
 void Interpreter::ProcessSAddWithOverflow( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 2 )
+	{
+		ReportError( "Incorrect number of operands for \"sadd.with.overflow\"!" );
+		return;
+	}
+
 	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
 	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
 
@@ -1242,6 +1626,12 @@ void Interpreter::ProcessSAddWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessUAddWithOverflow( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 2 )
+	{
+		ReportError( "Incorrect number of operands for \"uadd.with.overflow\"!" );
+		return;
+	}
+
 	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
 	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
 
@@ -1261,6 +1651,12 @@ void Interpreter::ProcessUAddWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessSSubWithOverflow( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 2 )
+	{
+		ReportError( "Incorrect number of operands for \"ssub.with.overflow\"!" );
+		return;
+	}
+
 	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
 	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
 
@@ -1280,6 +1676,11 @@ void Interpreter::ProcessSSubWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessUSubWithOverflow( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 2 )
+	{
+		ReportError( "Incorrect number of operands for \"usub.with.overflow\"!" );
+		return;
+	}
 	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
 	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
 
@@ -1299,6 +1700,12 @@ void Interpreter::ProcessUSubWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessSMulWithOverflow( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 2 )
+	{
+		ReportError( "Incorrect number of operands for \"smul.with.overflow\"!" );
+		return;
+	}
+
 	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
 	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
 
@@ -1318,6 +1725,12 @@ void Interpreter::ProcessSMulWithOverflow( const llvm::CallInst* const instructi
 
 void Interpreter::ProcessUMulWithOverflow( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 2 )
+	{
+		ReportError( "Incorrect number of operands for \"umul.with.overflow\"!" );
+		return;
+	}
+
 	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
 	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
 
@@ -1351,6 +1764,12 @@ void Interpreter::ProcessStackrestore( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessThreadLocalAddress( const llvm::CallInst* const instruction )
 {
+	if( instruction->arg_size() != 1 )
+	{
+		ReportError( "Incorrect number of operands for \"threadlocal.address\"!" );
+		return;
+	}
+
 	// Just return variable itself. For now we don't support handling thread-local variables properly (with TLS creation).
 	llvm::GenericValue val= GetVal( instruction->getArgOperand(0) );
 	current_function_frame_.instructions_map[ instruction ]= std::move(val);
@@ -1358,13 +1777,33 @@ void Interpreter::ProcessThreadLocalAddress( const llvm::CallInst* const instruc
 
 void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const bool destroy )
 {
+	if( instruction->arg_size() != 1 )
+	{
+		ReportError( "Incorrect number of operands for coroutine resume!" );
+		return;
+	}
+
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
 	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
-	CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
+
+	const auto it= coroutines_data_.find( coroutine_id );
+	if( it == coroutines_data_.end() )
+	{
+		ReportError( "Can't fetch coroutine data" );
+		return;
+	}
+
+	const std::shared_ptr<CoroutineData>& coroutine_data= it->second;
+
+	if( coroutine_data->suspend_instruction == nullptr )
+	{
+		ReportError( "Can't resume coroutine - suspend instruction is null" );
+		return;
+	}
 
 	CallFrame call_frame;
-	call_frame.instructions_map= coroutine_data.instructions_map;
-	call_frame.coroutine_data= &coroutine_data;
+	call_frame.instructions_map= coroutine_data->instructions_map;
+	call_frame.coroutine_data= coroutine_data;
 	call_frame.is_coroutine= true;
 
 	const size_t prev_stack_size= stack_.size();
@@ -1374,15 +1813,16 @@ void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const bool
 	{ // Set result of "suspend" instriction.
 		llvm::GenericValue val;
 		val.IntVal= llvm::APInt( 8u, destroy ? uint64_t(1) : uint64_t(0) );
-		current_function_frame_.instructions_map[ coroutine_data.suspend_instruction ]= val;
+		current_function_frame_.instructions_map[ coroutine_data->suspend_instruction ]= val;
 	}
 	// Continue execution starting with next instruction.
-	CallFunctionImpl( coroutine_data.suspend_instruction->getNextNode() );
+	ExecuteFunctionBody( coroutine_data->suspend_instruction->getNextNode() );
 
 	std::swap( call_frame, current_function_frame_ );
 
 	// Coroutine should not allocate anything on stack.
-	U_ASSERT( stack_.size() == prev_stack_size );
+	if( stack_.size() != prev_stack_size )
+		ReportError( "Detected a stack allocation for a coroutine, which shouldn't happen" );
 }
 
 void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )
@@ -1399,104 +1839,165 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 		val= op;
 		for( const auto index : llvm::dyn_cast<llvm::ExtractValueInst>(instruction)->indices() )
 		{
-			U_ASSERT( index < val.AggregateVal.size() );
+			if( index >= val.AggregateVal.size() )
+			{
+				ReportError( "Extracting value with incorrect index!" );
+				return;
+			}
+
 			val= val.AggregateVal[index];
 		}
 		break;
 
 	case llvm::Instruction::SExt:
-		U_ASSERT(dst_type->isIntegerTy());
+		if( !dst_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"sext\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op.IntVal.sext(dst_type->getIntegerBitWidth());
 		break;
 
 	case llvm::Instruction::ZExt:
-		U_ASSERT(dst_type->isIntegerTy());
+		if( !dst_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"zext\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op.IntVal.zext(dst_type->getIntegerBitWidth());
 		break;
 
 	case llvm::Instruction::Trunc:
-		U_ASSERT(dst_type->isIntegerTy());
+		if( !dst_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"trunc\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op.IntVal.trunc(dst_type->getIntegerBitWidth());
 		break;
 
 	case llvm::Instruction::FPExt:
 		if( dst_type->isFloatTy() )
 		{
-			if( src_type->isFloatTy() ) val.FloatVal= op.FloatVal;
-			else U_ASSERT(false);
+			if( src_type->isFloatTy() )
+				val.FloatVal= op.FloatVal;
+			else
+				ReportError( "unsupported src type for \"fpext\" instruction", *instruction );
 		}
 		else if( dst_type->isDoubleTy() )
 		{
-			if( src_type->isFloatTy() ) val.DoubleVal= double(op.FloatVal);
-			else U_ASSERT(false);
+			if( src_type->isFloatTy() )
+				val.DoubleVal= double(op.FloatVal);
+			else
+				ReportError( "unsupported src type for \"fpext\" instruction", *instruction );
 		}
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported dst type for \"fpext\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FPTrunc:
 		if( dst_type->isFloatTy() )
 		{
-			if( src_type->isFloatTy() ) val.FloatVal= op.FloatVal;
-			else if( src_type->isDoubleTy() ) val.FloatVal= float(op.DoubleVal);
-			else U_ASSERT(false);
+			if( src_type->isFloatTy() )
+				val.FloatVal= op.FloatVal;
+			else if( src_type->isDoubleTy() )
+				val.FloatVal= float(op.DoubleVal);
+			else
+				ReportError( "unsupported src type for \"fptrunc\" instruction", *instruction );
 		}
 		else if( dst_type->isDoubleTy() )
 		{
-			if( src_type->isDoubleTy() ) val.DoubleVal= op.DoubleVal;
-			else U_ASSERT(false);
+			if( src_type->isDoubleTy() )
+				val.DoubleVal= op.DoubleVal;
+			else
+				ReportError( "unsupported src type for \"fptrunc\" instruction", *instruction );
 		}
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported dst type for \"fptrunc\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::IntToPtr:
+		if( !dst_type->isPointerTy() )
+		{
+			ReportError( "Unsupported type for \"inttoptr\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= llvm::APInt( pointer_size_in_bits_, op.IntVal.getLimitedValue() );
 		break;
 
 	case llvm::Instruction::PtrToInt:
+		if( !dst_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"ptrtoint\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= llvm::APInt( pointer_size_in_bits_, op.IntVal.getLimitedValue() );
 		break;
 
 	case llvm::Instruction::FNeg:
-		if( src_type->isFloatTy() ) val.FloatVal= -op.FloatVal;
-		else if( src_type->isDoubleTy() ) val.DoubleVal = -op.DoubleVal;
-		else U_ASSERT(false);
+		if( src_type->isFloatTy() )
+			val.FloatVal= -op.FloatVal;
+		else if( src_type->isDoubleTy() )
+			val.DoubleVal = -op.DoubleVal;
+		else
+			ReportError( "unsupported type for \"fneg\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::SIToFP:
-		U_ASSERT(src_type->isIntegerTy());
+		if( !src_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"sitofp\" instruction", *instruction );
+			return;
+		}
 		if( dst_type->isFloatTy() )
 			val.FloatVal= llvm::APIntOps::RoundSignedAPIntToFloat(op.IntVal);
 		else if( dst_type->isDoubleTy() )
 			val.DoubleVal= llvm::APIntOps::RoundSignedAPIntToDouble(op.IntVal);
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"sitofp\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::UIToFP:
-		U_ASSERT(src_type->isIntegerTy());
+		if( !src_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"uitofp\" instruction", *instruction );
+			return;
+		}
 		if( dst_type->isFloatTy() )
 			val.FloatVal= llvm::APIntOps::RoundAPIntToFloat(op.IntVal);
 		else if( dst_type->isDoubleTy() )
 			val.DoubleVal= llvm::APIntOps::RoundAPIntToDouble(op.IntVal);
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"uitofp\" instruction", *instruction );
 		break;
 
 	// TODO - is this correct way to convert floats to ints?
 	case llvm::Instruction::FPToSI:
-		U_ASSERT(dst_type->isIntegerTy());
+		if( !dst_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"fptosi\" instruction", *instruction );
+			return;
+		}
 		if( src_type->isFloatTy() )
 			val.IntVal= llvm::APIntOps::RoundFloatToAPInt( op.FloatVal, dst_type->getIntegerBitWidth() );
 		else if( src_type->isDoubleTy() )
 			val.IntVal= llvm::APIntOps::RoundDoubleToAPInt( op.DoubleVal, dst_type->getIntegerBitWidth() );
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"fptosi\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FPToUI:
-		U_ASSERT(dst_type->isIntegerTy());
+		if( !dst_type->isIntegerTy() )
+		{
+			ReportError( "Unsupported type for \"fptoui\" instruction", *instruction );
+			return;
+		}
 		if( src_type->isFloatTy() )
 			val.IntVal= llvm::APIntOps::RoundFloatToAPInt( op.FloatVal, dst_type->getIntegerBitWidth() );
 		else if( src_type->isDoubleTy() )
 			val.IntVal= llvm::APIntOps::RoundDoubleToAPInt( op.DoubleVal, dst_type->getIntegerBitWidth() );
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"fptoui\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::BitCast:
@@ -1560,27 +2061,64 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 	const llvm::GenericValue op0= GetVal( instruction->getOperand(0u) );
 	const llvm::GenericValue op1= GetVal( instruction->getOperand(1u) );
 
-	llvm::Type* const type= instruction->getOperand(0u)->getType();
+	llvm::Type* const type0= instruction->getOperand(0u)->getType();
+	llvm::Type* const type1= instruction->getOperand(1u)->getType();
 	llvm::GenericValue val;
 	switch(instruction->getOpcode())
 	{
 	case llvm::Instruction::Add:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"add\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"add\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal + op1.IntVal;
 		break;
 
 	case llvm::Instruction::Sub:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"sub\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"sub\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal - op1.IntVal;
 		break;
 
 	case llvm::Instruction::Mul:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"mul\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"mul\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal * op1.IntVal;
 		break;
 
 	case llvm::Instruction::SDiv:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"sdiv\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"sdiv\" instruction", *instruction );
+			return;
+		}
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.sdiv(op1.IntVal);
 		else
@@ -1588,7 +2126,17 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 
 	case llvm::Instruction::UDiv:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"udiv\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy())
+		{
+			ReportError( "unsupported type for \"lshr\" instruction", *instruction );
+			return;
+		}
+
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.udiv(op1.IntVal);
 		else
@@ -1596,7 +2144,16 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 
 	case llvm::Instruction::SRem:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"srem\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"srem\" instruction", *instruction );
+			return;
+		}
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.srem(op1.IntVal);
 		else
@@ -1604,7 +2161,16 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 
 	case llvm::Instruction::URem:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"urem\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"urem\" instruction", *instruction );
+			return;
+		}
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.urem(op1.IntVal);
 		else
@@ -1612,85 +2178,178 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 
 	case llvm::Instruction::And:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"and\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"and\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal & op1.IntVal;
 		break;
 
 	case llvm::Instruction::Or:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"or\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"or\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal | op1.IntVal;
 		break;
 
 	case llvm::Instruction::Xor:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"xor\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy())
+		{
+			ReportError( "unsupported type for \"xor\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal ^ op1.IntVal;
 		break;
 
 	case llvm::Instruction::Shl:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"shl\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"shl\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal.shl(op1.IntVal);
 		break;
 
 	case llvm::Instruction::AShr:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"ashr\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"ashr\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal.ashr(op1.IntVal);
 		break;
 
 	case llvm::Instruction::LShr:
-		U_ASSERT(type->isIntegerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"lshr\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isIntegerTy() )
+		{
+			ReportError( "unsupported type for \"lshr\" instruction", *instruction );
+			return;
+		}
 		val.IntVal= op0.IntVal.lshr(op1.IntVal);
 		break;
 
 	case llvm::Instruction::FAdd:
-		if( type->isFloatTy() )
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"fadd\" instruction", *instruction );
+			return;
+		}
+		if( type0->isFloatTy() )
 			val.FloatVal= ( llvm::APFloat(op0.FloatVal) + llvm::APFloat(op1.FloatVal) ).convertToFloat();
-		else if( type->isDoubleTy() )
+		else if( type0->isDoubleTy() )
 			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) + llvm::APFloat(op1.DoubleVal) ).convertToDouble();
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"fadd\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FSub:
-		if( type->isFloatTy() )
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"fsub\" instruction", *instruction );
+			return;
+		}
+		if( type0->isFloatTy() )
 			val.FloatVal= ( llvm::APFloat(op0.FloatVal) - llvm::APFloat(op1.FloatVal) ).convertToFloat();
-		else if( type->isDoubleTy() )
+		else if( type0->isDoubleTy() )
 			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) - llvm::APFloat(op1.DoubleVal) ).convertToDouble();
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"fsub\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FMul:
-		if( type->isFloatTy() )
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"fmul\" instruction", *instruction );
+			return;
+		}
+		if( type0->isFloatTy() )
 			val.FloatVal= ( llvm::APFloat(op0.FloatVal) * llvm::APFloat(op1.FloatVal) ).convertToFloat();
-		else if( type->isDoubleTy() )
+		else if( type0->isDoubleTy() )
 			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) * llvm::APFloat(op1.DoubleVal) ).convertToDouble();
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"fmul\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FDiv:
-		if( type->isFloatTy() )
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"fdiv\" instruction", *instruction );
+			return;
+		}
+		if( type0->isFloatTy() )
 			val.FloatVal= ( llvm::APFloat(op0.FloatVal) / llvm::APFloat(op1.FloatVal) ).convertToFloat();
-		else if( type->isDoubleTy() )
+		else if( type0->isDoubleTy() )
 			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) / llvm::APFloat(op1.DoubleVal) ).convertToDouble();
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"fdiv\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::FRem:
-		if( type->isFloatTy() )
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"frem\" instruction", *instruction );
+			return;
+		}
+		if( type0->isFloatTy() )
 		{
 			llvm::APFloat result_val(op0.FloatVal);
 			result_val.mod( llvm::APFloat(op1.FloatVal));
 			val.FloatVal= result_val.convertToFloat();
 		}
-		else if( type->isDoubleTy() )
+		else if( type0->isDoubleTy() )
 		{
 			llvm::APFloat result_val(op0.DoubleVal);
 			result_val.mod( llvm::APFloat(op1.DoubleVal) );
 			val.DoubleVal= result_val.convertToDouble();
 		}
-		else U_ASSERT(false);
+		else
+			ReportError( "unsupported type for \"frem\" instruction", *instruction );
 		break;
 
 	case llvm::Instruction::ICmp:
-		U_ASSERT(type->isIntegerTy() || type->isPointerTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"icmp\" instruction", *instruction );
+			return;
+		}
+		if( !( type0->isIntegerTy() || type0->isPointerTy() ) )
+		{
+			ReportError( "unsupported type for \"icmp\" instruction", *instruction );
+			return;
+		}
 		switch(llvm::dyn_cast<llvm::CmpInst>(instruction)->getPredicate())
 		{
 		case llvm::CmpInst::ICMP_EQ : val.IntVal= op0.IntVal.eq (op1.IntVal); break;
@@ -1703,22 +2362,32 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		case llvm::CmpInst::ICMP_SGE: val.IntVal= op0.IntVal.sge(op1.IntVal); break;
 		case llvm::CmpInst::ICMP_SLT: val.IntVal= op0.IntVal.slt(op1.IntVal); break;
 		case llvm::CmpInst::ICMP_SLE: val.IntVal= op0.IntVal.sle(op1.IntVal); break;
-		default: U_ASSERT(false); break;
+		default:
+			ReportError( "unhandled compare predicate", *instruction );
+			return;
 		};
 		break;
 
 	case llvm::Instruction::FCmp:
-		U_ASSERT(type->isFloatingPointTy());
+		if( type0 != type1 )
+		{
+			ReportError( "types mismatch for \"fcmp\" instruction", *instruction );
+			return;
+		}
+		if( !type0->isFloatingPointTy() )
+		{
+			ReportError( "unsupported type for \"fcmp\" instruction", *instruction );
+			return;
+		}
 		{
 			llvm::APFloat::cmpResult cmp_result;
-			if( type->isFloatTy() )
+			if( type0->isFloatTy() )
 				cmp_result= llvm::APFloat(op0.FloatVal).compare(llvm::APFloat(op1.FloatVal));
 			else
 				cmp_result= llvm::APFloat(op0.DoubleVal).compare(llvm::APFloat(op1.DoubleVal));
 			switch(llvm::dyn_cast<llvm::CmpInst>(instruction)->getPredicate())
 			{
 			// see llvm-3.7.1.src/lib/IR/ConstantFold.cpp:1752
-			default: U_ASSERT(false); break;
 			case llvm::FCmpInst::FCMP_FALSE: val.IntVal= llvm::APInt( 1u, 0u ); break;
 			case llvm::FCmpInst::FCMP_TRUE : val.IntVal= llvm::APInt( 1u, 1u ); break;
 			case llvm::FCmpInst::FCMP_UNO  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpUnordered ); break;
@@ -1735,14 +2404,17 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 			case llvm::FCmpInst::FCMP_OLE  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpLessThan || cmp_result == llvm::APFloat::cmpEqual ); break;
 			case llvm::FCmpInst::FCMP_UGE  : val.IntVal= llvm::APInt( 1u, cmp_result != llvm::APFloat::cmpLessThan ); break;
 			case llvm::FCmpInst::FCMP_OGE  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpGreaterThan || cmp_result == llvm::APFloat::cmpEqual ); break;
+			default:
+				ReportError( "unhandled compare predicate", *instruction );
+				return;
 			}
 		}
 		break;
 
 	case llvm::Instruction::AtomicRMW:
 		{
-			std::byte* const data_ptr= GetMemoryForVirtualAddress( size_t(op0.IntVal.getLimitedValue()) );
-			const llvm::GenericValue load_result= DoLoad( data_ptr, instruction->getType() );
+			const MemoryRegionView memory_region= GetMemoryForVirtualAddress( size_t(op0.IntVal.getLimitedValue()) );
+			const llvm::GenericValue load_result= DoLoad( memory_region, instruction->getType() );
 			val= load_result;
 
 			llvm::GenericValue new_value;
@@ -1775,7 +2447,7 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 				new_value= op1;
 				break;
 			}
-			DoStore( data_ptr, new_value, instruction->getType() );
+			DoStore( memory_region, new_value, instruction->getType() );
 		}
 		break;
 
@@ -1785,6 +2457,22 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 	};
 
 	current_function_frame_.instructions_map[instruction]= val;
+}
+
+size_t Interpreter::GetFunctionIndex( const llvm::Function* const function )
+{
+	// Maintain bidirectional mapping of function pointers to their indices.
+
+	if( const auto it= function_pointers_map_.find( function ); it != function_pointers_map_.end() )
+		return it->second; // This function is already known.
+
+	// Create new entry in both containers.
+
+	const size_t index= function_pointers_mapping_vec_.size();
+	function_pointers_mapping_vec_.push_back( function );
+	function_pointers_map_.insert( std::make_pair( function, index ) );
+
+	return index;
 }
 
 void Interpreter::ReportDataStackOverflow()

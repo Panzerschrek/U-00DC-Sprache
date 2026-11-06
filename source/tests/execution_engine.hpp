@@ -53,7 +53,7 @@ public:
 
 	llvm::GenericValue runFunction( llvm::Function* const function, const llvm::ArrayRef<llvm::GenericValue> args )
 	{
-		Interpreter::ResultGeneric res= interpreter_.EvaluateGeneric( function, args );
+		Interpreter::ResultGeneric res= interpreter_.EvaluateGeneric( *function, args );
 
 		if( !res.errors.empty() )
 			throw ExecutionEngineException( std::move(res.errors) );

@@ -61,12 +61,12 @@ public:
 	// Evaluate result of "constexpr" call.
 	// it suports value and pointer args, it can return value args.
 	// Provided args should be equal to expected param types or compatible with it (have same size).
-	ResultConstexpr EvaluateConstexpr( llvm::Function* llvm_function, llvm::ArrayRef<const llvm::Constant*> args, llvm::Type& return_type );
+	ResultConstexpr EvaluateConstexpr( const llvm::Function& llvm_function, llvm::ArrayRef<const llvm::Constant*> args, llvm::Type& return_type );
 
 	// Evaluate any other call.
 	// Pointer args are not supported.
 	// Also globals state is preserved after this call.
-	ResultGeneric EvaluateGeneric( llvm::Function* llvm_function, llvm::ArrayRef<llvm::GenericValue> args );
+	ResultGeneric EvaluateGeneric( const llvm::Function& llvm_function, llvm::ArrayRef<llvm::GenericValue> args );
 
 	void RegisterCustomFunction( llvm::StringRef name, CustomFunction function );
 
@@ -74,10 +74,36 @@ public:
 	void ReadExecutinEngineData( void* dst, uint64_t address, size_t size ) const;
 
 private:
+	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
+
+	struct CoroutineData;
+
+	struct CallFrame
+	{
+		InstructionsMap instructions_map;
+		std::shared_ptr<CoroutineData> coroutine_data;
+		bool is_coroutine= false;
+	};
+
+	struct CoroutineData
+	{
+		InstructionsMap instructions_map; // Save here all instruction in case of suspend.
+		llvm::GenericValue promise;
+		const llvm::CallInst* suspend_instruction= nullptr;
+		bool done= false;
+	};
+
+	struct MemoryRegionView
+	{
+		std::byte* ptr= nullptr;
+		size_t size= 0;
+	};
+
+private:
 	ResultConstexpr PrepareResultAndClear();
 
 	llvm::GenericValue CallFunction( const llvm::Function& llvm_function );
-	llvm::GenericValue CallFunctionImpl( const llvm::Instruction* instruction );
+	llvm::GenericValue ExecuteFunctionBody( const llvm::Instruction* instruction );
 
 	// Returns offset
 	size_t MoveConstantToStack( const llvm::Constant& constant );
@@ -88,19 +114,19 @@ private:
 	llvm::GenericValue BuildGEP( const llvm::User* instruction );
 
 	llvm::GenericValue GetVal( const llvm::Value* val );
-	void ProcessAlloca( const llvm::Instruction* instruction );
+	void ProcessAlloca( const llvm::AllocaInst* instruction );
 
-	std::byte* GetMemoryForVirtualAddress( size_t offset );
+	MemoryRegionView GetMemoryForVirtualAddress( size_t offset );
 
 	void ProcessLoad( const llvm::Instruction* instruction );
-	llvm::GenericValue DoLoad( const std::byte* ptr, llvm::Type* t );
+	llvm::GenericValue DoLoad( MemoryRegionView memory_region, llvm::Type* t );
 
 	void ProcessStore( const llvm::Instruction* instruction );
-	void DoStore( std::byte* ptr, const llvm::GenericValue& val, llvm::Type* t );
+	void DoStore( MemoryRegionView memory_region, const llvm::GenericValue& val, llvm::Type* t );
 
 	void ProcessGEP( const llvm::Instruction* instruction );
 	void ProcessCall( const llvm::CallInst* instruction );
-	void ProcessMemmove( const llvm::Instruction* instruction );
+	void ProcessMemmove( const llvm::CallInst* instruction );
 	void ProcessMalloc( const llvm::CallInst* instruction );
 	void ProcessRealloc( const llvm::CallInst* instruction );
 	void ProcessFree( const llvm::CallInst* instruction );
@@ -134,32 +160,14 @@ private:
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
 	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );
 
+	size_t GetFunctionIndex( const llvm::Function* function );
+
 	void ReportDataStackOverflow();
 	void ReportGlobalsStackOverflow();
 
 	void ReportError(std::string_view text, const llvm::Instruction& instruction );
 	void ReportError(std::string_view text );
 	std::string GetCurrentCallStackDescription();
-
-private:
-	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
-
-	struct CoroutineData;
-
-	struct CallFrame
-	{
-		InstructionsMap instructions_map;
-		CoroutineData* coroutine_data= nullptr; // observer ptr
-		bool is_coroutine= false;
-	};
-
-	struct CoroutineData
-	{
-		InstructionsMap instructions_map; // Save here all instruction in case of suspend.
-		llvm::GenericValue promise;
-		const llvm::CallInst* suspend_instruction= nullptr;
-		bool done= false;
-	};
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -174,9 +182,15 @@ private:
 
 	// Allocate coroutine data here and provide user code only handle value.
 	uint32_t next_coroutine_id_= 1u;
-	std::unordered_map<uint32_t, CoroutineData> coroutines_data_;
+	llvm::DenseMap<uint32_t, std::shared_ptr<CoroutineData>> coroutines_data_;
 
 	llvm::DenseMap<const llvm::Constant*, size_t> external_constant_mapping_;
+
+	// Store just sequential integers for values for function pointers.
+	// Use this container to obtain functions for such integers.
+	// Doing so we can make sure, that no arbitrary address can be casted to llvm::Function*.
+	llvm::DenseMap<const llvm::Function*, size_t> function_pointers_map_;
+	llvm::SmallVector<const llvm::Function*> function_pointers_mapping_vec_;
 
 	llvm::StringMap<CustomFunction> custom_functions_;
 

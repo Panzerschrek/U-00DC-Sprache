@@ -4613,7 +4613,7 @@ Value CodeBuilder::DoCallFunction(
 	{
 		const Interpreter::ResultConstexpr evaluation_result=
 			constexpr_function_evaluator_.EvaluateConstexpr(
-				function_as_real_function,
+				*function_as_real_function,
 				constant_llvm_args,
 				function_type.return_type == void_type_
 					? *fundamental_llvm_types_.void_for_ret_
