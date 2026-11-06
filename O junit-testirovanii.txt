@@ -56,6 +56,8 @@ Nado eto imetj v vidu i predusmotretj vozmožnostj deduplikaçii.
 Poka ne ponätno, kak testy dolžny družitj s kross-kompiläçijej.
 Poka cto vidätsä kak minimum dva varianta - sobiratj testy pod çelevuju platformu, ili že pod host-platformu.
 Oba sposoba ne idealjny.
+Sborka dlä çelevoj platformy imejet smysl, jesli imejetsä vozmožnostj zapuskatj testy na nej, cto tehniceski inogda problemno, da i ne ponätno, kak sborocnaja sistema možet ih zapuskatj.
+Sobiratj testy pod host-platformu i zapuskatj ih prosce, no dlä etogo neobhodimo, ctoby sborocnyje çeli, soderžascije testy a takže ih zavisimosti umeli sobiratjsä pod etu platformu, cto inogda možet bytj problematicno.
 
 Problemu dlä raboty testov predstavläjut takže sborocnyje çeli - razdeläjemyje biblioteki.
 Jesli kakaja-to sborocnaja çelj zavisit ot drugoj çeli - razdeläjemoj biblioteki, to možet vozniknutj problema s zapuskom testov etoj çeli.
@@ -65,3 +67,17 @@ Krome togo mogut vozniknutj problemy, jesli vspomogateljnyj kod testirovanija (k
 Odno iz vozmožnyh rešenij problemy zapuska testov, ispoljzujuschih razdeläjemyje biblioteki - sobiratj dlä testov proekt s izmenenijem tipa sborocnyh çelej - razdeläjemyh bibliotek na obycnyje biblioteki (Ü biblioteki).
 Eto ustranit problemy dublirovanija  globaljnyh izmenäjemyh peremennyh i poiska dinamiceskih zavisimostej.
 No poka ne ponätno, kakije drugije problemy eto možet vyzvatj.
+
+Sborocnaja sistema dolžna predostavlätj vozmožnostj dlä zapuska toljko casti testov.
+Dlä etogo çelesoobrazno imenovatj testy i imetj vozmožnostj ukazyvatj testy dlä zapuska po imeni.
+Možno pojti daljše i dobavitj vozmožnostj ukazatj pattern dlä zapuska testov.
+Tak ili inace eto trebujet nalicija imön dlä testov.
+Pri etom unikaljnostj etih imön ne obäzateljna, da i ne vozmožna ona iz-za osobennostej komponovki Ü-koda.
+
+Imejet smysl realizovatj funkçional dlä testirovanija i dlä zamera proizvoditeljnosti ("benchmarks") shožim obrazom.
+Eto možet pozvolitj ispoljzovatj odin i tot že kod v kompilätore i sborocnoj sisteme kak dlä odnogo, tak i dlä drugogo.
+Takže eto možet pozvolitj ispoljzovatj odni i te že konstrukçii v samom jazyke.
+
+Stoit rassmotretj vozmožnostj ignorirovatj zapusk testa.
+Proignorirovannyje testy dolžny otobražatjsä v loge zapuska testov.
+Takže tam možno pisatj pricinu ignorirovanija.
