@@ -577,13 +577,23 @@ void Interpreter::CopyConstantToStack( const llvm::Constant& constant, const siz
 	}
 	else if( constant_type->isFloatTy() )
 	{
-		const float val= llvm::dyn_cast<llvm::ConstantFP>(&constant)->getValueAPF().convertToFloat();
-		std::memcpy( globals_stack_.data() + stack_offset, &val, sizeof(float) );
+		if( const auto fp_constant= llvm::dyn_cast<llvm::ConstantFP>(&constant) )
+		{
+			const float val= fp_constant->getValueAPF().convertToFloat();
+			std::memcpy( globals_stack_.data() + stack_offset, &val, sizeof(float) );
+		}
+		else
+			ReportError( "unexpected floating-point constant kind" );
 	}
 	else if( constant_type->isDoubleTy() )
 	{
-		const double val= llvm::dyn_cast<llvm::ConstantFP>(&constant)->getValueAPF().convertToDouble();
-		std::memcpy( globals_stack_.data() + stack_offset, &val, sizeof(double) );
+		if( const auto fp_constant= llvm::dyn_cast<llvm::ConstantFP>(&constant) )
+		{
+			const double val= fp_constant->getValueAPF().convertToDouble();
+			std::memcpy( globals_stack_.data() + stack_offset, &val, sizeof(double) );
+		}
+		else
+			ReportError( "unexpected floating-point constant kind" );
 	}
 	else if( constant_type->isPointerTy() )
 	{
