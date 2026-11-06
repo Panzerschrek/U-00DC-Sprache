@@ -114,7 +114,7 @@ private:
 	llvm::GenericValue BuildGEP( const llvm::User* instruction );
 
 	llvm::GenericValue GetVal( const llvm::Value* val );
-	void ProcessAlloca( const llvm::Instruction* instruction );
+	void ProcessAlloca( const llvm::AllocaInst* instruction );
 
 	MemoryRegionView GetMemoryForVirtualAddress( size_t offset );
 

@@ -287,7 +287,7 @@ llvm::GenericValue Interpreter::ExecuteFunctionBody( const llvm::Instruction* in
 		switch( instruction->getOpcode() )
 		{
 		case llvm::Instruction::Alloca:
-			ProcessAlloca(instruction);
+			ProcessAlloca( llvm::dyn_cast<llvm::AllocaInst>(instruction) );
 			break;
 
 		case llvm::Instruction::Load:
@@ -806,10 +806,9 @@ llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 	return res;
 }
 
-void Interpreter::ProcessAlloca( const llvm::Instruction* const instruction )
+void Interpreter::ProcessAlloca( const llvm::AllocaInst* const instruction )
 {
-	const auto alloca_instruction= llvm::dyn_cast<llvm::AllocaInst>(instruction);
-	llvm::Type* const element_type= alloca_instruction->getAllocatedType();
+	llvm::Type* const element_type= instruction->getAllocatedType();
 
 	const size_t element_size= size_t(data_layout_.getTypeAllocSize( element_type ));
 
