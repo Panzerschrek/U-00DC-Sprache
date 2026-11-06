@@ -28,7 +28,7 @@ LLVMValueRef U1_ConstexprFunctionEvaluatorEvaluate(
 {
 	const auto res=
 		constexpr_function_evaluator->EvaluateConstexpr(
-			llvm::dyn_cast<llvm::Function>(llvm::unwrap(function)),
+			*llvm::dyn_cast<llvm::Function>(llvm::unwrap(function)),
 			llvm::ArrayRef<const llvm::Constant*>( reinterpret_cast<const llvm::Constant* const*>(args_start), arg_count ),
 			*llvm::unwrap( return_type ) );
 

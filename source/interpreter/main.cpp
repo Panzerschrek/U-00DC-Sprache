@@ -520,7 +520,7 @@ int Main( int argc, const char* argv[] )
 
 		if( function_type->getNumParams() == 0 )
 		{
-			const Interpreter::ResultGeneric result= g_interpreter->EvaluateGeneric( main_function_llvm, {} );
+			const Interpreter::ResultGeneric result= g_interpreter->EvaluateGeneric( *main_function_llvm, {} );
 
 			for( const std::string& err : result.errors )
 				std::cerr << "Execution error: " << err << std::endl;
@@ -538,7 +538,7 @@ int Main( int argc, const char* argv[] )
 			args[0].IntVal= llvm::APInt( 32, 0ull );
 			args[1].IntVal= llvm::APInt( data_layout.getPointerSizeInBits(), 0ull );
 
-			const Interpreter::ResultGeneric result= g_interpreter->EvaluateGeneric( main_function_llvm, args );
+			const Interpreter::ResultGeneric result= g_interpreter->EvaluateGeneric( *main_function_llvm, args );
 
 			for( const std::string& err : result.errors )
 				std::cerr << "Execution error: " << err << std::endl;
