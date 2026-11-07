@@ -5043,20 +5043,7 @@ void SyntaxAnalyzer::PushErrorMessage()
 	if( error_messages_.empty() || error_messages_.back().src_loc != it_->src_loc )
 	{
 		if( error_messages_.size() < c_max_errors_to_report )
-		{
-			LexSyntError error_message;
-			error_message.src_loc= it_->src_loc;
-
-			if( it_->type == Lexem::Type::IntegerNumber || it_->type == Lexem::Type::FloatingPointNumber )
-			{
-				// Process numbers specially since text of number lexem is not a text but binary struct data.
-				error_message.text= "Syntax error - unexpected number lexem";
-			}
-			else
-				error_message.text= "Syntax error - unexpected lexem \"" + it_->text + "\"";
-
-			error_messages_.push_back( std::move(error_message) );
-		}
+			error_messages_.emplace_back( "Syntax error - unexpected lexem \"" + it_->text + "\"", it_->src_loc );
 	}
 
 	// HACK!
