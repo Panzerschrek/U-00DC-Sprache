@@ -68,16 +68,19 @@ size_t LoadNode_r(
 
 	LexicalAnalysisResult lex_result= LexicalAnalysis( *loaded_file );
 
-	for( LexSyntError error: lex_result.errors )
+	if( !lex_result.errors.empty() )
 	{
-		error.src_loc.SetFileIndex(uint32_t(node_index));
-		result.errors.push_back( std::move(error) );
+		for( LexSyntError error: lex_result.errors )
+		{
+			error.src_loc.SetFileIndex(uint32_t(node_index));
+			result.errors.push_back( std::move(error) );
+		}
+
+		// Don't care doing syntax analysis if there are lexical errors.
+		return node_index;
 	}
 
-	if( !lex_result.errors.empty() )
-		return ~0u;
-
-	for( Lexem& lexem :lex_result.lexems )
+	for( Lexem& lexem : lex_result.lexems )
 		lexem.src_loc.SetFileIndex(uint32_t(node_index));
 
 	const std::vector<Synt::Import> imports= Synt::ParseImports( lex_result.lexems );
