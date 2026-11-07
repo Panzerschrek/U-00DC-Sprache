@@ -128,6 +128,10 @@ std::optional<BinaryOperatorType> GetCompoundAssignmentOperator( const Lexem& le
 	};
 }
 
+// Prevent emitting too many errors, since it may consume a lot of memory.
+// We need to use pretty small limit, since some errors may be put in temporary containers, like in macro expansions.
+const size_t c_max_errors_to_report= 32u;
+
 // By declaring this class and all its methods locally( using anonymous namespace ) we allow complier to optimize methods of this class aggressively (using inlining where it is possible).
 class SyntaxAnalyzer
 {
@@ -450,10 +454,13 @@ void SyntaxAnalyzer::ParseMacro()
 
 	if( IsKeyword( macro.name ) )
 	{
-		LexSyntError msg;
-		msg.src_loc= macro.src_loc;
-		msg.text= "Using keyword as macro name";
-		error_messages_.push_back(std::move(msg));
+		if( error_messages_.size() < c_max_errors_to_report )
+		{
+			LexSyntError msg;
+			msg.src_loc= macro.src_loc;
+			msg.text= "Using keyword as macro name";
+			error_messages_.push_back(std::move(msg));
+		}
 	}
 
 	ExpectLexem( Lexem::Type::Colon );
@@ -476,10 +483,13 @@ void SyntaxAnalyzer::ParseMacro()
 		macro_context= Macro::Context::Namespace;
 	else
 	{
-		LexSyntError msg;
-		msg.src_loc= macro.src_loc;
-		msg.text= "\"" + context_str + "\" unknown macro context";
-		error_messages_.push_back(std::move(msg));
+		if( error_messages_.size() < c_max_errors_to_report )
+		{
+			LexSyntError msg;
+			msg.src_loc= macro.src_loc;
+			msg.text= "\"" + context_str + "\" unknown macro context";
+			error_messages_.push_back(std::move(msg));
+		}
 	}
 
 	macro.match_template_elements= ParseMacroMatchBlock();
@@ -497,10 +507,13 @@ void SyntaxAnalyzer::ParseMacro()
 	RcPtr<Macro>& dst_macro_ptr= (*macros_)[ macro_context ][ macro.name ];
 	if( !dst_macro_ptr.empty() )
 	{
-		LexSyntError msg;
-		msg.src_loc= macro.src_loc;
-		msg.text= "\"" + macro.name + "\" macro redefinition.";
-		error_messages_.push_back(std::move(msg));
+		if( error_messages_.size() < c_max_errors_to_report )
+		{
+			LexSyntError msg;
+			msg.src_loc= macro.src_loc;
+			msg.text= "\"" + macro.name + "\" macro redefinition.";
+			error_messages_.push_back(std::move(msg));
+		}
 	}
 	else
 		dst_macro_ptr= MakeRcPtr( std::move(macro) );
@@ -527,17 +540,23 @@ Macro::MatchElements SyntaxAnalyzer::ParseMacroMatchBlock()
 
 			if( elements_set.find( element.name ) != elements_set.end() )
 			{
-				LexSyntError msg;
-				msg.src_loc= it_->src_loc;
-				msg.text= "\"" + element.name + "\" macro parameter redefinition.";
-				error_messages_.push_back(std::move(msg));
+				if( error_messages_.size() < c_max_errors_to_report )
+				{
+					LexSyntError msg;
+					msg.src_loc= it_->src_loc;
+					msg.text= "\"" + element.name + "\" macro parameter redefinition.";
+					error_messages_.push_back(std::move(msg));
+				}
 			}
 			if( IsKeyword( element.name ) )
 			{
-				LexSyntError msg;
-				msg.src_loc= it_->src_loc;
-				msg.text= "Using keyword as macro element name";
-				error_messages_.push_back(std::move(msg));
+				if( error_messages_.size() < c_max_errors_to_report )
+				{
+					LexSyntError msg;
+					msg.src_loc= it_->src_loc;
+					msg.text= "Using keyword as macro element name";
+					error_messages_.push_back(std::move(msg));
+				}
 			}
 			NextLexem();
 
@@ -567,10 +586,13 @@ Macro::MatchElements SyntaxAnalyzer::ParseMacroMatchBlock()
 				element.kind= Macro::MatchElementKind::Repeated;
 			else
 			{
-				LexSyntError msg;
-				msg.src_loc= it_->src_loc;
-				msg.text= "\"" + element_type_str + "\" unknown macro variable type";
-				error_messages_.push_back(std::move(msg));
+				if( error_messages_.size() < c_max_errors_to_report )
+				{
+					LexSyntError msg;
+					msg.src_loc= it_->src_loc;
+					msg.text= "\"" + element_type_str + "\" unknown macro variable type";
+					error_messages_.push_back(std::move(msg));
+				}
 			}
 
 			if( element.kind == Macro::MatchElementKind::Optional || element.kind == Macro::MatchElementKind::Repeated )
@@ -629,10 +651,13 @@ Macro::MatchElements SyntaxAnalyzer::ParseMacroMatchBlock()
 				element.block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAfterBlockEnd;
 			else
 			{
-				LexSyntError msg;
-				msg.src_loc= it_->src_loc;
-				msg.text= "Expected lexem at start or after \"" + element.name + "\" element.";
-				error_messages_.push_back(std::move(msg));
+				if( error_messages_.size() < c_max_errors_to_report )
+				{
+					LexSyntError msg;
+					msg.src_loc= it_->src_loc;
+					msg.text= "Expected lexem at start or after \"" + element.name + "\" element.";
+					error_messages_.push_back(std::move(msg));
+				}
 			}
 
 			if( next_element != nullptr && next_element->kind == Macro::MatchElementKind::Lexem )
@@ -641,20 +666,26 @@ Macro::MatchElements SyntaxAnalyzer::ParseMacroMatchBlock()
 					!element.sub_elements.empty() && element.sub_elements.front().kind == Macro::MatchElementKind::Lexem &&
 					element.sub_elements.front().lexem.type == next_element->lexem.type && element.sub_elements.front().lexem.text == result[i+1u].lexem.text )
 				{
-					LexSyntError msg;
-					msg.src_loc= it_->src_loc;
-					msg.text= "Start lexem of optional macro block must be different from first lexem after optional block.";
-					error_messages_.push_back(std::move(msg));
+					if( error_messages_.size() < c_max_errors_to_report )
+					{
+						LexSyntError msg;
+						msg.src_loc= it_->src_loc;
+						msg.text= "Start lexem of optional macro block must be different from first lexem after optional block.";
+						error_messages_.push_back(std::move(msg));
+					}
 				}
 
 				if( element.kind == Macro::MatchElementKind::Repeated &&
 					element.lexem.type != Lexem::Type::EndOfFile &&
 					element.lexem.type == next_element->lexem.type && element.lexem.text == next_element->lexem.text )
 				{
-					LexSyntError msg;
-					msg.src_loc= it_->src_loc;
-					msg.text= "Separator lexem of repeated macro block must be different from first lexem after repeated block.";
-					error_messages_.push_back(std::move(msg));
+					if( error_messages_.size() < c_max_errors_to_report )
+					{
+						LexSyntError msg;
+						msg.src_loc= it_->src_loc;
+						msg.text= "Separator lexem of repeated macro block must be different from first lexem after repeated block.";
+						error_messages_.push_back(std::move(msg));
+					}
 				}
 
 				if( element.kind == Macro::MatchElementKind::Repeated &&
@@ -662,10 +693,13 @@ Macro::MatchElements SyntaxAnalyzer::ParseMacroMatchBlock()
 					!element.sub_elements.empty() && element.sub_elements.front().kind == Macro::MatchElementKind::Lexem &&
 					element.sub_elements.front().lexem.type == next_element->lexem.type && element.sub_elements.front().lexem.text == next_element->lexem.text )
 				{
-					LexSyntError msg;
-					msg.src_loc= it_->src_loc;
-					msg.text= "Start lexem of repeated macro block without separator must be different from first lexem after repeated block.";
-					error_messages_.push_back(std::move(msg));
+					if( error_messages_.size() < c_max_errors_to_report )
+					{
+						LexSyntError msg;
+						msg.src_loc= it_->src_loc;
+						msg.text= "Start lexem of repeated macro block without separator must be different from first lexem after repeated block.";
+						error_messages_.push_back(std::move(msg));
+					}
 				}
 			}
 		}
@@ -874,7 +908,8 @@ IntegerNumericConstant SyntaxAnalyzer::ParseIntegerNumericConstant()
 
 	if( num_parsed == std::nullopt )
 	{
-		error_messages_.push_back( LexSyntError( "Integer numeric literal overflow!", result.src_loc ) );
+		if( error_messages_.size() < c_max_errors_to_report )
+			error_messages_.push_back( LexSyntError( "Integer numeric literal overflow!", result.src_loc ) );
 		num_parsed= Int128{ 0, 0 };
 	}
 	
@@ -885,7 +920,10 @@ IntegerNumericConstant SyntaxAnalyzer::ParseIntegerNumericConstant()
 		const std::string_view suffix_str= it_->text;
 
 		if( suffix_str.size() > result.type_suffix.size() )
-			error_messages_.push_back( LexSyntError( "Type suffix of numeric literal is too long!", it_->src_loc ) );
+		{
+			if( error_messages_.size() < c_max_errors_to_report )
+				error_messages_.push_back( LexSyntError( "Type suffix of numeric literal is too long!", it_->src_loc ) );
+		}
 		else
 			std::memcpy( result.type_suffix.data(), suffix_str.data(), suffix_str.size() );
 
@@ -1143,10 +1181,13 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 				std::memcpy( char_literal.type_suffix.data(), it_->text.data(), it_->text.size() );
 			else
 			{
-				LexSyntError error_message;
-				error_message.src_loc= it_->src_loc;
-				error_message.text= "Char literal type suffix overflow";
-				error_messages_.push_back( std::move(error_message) );
+				if( error_messages_.size() < c_max_errors_to_report )
+				{
+					LexSyntError error_message;
+					error_message.src_loc= it_->src_loc;
+					error_message.text= "Char literal type suffix overflow";
+					error_messages_.push_back( std::move(error_message) );
+				}
 			}
 
 			NextLexem();
@@ -3485,10 +3526,14 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 
 			if( list.HasTail() )
 			{
-				LexSyntError error_message;
-				error_message.src_loc= it_->src_loc;
-				error_message.text= "Syntax error - expected exactly one element in expansion of macro for \"if\" alternative.";
-				error_messages_.push_back( std::move(error_message) );
+				if( error_messages_.size() < c_max_errors_to_report )
+				{
+					LexSyntError error_message;
+					error_message.src_loc= it_->src_loc;
+					error_message.text= "Syntax error - expected exactly one element in expansion of macro for \"if\" alternative.";
+					error_messages_.push_back( std::move(error_message) );
+				}
+
 				return nullptr;
 			}
 
@@ -3503,10 +3548,13 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 				}
 				else
 				{
-					LexSyntError error_message;
-					error_message.src_loc= it_->src_loc;
-					error_message.text= "Syntax error - expected block without safety modifiers and labels for \"if\" alternative.";
-					error_messages_.push_back( std::move(error_message) );
+					if( error_messages_.size() < c_max_errors_to_report )
+					{
+						LexSyntError error_message;
+						error_message.src_loc= it_->src_loc;
+						error_message.text= "Syntax error - expected block without safety modifiers and labels for \"if\" alternative.";
+						error_messages_.push_back( std::move(error_message) );
+					}
 					return nullptr;
 				}
 			}
@@ -3518,10 +3566,13 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 			if( auto if_coro_advance_operator= list.TryTakeStart< IfCoroAdvanceOperator >() )
 				return std::make_unique<IfAlternative>( std::move( *if_coro_advance_operator ) );
 
-			LexSyntError error_message;
-			error_message.src_loc= it_->src_loc;
-			error_message.text= "Syntax error - unexpected element kind for \"if\" alternative.";
-			error_messages_.push_back( std::move(error_message) );
+			if( error_messages_.size() < c_max_errors_to_report )
+			{
+				LexSyntError error_message;
+				error_message.src_loc= it_->src_loc;
+				error_message.text= "Syntax error - unexpected element kind for \"if\" alternative.";
+				error_messages_.push_back( std::move(error_message) );
+			}
 			return nullptr;
 		}
 	}
@@ -4534,11 +4585,13 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	const size_t depth_limit= 10; // Small, but reasonable limit.
 	if( macro_expansion_depth_ >= depth_limit )
 	{
-		LexSyntError error_message;
-		error_message.src_loc= expansion_src_loc;
-		error_message.text= "Macro expansion depth " + std::to_string(depth_limit) + " reached";
-
-		error_messages_.push_back( std::move(error_message) );
+		if( error_messages_.size() < c_max_errors_to_report )
+		{
+			LexSyntError error_message;
+			error_message.src_loc= expansion_src_loc;
+			error_message.text= "Macro expansion depth " + std::to_string(depth_limit) + " reached";
+			error_messages_.push_back( std::move(error_message) );
+		}
 
 		return ParseFnResult();
 	}
@@ -4547,11 +4600,13 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	const size_t total_expansions_limit= 32767;
 	if( macro_expansion_contexts_->size() >= total_expansions_limit )
 	{
-		LexSyntError error_message;
-		error_message.src_loc= expansion_src_loc;
-		error_message.text= "Macro expansions limit " + std::to_string(total_expansions_limit) + " reached";
-
-		error_messages_.push_back( std::move(error_message) );
+		if( error_messages_.size() < c_max_errors_to_report )
+		{
+			LexSyntError error_message;
+			error_message.src_loc= expansion_src_loc;
+			error_message.text= "Macro expansions limit " + std::to_string(total_expansions_limit) + " reached";
+			error_messages_.push_back( std::move(error_message) );
+		}
 
 		return ParseFnResult();
 	}
@@ -4612,13 +4667,16 @@ SyntaxAnalyzer::MacroVariablesMap SyntaxAnalyzer::MatchMacroBlock(
 	MacroVariablesMap out_elements;
 
 	const auto push_macro_error=
-	[&]
-	{
-		LexSyntError msg;
-		msg.src_loc= it_->src_loc;
-		msg.text= "Unexpected lexem - \"" + it_->text + "\". (In expansion of macro \"" + macro_name + "\")";
-		error_messages_.push_back(std::move(msg));
-	};
+		[&]
+		{
+			if( error_messages_.size() < c_max_errors_to_report )
+			{
+				LexSyntError msg;
+				msg.src_loc= it_->src_loc;
+				msg.text= "Unexpected lexem - \"" + it_->text + "\". (In expansion of macro \"" + macro_name + "\")";
+				error_messages_.push_back(std::move(msg));
+			}
+		};
 
 	for( size_t i= 0u; i < match_elements.size(); ++i )
 	{
@@ -4817,10 +4875,13 @@ void SyntaxAnalyzer::DoExpandMacro(
 				const auto element= parsed_elements.GetElement( result_element.name );
 				if( element == nullptr )
 				{
-					LexSyntError msg;
-					msg.src_loc= result_element.lexem.src_loc;
-					msg.text= result_element.name + " not found";
-					error_messages_.push_back( std::move(msg) );
+					if( error_messages_.size() < c_max_errors_to_report )
+					{
+						LexSyntError msg;
+						msg.src_loc= result_element.lexem.src_loc;
+						msg.text= result_element.name + " not found";
+						error_messages_.push_back( std::move(msg) );
+					}
 					return;
 				}
 
@@ -4839,10 +4900,13 @@ void SyntaxAnalyzer::DoExpandMacro(
 				const auto element= parsed_elements.GetElement( result_element.name );
 				if( element == nullptr )
 				{
-					LexSyntError msg;
-					msg.src_loc= result_element.lexem.src_loc;
-					msg.text= result_element.name + " not found";
-					error_messages_.push_back( std::move(msg) );
+					if( error_messages_.size() < c_max_errors_to_report )
+					{
+						LexSyntError msg;
+						msg.src_loc= result_element.lexem.src_loc;
+						msg.text= result_element.name + " not found";
+						error_messages_.push_back( std::move(msg) );
+					}
 					return;
 				}
 
@@ -4868,10 +4932,13 @@ void SyntaxAnalyzer::DoExpandMacro(
 				}
 				else
 				{
-					LexSyntError msg;
-					msg.src_loc= result_element.lexem.src_loc;
-					msg.text= "Expected optional or repated.";
-					error_messages_.push_back( std::move(msg) );
+					if( error_messages_.size() < c_max_errors_to_report )
+					{
+						LexSyntError msg;
+						msg.src_loc= result_element.lexem.src_loc;
+						msg.text= "Expected optional or repated.";
+						error_messages_.push_back( std::move(msg) );
+					}
 					return;
 				}
 			}
@@ -4975,18 +5042,21 @@ void SyntaxAnalyzer::PushErrorMessage()
 {
 	if( error_messages_.empty() || error_messages_.back().src_loc != it_->src_loc )
 	{
-		LexSyntError error_message;
-		error_message.src_loc= it_->src_loc;
-
-		if( it_->type == Lexem::Type::IntegerNumber || it_->type == Lexem::Type::FloatingPointNumber )
+		if( error_messages_.size() < c_max_errors_to_report )
 		{
-			// Process numbers specially since text of number lexem is not a text but binary struct data.
-			error_message.text= "Syntax error - unexpected number lexem";
-		}
-		else
-			error_message.text= "Syntax error - unexpected lexem \"" + it_->text + "\"";
+			LexSyntError error_message;
+			error_message.src_loc= it_->src_loc;
 
-		error_messages_.push_back( std::move(error_message) );
+			if( it_->type == Lexem::Type::IntegerNumber || it_->type == Lexem::Type::FloatingPointNumber )
+			{
+				// Process numbers specially since text of number lexem is not a text but binary struct data.
+				error_message.text= "Syntax error - unexpected number lexem";
+			}
+			else
+				error_message.text= "Syntax error - unexpected lexem \"" + it_->text + "\"";
+
+			error_messages_.push_back( std::move(error_message) );
+		}
 	}
 
 	// HACK!
