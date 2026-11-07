@@ -99,6 +99,10 @@ fn GetCompoundAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperator
 	}
 }
 
+// Prevent emitting too many errors, since it may consume a lot of memory.
+// We need to use pretty small limit, since some errors may be put in temporary containers, like in macro expansions.
+var size_type c_max_errors_to_report= 32s;
+
 class SyntaxAnalyzer
 {
 public:
@@ -272,9 +276,8 @@ private:
 		{
 			NextLexem(); // Advance parsing position, in order to avoid entering this function again.
 
-			errors_.push_back(
-				LexSyntError(
-					expansion_src_loc, ust::stringify8( "Macro expansion depth ", depth_limit, " reached" ) ) );
+			PushMacroErrorMessage(
+				expansion_src_loc, ust::stringify8( "Macro expansion depth ", depth_limit, " reached" ) );
 
 			return T();
 		}
@@ -285,11 +288,8 @@ private:
 		{
 			NextLexem(); // Advance parsing position, in order to avoid entering this function again.
 
-			errors_.push_back(
-				LexSyntError(
-					expansion_src_loc,
-					ust::stringify8( "Macro expansions limit ", total_expansions_limit, " reached" )
-				) );
+			PushMacroErrorMessage(
+				expansion_src_loc, ust::stringify8( "Macro expansions limit ", total_expansions_limit, " reached" ) );
 
 			return T();
 		}
@@ -856,10 +856,14 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 
 			if( int_parsed_opt.empty() )
 			{
-				errors_.push_back(
-					LexSyntError(
-						it_.front().src_loc,
-						ust::concat( "Integer literal overflow, ", num_str, " can't fit into 128 bits." ) ) );
+				if( errors_.size() < c_max_errors_to_report )
+				{
+					errors_.push_back(
+						LexSyntError(
+							it_.front().src_loc,
+							ust::concat( "Integer literal overflow, ", num_str, " can't fit into 128 bits." ) ) );
+				}
+
 				int_parsed_opt= 0u128;
 			}
 
@@ -879,9 +883,11 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 
 				if( type_suffix_str.size() >= ust::array_size( numeric_constant.type_suffix ) )
 				{
-					errors_.push_back(
-						LexSyntError(
-							it_.front().src_loc, ust::concat( "Integer literal type suffix is too long!" ) ) );
+					if( errors_.size() < c_max_errors_to_report )
+					{
+						errors_.push_back(
+							LexSyntError( it_.front().src_loc, "Integer literal type suffix is too long!" ) );
+					}
 				}
 
 				ust::array_view_mut</char8/>( numeric_constant.type_suffix ).copy_from( type_suffix_str );
@@ -897,9 +903,12 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 
 			if( num_parsed_opt.empty() )
 			{
-				errors_.push_back(
-					LexSyntError(
-						it_.front().src_loc, ust::concat( "Broken floating-point literal ", num_str, "!" ) ) );
+				if( errors_.size() < c_max_errors_to_report )
+				{
+					errors_.push_back(
+						LexSyntError(
+							it_.front().src_loc, ust::concat( "Broken floating-point literal ", num_str, "!" ) ) );
+				}
 			}
 
 			var FloatingPointNumericConstant mut numeric_constant
@@ -917,9 +926,11 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 
 				if( type_suffix_str.size() >= ust::array_size( numeric_constant.type_suffix ) )
 				{
-					errors_.push_back(
-						LexSyntError(
-							it_.front().src_loc, ust::concat( "Floating-point literal type suffix is too long!" ) ) );
+					if( errors_.size() < c_max_errors_to_report )
+					{
+						errors_.push_back(
+							LexSyntError( it_.front().src_loc, "Floating-point literal type suffix is too long!" ) );
+					}
 				}
 
 				ust::array_view_mut</char8/>( numeric_constant.type_suffix ).copy_from( type_suffix_str );
@@ -941,7 +952,10 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 				var ust::string8& text= it_.front().text;
 				if( text.size() > ust::array_size( string_literal.type_suffix ) )
 				{
-					errors_.push_back( LexSyntError( it_.front().src_loc, "String literal type suffix overflow" ) );
+					if( errors_.size() < c_max_errors_to_report )
+					{
+						errors_.push_back( LexSyntError( it_.front().src_loc, "String literal type suffix overflow" ) );
+					}
 				}
 				else
 				{
@@ -970,7 +984,10 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 				var ust::string8& text= it_.front().text;
 				if( text.size() > ust::array_size( char_literal.type_suffix ) )
 				{
-					errors_.push_back( LexSyntError( it_.front().src_loc, "Char literal type suffix overflow" ) );
+					if( errors_.size() < c_max_errors_to_report )
+					{
+						errors_.push_back( LexSyntError( it_.front().src_loc, "Char literal type suffix overflow" ) );
+					}
 				}
 				else
 				{
@@ -2596,7 +2613,14 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternative
 					}
 					else
 					{
-						errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - expected block without safety modifiers and labels for \"if\" alternative." ) );
+						if( errors_.size() < c_max_errors_to_report )
+						{
+							errors_.push_back(
+								LexSyntError(
+									it_.front().src_loc,
+									"Syntax error - expected block without safety modifiers and labels for \"if\" alternative." ) );
+						}
+
 						return EmptyVariant();
 					}
 				}
@@ -2613,12 +2637,25 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternative
 					return move(block_element).try_move</ust::box</IfCoroAdvanceOperator/>/>();
 				}
 
-				errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - unexpected element kind for \"if\" alternative." ) );
+				if( errors_.size() < c_max_errors_to_report )
+				{
+					errors_.push_back(
+						LexSyntError(
+							it_.front().src_loc, "Syntax error - unexpected element kind for \"if\" alternative." ) );
+				}
+
 				return EmptyVariant();
 			}
 			else
 			{
-				errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - expected exactly one element in expansion of macro for \"if\" alternative." ) );
+				if( errors_.size() < c_max_errors_to_report )
+				{
+					errors_.push_back(
+						LexSyntError(
+							it_.front().src_loc,
+							"Syntax error - expected exactly one element in expansion of macro for \"if\" alternative." ) );
+				}
+
 				return EmptyVariant();
 			}
 		}
@@ -4875,10 +4912,13 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 {
 	if( errors_.empty() || errors_.back().src_loc != it_.front().src_loc )
 	{
-		errors_.push_back(
-			LexSyntError(
-				it_.front().src_loc,
-				ust::concat( "Syntax error - unexpected lexem: \"", it_.front().ToDiagnosticString(), "\"" ) ) );
+		if( errors_.size() < c_max_errors_to_report )
+		{
+			errors_.push_back(
+				LexSyntError(
+					it_.front().src_loc,
+					ust::concat( "Syntax error - unexpected lexem: \"", it_.front().ToDiagnosticString(), "\"" ) ) );
+		}
 	}
 
 	// HACK! Advance current position if we report about error in current position multiple times.
@@ -4902,7 +4942,14 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 
 fn SyntaxAnalyzer::PushMacroErrorMessage( mut this, SrcLoc& src_loc, ust::string8 mut text )
 {
-	errors_.push_back( LexSyntError( src_loc, move(text) ) );
+	if( errors_.size() < c_max_errors_to_report )
+	{
+		errors_.push_back( LexSyntError( src_loc, move(text) ) );
+	}
+	else
+	{
+		move(text);
+	}
 }
 
 fn SyntaxAnalysis(
