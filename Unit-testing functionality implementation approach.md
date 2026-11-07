@@ -87,7 +87,14 @@ Mutexes may remain locked permanently.
 All this is problematic, but it's a lesser evil.
 Even with such problems present it may be still possible to run further tests, in hope that at least they are fine.
 Languages like C++ or Rust can solve some of such problems by using stack unwinding, but it isn't ideal and adds another point of failure in destructors executed during unwinding.
-Ü doesn't support ubnwinding, because it introduces additional speed and size overheads, so, it's not an option for recovering from failed unit-tests.
+Ü doesn't support unwinding, because it introduces additional speed and size overheads, so, it's not an option for recovering from failed unit-tests.
+
+Using `setjmp`/`longjmp` requires extra caution.
+`setjmp` may restore old values of local variables, if they are stored in registers.
+So, no changes of local variables should be done between `setjmp` and `longjmp`.
+In order to ensure this, inlining should be prevented (by using `noinline` attribute).
+Also `setjmp` function should be marked with `returns_twice` LLVM attribute.
+This all makes it necessary to write functionality using `setjmp`/`longjmp` using LLVM IR code directly.
 
 Extra consideration is necessary in order to prevent deadlocks in cases of failed unit-tests.
 It's necessary, since some global mutexes may remain in locked state after a test is failed and subsequent locking of these mutexes in tests launched later may produce a deadlock.
