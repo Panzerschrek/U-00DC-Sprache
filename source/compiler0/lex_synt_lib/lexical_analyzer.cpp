@@ -488,6 +488,15 @@ std::string GetColumnLimitMessage()
 	return "Lexical error: column limit reached, max is " + std::to_string( SrcLoc::c_max_column ) + ".";
 }
 
+// Prevent generating too many lexems.
+// It may lead to very large memory consumption if a file containing garbage (likely a huge binary file) is provided for lexical analysis.
+const size_t c_max_lexems= 1 << 24; // Around 16 millions is a reasonable limit.
+
+std::string GetLexemsLimitMessage()
+{
+	return "Lexical error: maximum number of lexems " + std::to_string( c_max_lexems ) + " is reached.";
+}
+
 // Prevent generating too many lexical errors.
 // It may lead to very large memory consumption if a file containing garbage (likely a huge binary file) is provided for lexical analysis.
 const size_t c_max_errors_to_report= 64;
@@ -657,6 +666,12 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 
 				result.lexems.push_back( std::move(lexem) );
 
+				if( result.lexems.size() >= c_max_lexems )
+				{
+					result.errors.emplace_back( GetLexemsLimitMessage(), SrcLoc( 0u, line, column ) );
+					return result;
+				}
+
 				lexem= ParseIdentifier( it, it_end );
 				lexem.type= Lexem::Type::LiteralSuffix;
 			}
@@ -673,6 +688,12 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 				CHECK_RETURN_COLUMN_LIMIT
 
 				result.lexems.push_back( std::move(lexem) );
+
+				if( result.lexems.size() >= c_max_lexems )
+				{
+					result.errors.emplace_back( GetLexemsLimitMessage(), SrcLoc( 0u, line, column ) );
+					return result;
+				}
 
 				lexem= ParseIdentifier( it, it_end );
 				lexem.type= Lexem::Type::LiteralSuffix;
@@ -691,6 +712,12 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 				CHECK_RETURN_COLUMN_LIMIT
 
 				result.lexems.push_back( std::move(lexem) );
+
+				if( result.lexems.size() >= c_max_lexems )
+				{
+					result.errors.emplace_back( GetLexemsLimitMessage(), SrcLoc( 0u, line, column ) );
+					return result;
+				}
 
 				lexem= ParseIdentifier( it, it_end );
 				lexem.type= Lexem::Type::LiteralSuffix;
@@ -748,6 +775,12 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 		CHECK_RETURN_COLUMN_LIMIT
 
 		result.lexems.push_back( std::move(lexem) );
+
+		if( result.lexems.size() >= c_max_lexems )
+		{
+			result.errors.emplace_back( GetLexemsLimitMessage(), SrcLoc( 0u, line, column ) );
+			return result;
+		}
 	} // while not end
 
 	#undef CHECK_RETURN_COLUMN_LIMIT
