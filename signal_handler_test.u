@@ -1,0 +1,75 @@
+import "/main_wrapper.iu"
+import "/stdout_ext.iu"
+
+pretty_main
+{
+	unsafe
+	{
+		signal( SIGILL, CustomSignalHandler );
+		signal( SIGFPE, CustomSignalHandler );
+		signal( SIGSEGV, CustomSignalHandler );
+	}
+
+	if( unsafe( setjmp( $<(g_jmp_buff[0]) ) ) == 0 )
+	{
+		ust::stdout_print_line( "Is about to halt." );
+		var ust::string8 mut heap_allocated_string= "Some contents, which is pretty long and requires a heap allocation. Likely.";
+		halt if( true );
+	}
+	else
+	{
+		ust::stdout_print_line( "Recovered after halt." );
+	}
+
+	ust::stdout_print_line( "After halt." );
+
+	if( unsafe( setjmp( $<(g_jmp_buff[0]) ) ) == 0 )
+	{
+		ust::stdout_print_line( "Is about to divide by zero." );
+		var i32 mut x = i32( ust::max( args.size() , 64s ) - 64s );
+		ust::stdout_print_line( "Division by zero result is ", 123 / x );
+	}
+	else
+	{
+		ust::stdout_print_line( "Recovered after division by zero." );
+	}
+
+	ust::stdout_print_line( "After division by zero." );
+
+	// Try recovering from "halt" multiple times.
+	for( auto mut i= 0s; i < 32s; ++i )
+	{
+		if( unsafe( setjmp( $<(g_jmp_buff[0]) ) ) == 0 )
+		{
+			ust::stdout_print_line( "Is about to halt #", i, "." );
+			halt if( true );
+		}
+		else
+		{
+			ust::stdout_print_line( "Recovered after halt #", i, "." );
+		}
+		ust::stdout_print_line( "After halt #", i, "." );
+	}
+
+	return 0;
+}
+
+thread_local [ byte8, 1024 ] g_jmp_buff= zero_init;
+
+// auto constexpr SIGINT = 2;
+auto constexpr SIGILL = 4;
+// auto constexpr SIGABRT = 6;
+auto constexpr SIGFPE = 8;
+auto constexpr SIGSEGV = 11;
+//auto constexpr SIGTERM = 15;
+
+// C library functions.
+fn nomangle signal( i32 sig, ( fn( i32 s ) unsafe call_conv( "C" ) ) handler ) unsafe call_conv( "C" );
+fn nomangle setjmp( $(byte8) jmp_buff ) unsafe call_conv( "C" ) : i32;
+fn nomangle longjmp( $(byte8) jmp_buff, i32 val ) unsafe call_conv( "C" ) : void;
+
+fn CustomSignalHandler( i32 s ) unsafe call_conv( "C" )
+{
+	ust::stderr_print_line( "Signal ", s, " received. Jumping back." );
+	unsafe( longjmp( $<(g_jmp_buff[0]), 1 ) );
+}
