@@ -14,14 +14,27 @@ It should be displayed in the build logs which tests have succeeded and which ha
 The *test* command should perform proper building for the specified target triple, assuming it's compatible with host triple and test executables built for it can be run on the host machine.
 But even if such compatibility isn't present, cross-compiling tests should work properly, just in case someone can (somehow) run tests on the target architecture/OS distinct from the host one.
 
+There may be a problem with tests having shared library dependencies.
+If a dependency is located in a directory distinct from the parent directory of the test executable, it may not be found.
+Some workaround is necessary for such cases, like changing *LD_LIBRARY_PATH* variable or creating symlinks for shared libraries.
+
 
 ## Stage 1 - inline unit-tests
 
-The Ü language itself should get a special kind of construction - a unit-test function, which can be defined as regular one, but with slightly-different syntax, with no arguments and no return value.
+The Ü language itself should get a special kind of construction - a unit-test function, which can be defined as regular one, but with slightly-different syntax, with no arguments, no return value and no other attributes (`nomangle`, virtual specifiers, `nodiscard`, calling convention, `unsafe`, reference notation).
 Such functions should be built as regular ones without a necessity to running the build in some sort of testing configuration, so that compilation errors in tests can be detected and corrected as soon as possible.
 
 Unit-tests should be named, so that it's possible to show names of failed tests (in order to simplify finding and correcting such tests).
 Names can be also useful if it's only needed to run only one particular test or tests with names satisfying some pattern.
+Name uniqueness shouldn't be enforced, since there is no strong reason for doing this.
+Accessing tests by name from surrounding code shouldn't be possible, they should be hidden and use generated unique names with some prefix like *_* internally, so that it's impossible to access them.
+
+Unit tests should be allowed in the global namespace, in nested namespaces, in structs and classes (as member functions with no `this` parameter).
+In the latter case unit-tests should have proper access rights to `private` class members.
+
+Unit tests in templates may be useful - in case if someone want to test a template in all possible instantiations.
+But maybe it's not so useful and even problematic and thus such tests shouldn't be allowed.
+At least it's possible to prohibit unit-tests in templates in the first version of the unit-tests implementation and if necessary to allow them later.
 
 The intended way to fail a unit-test is to use `halt` or some macro based on it.
 It's pretty convenient way of doing so, no extra language functionality is needed for that.
@@ -39,6 +52,7 @@ Unit-tests should be removed from regular build targets, at least in release bui
 For each build target only its unit-tests should be included in the result tests executable.
 Unit-tests from dependencies (both private and public) should not be run and ideally should be removed.
 Also unit-tests from shared-library dependencies should not be used.
+The only exception are unit-tests defined in public imported files of dependencies, they should run while running tests for build targets where they are used.
 
 It's necessary to write some library for launching unit-tests.
 It should be able to launch tests, detect and (partially) recover failures, be able to receive command-line arguments from the build system in order to filter-out tests or run only specific tests.
@@ -57,6 +71,9 @@ But for unit-testing there is no way avoiding this.
 So, unit-test executable should use a custom `halt` handler.
 Such handler should be able to return control flow to the code executing unit-tests.
 The failed test should be marked properly (its failure should be reported) and remaining tests should be launched.
+
+Since the same exact compiled code should be used for both regular build targets and unit-test targets, using custom `halt` handler may not be possible.
+In such case some other approach giving the same result may be used instead, like an OS-specific handler for the target-dependent `trap` instruction (like `ud2` on x86 architecture).
 
 Recovering from `halt` may be possible with some sort of `setjmp`/`longjmp` functionality.
 Using it allows at least restoring stack state.
@@ -84,6 +101,7 @@ It should instead use some sort of timeout (like 10 seconds or so), and if it's 
 
 Unit-test functions should have public linkage, so that they are not removed while building each compiled Ü file of a build target.
 They also should have some attribute - to distinguish them from regular functions.
+Unit-test functions defined in imported files should be also public, but also use comdats in order to deduplicate them.
 
 While linking a Ü library (composing LLVM bitcode files), these tests should be removed.
 While linked a build target requiring machine code generation (object files, shared libraries, executables), tests should be removed too.
@@ -111,6 +129,6 @@ But if at least one unit-test is added, the result executable should reflect tha
 
 Benchmarks can be implemented almost like tests by using mostly the same functionality.
 The only difference is in the way how they are launched.
-It's probably fine to not care about `halt`-based failures in benchmark and fail them using default `halt` handler.
+It's probably fine to not care about `halt`-based failures in benchmarks and fail them using default `halt` handler.
 Benchmarks should be run with precise time measurements and result times should be displayed.
 For benchmarks with pretty small execution time it has sense to run them multiple times - in order to level possible noise in measurements and (maybe) CPU-cache and scheduling-related effects.
