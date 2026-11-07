@@ -74,6 +74,7 @@ The failed test should be marked properly (its failure should be reported) and r
 
 Since the same exact compiled code should be used for both regular build targets and unit-test targets, using custom `halt` handler may not be possible.
 In such case some other approach giving the same result may be used instead, like an OS-specific handler for the target-dependent `trap` instruction (like `ud2` on x86 architecture).
+Also it may be useful to use a signal handler to handle not only `halt`, but maybe also division by zero errors and some other kinds of errors.
 
 Recovering from `halt` may be possible with some sort of `setjmp`/`longjmp` functionality.
 Using it allows at least restoring stack state.
@@ -110,9 +111,17 @@ While a tests executable is linked, some special option should be provided to th
 It should enable preserving all unit-test functions and putting them into some synthesized array or function with public visibility, so that it can be accessed later.
 Also a special option may be necessary in order to force-internalize and thus remove `main` and `wmain` functions - default entry-points.
 
+One of possible ways of preserving unit-tests is to generate a global variable - table containing all of them.
+Each entry of this table needs to contain a function pointer and pointer with size for test name (as it specified in source code).
+The last entry may be null terminator, so that no separate size variable is necessary.
+This variable requires public linkage and needs to be constant.
+Hidden visibility may be used for it, since it doesn't need to be exported from a shared library.
+
 Linking library doing unit-tests launching can be done in form of an object file.
 It should contain proper `main` or `wmain` function, so that the result tests executable gets proper entry point.
 Also it should depend on a function/global variable synthesized by the compiler in the way described above, which provides this library the list of unit-tests to run.
+This library should be built once and used for all build targets containing unit-tests, much like *ustlib*.
+Also it needs to depend on *ustlib*, if it's written in Ü.
 
 In order to speed-up the build, Ü source files should be built into LLVM bitcode exactly once - with both regular code and tests included.
 Nodes of the build graph linking the result (regular) build target and the result tests target should both depend on bitcode files compiled previously.
