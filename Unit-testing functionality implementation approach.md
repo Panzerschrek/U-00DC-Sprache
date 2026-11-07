@@ -36,6 +36,10 @@ It seems that for each build target a second test target can be created, which i
 Regular entry point (*main*, *wmain*) should be removed from test executables and replaced with special entry point for tests.
 Unit-tests should be removed from regular build targets, at least in release builds - in order to avoid bloating result artifacts.
 
+For each build target only its unit-tests should be included in the result tests executable.
+Unit-tests from dependencies (both private and public) should not be run and ideally should be removed.
+Also unit-tests from shared-library dependencies should not be used.
+
 It's necessary to write some library for launching unit-tests.
 It should be able to launch tests, detect and (partially) recover failures, be able to receive command-line arguments from the build system in order to filter-out tests or run only specific tests.
 It should define custom entry point (*main*, *wmain*).
@@ -74,6 +78,33 @@ In case if a test has failed, some shared atomic flag should be set to `true` on
 The main thread should check this flag from time to time.
 If this flag is set, the main thread should not wait forever for the thread running tests to finish.
 It should instead use some sort of timeout (like 10 seconds or so), and if it's expired, the runner thread should be considered to be deadlocked and the tests executable should finish quickly with an error.
+
+
+### Linking tests
+
+Unit-test functions should have public linkage, so that they are not removed while building each compiled Ü file of a build target.
+They also should have some attribute - to distinguish them from regular functions.
+
+While linking a Ü library (composing LLVM bitcode files), these tests should be removed.
+While linked a build target requiring machine code generation (object files, shared libraries, executables), tests should be removed too.
+
+While a tests executable is linked, some special option should be provided to the compiler.
+It should enable preserving all unit-test functions and putting them into some synthesized array or function with public visibility, so that it can be accessed later.
+Also a special option may be necessary in order to force-internalize and thus remove `main` and `wmain` functions - default entry-points.
+
+Linking library doing unit-tests launching can be done in form of an object file.
+It should contain proper `main` or `wmain` function, so that the result tests executable gets proper entry point.
+Also it should depend on a function/global variable synthesized by the compiler in the way described above, which provides this library the list of unit-tests to run.
+
+In order to speed-up the build, Ü source files should be built into LLVM bitcode exactly once - with both regular code and tests included.
+Nodes of the build graph linking the result (regular) build target and the result tests target should both depend on bitcode files compiled previously.
+It's needed in order to avoid increasing build times much for building and linking tests.
+
+In many cases a build target may contain no unit-tests at all.
+In such case a tests executable may be still built into test executables running zero tests.
+All should work fine in such cases too.
+And it should be pretty fast to link such empty tests, since all code of a build target should be optimized-out and no machine code should be generated at all.
+But if at least one unit-test is added, the result executable should reflect that and contain such test.
 
 
 ## Stage 2 - benchmarks
