@@ -155,6 +155,12 @@ The parent process starts the child and the child reports to the parent which te
 In case of a crash of the child process, the parent process can restart it from the next test after the failed one.
 This also works well if nothing crashes and degrades to one-by-one tests launching in case if all tests fail.
 Such an approach also needs some communication channel from the child to the parent in order to report which tests are passed and which are now launched.
+Using shared memory seems to be the easiest way of such communication.
+
+There is yet another caveat of the approach with process-based tests isolation.
+Debugging failed tests is hard, since debuggers (usually) don't debug child processes.
+So, in order to support easy debugging, there should be a mode running all tests sequentially in the same process.
+Maybe such mode should be default and multiprocess mode should be enabled for tests launched via the build system (with a special command-line option).
 
 
 ### Linking tests
