@@ -105,6 +105,36 @@ If this flag is set, the main thread should not wait forever for the thread runn
 It should instead use some sort of timeout (like 10 seconds or so), and if it's expired, the runner thread should be considered to be deadlocked and the tests executable should finish quickly with an error.
 
 
+### Alternative approach for handling failures
+
+It seems that `setjmp`/`longjmp` approach may be not that reliable.
+Especially on Windows it doesn't work well or doesn't work at all.
+So, a more reliable approach is needed.
+
+The most obvious alternative approach is to run each test in a separate process.
+It gives good enough isolation and full protection against typical crashes.
+
+On Unix systems creating processes is easy.
+It's possible to use `fork` function for doing that and `waitpid` for waiting for a child process to finish.
+But it creates some overhead, which is roughly 1ms (± order of magnitude) for each process.
+Maybe some overhead is introduced due to waiting.
+Starting processes in bulk and waiting for them all may be faster.
+
+On Windows creating processes may be slower.
+The exact delay should be measured.
+
+There is a way to reduce overhead for process creation.
+It's possible to run all tests in single processes in hope that they work well.
+If nothing crashes, no overheads are present.
+But in case of a crash each test may be re-run in a separate process.
+
+A more advanced approach is to use a pair of parent/child processes.
+The parent process starts the child and the child reports to the parent which tests are passed.
+In case of a crash of the child process, the parent process can restart it from the next test after the failed one.
+This also works well if nothing crashes and degrades to one-by-one tests launching in case if all tests fail.
+Such an approach also needs some communication channel from the child to the parent in order to report which tests are passed and which are now launched.
+
+
 ### Linking tests
 
 Unit-test functions should have public linkage, so that they are not removed while building each compiled Ü file of a build target.
