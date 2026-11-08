@@ -1,5 +1,9 @@
+#define NOMINMAX
+#include <windows.h>
+
 #include <iostream>
 #include <unordered_set>
+
 
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/ManagedStatic.h>
@@ -252,64 +256,121 @@ bool HasError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErr
 } // namespace U
 
 // Entry point for tests executable.
-int main()
+int main( const int argc, const char** argv )
 {
 	using namespace U;
 
 	const TestsFuncsContainer& funcs_container= GetTestsFuncsContainer();
 
-	std::cout << "Run " << funcs_container.size() << " Ü tests" << std::endl << std::endl;
-
-	uint32_t passed= 0u;
-	uint32_t disabled= 0u;
-	uint32_t failed= 0u;
-	uint32_t filtered= 0u;
-	for(const TestFuncData& func_data : funcs_container )
+	if( argc <= 1 )
 	{
-		if( !FilterTest( func_data.name ) )
+		wchar_t module_name[ 1024 ];
+		GetModuleFileNameW( nullptr, module_name, 1024 );
+
+		std::cout << "Run " << funcs_container.size() << " Ü tests" << std::endl << std::endl;
+
+		uint32_t passed= 0u;
+		uint32_t disabled= 0u;
+		uint32_t failed= 0u;
+		uint32_t filtered= 0u;
+
+		for( size_t i= 0; i < funcs_container.size(); ++i )
 		{
-			++filtered;
-			continue;
+			const TestFuncData& func_data= funcs_container[ i ];
+
+			if( !FilterTest( func_data.name ) )
+			{
+				++filtered;
+				continue;
+			}
+
+			std::wstring command_line= std::wstring(L"\"") + module_name + L"\" " + std::to_wstring( i );
+
+			STARTUPINFOW startup_info{};
+			startup_info.cb= sizeof(STARTUPINFOW);
+
+			PROCESS_INFORMATION process_information{};
+
+			const BOOL res=
+				CreateProcessW(
+					module_name,
+					command_line.data(),
+					nullptr,
+					nullptr,
+					0,
+					0,
+					0,
+					nullptr,
+					&startup_info,
+					&process_information );
+
+			if( res == 0 )
+			{
+				const auto e= GetLastError();
+				std::cout << "Process creation error: " << e << std::endl;
+				return -1;
+			}
+
+			WaitForSingleObject( process_information.hProcess, INFINITE );
+
+			DWORD exit_code= 99999;
+			GetExitCodeProcess( process_information.hProcess, &exit_code );
+
+			if( exit_code == 0 )
+				++passed;
+			else
+			{
+				std::cout << "Test " << func_data.name << " exited with code " << exit_code << std::endl;
+				++failed;
+			}
 		}
+
+		std::cout << std::endl <<
+			passed << " tests passed\n" <<
+			disabled << " tests disabled\n" <<
+			filtered << " tests filtered\n" <<
+			failed << " tests failed" << std::endl;
+
+		return -int(failed);
+	}
+	else
+	{
+		const size_t test_index= std::atoi( argv[1] );
+		const TestFuncData& func_data= funcs_container[ test_index ];
 
 		try
 		{
 			func_data.func();
-			++passed;
 		}
 		catch( const DisableTestException& )
 		{
-			// std::cout << "Test " << func_data.name << " disabled\n";
-			++disabled;
+			llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
+			std::cout << "Test " << func_data.name << " disabled\n";
+			return -1;
 		}
 		catch( const TestException& ex )
 		{
+			llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
 			std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
-			++failed;
+			return -1;
 		}
 		catch( const HaltException& )
 		{
+			llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
 			std::cout << "Test " << func_data.name << " halted" << std::endl;
-			++failed;
+			return -1;
 		}
 		catch( const ExecutionEngineException& ex )
 		{
+			llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
 			std::cout << "Test " << func_data.name << " failed:";
 			for( const std::string& e : ex.errors )
 				std::cout << "\n" << e;
 			std::cout << std::endl;
-			++failed;
+			return -1;
 		}
 
-		// We must kill ALL static internal llvm variables after each test.
-		llvm::llvm_shutdown();
+		llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
+		return 0;
 	}
-
-	std::cout << std::endl <<
-		passed << " tests passed\n" <<
-		disabled << " tests disabled\n" <<
-		filtered << " tests filtered\n" <<
-		failed << " tests failed" << std::endl;
-
-	return -int(failed);
 }
