@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/mman.h>
 
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/ManagedStatic.h>
@@ -330,6 +331,15 @@ std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const std::string_vi
 	return code_builder;
 }
 
+enum class TestStatus : uint8_t
+{
+	NotRun,
+	InProgress,
+	Filtered,
+	Disabled,
+	Finished,
+};
+
 } // namespace U
 
 // Entry point for tests executable.
@@ -341,103 +351,138 @@ int main()
 
 	std::cout << "Run " << funcs_container.size() << " tests" << std::endl << std::endl;
 
+	// Create a chunk of shared memory intended to be used for status indication by both parent and child processes.
+	const auto shared_test_status_values =
+		static_cast<TestStatus*>(
+			::mmap(
+				nullptr,
+				sizeof(TestStatus) * funcs_container.size(),
+				PROT_READ | PROT_WRITE,
+				MAP_SHARED | MAP_ANONYMOUS,
+				-1,
+				0 ) );
+
+	// Set initial status for all tests.
+	for( size_t i= 0; i < funcs_container.size(); ++i )
+		shared_test_status_values[i]= TestStatus::NotRun;
+
+	// Perform several attemts of running a child process.
+	const size_t c_max_retries= 32;
+	for( size_t try_index= 0; try_index < c_max_retries; ++try_index )
+	{
+		// Spawn a child process.
+		const pid_t pid= ::fork();
+		if( pid == 0 )
+		{
+			// Child process - run tests which aren't run yet.
+
+			for( size_t i= 0; i < funcs_container.size(); ++i )
+			{
+				TestStatus& status= shared_test_status_values[i];
+
+				if( status != TestStatus::NotRun )
+				{
+					// Ignore tests which are finished.
+					// Also ignore tests marked as "in progress", since they are likely failed.
+					continue;
+				}
+
+				status= TestStatus::InProgress;
+
+				const TestFuncData& func_data= funcs_container[i];
+
+				if( !FilterTest( func_data.name ) )
+				{
+					status= TestStatus::Filtered;
+					continue;
+				}
+
+				try
+				{
+					func_data.func();
+
+					llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
+
+					status= TestStatus::Finished;
+				}
+				catch( const DisableTestException& )
+				{
+					std::cout << "Test " << func_data.name << " disabled\n";
+					status= TestStatus::Disabled;
+				}
+				catch( const TestException& ex )
+				{
+					std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
+					return -1;
+				}
+				catch( const HaltException& )
+				{
+					std::cout << "Test " << func_data.name << " halted" << std::endl;
+					return -1;
+				}
+				catch( const ExecutionEngineException& ex )
+				{
+					std::cout << "Test " << func_data.name << " failed:";
+					for( const std::string& e : ex.errors )
+						std::cout << "\n" << e;
+					std::cout << std::endl;
+					return -1;
+				}
+			}
+
+			// All is fine - exit with zero code.
+			return 0;
+		}
+		else
+		{
+			// Parent process - wait for child process to finish.
+
+			int status= 999999;
+			::waitpid( pid, &status, 0 );
+			if( status == 0 )
+				break; // Finished all (remaining) tests with no problems.
+			else
+			{
+				// Something failed.
+				// Continue execution of other tests after failed one.
+				std::cout << "Tests failure detected (exit code " << WEXITSTATUS(status) << "), re-run the child process, retries remained: " << c_max_retries - try_index << std::endl;
+				continue;
+			}
+		}
+	}
+
+	// Read status for each test from the shared memory.
+	// It's safe to do here, since the child process (which modifies it) is already finished.
+
 	uint32_t passed= 0u;
 	uint32_t disabled= 0u;
 	uint32_t failed= 0u;
 	uint32_t filtered= 0u;
 
-	for(const TestFuncData& func_data : funcs_container )
+	for( size_t i= 0; i < funcs_container.size(); ++i )
 	{
-		if( !FilterTest( func_data.name ) )
+		const TestFuncData& func_data= funcs_container[i];
+		switch( shared_test_status_values[i] )
 		{
+		case TestStatus::NotRun:
+			std::cout << "Test " << func_data.name << " not run  - wtf?" << std::endl;
+			++failed;
+			break;
+		case TestStatus::InProgress:
+			std::cout << "Test " << func_data.name << " failed" << std::endl;
+			++failed;
+			break;
+		case TestStatus::Filtered:
 			++filtered;
-			continue;
-		}
-
-		const pid_t pid= ::fork();
-		if( pid == 0 )
-		{
-			try
-			{
-				func_data.func();
-			}
-			catch( const DisableTestException& )
-			{
-				llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
-				std::cout << "Test " << func_data.name << " disabled\n";
-				return 0;
-			}
-			catch( const TestException& ex )
-			{
-				llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
-				std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
-				return -1;
-			}
-			catch( const HaltException& )
-			{
-				llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
-				std::cout << "Test " << func_data.name << " halted" << std::endl;
-				return -1;
-			}
-			catch( const ExecutionEngineException& ex )
-			{
-				llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
-				std::cout << "Test " << func_data.name << " failed:";
-				for( const std::string& e : ex.errors )
-					std::cout << "\n" << e;
-				std::cout << std::endl;
-				return -1;
-			}
-
-			llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
-			return 0;
-		}
-		else
-		{
-			int status= 999;
-			::waitpid( pid, &status, 0 );
-			if( status == 0 )
-				++passed;
-			else
-			{
-				std::cout << "Non-zero exit code for test " << func_data.name << std::endl;
-				++failed;
-			}
-		}
-
-		/*
-		try
-		{
-			func_data.func();
+			break;
+		case TestStatus::Finished:
 			++passed;
-		}
-		catch( const DisableTestException& )
-		{
-			std::cout << "Test " << func_data.name << " disabled\n";
+			break;
+		case TestStatus::Disabled:
+			std::cout << "Test " << func_data.name << " disabled" << std::endl;
 			++disabled;
+			break;
 		}
-		catch( const TestException& ex )
-		{
-			std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
-			++failed;
-		}
-		catch( const HaltException& )
-		{
-			std::cout << "Test " << func_data.name << " halted" << std::endl;
-			++failed;
-		}
-		catch( const ExecutionEngineException& ex )
-		{
-			std::cout << "Test " << func_data.name << " failed:";
-			for( const std::string& e : ex.errors )
-				std::cout << "\n" << e;
-			std::cout << std::endl;
-			++failed;
-		}
-
-		// We must kill ALL static internal llvm variables after each test.
-		llvm::llvm_shutdown();
-		*/
 	}
 
 	std::cout << std::endl <<
