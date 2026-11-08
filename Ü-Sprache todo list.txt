@@ -135,9 +135,6 @@ Compiler:
 *) Fix alignment mismatch for 128-bit types in C++ and in Ü
 *) Prevent infinite or near-infinite templates instantiation, possibly via a hard limit for total number of template
 	instantiations. This may prevent stack overflow in some cases.
-*) Limit number of lex/synt errors printed - to avoid printing too many of them
-*) Add a hard limit for input file size (like 10MB) - in order to prevent generating millions of lexical errors in case
-	if a non-source file (a binary file) unintentionally is provided to the compiler
 *) Investigate optimization possibility - avoid mangling private functions
 *) Try to optimize SrcLoc size (use only 4 bytes)
 *) In Compiler0 parse floating-point numeric literals in syntax analyzer and avoid storing literal string in AST. It

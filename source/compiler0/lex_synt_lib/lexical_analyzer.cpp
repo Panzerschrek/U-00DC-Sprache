@@ -488,18 +488,50 @@ std::string GetColumnLimitMessage()
 	return "Lexical error: column limit reached, max is " + std::to_string( SrcLoc::c_max_column ) + ".";
 }
 
+// Prevent lexing too large files.
+// It may lead to very large memory consumption if a file containing garbage (likely a huge binary file) is provided for lexical analysis.
+const size_t c_max_input_size= 1 << 25; // 32 megabytes is a reasonable limit.
+
+std::string GetInputLimitMessage()
+{
+	return "Lexical error: input size limit " + std::to_string( c_max_input_size ) + " is reached.";
+}
+
+// Prevent generating too many lexems.
+// It may lead to very large memory consumption if a file containing garbage (likely a huge binary file) is provided for lexical analysis.
+const size_t c_max_lexems= 1 << 24; // Around 16 millions is a reasonable limit.
+
+std::string GetLexemsLimitMessage()
+{
+	return "Lexical error: maximum number of lexems " + std::to_string( c_max_lexems ) + " is reached.";
+}
+
+// Prevent generating too many lexical errors.
+// It may lead to very large memory consumption if a file containing garbage (likely a huge binary file) is provided for lexical analysis.
+const size_t c_max_errors_to_report= 64;
+
+std::string GetErrorsLimitMessage()
+{
+	return "Lexical error: maximum number of errors " + std::to_string( c_max_errors_to_report ) + " is reached.";
+}
+
 } // namespace
 
 LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 {
 	LexicalAnalysisResult result;
 
+	if( program_text.size() > c_max_input_size )
+	{
+		result.errors.emplace_back( GetInputLimitMessage(), SrcLoc( 0u, 1u, 1u ) );
+		return result;
+	}
+
 	Iterator it= program_text.data();
 	const Iterator it_end= it + program_text.size();
 
 	if( program_text.size() >= 3u && program_text.substr(0, 3) == "\xEF\xBB\xBF" )
 		it+= 3; // Skip UTF-8 byte order mark.
-
 
 	uint32_t line= 1; // Count lines from "1", in human-readable format.
 	uint32_t column= 0u;
@@ -593,7 +625,15 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 			}
 
 			if( comments_depth != 0 )
+			{
 				result.errors.emplace_back( "Lexical error: expected */", SrcLoc( 0u, line, column ) );
+
+				if( result.errors.size() >= c_max_errors_to_report )
+				{
+					result.errors.emplace_back( GetErrorsLimitMessage(), SrcLoc( 0u, line, column ) );
+					return result;
+				}
+			}
 			continue;
 		}
 		else if( IsNewline(c) )
@@ -641,6 +681,12 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 
 				result.lexems.push_back( std::move(lexem) );
 
+				if( result.lexems.size() >= c_max_lexems )
+				{
+					result.errors.emplace_back( GetLexemsLimitMessage(), SrcLoc( 0u, line, column ) );
+					return result;
+				}
+
 				lexem= ParseIdentifier( it, it_end );
 				lexem.type= Lexem::Type::LiteralSuffix;
 			}
@@ -657,6 +703,12 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 				CHECK_RETURN_COLUMN_LIMIT
 
 				result.lexems.push_back( std::move(lexem) );
+
+				if( result.lexems.size() >= c_max_lexems )
+				{
+					result.errors.emplace_back( GetLexemsLimitMessage(), SrcLoc( 0u, line, column ) );
+					return result;
+				}
 
 				lexem= ParseIdentifier( it, it_end );
 				lexem.type= Lexem::Type::LiteralSuffix;
@@ -675,6 +727,12 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 				CHECK_RETURN_COLUMN_LIMIT
 
 				result.lexems.push_back( std::move(lexem) );
+
+				if( result.lexems.size() >= c_max_lexems )
+				{
+					result.errors.emplace_back( GetLexemsLimitMessage(), SrcLoc( 0u, line, column ) );
+					return result;
+				}
 
 				lexem= ParseIdentifier( it, it_end );
 				lexem.type= Lexem::Type::LiteralSuffix;
@@ -714,6 +772,13 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 				result.errors.emplace_back(
 					"Lexical error: unrecognized character: " + std::to_string(c),
 					SrcLoc( 0u, line, column ) );
+
+				if( result.errors.size() >= c_max_errors_to_report )
+				{
+					result.errors.emplace_back( GetErrorsLimitMessage(), SrcLoc( 0u, line, column ) );
+					return result;
+				}
+
 				++it;
 				continue;
 			}
@@ -725,6 +790,12 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 		CHECK_RETURN_COLUMN_LIMIT
 
 		result.lexems.push_back( std::move(lexem) );
+
+		if( result.lexems.size() >= c_max_lexems )
+		{
+			result.errors.emplace_back( GetLexemsLimitMessage(), SrcLoc( 0u, line, column ) );
+			return result;
+		}
 	} // while not end
 
 	#undef CHECK_RETURN_COLUMN_LIMIT
