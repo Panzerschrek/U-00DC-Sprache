@@ -274,6 +274,10 @@ int main( const int argc, const char** argv )
 		uint32_t failed= 0u;
 		uint32_t filtered= 0u;
 
+		std::unordered_map<HANDLE, size_t> process_handle_to_index;
+
+		std::cout << "Starting processes" << std::endl;
+
 		for( size_t i= 0; i < funcs_container.size(); ++i )
 		{
 			const TestFuncData& func_data= funcs_container[ i ];
@@ -311,10 +315,40 @@ int main( const int argc, const char** argv )
 				return -1;
 			}
 
-			WaitForSingleObject( process_information.hProcess, INFINITE );
+			process_handle_to_index.emplace( process_information.hProcess, i );
+		}
+
+		std::cout << "Waiting for all proceses to finish" << std::endl;
+
+		{
+			std::vector<HANDLE> handles;
+
+			for( const auto& pair : process_handle_to_index )
+			{
+				handles.push_back( pair.first );
+
+				if( handles.size() >= MAXIMUM_WAIT_OBJECTS )
+				{
+					WaitForMultipleObjects( DWORD( handles.size() ), handles.data(), 1, INFINITE );
+					handles.clear();
+				}
+			}
+
+			if( !handles.empty() )
+			{
+				WaitForMultipleObjects( DWORD( handles.size() ), handles.data(), 1, INFINITE );
+				handles.clear();
+			}
+
+			std::cout << "Retrieving exit codes" << std::endl;
+		}
+
+		for( const auto& pair : process_handle_to_index )
+		{
+			const TestFuncData& func_data= funcs_container[ pair.second ];
 
 			DWORD exit_code= 99999;
-			GetExitCodeProcess( process_information.hProcess, &exit_code );
+			GetExitCodeProcess( pair.first, &exit_code );
 
 			if( exit_code == 0 )
 				++passed;
