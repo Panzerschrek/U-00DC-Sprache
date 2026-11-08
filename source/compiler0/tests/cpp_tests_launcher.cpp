@@ -1,5 +1,8 @@
 #include <iostream>
 
+#include <unistd.h>
+#include <sys/wait.h>
+
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/ManagedStatic.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
@@ -351,6 +354,58 @@ int main()
 			continue;
 		}
 
+		const pid_t pid= ::fork();
+		if( pid == 0 )
+		{
+			try
+			{
+				func_data.func();
+			}
+			catch( const DisableTestException& )
+			{
+				llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
+				std::cout << "Test " << func_data.name << " disabled\n";
+				return 0;
+			}
+			catch( const TestException& ex )
+			{
+				llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
+				std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
+				return -1;
+			}
+			catch( const HaltException& )
+			{
+				llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
+				std::cout << "Test " << func_data.name << " halted" << std::endl;
+				return -1;
+			}
+			catch( const ExecutionEngineException& ex )
+			{
+				llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
+				std::cout << "Test " << func_data.name << " failed:";
+				for( const std::string& e : ex.errors )
+					std::cout << "\n" << e;
+				std::cout << std::endl;
+				return -1;
+			}
+
+			llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
+			return 0;
+		}
+		else
+		{
+			int status= 999;
+			::waitpid( pid, &status, 0 );
+			if( status == 0 )
+				++passed;
+			else
+			{
+				std::cout << "Non-zero exit code for test " << func_data.name << std::endl;
+				++failed;
+			}
+		}
+
+		/*
 		try
 		{
 			func_data.func();
@@ -382,6 +437,7 @@ int main()
 
 		// We must kill ALL static internal llvm variables after each test.
 		llvm::llvm_shutdown();
+		*/
 	}
 
 	std::cout << std::endl <<
