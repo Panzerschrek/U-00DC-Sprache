@@ -64,6 +64,27 @@ Also it may be useful in order to reduce build-times, since creating a test exec
 
 It may be useful to have a way to disable some unit-tests, so that a message is shown during running tests how many tests are disabled and why particular tests are disabled.
 
+
+### Possible syntax
+
+Introducing a keyword like `test` or `unittest` isn't a good idea, since such simple word may cause name collisions with names in user code.
+Instead some other keyword should be used, which is less likely to cause a collision, like `fn_test`.
+How can it look like:
+
+```
+fn_test( UserProvidedTestNameHere_AsSimpleIdentifier )
+{
+    // test code here
+}
+```
+
+Test name is specified in `()`.
+Using `()` may allow extending the syntax to provide some extra parameters (like disable/ignore flag) in future.
+
+Using identifiers for test names may simplify later name retrieval for tests.
+Since no arbitrary strings are possible, test functions can have internal names based on the provided name and decoding an internal name to get its original form isn't that hard.
+
+
 ### Handling failures
 
 In normal programs handling `halt` is not a good idea and they should avoid doing that.
@@ -120,11 +141,12 @@ But it creates some overhead, which is roughly 1ms (± order of magnitude) for e
 Maybe some overhead is introduced due to waiting.
 Starting processes in bulk and waiting for them all may be faster.
 
-On Windows creating processes may be slower.
-The exact delay should be measured.
+On Windows creating processes is way slower.
+The overhead is roughly 12ms (± order of magnitude) for each process (`CreateProcessW`, `WaitForSingleObject` and `GetExitCodeProcess` calls).
+So, running many tests each in its own process may be way too slow.
 
 There is a way to reduce overhead for process creation.
-It's possible to run all tests in single processes in hope that they work well.
+It's possible to run all tests in single process in hope that they work well.
 If nothing crashes, no overheads are present.
 But in case of a crash each test may be re-run in a separate process.
 
