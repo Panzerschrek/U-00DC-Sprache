@@ -88,6 +88,11 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 		}
 		res.single_file_to_build= args.drop_and_get_front();
 	}
+	else if( command == "test" )
+	{
+		res.command= Options::Command::Test;
+		args.drop_front();
+	}
 	else if( command == "init" )
 	{
 		res.command= Options::Command::Init;
