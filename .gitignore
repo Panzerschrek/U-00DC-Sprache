@@ -9,8 +9,7 @@
 *.layout
 
 # Build directories
-build*/
-!build_system/
+/build*/
 
 # QtCreator settings
 *.pro.user
