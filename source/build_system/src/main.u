@@ -450,7 +450,19 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 		bsi.logger_.LogVerbose( "Skip updating on-disk build graph state." );
 	}
 
-	ust::ignore_unused( test_list_to_execute ); // TODO - run tests here if necessary.
+	if( main_result != 0 )
+	{
+		return main_result;
+	}
+
+	// Run tests if "test" command is requested and only if building was successfull.
+	if( options.command == Options::Command::Test )
+	{
+		if( !ExecuteTests( test_list_to_execute, bsi.logger_, max_number_of_parallel_jobs ) )
+		{
+			main_result= -1;
+		}
+	}
 
 	return main_result;
 }
