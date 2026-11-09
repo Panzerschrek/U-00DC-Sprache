@@ -156,7 +156,9 @@ fn nodiscard TransformAndValidatePackageInfo(
 
 		// Process generated public headers.
 
-		if( build_target.target_type == BuildTargetType::Executable && !build_target.generated_public_header_files.empty() )
+		if( ( build_target.target_type == BuildTargetType::Executable ||
+				build_target.target_type == BuildTargetType::Test ) &&
+			!build_target.generated_public_header_files.empty() )
 		{
 			// For now forbid specifying public generated headers for executables.
 			// It's useless, since exporting symbols from executables isn't supported.
@@ -189,7 +191,9 @@ fn nodiscard TransformAndValidatePackageInfo(
 
 		// Process public include directories.
 
-		if( build_target.target_type == BuildTargetType::Executable && !build_target.public_include_directories.empty() )
+		if( ( build_target.target_type == BuildTargetType::Executable ||
+				build_target.target_type == BuildTargetType::Test ) &&
+			!build_target.public_include_directories.empty() )
 		{
 			// For now forbid specifying public include directories for executables.
 			// It's useless, since exporting symbols from executables isn't supported.
@@ -244,7 +248,9 @@ fn nodiscard TransformAndValidatePackageInfo(
 
 		// Process public dependencies.
 
-		if( build_target.target_type == BuildTargetType::Executable && !build_target.public_dependencies.empty() )
+		if( ( build_target.target_type == BuildTargetType::Executable ||
+				build_target.target_type == BuildTargetType::Test ) &&
+			!build_target.public_dependencies.empty() )
 		{
 			// For now forbid specifying public dependencies for executables.
 			// It's useless, since exporting symbols from executables isn't supported.
@@ -1185,7 +1191,7 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 
 	switch( build_target.target_type )
 	{
-		BuildTargetType::Executable -> {}, // This should be checked before.
+		BuildTargetType::Executable, BuildTargetType::Test-> {}, // This should be checked before.
 		BuildTargetType::Library ->
 		{
 			// Extract shared library dependencies of public and private library dependencies.

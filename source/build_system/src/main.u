@@ -1149,7 +1149,7 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	switch( target.target_type )
 	{
-		BuildTargetType::Executable ->
+		BuildTargetType::Executable, BuildTargetType::Test ->
 		{
 			if( target_is_windows )
 			{
@@ -1236,6 +1236,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	switch( target.target_type )
 	{
 		BuildTargetType::Executable,
+		BuildTargetType::Test,
 		BuildTargetType::SharedLibrary,
 		BuildTargetType::ObjectFile ->
 		{
@@ -1306,7 +1307,10 @@ fn CreatePackageTargetBuildGraphNodes(
 	// Link ustlib.
 	switch( target.target_type )
 	{
-		BuildTargetType::Executable, BuildTargetType::SharedLibrary, BuildTargetType::ObjectFile ->
+		BuildTargetType::Executable,
+		BuildTargetType::Test,
+		BuildTargetType::SharedLibrary,
+		BuildTargetType::ObjectFile ->
 		{
 			// Link ustlib into build targets with binary code.
 			var ust::filesystem_path mut bc_file= GetCompiledUstlibPath( root_package_build_directory );
@@ -1322,7 +1326,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	// Link against system libraries required by "ustlib".
 	switch( target.target_type )
 	{
-		BuildTargetType::Executable, BuildTargetType::SharedLibrary ->
+		BuildTargetType::Executable, BuildTargetType::Test, BuildTargetType::SharedLibrary ->
 		{
 			foreach( &lib : GetUstlibSystemLibrariesToLink( target_triple ) )
 			{
@@ -1336,6 +1340,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	switch( target.target_type )
 	{
 		BuildTargetType::Executable,
+		BuildTargetType::Test,
 		BuildTargetType::SharedLibrary ->
 		{
 			foreach( &shared_library_dependency : target.shared_library_dependencies_to_link )
@@ -1393,6 +1398,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	switch( target.target_type )
 	{
 		BuildTargetType::Executable,
+		BuildTargetType::Test,
 		BuildTargetType::SharedLibrary ->
 		{
 			foreach( &external_library : target.all_external_libraries_to_link )
@@ -1422,7 +1428,7 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	switch( target.target_type )
 	{
-		BuildTargetType::Executable ->
+		BuildTargetType::Executable, BuildTargetType::Test ->
 		{
 			// This requires compiler to be built with internal LLD (for now we don't support external linkers).
 			node.command_line.push_back( "-filetype=exe" );
@@ -1448,7 +1454,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	// Internalization.
 	switch( target.target_type )
 	{
-		BuildTargetType::Executable ->
+		BuildTargetType::Executable, BuildTargetType::Test ->
 		{
 			// Run full internalization in order to export only "main".
 			node.command_line.push_back( "--internalize" );
