@@ -218,6 +218,8 @@ C++ header converter:
 *) Consider adding typedefs for structs/unions/enums while processing a header in C++ mode
 
 Ü Build system:
+*) Implement a workaround allowing running tests (and maybe other executables) having dependencies on shared libraries
+	located outside executable's directory (shared library targets from other projects or external shared libraries)
 *) Support building "ustlib" into a shared library (dll/so)
 *) Consider adding a builg configuration like "profile" or "release with debug info", so that it's possible to profile
 *) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
