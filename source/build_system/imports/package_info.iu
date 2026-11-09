@@ -88,6 +88,8 @@ enum BuildTargetType
 	SharedLibrary,
 	// Object file, which may be used by a native linker to link result binary file.
 	ObjectFile,
+	// Just like a normal executable, but it's executed during tests running.
+	Test,
 }
 
 struct DependencyName

@@ -64,6 +64,7 @@ There are following build target types:
 * Library - a build target on which other build targets can depend and use code from it
 * Shared library - in native format, like *dll* or *so*
 * Object file - in native format
+* Test - like a normal executable, but it's executed during tests running
 
 A build target should have non-empty name unique within its package.
 Result file names are based on this target name.
@@ -75,7 +76,7 @@ Dependencies
 ------------
 
 A build target may have dependencies on other build targets - from this package or from another packages.
-It's possible to depend on libraries and shared libraries, but not executables or object files.
+It's possible to depend on libraries and shared libraries, but not executables, tests or object files.
 
 Dependencies of a build target are listed in ``public_dependencies`` and ``private_dependencies`` lists of the build target structure.
 Each element of these lists contains build target name and package name, which by-default contains current package name.
@@ -175,6 +176,7 @@ The build system executable supports following commands:
 * build - perform the build
 * build_single - build a program consisting of a single specified source file and having no dependencies
 * init - initialize a stub project within current directory or directory specified via ``--project-directory`` option
+* test - perform the build and run tests. It's assumed that test executables can run on the host machine.
 * help - print help message and exit
 
 There are also many options, which affect some commands.

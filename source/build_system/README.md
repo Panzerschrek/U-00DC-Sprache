@@ -23,7 +23,7 @@ By default the build system creates a directory named _build_ in the project dir
 But this may be changed via ``--build-directory`` command line option.
 Also it's possible to choose project directory other than current via ``--project-directory`` option.
 
-Build configuration may be specified via ``--build-configuration`` option, supported configurations are _release_ and _debug_.
+Build configuration may be specified via ``--build-configuration`` option, supported configurations are _release_, _debug_, _min_size_release_.
 Target triple may be specified with ``--target-triple`` option.
 For more info, run the build system executable using ``--help`` option or ``help`` command.
 
@@ -37,10 +37,11 @@ For now following features are implemented:
 * Dependencies between build targets - public and private
 * Shared library build targets
 * Object file build targets
+* Test build targets
 * Imports isolation - in each build target it's allowed to import only own header files or header files of dependencies
 * Isolation of symbols in different libraries - in order to prevent possible name conflicts and have possibility to build different versions of the same library into one result binary
 * Build results caching - if nothing was changed, nothing will be rebuilt, if only some source files were changed, only these files and their dependencies will be rebuilt.
-* Build configurations - debug, release, minimal size release. Each configuration has its own set of compiler flags. Additionaly there are a couple of options for tweaking of these configurations.
+* Build configurations - debug, release, minimal size release. Each configuration has its own set of compiler flags. Additionally there are a couple of options for tweaking of these configurations.
 * Multithreaded building - several compilation/custom command processes can be run in parallel.
 * Configuration options - for tweaking build targets
 * Target triple specifying

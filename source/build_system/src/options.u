@@ -25,6 +25,7 @@ auto constexpr g_help_message=
 	"COMMANDS:\n" +
 	"  build                              - perform the build\n" +
 	"  build_single <file>                - build a simple single-file program with no dependencies\n" +
+	"  test                               - perform the build and run tests\n" +
 	"  init                               - initialize a stub project\n" +
 	"  help                               - show this message\n" +
 	"\n" +
@@ -87,6 +88,11 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 			return ust::null_optional;
 		}
 		res.single_file_to_build= args.drop_and_get_front();
+	}
+	else if( command == "test" )
+	{
+		res.command= Options::Command::Test;
+		args.drop_front();
 	}
 	else if( command == "init" )
 	{

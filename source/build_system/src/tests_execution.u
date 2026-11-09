@@ -1,0 +1,83 @@
+import "/stringification.iu"
+import "process.iu"
+import "tests_execution.iu"
+
+namespace BK
+{
+
+fn nodiscard ExecuteTests(
+	TestListToExecute& test_list_to_execute,
+	Logger &mut logger,
+	u32 max_number_of_parallel_jobs ) : bool
+{
+	if( test_list_to_execute.empty() )
+	{
+		logger.LogInfo( "There are no tests to run." );
+		return true;
+	}
+
+	logger.LogInfo( ust::stringify8( "Running ", test_list_to_execute.size(), " test executables." ) );
+
+	auto mut process_group_opt= CreateProcessGroup( logger );
+	if( process_group_opt.empty() )
+	{
+		logger.LogError( "Failed to create process group!" );
+		return false;
+	}
+
+	var ProcessGroupInterface &mut process_group= process_group_opt.try_deref();
+
+	auto mut tests_it= test_list_to_execute.iter();
+	var size_type mut tests_finished= 0s;
+
+	var ProcessGroupInterface::ProcessId mut process_id(1);
+
+	while( tests_finished < test_list_to_execute.size() )
+	{
+		// Try starting new processes, until number of running processes is less than limit.
+		while( process_group.GetNumberOfRunningProcesses() < size_type(max_number_of_parallel_jobs) )
+		{
+			if_var( &test : tests_it.next() )
+			{
+				logger.LogVerbose( ust::concat( "Starting test \"", test, "\"." ) );
+				if( !process_group.StartProcess( logger, process_id, test, ust::empty_range ) )
+				{
+					logger.LogError( ust::concat( "Failed to start process for command \"", test, "\"." ) );
+					return false;
+				}
+				++process_id;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		// Do work with processes. Potentially wait for output or finish.
+		if( !process_group.DoWork( logger ) )
+		{
+			logger.LogError( "Process group DoWork error!" );
+			return false;
+		}
+
+		// Extract finished processes.
+		loop
+		{
+			if_var( process_id : process_group.TakeFinishedProcess() )
+			{
+				ust::ignore_unused( process_id );
+				++tests_finished;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+
+	logger.LogInfo( "Successfully completed all tests!" );
+
+	return true;
+}
+
+} // namespace BK

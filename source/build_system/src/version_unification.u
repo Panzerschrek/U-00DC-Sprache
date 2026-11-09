@@ -13,9 +13,11 @@ fn nodiscard UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, Wor
 
 	foreach( &pair : workspace.build_targets )
 	{
-		if( pair.value().target_type== BuildTargetType::Executable )
+		switch( pair.value().target_type )
 		{
-			continue; // Executables can't (for now) have dependencies, so, no unification for them is needed.
+			// Executables can't (for now) be dependencies, so, no unification for them is needed.
+			BuildTargetType::Executable, BuildTargetType::Test -> { continue; },
+			BuildTargetType::Library, BuildTargetType::SharedLibrary, BuildTargetType::ObjectFile -> {},
 		}
 
 		var BuildTargetAbsoluteName& build_target_name= pair.key();

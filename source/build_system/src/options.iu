@@ -17,6 +17,7 @@ struct Options
 		Help,
 		Build,
 		BuildSingle,
+		Test,
 		Init,
 	}
 

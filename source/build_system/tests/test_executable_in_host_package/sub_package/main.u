@@ -1,0 +1,8 @@
+import "/main_wrapper.iu"
+import "/stdout.iu"
+
+pretty_main
+{
+	ust::stdout_print( "Running a subpackage test.\n" );
+	return 0;
+}

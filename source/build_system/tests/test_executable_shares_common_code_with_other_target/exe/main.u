@@ -1,0 +1,8 @@
+import "/stdout_ext.iu"
+import "/lib/lib.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	ust::stdout_print_line( "Regular executable: ", LibFunc( 13 ) );
+	return 0;
+}
