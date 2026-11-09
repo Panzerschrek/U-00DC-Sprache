@@ -39,6 +39,7 @@ fn nodiscard ExecuteTests(
 		{
 			if_var( &test : tests_it.next() )
 			{
+				logger.LogVerbose( ust::concat( "Starting test \"", test, "\"." ) );
 				if( !process_group.StartProcess( logger, process_id, test, ust::empty_range ) )
 				{
 					logger.LogError( ust::concat( "Failed to start process for command \"", test, "\"." ) );
@@ -73,6 +74,8 @@ fn nodiscard ExecuteTests(
 			}
 		}
 	}
+
+	logger.LogInfo( "Successfully completed all tests!" );
 
 	return true;
 }
