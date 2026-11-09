@@ -377,6 +377,11 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 	// Construct the build graph for the whole project.
 	var BuildGraph mut build_graph;
 
+	// This list is populated with all build targets of "Test" type.
+	// In case of cross-compilation (with given target tripple different from host one) such build targets are collected too.
+	// If the given target triple is compatible with the host one (like 32-bit executables on 64-bit Windows), all should work well.
+	// Otherwise running tests will fail.
+	// But it's not a big deal, running tests requires usage of "test" command, and if tests can't be run, it shouldn't be used.
 	var TestListToExecute mut test_list_to_execute;
 
 	CreateWorkspaceBuildTargetsGraphNodes(
