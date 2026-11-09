@@ -1536,6 +1536,18 @@ def TestExecutableInHostPackageTest():
 	assert( stdout.find( "Running a subpackage test." ) != -1 )
 
 
+def TestExecutableSharesCommonCodeWithOutherTargetTest():
+	test_dir= "test_executable_shares_common_code_with_other_target"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	assert( stdout.find( "Running 1 test executables." ) != -1 )
+	assert( stdout.find( "Test executable." ) != -1 )
+	RunExecutable( test_dir, "exe" ) # Other (non-test) build targets should be also built while running tests.
+
+
 #
 # End tests list
 #
@@ -1750,6 +1762,7 @@ def main():
 		TestExecutableTest,
 		TestExecutableTestFail,
 		TestExecutableInHostPackageTest,
+		TestExecutableSharesCommonCodeWithOutherTargetTest
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
