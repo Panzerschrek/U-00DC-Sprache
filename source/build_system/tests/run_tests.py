@@ -1525,6 +1525,17 @@ def TestExecutableTestFail():
 	assert( stderr.find( "This test has failed." ) != -1 )
 
 
+def TestExecutableInHostPackageTest():
+	test_dir= "test_executable_in_host_package"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	assert( stdout.find( "Running 1 test executables." ) != -1 )
+	assert( stdout.find( "Running a subpackage test." ) != -1 )
+
+
 #
 # End tests list
 #
@@ -1738,6 +1749,7 @@ def main():
 		HostBuildTargetCommandError1Test,
 		TestExecutableTest,
 		TestExecutableTestFail,
+		TestExecutableInHostPackageTest,
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
