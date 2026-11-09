@@ -1,0 +1,9 @@
+import "/path.iu"
+import "/vector.iu"
+
+namespace BK
+{
+
+type TestListToExecute= ust::vector</ust::filesystem_path/>;
+
+} // namespace BK

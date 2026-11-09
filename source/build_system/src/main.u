@@ -19,6 +19,7 @@ import "package_transformation.iu"
 import "process.iu"
 import "shared_library.iu"
 import "target_triple.iu"
+import "tests_execution.iu"
 import "version_unification.iu"
 
 pretty_main
@@ -376,6 +377,8 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 	// Construct the build graph for the whole project.
 	var BuildGraph mut build_graph;
 
+	var TestListToExecute mut test_list_to_execute;
+
 	CreateWorkspaceBuildTargetsGraphNodes(
 		bsi.build_system_paths_,
 		options.sysroot,
@@ -384,7 +387,8 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 		target_triple,
 		options.target_cpu,
 		target_workspace,
-		build_graph );
+		build_graph,
+		test_list_to_execute );
 
 	// Custom build steps list should have stable order, since it's populated previously in packages stable order.
 	foreach( &custom_build_step : target_workspace.custom_build_steps )
@@ -400,7 +404,8 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 		host_target_triple,
 		"", // Set no target CPU for host build targets.
 		host_workspace,
-		build_graph );
+		build_graph,
+		test_list_to_execute );
 
 	// Custom build steps list should have stable order, since it's populated previously in packages stable order.
 	foreach( &custom_build_step : host_workspace.custom_build_steps )
@@ -444,6 +449,8 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 	{
 		bsi.logger_.LogVerbose( "Skip updating on-disk build graph state." );
 	}
+
+	ust::ignore_unused( test_list_to_execute ); // TODO - run tests here if necessary.
 
 	return main_result;
 }
@@ -884,7 +891,8 @@ fn CreateWorkspaceBuildTargetsGraphNodes(
 	TargetTriple& target_triple,
 	ust::string_view8 target_cpu,
 	WorkspaceInfo& workspace,
-	BuildGraph &mut build_graph )
+	BuildGraph &mut build_graph,
+	TestListToExecute &mut test_list_to_execute )
 {
 	if( !workspace.build_targets.empty() )
 	{
@@ -919,7 +927,8 @@ fn CreateWorkspaceBuildTargetsGraphNodes(
 			target_cpu,
 			workspace,
 			build_target_name,
-			build_graph );
+			build_graph,
+			test_list_to_execute );
 	}
 }
 
@@ -932,7 +941,8 @@ fn CreatePackageTargetBuildGraphNodes(
 	ust::string_view8 target_cpu,
 	WorkspaceInfo& workspace,
 	BuildTargetAbsoluteName& target_name,
-	BuildGraph &mut build_graph )
+	BuildGraph &mut build_graph,
+	TestListToExecute &mut test_list_to_execute )
 {
 	var bool target_is_windows = target_triple.operating_system == g_os_windows;
 
@@ -1182,6 +1192,11 @@ fn CreatePackageTargetBuildGraphNodes(
 	}
 
 	result_target_file_path= ust::path::normalize( result_target_file_path );
+
+	if( target.target_type == BuildTargetType::Test )
+	{
+		test_list_to_execute.push_back( result_target_file_path );
+	}
 
 	var BuildGraph::Node mut node
 	{
