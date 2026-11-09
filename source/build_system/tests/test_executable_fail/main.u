@@ -1,0 +1,7 @@
+import "/stdout.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	ust::stderr_print( "This test has failed.\n" );
+	return -1;
+}

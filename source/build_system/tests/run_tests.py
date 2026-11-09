@@ -1514,6 +1514,17 @@ def TestExecutableTest():
 	assert( stdout.find( "Running 1 test executables." ) != -1 )
 	assert( stdout.find( "Running a test executable." ) != -1 )
 
+
+def TestExecutableTestFail():
+	test_dir= "test_executable_fail"
+	res= RunBuildSystemWithTests( test_dir )
+	assert( res.returncode != 0 )
+	stdout= str(res.stdout)
+	stderr= str(res.stderr)
+	assert( stdout.find( "Running 1 test executables." ) != -1 )
+	assert( stderr.find( "This test has failed." ) != -1 )
+
+
 #
 # End tests list
 #
@@ -1726,6 +1737,7 @@ def main():
 		HostBuildTargetCommandError0Test,
 		HostBuildTargetCommandError1Test,
 		TestExecutableTest,
+		TestExecutableTestFail,
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
