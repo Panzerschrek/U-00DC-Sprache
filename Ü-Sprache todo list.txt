@@ -39,8 +39,6 @@ General:
 *) Inverstigate possibility to add "with" operator (or something similar) in expression context
 *) Allow "nodiscard" flag for async functions to affect result of a call via "await"
 *) Consider making "nodiscard" flag presence configurable - based on a constant expression
-*) Support unit-testing - add function-like unit tests global objects, which are compiled if special compiler flag
-	is provided, support building and running such unit-tests in the build system
 *) Allow variables decomposition in constructions "with" and "if_coro_advance"
 *) Provide more information in typeinfo about member function templates for structs/classes, like calling convention or
 	mutability/reference modifiers for params and return values
@@ -80,6 +78,15 @@ Lambdas:
 *) Conversion of lambdas with zero captures into function pointers
 *) Simplified lambdas syntax for lambdas consisting of single return statement
 *) Template lambdas
+
+Unit-testing:
+*) Implement special syntax for unit-tests (function-like things)
+*) Add an option into the compiler allowing collecting unit-tests and puting them in some table (global constant)
+*) Create a library for running unit-tests
+*) Implement some sort of process-based isolation for unit-tests running, so that if one unit-test failed, other
+	tests can be still run and overall testing statistics can be reported
+*) Generate unit-test targets for all kinds of build targets in build system and run them if "test" command is specified
+*) Implement benchmarking functionality using similar to unit-testing approach
 
 Standart library:
 *) Support types with references inside in some containers (variant, result, hash_map)
