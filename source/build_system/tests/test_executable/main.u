@@ -1,0 +1,7 @@
+import "/stdout.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	ust::stdout_print( "Running a test executable.\n" );
+	return 0;
+}

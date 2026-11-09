@@ -79,6 +79,32 @@ def RunBuildSystemWithErrors( project_subdirectory ):
 	return subprocess.run( build_system_args, stderr=subprocess.PIPE )
 
 
+def RunBuildSystemWithTests( project_subdirectory ):
+	project_root = os.path.join( g_tests_path, project_subdirectory )
+	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
+	build_system_args= [
+		g_build_system_executable,
+		"test",
+		"--build-configuration", "release",
+		"--compiler-executable", g_compiler_executable,
+		"--build-system-imports-path", g_build_system_imports_path,
+		"--ustlib-path", g_ustlib_path,
+		"--configuration-options", g_configuration_options_file_path,
+		"--project-directory", project_root,
+		"--build-directory", build_root,
+		"--packages-repository-directory", os.path.join( g_tests_path, g_packages_repository_dir ),
+		]
+
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
+	# Run the build and tests.
+	return subprocess.run( build_system_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+
+
 def RunExecutableWithExplicitConfiguration( project_subdirectory, executable_name, configuration ):
 	return subprocess.check_call( [ os.path.join( g_tests_build_root_path, project_subdirectory, configuration, executable_name ) ], stdout= subprocess.DEVNULL )
 
@@ -1478,6 +1504,16 @@ def HostBuildTargetCommandError1Test():
 	assert( stderr.find( "Host build target \"sub_package/helper_tool\" used in custom build step \"test.iu\" not found!" ) != -1 )
 
 
+def TestExecutableTest():
+	test_dir= "test_executable"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	assert( stdout.find( "Running 1 test executables." ) != -1 )
+	assert( stdout.find( "Running a test executable." ) != -1 )
+
 #
 # End tests list
 #
@@ -1689,6 +1725,7 @@ def main():
 		MissingCustomBuildStepForGeneratedFile2Test,
 		HostBuildTargetCommandError0Test,
 		HostBuildTargetCommandError1Test,
+		TestExecutableTest,
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
