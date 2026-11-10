@@ -1,25 +1,22 @@
-# Objects and binaries.
-*.obj
-*.o
-*.exe
-*.dll
-*.so
-
-# Code::Blocks shit.
-*.layout
-
-# Build directories
+# Build directories (assume that they are located only in the repository root)
 /build*/
 
-# QtCreator settings
+# Directory with temporary stuff (using during work)
+/other/
+
+# Code::Blocks files
+*.layout
+
+# QtCreator files
 *.pro.user
 CMakeLists.txt.user
 
-# Ecode settings
-*.ecode/
+# Ecode files
+.ecode/
+
+# Visual Studio files
+.vs/
 
 # Python cache
-__pycache__
+__pycache__/
 
-# Directory with temporary stuff (using during work )
-other/
