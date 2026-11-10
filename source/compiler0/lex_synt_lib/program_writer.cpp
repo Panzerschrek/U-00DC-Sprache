@@ -1016,6 +1016,19 @@ void ElementWrite( const ProgramElementsList& elements ) const
 
 void WriteFunctionDeclaration( const Function& function ) const
 {
+	if( function.kind == Function::Kind::Test )
+	{
+		// Handle unit-test functions here - they have different syntax.
+
+		stream_ << Keyword( Keywords::fn_test_ );
+		stream_ << "( ";
+
+		if( !function.name.empty() )
+		stream_ << function.name.back().name;
+		stream_ << " )";
+		return;
+	}
+
 	if( function.overloaded_operator == OverloadedOperator::None )
 		stream_ << Keyword( Keywords::fn_ );
 	else
@@ -1051,7 +1064,7 @@ void WriteFunctionDeclaration( const Function& function ) const
 		stream_ << Keyword( Keywords::async_ ) << " ";
 		break;
 	case Function::Kind::Test:
-		// TODO - handle such function specially?
+		// This should be handled before.
 		break;
 	}
 
