@@ -46,7 +46,7 @@ namespace LLVMBool_ { var LLVMBool False= 0, True= 1; }
 
 type LLVMLinkage= u32;
 var LLVMLinkage
-	LVMExternalLinkage( 0 ),
+	LLVMExternalLinkage( 0 ),
 	LLVMAvailableExternallyLinkage( 1 ),
 	LLVMLinkOnceAnyLinkage( 2 ),
 	LLVMLinkOnceODRLinkage( 3 ),

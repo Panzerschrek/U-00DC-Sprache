@@ -1272,7 +1272,7 @@ fn CodeBuilder::BuildFuncCode(
 	{
 		// Unit-test functions should use external linkage.
 		// It's necessary, so that they are not optimized-out and can be later collected and executed.
-		unsafe( LLVMSetLinkage( llvm_function, LVMExternalLinkage ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMExternalLinkage ) );
 		// Hidden visibility is used for unit-test functions, since they shouldn't be exported from libraries.
 		unsafe( LLVMSetVisibility( llvm_function, LLVMHiddenVisibility ) );
 
@@ -1312,7 +1312,7 @@ fn CodeBuilder::BuildFuncCode(
 	{
 		// The only reason to use "nomangle" functions is to interact with external code.
 		// For such purposes  external linkage is essential.
-		unsafe( LLVMSetLinkage( llvm_function, LVMExternalLinkage ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMExternalLinkage ) );
 		unsafe( LLVMSetVisibility( llvm_function, visibility ) );
 	}
 	else if( func_variable.prototype_syntax_element.empty() || IsSrcLocFromMainFile( func_variable.prototype_syntax_element.try_deref().src_loc ) )
@@ -1324,7 +1324,7 @@ fn CodeBuilder::BuildFuncCode(
 	else
 	{
 		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
-		unsafe( LLVMSetLinkage( llvm_function, LVMExternalLinkage ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMExternalLinkage ) );
 		unsafe( LLVMSetVisibility( llvm_function, visibility ) );
 	}
 
@@ -2601,7 +2601,7 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 		if( comdats_supported_ )
 		{
 			// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
-			LLVMSetLinkage( global_variable, LVMExternalLinkage );
+			LLVMSetLinkage( global_variable, LLVMExternalLinkage );
 			auto comdat= LLVMGetOrInsertComdat( module_, name_with_suffix.front() );
 			LLVMSetComdatSelectionKind( comdat, LLVMAnyComdatSelectionKind );
 			LLVMSetComdat( global_variable, comdat );
