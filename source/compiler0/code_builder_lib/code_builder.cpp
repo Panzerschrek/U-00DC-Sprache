@@ -1437,11 +1437,15 @@ size_t CodeBuilder::PrepareFunction(
 		inserted_func_variable.body_src_loc= inserted_func_variable.prototype_src_loc= func->src_loc;
 		inserted_func_variable.syntax_element= func;
 
-		inserted_func_variable.llvm_function=
-			std::make_shared<LazyLLVMFunction>(
-				inserted_func_variable.no_mangle
-					? func_name
-					: mangler_->MangleFunction( names_scope, func_name, inserted_func_variable.type ) );
+		std::string mangled_name;
+		if( func->kind == Synt::Function::Kind::Test )
+			mangled_name= GetUnitTestFunctionName( *func );
+		else if( inserted_func_variable.no_mangle )
+			mangled_name= func_name;
+		else
+			mangled_name= mangler_->MangleFunction( names_scope, func_name, inserted_func_variable.type );
+
+		inserted_func_variable.llvm_function= std::make_shared<LazyLLVMFunction>( std::move( mangled_name ) );
 
 		return functions_set.functions.size() - 1u;
 	}
