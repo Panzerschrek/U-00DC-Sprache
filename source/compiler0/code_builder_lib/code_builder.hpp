@@ -727,6 +727,8 @@ private:
 		ReferenceNotationDeductionContext* reference_notation_deduction_context= nullptr,
 		LambdaPreprocessingContext* lambda_preprocessing_context= nullptr );
 
+	std::string GetUnitTestFunctionName( const Synt::Function& function );
+
 	// Expressions.
 	VariablePtr BuildExpressionCodeEnsureVariable(
 		const Synt::Expression& expression,

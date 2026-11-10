@@ -190,6 +190,7 @@ private:
 	fn ParseFunctionTypeEnding( mut this, FunctionType &mut function_type );
 
 	fn ParseFunction( mut this ) : Function;
+	fn ParseTestFunction( mut this ) : Function;
 
 	fn ParseCall( mut this ) : ust::vector</ ust::shared_ptr_final</Expression/> /> ;
 
@@ -498,6 +499,10 @@ fn SyntaxAnalyzer::ParseNamespaceBodyImpl( mut this, Lexem::Type end_lexem ) : N
 		if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
 		{
 			namespace_elements.push_back( ust::make_shared_ptr_final( ParseFunction() ) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::fn_test_ ) )
+		{
+			namespace_elements.push_back( ust::make_shared_ptr_final( ParseTestFunction() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
 		{
@@ -2178,6 +2183,33 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	return res;
 }
 
+fn SyntaxAnalyzer::ParseTestFunction( mut this ) : Function
+{
+	// Test functions are pretty simple.
+	// They have no params, return value, virtual/nomangle/nodiscard, "unsafe" flag, calling convention, reference notation and other stuff.
+
+	debug_assert( IsKeyword( it_.front(), Keyword::fn_test_ ) );
+	NextLexem();
+
+	ExpectLexem( Lexem::Type::BracketLeft );
+
+	var Function mut function{ .src_loc= it_.front().src_loc, .kind= Function::Kind::Test };
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+
+	function.name.push_back( it_.front().text );
+	NextLexem();
+
+	ExpectLexem( Lexem::Type::BracketRight );
+
+	function.block.reset( ParseBlock() );
+
+	return function;
+}
+
 fn SyntaxAnalyzer::ParseCall( mut this ) : ust::vector</ ust::shared_ptr_final</Expression/> />
 {
 	ExpectLexem( Lexem::Type::BracketLeft );
@@ -3685,6 +3717,10 @@ fn SyntaxAnalyzer::ParseClassBodyElementsImpl( mut this, Lexem::Type end_lexem )
 		else if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
 		{
 			class_elements.push_back( ust::make_shared_ptr_final( ParseFunction() ) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::fn_test_ ) )
+		{
+			class_elements.push_back( ust::make_shared_ptr_final( ParseTestFunction() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
 		{

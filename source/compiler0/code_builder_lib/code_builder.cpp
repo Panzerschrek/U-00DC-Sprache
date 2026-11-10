@@ -1437,11 +1437,15 @@ size_t CodeBuilder::PrepareFunction(
 		inserted_func_variable.body_src_loc= inserted_func_variable.prototype_src_loc= func->src_loc;
 		inserted_func_variable.syntax_element= func;
 
-		inserted_func_variable.llvm_function=
-			std::make_shared<LazyLLVMFunction>(
-				inserted_func_variable.no_mangle
-					? func_name
-					: mangler_->MangleFunction( names_scope, func_name, inserted_func_variable.type ) );
+		std::string mangled_name;
+		if( func->kind == Synt::Function::Kind::Test )
+			mangled_name= GetUnitTestFunctionName( *func );
+		else if( inserted_func_variable.no_mangle )
+			mangled_name= func_name;
+		else
+			mangled_name= mangler_->MangleFunction( names_scope, func_name, inserted_func_variable.type );
+
+		inserted_func_variable.llvm_function= std::make_shared<LazyLLVMFunction>( std::move( mangled_name ) );
 
 		return functions_set.functions.size() - 1u;
 	}
@@ -1610,7 +1614,43 @@ void CodeBuilder::BuildFuncCode(
 	else
 		visibility= llvm::GlobalValue::HiddenVisibility;
 
-	if( parent_names_scope.IsInsideTemplate() )
+	if( syntax_element.kind == Synt::Function::Kind::Test )
+	{
+		// Unit-test functions should use external linkage.
+		// It's necessary, so that they are not optimized-out and can be later collected and executed.
+		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
+		// Hidden visibility is used for unit-test functions, since they shouldn't be exported from libraries.
+		llvm_function->setVisibility( llvm::GlobalValue::HiddenVisibility );
+
+		if( !IsSrcLocFromMainFile( syntax_element.src_loc ) )
+		{
+			// For unit-test functions defined in imported files create a comdat.
+			// It's necessary for deduplication.
+			// Since names of unit-test functions are generated and include file path hash/line/column,
+			// only unit-test functions originated from the exact same file will have identical comdat name and thus will be deduplicated.
+			if( target_triple_.getObjectFormat() == llvm::Triple::MachO )
+				llvm_function->setLinkage( llvm::GlobalValue::LinkOnceODRLinkage );
+			else
+			{
+				llvm::Comdat* const comdat= module_->getOrInsertComdat( llvm_function->getName() );
+				comdat->setSelectionKind( llvm::Comdat::Any );
+				llvm_function->setComdat( comdat );
+			}
+		}
+
+		// Mark unit-test functions with a special metadata.
+		// It's necessary in order to be able to collect all unit-test functions later.
+		// Also attach original name to it, so that it can be displayed somewhere.
+		llvm_function->setMetadata(
+			"__U_unit_test",
+			llvm::MDNode::get( llvm_context_, { llvm::MDString::get( llvm_context_, func_name ) } ) );
+
+		// Prohibit placing unit-tests within templates.
+		// It's mostly useless and we can't generate unique names for such unit-tests anyway.
+		if( parent_names_scope.IsInsideTemplate() )
+			REPORT_ERROR( UnitTestWithinTemplate, parent_names_scope.GetErrors(), func_variable.body_src_loc );
+	}
+	else if( parent_names_scope.IsInsideTemplate() )
 	{
 		// Set private visibility for functions inside templates.
 		// There is no need to use external linkage, since each user of the template must import file with source template.
@@ -2172,6 +2212,58 @@ void CodeBuilder::BuildFuncCode(
 	llvm_function->setMetadata( "__U_incomplete_function_marker", nullptr );
 
 	TryToPerformReturnValueAllocationOptimization( *llvm_function );
+}
+
+std::string CodeBuilder::GetUnitTestFunctionName( const Synt::Function& function )
+{
+	std::string name;
+	name+= "_test_fn_"; // Start with "_" in order to avoid collisions with user names.
+
+	name+= function.name.back().name;
+	name+= "_";
+
+	SrcLoc src_loc= function.src_loc;
+
+	if( completion_request_index_ != 0u )
+	{
+		// Workaround for language server.
+		// Don't even try accessing source graph in it, since it may be slightly outdated if completion for a test is performed.
+		name+= std::to_string( src_loc.GetLine() );
+		name+= "_";
+		name+= std::to_string( src_loc.GetColumn() );
+		name+= "_";
+	}
+	else
+	{
+		while(true)
+		{
+			// Encode file.
+			U_ASSERT( source_graph_ != nullptr );
+			U_ASSERT( src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
+			// Use file path hash instead of file index, because we need to use stable identifier independent on from which main file this file is imported.
+			name+= source_graph_->nodes_storage[ src_loc.GetFileIndex() ].file_path_hash;
+			name+= "_";
+
+			// Encode line and column into the name to produce different names for different tests in the same file.
+			name+= std::to_string( src_loc.GetLine() );
+			name+= "_";
+
+			name+= std::to_string( src_loc.GetColumn() );
+			name+= "_";
+
+			const auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
+			if( macro_expansion_index != SrcLoc::c_max_macro_expanison_index )
+			{
+				// If this is a test defined via macro - add macro expansion context to the name.
+				src_loc= (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc;
+				continue;
+			}
+			else
+				break; // Not a macro expansion context.
+		}
+	}
+
+	return name;
 }
 
 void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names_scope, FunctionContext& function_context )

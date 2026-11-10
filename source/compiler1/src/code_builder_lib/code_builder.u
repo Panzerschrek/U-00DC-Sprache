@@ -600,7 +600,8 @@ fn CodeBuilder::PrepareFunction(
 
 	var FunctionVariable::Kind mut function_kind= function_declaration.kind;
 
-	if( function_kind != FunctionVariable::Kind::Regular )
+	if( function_kind == FunctionVariable::Kind::Generator ||
+		function_kind == FunctionVariable::Kind::Async )
 	{
 		// Perform checks before transforming coroutine function type.
 		PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope_ptr, function_declaration.src_loc );
@@ -639,7 +640,11 @@ fn CodeBuilder::PrepareFunction(
 	}
 
 	var ust::string8 mut llvm_function_name;
-	if( function_declaration.no_mangle )
+	if( function_declaration.kind == Synt::Function::Kind::Test )
+	{
+		llvm_function_name= GetUnitTestFunctionName( function_declaration ) + "\0";
+	}
+	else if( function_declaration.no_mangle )
 	{
 		llvm_function_name= func_name + "\0";
 	}
@@ -1263,7 +1268,58 @@ fn CodeBuilder::BuildFuncCode(
 		visibility= LLVMHiddenVisibility;
 	}
 
-	if( names_scope.lock_imut().deref().IsInsideTemplate() )
+	if( body_syntax_element.kind == Synt::Function::Kind::Test )
+	{
+		// Unit-test functions should use external linkage.
+		// It's necessary, so that they are not optimized-out and can be later collected and executed.
+		unsafe( LLVMSetLinkage( llvm_function, LLVMExternalLinkage ) );
+		// Hidden visibility is used for unit-test functions, since they shouldn't be exported from libraries.
+		unsafe( LLVMSetVisibility( llvm_function, LLVMHiddenVisibility ) );
+
+		if( !IsSrcLocFromMainFile( body_syntax_element.src_loc ) )
+		{
+			// For unit-test functions defined in imported files create a comdat.
+			// It's necessary for deduplication.
+			// Since names of unit-test functions are generated and include file path hash/line/column,
+			// only unit-test functions originated from the exact same file will have identical comdat name and thus will be deduplicated.
+			if( comdats_supported_ )
+			{
+				unsafe
+				{
+					auto comdat= LLVMGetOrInsertComdat( module_, func_variable.llvm_function.lock_imut().deref().name_mangled.front() );
+					LLVMSetComdatSelectionKind( comdat, LLVMAnyComdatSelectionKind );
+					LLVMSetComdat( llvm_function, comdat );
+				}
+			}
+			else
+			{
+				unsafe( LLVMSetLinkage( llvm_function, LLVMLinkOnceODRLinkage ) );
+			}
+		}
+
+		// Mark unit-test functions with a special metadata.
+		// It's necessary in order to be able to collect all unit-test functions later.
+		// Also attach original name to it, so that it can be displayed somewhere.
+		var ust::string_view8 original_name= body_syntax_element.name.back();
+		unsafe
+		{
+			var LLVMMetadataRef mut name_string_node=
+				LLVMMDStringInContext2( llvm_context_, original_name.data(), original_name.size() );
+
+			SetGlobalMetadata(
+				llvm_function,
+				"__U_unit_test",
+				unsafe( LLVMMDNodeInContext2( llvm_context_, $<(name_string_node), 1s ) ) );
+		}
+
+		// Prohibit placing unit-tests within templates.
+		// It's mostly useless and we can't generate unique names for such unit-tests anyway.
+		if( names_scope.lock_imut().deref().IsInsideTemplate() )
+		{
+			REPORT_ERROR( UnitTestWithinTemplate, names_scope, body_syntax_element.src_loc )
+		}
+	}
+	else if( names_scope.lock_imut().deref().IsInsideTemplate() )
 	{
 		// Set private visibility for functions inside templates.
 		// There is no need to use external linkage, since each user of the template must import file with source template.
@@ -1278,7 +1334,7 @@ fn CodeBuilder::BuildFuncCode(
 	{
 		// The only reason to use "nomangle" functions is to interact with external code.
 		// For such purposes  external linkage is essential.
-		unsafe( LLVMSetLinkage( llvm_function, LVMExternalLinkage ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMExternalLinkage ) );
 		unsafe( LLVMSetVisibility( llvm_function, visibility ) );
 	}
 	else if( func_variable.prototype_syntax_element.empty() || IsSrcLocFromMainFile( func_variable.prototype_syntax_element.try_deref().src_loc ) )
@@ -1290,7 +1346,7 @@ fn CodeBuilder::BuildFuncCode(
 	else
 	{
 		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
-		unsafe( LLVMSetLinkage( llvm_function, LVMExternalLinkage ) );
+		unsafe( LLVMSetLinkage( llvm_function, LLVMExternalLinkage ) );
 		unsafe( LLVMSetVisibility( llvm_function, visibility ) );
 	}
 
@@ -1921,6 +1977,46 @@ fn CodeBuilder::BuildFuncCode(
 
 }
 
+fn CodeBuilder::GetUnitTestFunctionName( this, Synt::Function& function ) : ust::string8
+{
+	var ust::default_stringifier8 mut stringifier;
+
+	ust::apply_value_to_stringifier( stringifier, "_test_fn_" ); // Start with "_" in order to avoid collisions with user names.
+
+	ust::apply_value_to_stringifier( stringifier, function.name.back() );
+	ust::apply_value_to_stringifier( stringifier, "_" );
+
+	var SrcLoc mut src_loc= function.src_loc;
+	loop
+	{
+		// Encode file.
+		// Use file path hash instead of file index, because we need to use stable identifier independent on from which main file this file is imported.
+		ust::apply_value_to_stringifier( stringifier, source_graph_.try_deref().nodes[ size_type( src_loc.GetFileIndex() ) ].file_path_hash );
+		ust::apply_value_to_stringifier( stringifier, "_" );
+
+		// Encode line and column into the name to produce different names for different tests in the same file.
+		ust::apply_value_to_stringifier( stringifier, src_loc.GetLine() );
+		ust::apply_value_to_stringifier( stringifier, "_" );
+
+		ust::apply_value_to_stringifier( stringifier, src_loc.GetColumn() );
+		ust::apply_value_to_stringifier( stringifier, "_" );
+
+		auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
+		if( macro_expansion_index != SrcLoc::c_max_macro_expanison_index )
+		{
+			// If this is a test defined via macro - add macro expansion context to the name.
+			src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
+			continue;
+		}
+		else
+		{
+			break; // Not a macro expansion context.
+		}
+	}
+
+	return move(stringifier).get();
+}
+
 fn CodeBuilder::TryCallCopyConstructor(
 	mut this,
 	NamesScopePtr& names_scope,
@@ -2527,7 +2623,7 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 		if( comdats_supported_ )
 		{
 			// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
-			LLVMSetLinkage( global_variable, LVMExternalLinkage );
+			LLVMSetLinkage( global_variable, LLVMExternalLinkage );
 			auto comdat= LLVMGetOrInsertComdat( module_, name_with_suffix.front() );
 			LLVMSetComdatSelectionKind( comdat, LLVMAnyComdatSelectionKind );
 			LLVMSetComdat( global_variable, comdat );

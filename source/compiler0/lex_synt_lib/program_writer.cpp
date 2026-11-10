@@ -1016,6 +1016,19 @@ void ElementWrite( const ProgramElementsList& elements ) const
 
 void WriteFunctionDeclaration( const Function& function ) const
 {
+	if( function.kind == Function::Kind::Test )
+	{
+		// Handle unit-test functions here - they have different syntax.
+
+		stream_ << Keyword( Keywords::fn_test_ );
+		stream_ << "( ";
+
+		if( !function.name.empty() )
+		stream_ << function.name.back().name;
+		stream_ << " )";
+		return;
+	}
+
 	if( function.overloaded_operator == OverloadedOperator::None )
 		stream_ << Keyword( Keywords::fn_ );
 	else
@@ -1040,10 +1053,20 @@ void WriteFunctionDeclaration( const Function& function ) const
 		break;
 	};
 
-	if( function.kind == Function::Kind::Generator )
+	switch( function.kind )
+	{
+	case Function::Kind::Regular:
+		break;
+	case Function::Kind::Generator:
 		stream_ << Keyword( Keywords::generator_ ) << " ";
-	else if( function.kind == Function::Kind::Async )
+		break;
+	case Function::Kind::Async:
 		stream_ << Keyword( Keywords::async_ ) << " ";
+		break;
+	case Function::Kind::Test:
+		// This should be handled before.
+		break;
+	}
 
 	ElementWrite( function.coroutine_non_sync_tag );
 

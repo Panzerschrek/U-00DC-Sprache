@@ -141,6 +141,7 @@ PROCESS_ERROR( IncompleteMemberOfClassTemplate, "\"{0}\" is incomplete." )
 PROCESS_ERROR( TemplateFunctionGenerationFailed, "Instantiation of function template \"{0}\" failed." )
 PROCESS_ERROR( CouldNotSelectMoreSpecializedTypeTemplate, "Could not select more specialized type template." )
 PROCESS_ERROR( MoreThanOneTypeTemplateAsTemplateArgument, "Using a set of more than one type templates for template argument. Only single type templates are supported as template arguments." )
+PROCESS_ERROR( UnitTestWithinTemplate, "Defining unit-tests within templates isn't supported." )
 
 // Reference checking
 PROCESS_ERROR( ReferenceProtectionError, "Reference protection check for variable \"{0}\" failed." )
