@@ -72,6 +72,36 @@ void CodeBuilder::NamesScopeFill(
 		return; // process out of line functions later.
 
 	const std::string& func_name= function_declaration->name.back().name;
+
+	if( function_declaration->kind == Synt::Function::Kind::Test )
+	{
+		// Process unit-test functions specially.
+		// Use generated unique names for them, so that it's not possible to access such a function.
+		// Also it allows to use the same name for multiple unit-test functions in the same scope.
+
+		if( IsKeyword( func_name ) )
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration->src_loc );
+
+		const std::string internal_name= GetUnitTestFunctionName( *function_declaration );
+
+		if( base_class != nullptr )
+			base_class->SetMemberVisibility( func_name, visibility );
+
+		OverloadedFunctionsSet functions_set;
+		functions_set.base_class= base_class;
+		functions_set.syntax_elements.push_back( function_declaration );
+
+		if( names_scope.AddName(
+				internal_name,
+				NamesScopeValue( std::make_shared<OverloadedFunctionsSet>( std::move(functions_set) ), SrcLoc() ) ) == nullptr )
+		{
+			// This shouldn't really happen, since we generate unique names, but handle such case anyway.
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_declaration->src_loc, internal_name );
+		}
+
+		return;
+	}
+
 	NamesScopeFillFunction( names_scope, function_declaration, func_name, base_class, visibility );
 }
 
