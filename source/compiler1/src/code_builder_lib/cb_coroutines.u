@@ -52,7 +52,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 
 	switch( kind )
 	{
-		FunctionVariable::Kind::Regular -> { halt; },
+		FunctionVariable::Kind::Regular, FunctionVariable::Kind::Test -> { halt; },
 		FunctionVariable::Kind::Generator -> { coroutine_type_description.kind= CoroutineKind::Generator; },
 		FunctionVariable::Kind::Async -> { coroutine_type_description.kind= CoroutineKind::AsyncFunc; },
 	}

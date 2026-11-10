@@ -600,7 +600,8 @@ fn CodeBuilder::PrepareFunction(
 
 	var FunctionVariable::Kind mut function_kind= function_declaration.kind;
 
-	if( function_kind != FunctionVariable::Kind::Regular )
+	if( function_kind == FunctionVariable::Kind::Generator ||
+		function_kind == FunctionVariable::Kind::Async )
 	{
 		// Perform checks before transforming coroutine function type.
 		PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope_ptr, function_declaration.src_loc );

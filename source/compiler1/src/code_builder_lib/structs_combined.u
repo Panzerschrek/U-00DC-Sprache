@@ -1130,7 +1130,7 @@ fn FunctionVariable::IsCoroutine( this ) : bool
 {
 	switch(kind)
 	{
-		Kind::Regular -> { return false; },
+		Kind::Regular, Kind::Test -> { return false; },
 		Kind::Generator, Kind::Async -> { return true; },
 	}
 }
