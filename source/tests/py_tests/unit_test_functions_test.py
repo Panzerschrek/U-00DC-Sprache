@@ -131,3 +131,33 @@ def UnitTestFunction_NamesAccess_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_test_fn_SomeClassInternalsTest_b14a7b8059d9c055954c92674ce60032_5_12_" )
+
+
+def UnitTestFunction_ExplicitReturn_Test0():
+	c_program_text= """
+		fn_test( SomeTest )
+		{
+			auto mut x= 10;
+			auto mut y= 3;
+			halt if( x - y != 7 );
+			if( true )
+			{
+				return; // Can use "return" within a unit-test, since it's just a function.
+			}
+			halt if( x == 100 ); // This check is unreachable.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_test_fn_SomeTest_b14a7b8059d9c055954c92674ce60032_2_11_" )
+
+
+def UnitTestFunction_ExplicitReturn_Test1():
+	c_program_text= """
+		fn_test( SomeTest )
+		{
+			return 123; // Error here - unit-test functions return "void".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "TypesMismatch", 4 ) )
