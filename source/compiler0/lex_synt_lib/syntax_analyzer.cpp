@@ -4048,7 +4048,7 @@ Function SyntaxAnalyzer::ParseTestFunction()
 	// Test functions are pretty simple.
 	// They have no params, return value, virtual/nomangle/nodiscard, "unsafe" flag, calling convention, reference notation and other stuff.
 
-	U_ASSERT( it_->text == Keywords::fn_ );
+	U_ASSERT( it_->text == Keywords::fn_test_ );
 	NextLexem();
 
 	ExpectLexem( Lexem::Type::BracketLeft );
