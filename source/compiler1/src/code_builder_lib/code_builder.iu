@@ -373,6 +373,8 @@ private:
 		ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext /> reference_notation_deduction_context,
 		ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context );
 
+	fn GetUnitTestFunctionName( this, Synt::Function& function ) : ust::string8;
+
 	struct BlockElementBuildInfo nodiscard
 	{
 		bool has_terminal_instruction_inside= false;

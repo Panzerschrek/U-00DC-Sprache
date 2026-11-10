@@ -63,6 +63,38 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	}
 
 	auto& func_name= function.deref().name.back();
+
+	if( function.deref().kind == Synt::Function::Kind::Test )
+	{
+		// Process unit-test functions specially.
+		// Use generated unique names for them, so that it's not possible to access such a function.
+		// Also it allows to use the same name for multiple unit-test functions in the same scope.
+
+		if( IsKeyword( func_name ) )
+		{
+			REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, function.deref().src_loc )
+			return;
+		}
+
+		var ust::string8 internal_name= GetUnitTestFunctionName( function.deref() );
+
+		with( mut names_scope_lock : names_scope_ptr.lock_mut() )
+		{
+			auto& mut names_scope= names_scope_lock.deref();
+
+			var bool adding_ok= names_scope.AddName( internal_name, FunctionsSet{ .class_= class_type, .syntax_elements= ust::make_array(function) } );
+
+			if( !adding_ok )
+			{
+				auto errors_container= names_scope.GetErrors();
+				auto mut errors_container_lock= errors_container.try_lock_mut();
+				errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function.deref().src_loc, internal_name ) );
+			}
+		}
+
+		return;
+	}
+
 	NamesScopeFillFunction( names_scope_ptr, function, func_name, class_type, visibility );
 }
 
