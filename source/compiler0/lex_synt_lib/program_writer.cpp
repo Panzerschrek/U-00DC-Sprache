@@ -1040,10 +1040,17 @@ void WriteFunctionDeclaration( const Function& function ) const
 		break;
 	};
 
-	if( function.kind == Function::Kind::Generator )
+	switch( function.kind )
+	{
+	case Function::Kind::Regular:
+		break;
+	case Function::Kind::Generator:
 		stream_ << Keyword( Keywords::generator_ ) << " ";
-	else if( function.kind == Function::Kind::Async )
+		break;
+	case Function::Kind::Async:
 		stream_ << Keyword( Keywords::async_ ) << " ";
+		break;
+	}
 
 	ElementWrite( function.coroutine_non_sync_tag );
 
