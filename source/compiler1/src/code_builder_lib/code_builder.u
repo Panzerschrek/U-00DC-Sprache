@@ -1296,6 +1296,21 @@ fn CodeBuilder::BuildFuncCode(
 				unsafe( LLVMSetLinkage( llvm_function, LLVMLinkOnceODRLinkage ) );
 			}
 		}
+
+		// Mark unit-test functions with a special metadata.
+		// It's necessary in order to be able to collect all unit-test functions later.
+		// Also attack original name to it, so that it can be displayed somewhere.
+		var ust::string_view8 original_name= body_syntax_element.name.back();
+		unsafe
+		{
+			var LLVMMetadataRef mut name_string_node=
+				LLVMMDStringInContext2( llvm_context_, original_name.data(), original_name.size() );
+
+			SetGlobalMetadata(
+				llvm_function,
+				"__U_unit_test",
+				unsafe( LLVMMDNodeInContext2( llvm_context_, $<(name_string_node), 1s ) ) );
+		}
 	}
 	else if( names_scope.lock_imut().deref().IsInsideTemplate() )
 	{
