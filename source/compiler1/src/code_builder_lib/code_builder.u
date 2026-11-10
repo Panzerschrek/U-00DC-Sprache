@@ -1311,6 +1311,13 @@ fn CodeBuilder::BuildFuncCode(
 				"__U_unit_test",
 				unsafe( LLVMMDNodeInContext2( llvm_context_, $<(name_string_node), 1s ) ) );
 		}
+
+		// Prohibit placing unit-tests within templates.
+		// It's mostly useless and we can't generate unique names for such unit-tests anyway.
+		if( names_scope.lock_imut().deref().IsInsideTemplate() )
+		{
+			REPORT_ERROR( UnitTestWithinTemplate, names_scope, body_syntax_element.src_loc )
+		}
 	}
 	else if( names_scope.lock_imut().deref().IsInsideTemplate() )
 	{
