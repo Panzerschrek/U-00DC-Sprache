@@ -4051,10 +4051,10 @@ Function SyntaxAnalyzer::ParseTestFunction()
 	U_ASSERT( it_->text == Keywords::fn_ );
 	NextLexem();
 
+	ExpectLexem( Lexem::Type::BracketLeft );
+
 	Function result( it_->src_loc );
 	result.kind= Function::Kind::Test;
-
-	ExpectLexem( Lexem::Type::BracketLeft );
 
 	if( it_->type == Lexem::Type::Identifier )
 		result.name.push_back( Function::NameComponent{ it_->text, it_->src_loc, false } );
