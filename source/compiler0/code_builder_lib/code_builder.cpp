@@ -1614,7 +1614,15 @@ void CodeBuilder::BuildFuncCode(
 	else
 		visibility= llvm::GlobalValue::HiddenVisibility;
 
-	if( parent_names_scope.IsInsideTemplate() )
+	if( syntax_element.kind == Synt::Function::Kind::Test )
+	{
+		// Unit-test functions should use external linkage.
+		// It's necessary, so that they are not optimized-out and can be later collected and executed.
+		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
+		// Hidden visibility is used for unit-test functions, since they shouldn't be exported from libraries.
+		llvm_function->setVisibility( llvm::GlobalValue::HiddenVisibility );
+	}
+	else if( parent_names_scope.IsInsideTemplate() )
 	{
 		// Set private visibility for functions inside templates.
 		// There is no need to use external linkage, since each user of the template must import file with source template.

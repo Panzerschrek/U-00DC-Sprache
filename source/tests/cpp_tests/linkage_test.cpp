@@ -595,6 +595,25 @@ U_TEST( PolymorphClassesDataLinkage_Test4 )
 	U_TEST_ASSERT( !vtable->hasComdat() );
 }
 
+U_TEST( UnitTestFunctionLinkage_Test0 )
+{
+	// Unit-test functions should use external linkage.
+	// It's necessary, so that they are not optimized-out and can be later collected and executed.
+	static const char c_program_text[]=
+	R"(
+		fn_test( SomeTest ) {}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const test_function= module->getFunction( "_test_fn_SomeTest_b14a7b8059d9c055954c92674ce60032_2_11_" );
+	U_TEST_ASSERT( test_function != nullptr );
+	U_TEST_ASSERT( test_function->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( test_function->getVisibility() == llvm::GlobalValue::HiddenVisibility );
+	// No comdat is necessary, since no deduplication is necessary for unit-test functions located in compiled files.
+	U_TEST_ASSERT( !test_function->hasComdat() );
+}
+
 } // namespace
 
 } // namespace U
