@@ -161,3 +161,38 @@ def UnitTestFunction_ExplicitReturn_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "TypesMismatch", 4 ) )
+
+
+def UnitTestFunction_WithtinTemplate_Test0():
+	c_program_text= """
+		template</type T/>
+		struct Box
+		{
+			fn_test( BoxTest ) {} // Error here - it's not allowed to place unit-tests within templates.
+			i32 x;
+		}
+		type IntBox= Box</i32/>; // For now require instantiating a template in order to detect unit-tests within.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "UnitTestWithinTemplate", 5 ) )
+
+
+def UnitTestFunction_WithtinTemplate_Test1():
+	c_program_text= """
+		template</type T/>
+		struct Box
+		{
+			struct Internal
+			{
+				fn_test( BoxTest ) {} // Error here - it's not allowed to place unit-tests within templates (even indirectly).
+			}
+			i32 x;
+		}
+		type IntBox= Box</i32/>; // For now require instantiating a template in order to detect unit-tests within.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateContext" )
+	assert( HasError( errors_list[0].template_errors.errors, "UnitTestWithinTemplate", 7 ) )

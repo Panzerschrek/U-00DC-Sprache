@@ -1644,6 +1644,11 @@ void CodeBuilder::BuildFuncCode(
 		llvm_function->setMetadata(
 			"__U_unit_test",
 			llvm::MDNode::get( llvm_context_, { llvm::MDString::get( llvm_context_, func_name ) } ) );
+
+		// Prohibit placing unit-tests within templates.
+		// It's mostly useless and we can't generate unique names for such unit-tests anyway.
+		if( parent_names_scope.IsInsideTemplate() )
+			REPORT_ERROR( UnitTestWithinTemplate, parent_names_scope.GetErrors(), func_variable.body_src_loc );
 	}
 	else if( parent_names_scope.IsInsideTemplate() )
 	{
