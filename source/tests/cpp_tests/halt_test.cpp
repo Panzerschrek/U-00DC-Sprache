@@ -303,6 +303,32 @@ U_TEST( FinishedAsyncFunctionInAwaitHalt_Test0 )
 	U_TEST_ASSERT(false);
 }
 
+U_TEST( HaltInUnitTest )
+{
+	static const char c_program_text[]=
+	R"(
+		fn_test( TestWhichAlwaysFails )
+		{
+			halt; // "halt" in unit-tests should work as usual.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_test_fn_TestWhichAlwaysFails_b14a7b8059d9c055954c92674ce60032_2_11_" );
+	U_TEST_ASSERT( function != nullptr );
+
+	try
+	{
+		engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	}
+	catch( const HaltException& )
+	{
+		U_TEST_ASSERT(true);
+		return;
+	}
+	U_TEST_ASSERT( false );
+}
+
 } // namespace
 
 } // namespace U
