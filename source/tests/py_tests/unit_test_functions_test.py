@@ -12,6 +12,7 @@ def UnitTestFunctionDefinition_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_test_fn_SomeTest_b14a7b8059d9c055954c92674ce60032_3_11_" )
 
 
 def UnitTestFunctionDefinition_Test1():
@@ -28,6 +29,7 @@ def UnitTestFunctionDefinition_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_test_fn_SomeTest_b14a7b8059d9c055954c92674ce60032_5_12_" )
 
 
 def UnitTestFunctionDefinition_Test2():
@@ -44,6 +46,7 @@ def UnitTestFunctionDefinition_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_test_fn_SomeTest_b14a7b8059d9c055954c92674ce60032_5_12_" )
 
 
 def UnitTestFunctionDefinition_Test3():
@@ -66,6 +69,9 @@ def UnitTestFunctionDefinition_Test3():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_test_fn_IntsTest_b14a7b8059d9c055954c92674ce60032_3_11_" )
+	tests_lib.run_function( "_test_fn_IntsTest_b14a7b8059d9c055954c92674ce60032_8_11_" )
+	tests_lib.run_function( "_test_fn_IntsTest_b14a7b8059d9c055954c92674ce60032_13_11_" )
 
 
 def UnitTestFunctionDefinition_Test4():
@@ -79,3 +85,6 @@ def UnitTestFunctionDefinition_Test4():
 		fn_test( var_name ) {}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_test_fn_StructName_b14a7b8059d9c055954c92674ce60032_6_11_" )
+	tests_lib.run_function( "_test_fn_FuncName_b14a7b8059d9c055954c92674ce60032_7_11_" )
+	tests_lib.run_function( "_test_fn_var_name_b14a7b8059d9c055954c92674ce60032_8_11_" )
