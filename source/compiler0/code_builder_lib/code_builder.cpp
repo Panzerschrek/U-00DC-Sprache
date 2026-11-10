@@ -1621,6 +1621,22 @@ void CodeBuilder::BuildFuncCode(
 		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
 		// Hidden visibility is used for unit-test functions, since they shouldn't be exported from libraries.
 		llvm_function->setVisibility( llvm::GlobalValue::HiddenVisibility );
+
+		if( !IsSrcLocFromMainFile( syntax_element.src_loc ) )
+		{
+			// For unit-test functions defined in imported files create comdat.
+			// It's necessary for deduplication.
+			// Since names of unit-test functions are generated and include file path hash/line/column,
+			// only unit-test functions originated from the exact same file will have identical comdat name and thus will be deduplicated.
+			if( target_triple_.getObjectFormat() == llvm::Triple::MachO )
+				llvm_function->setLinkage( llvm::GlobalValue::LinkOnceODRLinkage );
+			else
+			{
+				llvm::Comdat* const comdat= module_->getOrInsertComdat( llvm_function->getName() );
+				comdat->setSelectionKind( llvm::Comdat::Any );
+				llvm_function->setComdat( comdat );
+			}
+		}
 	}
 	else if( parent_names_scope.IsInsideTemplate() )
 	{

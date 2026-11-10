@@ -614,6 +614,26 @@ U_TEST( UnitTestFunctionLinkage_Test0 )
 	U_TEST_ASSERT( !test_function->hasComdat() );
 }
 
+U_TEST( UnitTestFunctionLinkage_Test1 )
+{
+	static const char c_program_text_a[]= " fn_test( SomeTest ) {} ";
+	static const char c_program_text_root[]= " import \"a\" ";
+
+	const auto module= BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+
+	const llvm::Function* const test_function= module->getFunction( "_test_fn_SomeTest_0cc175b9c0f1b6a831c399e269772661_1_10_" );
+	U_TEST_ASSERT( test_function != nullptr );
+	U_TEST_ASSERT( test_function->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( test_function->getVisibility() == llvm::GlobalValue::HiddenVisibility );
+	// Comdat is necessary, since deduplication is necessary for unit-test functions located in imported files.
+	U_TEST_ASSERT( test_function->hasComdat() );
+}
+
 } // namespace
 
 } // namespace U
