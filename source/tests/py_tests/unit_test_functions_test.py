@@ -88,3 +88,46 @@ def UnitTestFunctionDefinition_Test4():
 	tests_lib.run_function( "_test_fn_StructName_b14a7b8059d9c055954c92674ce60032_6_11_" )
 	tests_lib.run_function( "_test_fn_FuncName_b14a7b8059d9c055954c92674ce60032_7_11_" )
 	tests_lib.run_function( "_test_fn_var_name_b14a7b8059d9c055954c92674ce60032_8_11_" )
+
+
+def UnitTestFunction_NamesAccess_Test0():
+	c_program_text= """
+		// A unit-test function has direct access to names within namespace where it's defined (just like any regular function).
+		namespace A
+		{
+			fn FooA() : i32 { return 111; }
+			namespace B
+			{
+				fn FooB() : i32 { return 222; }
+
+				fn_test( ABTest )
+				{
+					halt if( FooA() != 111 );
+					halt if( FooB() != 222 );
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_test_fn_ABTest_b14a7b8059d9c055954c92674ce60032_10_13_" )
+
+
+def UnitTestFunction_NamesAccess_Test1():
+	c_program_text= """
+		// A unit-test function has private access to class members if it's defined within a class.
+		class SomeClass
+		{
+			fn_test( SomeClassInternalsTest )
+			{
+				var SomeClass mut instance;
+				halt if( instance.i_field_ != 123 );
+				instance.i_field_= 456;
+				halt if( instance.i_field_ != 456 );
+			}
+
+		private:
+			i32 i_field_= 123;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_test_fn_SomeClassInternalsTest_b14a7b8059d9c055954c92674ce60032_5_12_" )
