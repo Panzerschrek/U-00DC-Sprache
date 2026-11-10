@@ -265,6 +265,7 @@ private:
 	TypeAlias ParseTypeAlias();
 	TypeAlias ParseTypeAliasBody();
 	Function ParseFunction();
+	Function ParseTestFunction();
 	Class ParseClass();
 	ClassElementsList ParseClassBodyElementsToFileEnd();
 	ClassElementsList ParseClassBodyElementsToClassEnd();
@@ -751,6 +752,8 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 	{
 		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 			result.push_back( MakeRcPtr( ParseFunction() ) );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_test_ )
+			result.push_back( MakeRcPtr( ParseTestFunction() ) );
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 			result.push_back( MakeRcPtr( ParseClass() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
@@ -4040,6 +4043,35 @@ Function SyntaxAnalyzer::ParseFunction()
 	return result;
 }
 
+Function SyntaxAnalyzer::ParseTestFunction()
+{
+	// Test functions are pretty simple.
+	// They have no params, return value, virtual/nomangle/nodiscard, "unsafe" flag, calling convention, reference notation and other stuff.
+
+	U_ASSERT( it_->text == Keywords::fn_ );
+	NextLexem();
+
+	Function result( it_->src_loc );
+	result.kind= Function::Kind::Test;
+
+	ExpectLexem( Lexem::Type::BracketLeft );
+
+	if( it_->type == Lexem::Type::Identifier )
+		result.name.push_back( Function::NameComponent{ it_->text, it_->src_loc, false } );
+	else
+		PushErrorMessage();
+
+	NextLexem();
+
+	ExpectLexem( Lexem::Type::BracketRight );
+
+	// Always require a block for a test function.
+
+	result.block= std::make_unique<const Block>( ParseBlock() );
+
+	return result;
+}
+
 Class SyntaxAnalyzer::ParseClass()
 {
 	U_ASSERT( it_->text == Keywords::struct_ || it_->text == Keywords::class_ );
@@ -4098,6 +4130,8 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 			break;
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 			result.push_back( MakeRcPtr( ParseFunction() ) );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_test_ )
+			result.push_back( MakeRcPtr( ParseTestFunction() ) );
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 			result.push_back( MakeRcPtr( ParseClass() ) );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )

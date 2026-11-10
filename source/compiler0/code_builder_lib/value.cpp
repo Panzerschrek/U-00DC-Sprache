@@ -43,6 +43,7 @@ bool FunctionVariable::IsCoroutine() const
 	switch(kind)
 	{
 	case Kind::Regular:
+	case Kind::Test:
 		return false;
 	case Kind::Generator:
 	case Kind::Async:

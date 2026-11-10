@@ -116,6 +116,7 @@ def run_tests():
 		"typeof_test",
 		"unconditional_loop_test",
 		"uninitialized_initializer_test",
+		"unit_test_functions_test",
 		"unsafe_expression_test",
 		"unsafe_test",
 		"useless_expression_root_errors_test",

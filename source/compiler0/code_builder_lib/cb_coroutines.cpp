@@ -37,6 +37,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 	switch( kind )
 	{
 	case FunctionVariable::Kind::Regular:
+	case FunctionVariable::Kind::Test:
 		U_ASSERT(false);
 		break;
 	case FunctionVariable::Kind::Generator:

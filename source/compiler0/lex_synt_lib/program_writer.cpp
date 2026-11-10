@@ -1050,6 +1050,9 @@ void WriteFunctionDeclaration( const Function& function ) const
 	case Function::Kind::Async:
 		stream_ << Keyword( Keywords::async_ ) << " ";
 		break;
+	case Function::Kind::Test:
+		// TODO - handle such function specially?
+		break;
 	}
 
 	ElementWrite( function.coroutine_non_sync_tag );
