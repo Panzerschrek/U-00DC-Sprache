@@ -1268,7 +1268,36 @@ fn CodeBuilder::BuildFuncCode(
 		visibility= LLVMHiddenVisibility;
 	}
 
-	if( names_scope.lock_imut().deref().IsInsideTemplate() )
+	if( body_syntax_element.kind == Synt::Function::Kind::Test )
+	{
+		// Unit-test functions should use external linkage.
+		// It's necessary, so that they are not optimized-out and can be later collected and executed.
+		unsafe( LLVMSetLinkage( llvm_function, LVMExternalLinkage ) );
+		// Hidden visibility is used for unit-test functions, since they shouldn't be exported from libraries.
+		unsafe( LLVMSetVisibility( llvm_function, LLVMHiddenVisibility ) );
+
+		if( !IsSrcLocFromMainFile( body_syntax_element.src_loc ) )
+		{
+			// For unit-test functions defined in imported files create comdat.
+			// It's necessary for deduplication.
+			// Since names of unit-test functions are generated and include file path hash/line/column,
+			// only unit-test functions originated from the exact same file will have identical comdat name and thus will be deduplicated.
+			if( comdats_supported_ )
+			{
+				unsafe
+				{
+					auto comdat= LLVMGetOrInsertComdat( module_, func_variable.llvm_function.lock_imut().deref().name_mangled.front() );
+					LLVMSetComdatSelectionKind( comdat, LLVMAnyComdatSelectionKind );
+					LLVMSetComdat( llvm_function, comdat );
+				}
+			}
+			else
+			{
+				unsafe( LLVMSetLinkage( llvm_function, LLVMLinkOnceODRLinkage ) );
+			}
+		}
+	}
+	else if( names_scope.lock_imut().deref().IsInsideTemplate() )
 	{
 		// Set private visibility for functions inside templates.
 		// There is no need to use external linkage, since each user of the template must import file with source template.
