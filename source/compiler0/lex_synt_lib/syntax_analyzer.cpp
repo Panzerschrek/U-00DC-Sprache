@@ -4056,11 +4056,10 @@ Function SyntaxAnalyzer::ParseTestFunction()
 	Function result( it_->src_loc );
 	result.kind= Function::Kind::Test;
 
-	if( it_->type == Lexem::Type::Identifier )
-		result.name.push_back( Function::NameComponent{ it_->text, it_->src_loc, false } );
-	else
+	if( it_->type != Lexem::Type::Identifier )
 		PushErrorMessage();
 
+	result.name.push_back( Function::NameComponent{ it_->text, it_->src_loc, false } );
 	NextLexem();
 
 	ExpectLexem( Lexem::Type::BracketRight );
