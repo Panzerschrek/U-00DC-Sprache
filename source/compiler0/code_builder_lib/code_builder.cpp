@@ -1637,6 +1637,13 @@ void CodeBuilder::BuildFuncCode(
 				llvm_function->setComdat( comdat );
 			}
 		}
+
+		// Mark unit-test functions with a special metadata.
+		// It's necessary in order to be able to collect all unit-test functions later.
+		// Also attack original name to it, so that it can be displayed somewhere.
+		llvm_function->setMetadata(
+			"__U_unit_test",
+			llvm::MDNode::get( llvm_context_, { llvm::MDString::get( llvm_context_, func_name ) } ) );
 	}
 	else if( parent_names_scope.IsInsideTemplate() )
 	{

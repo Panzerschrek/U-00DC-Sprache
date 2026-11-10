@@ -612,6 +612,11 @@ U_TEST( UnitTestFunctionLinkage_Test0 )
 	U_TEST_ASSERT( test_function->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 	// No comdat is necessary, since no deduplication is necessary for unit-test functions located in compiled files.
 	U_TEST_ASSERT( !test_function->hasComdat() );
+
+	const llvm::MDNode* const test_metadata= test_function->getMetadata( "__U_unit_test" );
+	U_TEST_ASSERT( test_metadata != nullptr );
+	U_TEST_ASSERT( test_metadata->getNumOperands() == 1 );
+	U_TEST_ASSERT( test_metadata->getOperand(0).equalsStr( "SomeTest" ) );
 }
 
 U_TEST( UnitTestFunctionLinkage_Test1 )
@@ -632,6 +637,11 @@ U_TEST( UnitTestFunctionLinkage_Test1 )
 	U_TEST_ASSERT( test_function->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 	// Comdat is necessary, since deduplication is necessary for unit-test functions located in imported files.
 	U_TEST_ASSERT( test_function->hasComdat() );
+
+	const llvm::MDNode* const test_metadata= test_function->getMetadata( "__U_unit_test" );
+	U_TEST_ASSERT( test_metadata != nullptr );
+	U_TEST_ASSERT( test_metadata->getNumOperands() == 1 );
+	U_TEST_ASSERT( test_metadata->getOperand(0).equalsStr( "SomeTest" ) );
 }
 
 } // namespace
