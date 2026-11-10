@@ -90,6 +90,15 @@ def UnitTestFunctionDefinition_Test4():
 	tests_lib.run_function( "_test_fn_var_name_b14a7b8059d9c055954c92674ce60032_8_11_" )
 
 
+def UnitTestFunctionDefinition_Test5():
+	c_program_text= """
+		// Generate a unit-test function using mixin.
+		mixin( " fn_test( MixinGeneratedTest ) { auto x= 123; halt if( x / 10 != 12 );  } " );
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_test_fn_MixinGeneratedTest_b14a7b8059d9c055954c92674ce60032_3_10_b14a7b8059d9c055954c92674ce60032_3_2_" )
+
+
 def UnitTestFunction_NamesAccess_Test0():
 	c_program_text= """
 		// A unit-test function has direct access to names within namespace where it's defined (just like any regular function).
@@ -196,3 +205,57 @@ def UnitTestFunction_WithtinTemplate_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TemplateContext" )
 	assert( HasError( errors_list[0].template_errors.errors, "UnitTestWithinTemplate", 7 ) )
+
+
+def UnitTestFunctionIsInaccessible_Test0():
+	c_program_text= """
+		fn_test( SomeTest ) {}
+		fn Foo()
+		{
+			SomeTest(); // Can't call a unit-test function directly. Its name is encoded and can't ba accessed in Ü code.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NameNotFound", 5 ) )
+
+
+def UnitTestFunctionIsInaccessible_Test1():
+	c_program_text= """
+		fn_test( SomeTest )
+		{
+			if( false )
+			{
+				// Try performing recursive call to itself.
+				SomeTest(); // Can't call a unit-test function directly. Its name is encoded and can't ba accessed in Ü code.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NameNotFound", 7 ) )
+
+
+def YieldOutsideCoroutine_ForUnitTestFunction_Test0():
+	c_program_text= """
+		fn_test( SomeTest )
+		{
+			yield; // Unit-test function is not a coroutine, using "yield" in it isn't possible.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "YieldOutsideCoroutine", 4 ) )
+
+
+def UnsafeFunctionCallOutsideUnsafeBlock_ForUnitTestFunction_Test0():
+	c_program_text= """
+		fn_test( SomeTest )
+		{
+			Foo(); // A unit-test function has safe body by-default (as any other function), calling an "unsafe" function requires an "unsafe" block.
+		}
+		fn Foo() unsafe;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsafeFunctionCallOutsideUnsafeBlock", 4 ) )
