@@ -1624,7 +1624,7 @@ void CodeBuilder::BuildFuncCode(
 
 		if( !IsSrcLocFromMainFile( syntax_element.src_loc ) )
 		{
-			// For unit-test functions defined in imported files create comdat.
+			// For unit-test functions defined in imported files create a comdat.
 			// It's necessary for deduplication.
 			// Since names of unit-test functions are generated and include file path hash/line/column,
 			// only unit-test functions originated from the exact same file will have identical comdat name and thus will be deduplicated.
@@ -1640,7 +1640,7 @@ void CodeBuilder::BuildFuncCode(
 
 		// Mark unit-test functions with a special metadata.
 		// It's necessary in order to be able to collect all unit-test functions later.
-		// Also attack original name to it, so that it can be displayed somewhere.
+		// Also attach original name to it, so that it can be displayed somewhere.
 		llvm_function->setMetadata(
 			"__U_unit_test",
 			llvm::MDNode::get( llvm_context_, { llvm::MDString::get( llvm_context_, func_name ) } ) );
@@ -2227,7 +2227,7 @@ std::string CodeBuilder::GetUnitTestFunctionName( const Synt::Function& function
 	if( completion_request_index_ != 0u )
 	{
 		// Workaround for language server.
-		// Don't even try accessing source graph in it, since it may be slightly outdated if completion for a lambda is performed.
+		// Don't even try accessing source graph in it, since it may be slightly outdated if completion for a test is performed.
 		name+= std::to_string( src_loc.GetLine() );
 		name+= "_";
 		name+= std::to_string( src_loc.GetColumn() );
@@ -2244,7 +2244,7 @@ std::string CodeBuilder::GetUnitTestFunctionName( const Synt::Function& function
 			name+= source_graph_->nodes_storage[ src_loc.GetFileIndex() ].file_path_hash;
 			name+= "_";
 
-			// Encode line and column into the name to produce different names for different lambdas in the same file.
+			// Encode line and column into the name to produce different names for different tests in the same file.
 			name+= std::to_string( src_loc.GetLine() );
 			name+= "_";
 
@@ -2254,7 +2254,7 @@ std::string CodeBuilder::GetUnitTestFunctionName( const Synt::Function& function
 			const auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
 			if( macro_expansion_index != SrcLoc::c_max_macro_expanison_index )
 			{
-				// If this is a lambda defined via macro - add macro expansion context to the name.
+				// If this is a test defined via macro - add macro expansion context to the name.
 				src_loc= (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc;
 				continue;
 			}

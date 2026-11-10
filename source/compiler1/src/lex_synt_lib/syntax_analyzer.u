@@ -2185,6 +2185,9 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 
 fn SyntaxAnalyzer::ParseTestFunction( mut this ) : Function
 {
+	// Test functions are pretty simple.
+	// They have no params, return value, virtual/nomangle/nodiscard, "unsafe" flag, calling convention, reference notation and other stuff.
+
 	debug_assert( IsKeyword( it_.front(), Keyword::fn_test_ ) );
 	NextLexem();
 

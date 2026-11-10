@@ -1278,7 +1278,7 @@ fn CodeBuilder::BuildFuncCode(
 
 		if( !IsSrcLocFromMainFile( body_syntax_element.src_loc ) )
 		{
-			// For unit-test functions defined in imported files create comdat.
+			// For unit-test functions defined in imported files create a comdat.
 			// It's necessary for deduplication.
 			// Since names of unit-test functions are generated and include file path hash/line/column,
 			// only unit-test functions originated from the exact same file will have identical comdat name and thus will be deduplicated.
@@ -1299,7 +1299,7 @@ fn CodeBuilder::BuildFuncCode(
 
 		// Mark unit-test functions with a special metadata.
 		// It's necessary in order to be able to collect all unit-test functions later.
-		// Also attack original name to it, so that it can be displayed somewhere.
+		// Also attach original name to it, so that it can be displayed somewhere.
 		var ust::string_view8 original_name= body_syntax_element.name.back();
 		unsafe
 		{

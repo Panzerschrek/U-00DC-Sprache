@@ -86,6 +86,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 			if( !adding_ok )
 			{
+				// This shouldn't really happen, since we generate unique names, but handle such case anyway.
 				auto errors_container= names_scope.GetErrors();
 				auto mut errors_container_lock= errors_container.try_lock_mut();
 				errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function.deref().src_loc, internal_name ) );
