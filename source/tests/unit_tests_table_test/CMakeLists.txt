@@ -56,3 +56,6 @@ add_custom_target(
 	DEPENDS ${OUT_EXECUTABLE}
 	SOURCES ${SOURCES} ${IMPORTS}
 	)
+
+# Run the test
+add_custom_command( TARGET UnitTestsTableTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND ${OUT_EXECUTABLE} )
