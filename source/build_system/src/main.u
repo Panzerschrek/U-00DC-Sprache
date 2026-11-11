@@ -1786,6 +1786,9 @@ fn CreatePackageTargetBuildGraphNodes(
 		// Link unit-testing lib.
 		node.command_line.push_back( GetCompiledUnitTestingLibPath( root_package_build_directory ) );
 
+		// Generate table containing unit-tests. Hardcode here name used by the unit-testing library internally.
+		node.command_line.push_back( "--build-tests-table=__U_unit_tests_table" );
+
 		node.command_line.push_back( "-o" );
 		node.command_line.push_back( result_target_file_path );
 
