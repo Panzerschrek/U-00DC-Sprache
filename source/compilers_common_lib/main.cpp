@@ -857,7 +857,10 @@ int Main( int argc, const char* argv[] )
 		InternalizeHiddenFunctions( *result_module );
 
 	if( !Options::build_tests_table.empty() )
-		BuildUnitTestsTable( *result_module, Options::build_tests_table );
+	{
+		if( !BuildUnitTestsTable( *result_module, Options::build_tests_table ) )
+			return 1;
+	}
 
 	if( file_type == FileType::Obj || file_type == FileType::Asm || file_type == FileType::Exe || file_type == FileType::Dll )
 	{

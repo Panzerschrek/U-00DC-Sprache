@@ -6,6 +6,7 @@
 namespace U
 {
 
-void BuildUnitTestsTable( llvm::Module& module, llvm::StringRef table_name );
+// Returns true on success.
+bool BuildUnitTestsTable( llvm::Module& module, llvm::StringRef table_name );
 
 } // namespace U
