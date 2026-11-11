@@ -1,0 +1,5 @@
+import "inc.iu"
+
+fn_test( ATest )
+{
+}
