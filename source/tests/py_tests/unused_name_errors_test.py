@@ -1855,3 +1855,12 @@ def UnusedClassFunction_Test5():
 		}
 	"""
 	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnitTestsAreAllowedToBeUnused_Test0():
+	c_program_text= """
+		fn_test( SomeTest )
+		{
+		}
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
