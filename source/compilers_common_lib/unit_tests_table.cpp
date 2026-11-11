@@ -73,6 +73,9 @@ bool BuildUnitTestsTable( llvm::Module& module, const llvm::StringRef table_name
 		}
 	}
 
+	// Push terminating null.
+	table_initializers.push_back( llvm::Constant::getNullValue( table_element_type ) );
+
 	const auto table_type= llvm::ArrayType::get( table_element_type, table_initializers.size() );
 	llvm::Constant* const table_initializer= llvm::ConstantArray::get( table_type, table_initializers );
 
