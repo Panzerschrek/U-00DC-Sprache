@@ -17,15 +17,33 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		halt if( num_functions != 4s );
 
-		// Check if names are non-empty.
+		// Check if names are correct.
+
+		var bool mut a_found= false, mut b_found= false, mut main_found= false, mut inc_found= false;
 
 		for( auto mut i= 0s; i < num_functions; ++i )
 		{
 			var TableElement& el= $>( table_start + i );
 			halt if( el.name_begin >= el.name_end );
+
+			a_found|= StringsAreEqual( "ATest", el.name_begin, el.name_end );
+			b_found|= StringsAreEqual( "BTest", el.name_begin, el.name_end );
+			main_found|= StringsAreEqual( "MainTest", el.name_begin, el.name_end );
+			inc_found|= StringsAreEqual( "IncTest", el.name_begin, el.name_end );
 		}
 
+		halt if( !a_found );
+		halt if( !b_found );
+		halt if( !main_found );
+		halt if( !inc_found );
+
 		// Call all tests.
+
+		halt if( a_called );
+		halt if( b_called );
+		halt if( main_called );
+		halt if( inc_called );
+
 		for( auto mut i= 0s; i < num_functions; ++i )
 		{
 			var TableElement& el= $>( table_start + i );
@@ -47,6 +65,29 @@ struct TableElement
 	( fn() ) function_pointer;
 	$(char8) name_begin;
 	$(char8) name_end;
+}
+
+template</ size_type S />
+fn StringsAreEqual( [ char8, S ]& expected, $(char8) got_begin, $(char8) got_end ) unsafe : bool
+{
+	unsafe
+	{
+		var ssize_type got_size= got_end - got_begin;
+		if( got_size != ssize_type( S ) )
+		{
+			return false;
+		}
+
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			if( $>( got_begin + i ) != expected[i] )
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 fn_test( MainTest )
