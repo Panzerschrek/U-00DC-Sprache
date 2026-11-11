@@ -1783,6 +1783,9 @@ fn CreatePackageTargetBuildGraphNodes(
 			}
 		}
 
+		// Link unit-testing lib.
+		node.command_line.push_back( GetCompiledUnitTestingLibPath( root_package_build_directory ) );
+
 		node.command_line.push_back( "-o" );
 		node.command_line.push_back( result_target_file_path );
 
@@ -2063,6 +2066,11 @@ fn CreateUstlibBuildGraphNodes(
 	build_graph.nodes.push_back( move(node) );
 }
 
+fn GetCompiledUnitTestingLibPath( ust::filesystem_path_view root_package_build_directory ) : ust::filesystem_path
+{
+	return ust::path::normalize( ust::path::join( root_package_build_directory, "unit_testing_lib.bc" ) );
+}
+
 fn CreateUnitTestingLibBuildGraphNodes(
 	BuildSystemPaths& build_system_paths,
 	ust::filesystem_path_view sysroot,
@@ -2072,7 +2080,7 @@ fn CreateUnitTestingLibBuildGraphNodes(
 	ust::string_view8 target_cpu,
 	BuildGraph &mut build_graph )
 {
-	var ust::filesystem_path out_file= ust::path::normalize( ust::path::join( root_package_build_directory, "unit_testing_lib.bc" ) );
+	var ust::filesystem_path out_file= GetCompiledUnitTestingLibPath( root_package_build_directory );
 
 	var BuildGraph::Node mut node
 	{
