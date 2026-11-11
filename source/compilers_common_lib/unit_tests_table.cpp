@@ -12,19 +12,65 @@ namespace U
 
 bool BuildUnitTestsTable( llvm::Module& module, const llvm::StringRef table_name )
 {
-	auto module_with_table= std::make_unique<llvm::Module>( "__U_tests_table_module", module.getContext() );
+	llvm::LLVMContext& llvm_context= module.getContext();
+
+	auto module_with_table= std::make_unique<llvm::Module>( "__U_tests_table_module", llvm_context );
 	module_with_table->setDataLayout( module.getDataLayout() );
 	module_with_table->setTargetTriple( module.getTargetTriple() );
 
-	const auto pointer_type= llvm::PointerType::get( module.getContext(), 0u );
-	const auto table_element_type= llvm::StructType::get( pointer_type );
+	const auto pointer_type= llvm::PointerType::get( llvm_context, 0u );
+
+	// Function pointer + name begin + name end.
+	const auto table_element_type= llvm::StructType::get( pointer_type, pointer_type, pointer_type );
 
 	llvm::SmallVector<llvm::Constant*, 256> table_initializers;
 
+	const llvm::StringRef test_marker_metadata= "__U_unit_test";
+
+	std::unordered_map< llvm::Constant*, llvm::GlobalVariable* > names_table;
+
 	for( llvm::Function& function : module.functions() )
 	{
-		if( function.hasMetadata( "__U_unit_test" ) )
-			table_initializers.push_back( llvm::ConstantStruct::get( table_element_type, { &function } ) );
+		if( function.hasMetadata( test_marker_metadata ) )
+		{
+			// Create a global variable containing name.
+			// Duduplicate such variables in case of identical names.
+
+			const llvm::StringRef test_name=
+					llvm::dyn_cast<llvm::MDString>( function.getMetadata( test_marker_metadata )->getOperand(0).get() )->getString();
+
+			llvm::Constant* const name_string_initializer=
+				llvm::ConstantDataArray::getString( llvm_context, test_name, false );
+
+			if( names_table.find( name_string_initializer ) == names_table.end() )
+				names_table.emplace(
+					name_string_initializer,
+					new llvm::GlobalVariable(
+						*module_with_table,
+						name_string_initializer->getType(),
+						true, // is constant,
+						llvm::GlobalValue::PrivateLinkage,
+						name_string_initializer,
+						"__U_test_name_" + test_name ) );
+
+			// Global variable containing name is name begin pointer.
+			llvm::GlobalVariable* const name_variable= names_table[ name_string_initializer ];
+
+			llvm::Value* const name_size_value[]
+			{
+				llvm::ConstantInt::get( llvm_context, llvm::APInt( 32u, uint64_t( test_name.size() ) ) )
+			};
+
+			// Global variable containing name + its size is end pointer.
+			const auto name_variable_end_ptr=
+				llvm::ConstantExpr::getGetElementPtr(
+					name_string_initializer->getType(), name_variable, name_size_value );
+
+			table_initializers.push_back(
+				llvm::ConstantStruct::get(
+					table_element_type,
+					{ &function, name_variable, name_variable_end_ptr } ) );
+		}
 	}
 
 	const auto table_type= llvm::ArrayType::get( table_element_type, table_initializers.size() );
