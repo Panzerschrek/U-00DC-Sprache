@@ -6,6 +6,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	{
 		var $(TableElement) table_start= $<( import var</ TableElement />( "my_pretty_tests_table" ) );
 
+		// Count how many entries we have.
+
 		var size_type mut num_functions= 0s;
 		var ( fn() ) zero_fn= zero_init;
 		while( $>( table_start + num_functions ).function_pointer != zero_fn )
@@ -15,11 +17,26 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		halt if( num_functions != 4s );
 
+		// Check if names are non-empty.
+
 		for( auto mut i= 0s; i < num_functions; ++i )
 		{
 			var TableElement& el= $>( table_start + i );
 			halt if( el.name_begin >= el.name_end );
 		}
+
+		// Call all tests.
+		for( auto mut i= 0s; i < num_functions; ++i )
+		{
+			var TableElement& el= $>( table_start + i );
+			el.function_pointer();
+		}
+
+		// Make sure actual tests are called and no some other function.
+		halt if( !a_called );
+		halt if( !b_called );
+		halt if( !main_called );
+		halt if( !inc_called );
 	}
 
 	return 0;
@@ -34,4 +51,8 @@ struct TableElement
 
 fn_test( MainTest )
 {
+	unsafe
+	{
+		main_called= true;
+	}
 }

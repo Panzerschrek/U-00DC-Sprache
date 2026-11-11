@@ -2,4 +2,8 @@ import "inc.iu"
 
 fn_test( ATest )
 {
+	unsafe
+	{
+		a_called= true;
+	}
 }

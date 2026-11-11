@@ -1,3 +1,9 @@
 fn_test( IncTest )
 {
+	unsafe
+	{
+		inc_called= true;
+	}
 }
+
+var bool mut a_called= false, mut b_called= false, mut main_called= false, mut inc_called= false;
