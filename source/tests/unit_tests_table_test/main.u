@@ -4,6 +4,7 @@ fn nomangle main() call_conv( "C" ) : i32
 {
 	unsafe
 	{
+		// Access unit-tests table in generated global variable.
 		var $(TableElement) table_start= $<( import var</ TableElement />( "my_pretty_tests_table" ) );
 
 		// Count how many entries we have.
@@ -17,7 +18,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		halt if( num_functions != 4s );
 
-		// Check if names are correct.
+		// Check if all expected test names are present.
 
 		var bool mut a_found= false, mut b_found= false, mut main_found= false, mut inc_found= false;
 
@@ -50,7 +51,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			el.function_pointer();
 		}
 
-		// Make sure actual tests are called and no some other function.
+		// Make sure actual tests are called and no some other functions.
 		halt if( !a_called );
 		halt if( !b_called );
 		halt if( !main_called );
