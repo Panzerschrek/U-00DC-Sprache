@@ -175,6 +175,9 @@ endif()
 file( GLOB BUILD_SYSTEM_IMPORTS "imports/*" )
 install( FILES ${BUILD_SYSTEM_IMPORTS} DESTINATION "build_system/imports" )
 
+file( GLOB UNIT_TESTING_LIB_FILES "unit_testing_lib/*" )
+install( FILES ${UNIT_TESTING_LIB_FILES} DESTINATION "build_system/unit_testing_lib" )
+
 # The build system uses the compiler executable itself to produce shared libraries and executables.
 # This requires internal LLD.
 # So, if no LLD is linked, disable build system tests.

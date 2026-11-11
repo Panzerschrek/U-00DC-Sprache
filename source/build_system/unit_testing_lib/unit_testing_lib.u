@@ -1,0 +1,45 @@
+import "/main_wrapper.iu"
+import "/stdout_ext.iu"
+
+pretty_main
+{
+	unsafe
+	{
+		var $(UnitTestsTableElement) unit_tests_table= $<( import var</ UnitTestsTableElement />( "__U_unit_tests_table" ) );
+
+		// Count how many entries we have.
+
+		var size_type mut num_unit_tests= 0s;
+		while( !ust::is_nullptr( $>( unit_tests_table + num_unit_tests ).function_pointer ) )
+		{
+			++num_unit_tests;
+		}
+
+		safe( ust::stdout_print_line( "Running ", num_unit_tests, " unit-tests..." ) );
+
+		for( auto mut i= 0s; i < num_unit_tests; ++i )
+		{
+			var UnitTestsTableElement& el= $>( unit_tests_table + i );
+			var ust::string_view8 test_name( el.name_begin, el.name_size );
+
+			safe( ust::stdout_print_line( "Running test \"", test_name, "\"." ) );
+
+			safe( el.function_pointer() );
+		}
+
+		safe( ust::stdout_print_line( "Done running unit-tests." ) );
+	}
+
+	return 0;
+}
+
+// This struct should match the struct used by the compiler for unit-tests table elements.
+struct UnitTestsTableElement ordered
+{
+	( fn() ) function_pointer;
+	$(char8) name_begin;
+	size_type name_size;
+}
+
+// Should have size of exactly 3 pointers.
+static_assert( typeinfo</ UnitTestsTableElement />.size_of == typeinfo</ $(byte8) />.size_of * 3s, "Invalid size!" );
