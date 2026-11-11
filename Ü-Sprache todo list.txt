@@ -80,7 +80,6 @@ Lambdas:
 *) Template lambdas
 
 Unit-testing:
-*) Add an option into the compiler allowing collecting unit-tests and puting them in some table (global constant)
 *) Create a library for running unit-tests
 *) Implement some sort of process-based isolation for unit-tests running, so that if one unit-test failed, other
 	tests can be still run and overall testing statistics can be reported

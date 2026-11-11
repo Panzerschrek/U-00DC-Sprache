@@ -928,7 +928,9 @@ void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
 						!( function.no_mangle && function.syntax_element != nullptr && function.syntax_element->block != nullptr ) &&
 						function.virtual_table_index == ~0u &&
 						IsSrcLocFromMainFile( function.body_src_loc ) &&
-						IsSrcLocFromMainFile( function.prototype_src_loc ) )
+						IsSrcLocFromMainFile( function.prototype_src_loc ) &&
+						// Don't report about unused tests.
+						function.kind != Synt::Function::Kind::Test )
 					{
 						bool is_special_method= false;
 						if( functions_set->base_class != nullptr )

@@ -45,6 +45,7 @@
 #include  "code_builder_launcher.hpp"
 #include "linker.hpp"
 #include "make_dep_file.hpp"
+#include "unit_tests_table.hpp"
 
 namespace U
 {
@@ -277,6 +278,13 @@ cl::list<std::string> internalize_functions_from(
 	cl::ZeroOrMore,
 	cl::cat(options_category));
 
+cl::opt<std::string> build_tests_table(
+	"build-tests-table",
+	cl::desc("Build a table containing all unit-tests from the given files and use the given name for it."),
+	cl::value_desc("table name"),
+	cl::Optional,
+	cl::cat(options_category) );
+
 enum class LTOMode{ None, PreLink, Link };
 cl::opt< LTOMode > lto_mode(
 	"lto-mode",
@@ -502,6 +510,7 @@ int Main( int argc, const char* argv[] )
 	Options::internalize_hidden_functions.removeArgument();
 	Options::internalize_preserve.removeArgument();
 	Options::internalize_functions_from.removeArgument();
+	Options::build_tests_table.removeArgument();
 	Options::lto_mode.removeArgument();
 	Options::linker_args.removeArgument();
 	Options::sysroot.removeArgument();
@@ -846,6 +855,12 @@ int Main( int argc, const char* argv[] )
 	// Do it before optimization, to encourange inlining of internalized functions.
 	if( Options::internalize_hidden_functions )
 		InternalizeHiddenFunctions( *result_module );
+
+	if( !Options::build_tests_table.empty() )
+	{
+		if( !BuildUnitTestsTable( *result_module, Options::build_tests_table ) )
+			return 1;
+	}
 
 	if( file_type == FileType::Obj || file_type == FileType::Asm || file_type == FileType::Exe || file_type == FileType::Dll )
 	{

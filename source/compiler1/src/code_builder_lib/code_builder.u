@@ -2086,7 +2086,9 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( this, NamesScopePtr& names_scope 
 						!( function.no_mangle && !function.body_syntax_element.empty() && !function.body_syntax_element.try_deref().block.empty() ) &&
 						function.virtual_table_index == ~0u &&
 						IsSrcLocFromMainFile( body_src_loc ) &&
-						IsSrcLocFromMainFile( prototye_src_loc ) )
+						IsSrcLocFromMainFile( prototye_src_loc ) &&
+						// Don't report about unused tests.
+						( function.body_syntax_element.empty() || function.body_syntax_element.try_deref().kind != Synt::Function::Kind::Test ) )
 					{
 						var bool mut is_special_method= false;
 						if( !functions_set.class_.empty() )
