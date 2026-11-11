@@ -4,13 +4,11 @@ fn nomangle main() call_conv( "C" ) : i32
 {
 	unsafe
 	{
-		var $(byte8) table_ptr= import var</ $(byte8) />( "my_pretty_tests_table" );
-
-		var $(TableElement) table_ptr_casted= cast_ref_unsafe</ $(TableElement) />( table_ptr );
+		var $(TableElement) table_start= $<( import var</ TableElement />( "my_pretty_tests_table" ) );
 
 		var size_type mut num_functions= 0s;
 		var ( fn() ) zero_fn= zero_init;
-		while( $>( table_ptr_casted + num_functions ).function_pointer != zero_fn )
+		while( $>( table_start + num_functions ).function_pointer != zero_fn )
 		{
 			++num_functions;
 		}
@@ -19,7 +17,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		for( auto mut i= 0s; i < num_functions; ++i )
 		{
-			var TableElement& el= $>( table_ptr_casted + i );
+			var TableElement& el= $>( table_start + i );
 			halt if( el.name_begin >= el.name_end );
 		}
 	}
