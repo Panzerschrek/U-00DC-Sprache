@@ -12,14 +12,6 @@ namespace U
 
 bool BuildUnitTestsTable( llvm::Module& module, const llvm::StringRef table_name )
 {
-	llvm::SmallVector<llvm::Function*, 256> test_functions;
-
-	for( llvm::Function& function : module.functions() )
-	{
-		if( function.hasMetadata( "__U_unit_test" ) )
-			test_functions.push_back( &function );
-	}
-
 	auto module_with_table= std::make_unique<llvm::Module>( "__U_tests_table_module", module.getContext() );
 	module_with_table->setDataLayout( module.getDataLayout() );
 	module_with_table->setTargetTriple( module.getTargetTriple() );
@@ -27,13 +19,15 @@ bool BuildUnitTestsTable( llvm::Module& module, const llvm::StringRef table_name
 	const auto pointer_type= llvm::PointerType::get( module.getContext(), 0u );
 	const auto table_element_type= llvm::StructType::get( pointer_type );
 
-	const auto table_type= llvm::ArrayType::get( table_element_type, test_functions.size() );
+	llvm::SmallVector<llvm::Constant*, 256> table_initializers;
 
-	llvm::SmallVector<llvm::Constant*, 256> table_initializers( test_functions.size() );
+	for( llvm::Function& function : module.functions() )
+	{
+		if( function.hasMetadata( "__U_unit_test" ) )
+			table_initializers.push_back( llvm::ConstantStruct::get( table_element_type, { &function } ) );
+	}
 
-	for( size_t i= 0; i < test_functions.size(); ++i )
-		table_initializers[i]= llvm::ConstantStruct::get( table_element_type, { test_functions[i] } );
-
+	const auto table_type= llvm::ArrayType::get( table_element_type, table_initializers.size() );
 	llvm::Constant* const table_initializer= llvm::ConstantArray::get( table_type, table_initializers );
 
 	new llvm::GlobalVariable(
