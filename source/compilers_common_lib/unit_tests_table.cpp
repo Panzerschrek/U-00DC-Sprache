@@ -19,9 +19,10 @@ bool BuildUnitTestsTable( llvm::Module& module, const llvm::StringRef table_name
 	module_with_table->setTargetTriple( module.getTargetTriple() );
 
 	const auto pointer_type= llvm::PointerType::get( llvm_context, 0u );
+	const auto size_type= module.getDataLayout().getIntPtrType( llvm_context );
 
-	// Function pointer + name begin + name end.
-	const auto table_element_type= llvm::StructType::get( pointer_type, pointer_type, pointer_type );
+	// Function pointer + name begin + name size.
+	const auto table_element_type= llvm::StructType::get( pointer_type, pointer_type, size_type );
 
 	llvm::SmallVector<llvm::Constant*, 256> table_initializers;
 
@@ -56,20 +57,12 @@ bool BuildUnitTestsTable( llvm::Module& module, const llvm::StringRef table_name
 			// Global variable containing name is name begin pointer.
 			llvm::GlobalVariable* const name_variable= names_table[ name_string_initializer ];
 
-			llvm::Value* const name_size_value[]
-			{
-				llvm::ConstantInt::get( llvm_context, llvm::APInt( 32u, uint64_t( test_name.size() ) ) )
-			};
-
-			// Global variable containing name + its size is end pointer.
-			const auto name_variable_end_ptr=
-				llvm::ConstantExpr::getGetElementPtr(
-					llvm::Type::getInt8Ty( llvm_context ), name_variable, name_size_value );
+			llvm::Constant* const name_size_value= llvm::ConstantInt::get( size_type, uint64_t( test_name.size() ) );
 
 			table_initializers.push_back(
 				llvm::ConstantStruct::get(
 					table_element_type,
-					{ &function, name_variable, name_variable_end_ptr } ) );
+					{ &function, name_variable, name_size_value } ) );
 		}
 	}
 

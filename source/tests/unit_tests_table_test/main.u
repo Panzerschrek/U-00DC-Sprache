@@ -24,12 +24,12 @@ fn nomangle main() call_conv( "C" ) : i32
 		for( auto mut i= 0s; i < num_functions; ++i )
 		{
 			var TableElement& el= $>( table_start + i );
-			halt if( el.name_begin >= el.name_end );
+			halt if( el.name_size == 0s );
 
-			a_found|= StringsAreEqual( "ATest", el.name_begin, el.name_end );
-			b_found|= StringsAreEqual( "BTest", el.name_begin, el.name_end );
-			main_found|= StringsAreEqual( "MainTest", el.name_begin, el.name_end );
-			inc_found|= StringsAreEqual( "IncTest", el.name_begin, el.name_end );
+			a_found|= StringsAreEqual( "ATest", el.name_begin, el.name_size );
+			b_found|= StringsAreEqual( "BTest", el.name_begin, el.name_size );
+			main_found|= StringsAreEqual( "MainTest", el.name_begin, el.name_size );
+			inc_found|= StringsAreEqual( "IncTest", el.name_begin, el.name_size );
 		}
 
 		halt if( !a_found );
@@ -64,20 +64,19 @@ struct TableElement
 {
 	( fn() ) function_pointer;
 	$(char8) name_begin;
-	$(char8) name_end;
+	size_type name_size;
 }
 
 template</ size_type S />
-fn StringsAreEqual( [ char8, S ]& expected, $(char8) got_begin, $(char8) got_end ) unsafe : bool
+fn StringsAreEqual( [ char8, S ]& expected, $(char8) got_begin, size_type got_size ) unsafe : bool
 {
+	if( got_size != S )
+	{
+		return false;
+	}
+
 	unsafe
 	{
-		var ssize_type got_size= got_end - got_begin;
-		if( got_size != ssize_type( S ) )
-		{
-			return false;
-		}
-
 		for( auto mut i= 0s; i < S; ++i )
 		{
 			if( $>( got_begin + i ) != expected[i] )
