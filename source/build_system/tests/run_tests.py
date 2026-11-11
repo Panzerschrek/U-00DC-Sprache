@@ -1548,6 +1548,20 @@ def TestExecutableSharesCommonCodeWithOutherTargetTest():
 	RunExecutable( test_dir, "exe" ) # Other (non-test) build targets should be also built while running tests.
 
 
+def UnitTestsRunningTest():
+	test_dir= "unit_tests_running"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	assert( stdout.find( "Running 4 unit-tests..." ) != -1 )
+	assert( stdout.find( "A test" ) != -1 )
+	assert( stdout.find( "B test" ) != -1 )
+	assert( stdout.find( "Main test" ) != -1 )
+	assert( stdout.find( "Inc test" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -1762,7 +1776,8 @@ def main():
 		TestExecutableTest,
 		TestExecutableTestFail,
 		TestExecutableInHostPackageTest,
-		TestExecutableSharesCommonCodeWithOutherTargetTest
+		TestExecutableSharesCommonCodeWithOutherTargetTest,
+		UnitTestsRunningTest
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )

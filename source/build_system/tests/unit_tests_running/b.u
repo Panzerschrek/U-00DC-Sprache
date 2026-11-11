@@ -1,0 +1,6 @@
+import "inc.iu"
+
+fn_test( BTest )
+{
+	ust::stdout_print( "B test.\n" );
+}

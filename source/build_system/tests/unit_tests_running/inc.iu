@@ -1,0 +1,6 @@
+import "/stdout.iu"
+
+fn_test( IncTest )
+{
+	ust::stdout_print( "Inc test.\n" );
+}

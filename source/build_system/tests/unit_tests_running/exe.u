@@ -1,0 +1,12 @@
+import "inc.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	ust::stdout_print( "Running main executable.\n" );
+	return 0;
+}
+
+fn_test( MainTest )
+{
+	ust::stdout_print( "Main test.\n" );
+}
