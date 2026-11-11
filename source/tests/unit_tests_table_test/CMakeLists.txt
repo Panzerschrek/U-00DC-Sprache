@@ -47,6 +47,7 @@ add_custom_command(
 		${SPRACHE_COMPILER_OPT_OPTIONS}
 		--verify-module
 		--internalize
+		--build-tests-table=my_pretty_tests_table
 		${SYSROOT_OPTION}
 	)
 
