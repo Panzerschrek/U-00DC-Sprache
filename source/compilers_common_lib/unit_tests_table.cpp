@@ -64,7 +64,7 @@ bool BuildUnitTestsTable( llvm::Module& module, const llvm::StringRef table_name
 			// Global variable containing name + its size is end pointer.
 			const auto name_variable_end_ptr=
 				llvm::ConstantExpr::getGetElementPtr(
-					name_string_initializer->getType(), name_variable, name_size_value );
+					llvm::Type::getInt8Ty( llvm_context ), name_variable, name_size_value );
 
 			table_initializers.push_back(
 				llvm::ConstantStruct::get(
