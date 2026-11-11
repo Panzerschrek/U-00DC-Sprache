@@ -2,7 +2,36 @@ import "inc.iu"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
+	unsafe
+	{
+		var $(byte8) table_ptr= import var</ $(byte8) />( "my_pretty_tests_table" );
+
+		var $(TableElement) table_ptr_casted= cast_ref_unsafe</ $(TableElement) />( table_ptr );
+
+		var size_type mut num_functions= 0s;
+		var ( fn() ) zero_fn= zero_init;
+		while( $>( table_ptr_casted + num_functions ).function_pointer != zero_fn )
+		{
+			++num_functions;
+		}
+
+		halt if( num_functions != 4s );
+
+		for( auto mut i= 0s; i < num_functions; ++i )
+		{
+			var TableElement& el= $>( table_ptr_casted + i );
+			halt if( el.name_begin >= el.name_end );
+		}
+	}
+
 	return 0;
+}
+
+struct TableElement
+{
+	( fn() ) function_pointer;
+	$(char8) name_begin;
+	$(char8) name_end;
 }
 
 fn_test( MainTest )
