@@ -60,12 +60,16 @@ fn nomangle main() call_conv( "C" ) : i32
 	return 0;
 }
 
-struct TableElement
+// This struct should match the struct used by the compiler for unit-tests table elements.
+struct TableElement ordered
 {
 	( fn() ) function_pointer;
 	$(char8) name_begin;
 	size_type name_size;
 }
+
+// Should have size of exactly 3 pointers.
+static_assert( typeinfo</ TableElement />.size_of == typeinfo</ $(byte8) />.size_of * 3s, "Invalid size!" );
 
 template</ size_type S />
 fn StringsAreEqual( [ char8, S ]& expected, $(char8) got_begin, size_type got_size ) unsafe : bool
