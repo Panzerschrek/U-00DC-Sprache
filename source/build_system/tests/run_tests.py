@@ -1635,6 +1635,21 @@ def UnitTestsRunningForExecutableAndLibraryTest():
 	assert( stdout.find( "Main executable" ) == -1 )
 
 
+def UnitTestsDisabledTest():
+	test_dir= "unit_tests_disabled"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	# Should have no tests to run at all
+	assert( stdout.find( "There are no tests to run." ) != -1 )
+	# Should not run unit-tests
+	assert( stdout.find( "Main test" ) == -1 )
+	# Should not run the executable itself.
+	assert( stdout.find( "Running main executable" ) == -1 )
+
+
 #
 # End tests list
 #
@@ -1854,7 +1869,8 @@ def main():
 		UnitTestsRunningForLibraryTest,
 		UnitTestsRunningForSharedLibraryTest,
 		UnitTestsRunningForObjectFileTest,
-		UnitTestsRunningForExecutableAndLibraryTest
+		UnitTestsRunningForExecutableAndLibraryTest,
+		UnitTestsDisabledTest
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
