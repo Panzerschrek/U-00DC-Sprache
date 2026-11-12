@@ -1,0 +1,25 @@
+import "/stdout.iu"
+import "/shared_lib/shared_lib.iu"
+
+fn SharedLibFunc( i32 x ) : i32
+{
+	return x * 3 + 5;
+}
+
+fn_test( SharedLibFuncTestPositive )
+{
+	halt if( SharedLibFunc( 7 ) != 26 );
+	ust::stdout_print( "SharedLibFuncTestPositive - seems to be ok\n" );
+}
+
+fn_test( SharedLibFuncTestNagative )
+{
+	halt if( SharedLibFunc( -219 ) != -652 );
+	ust::stdout_print( "SharedLibFuncTestNagative - seems to be ok\n" );
+}
+
+fn_test( SharedLibFuncTestZero )
+{
+	halt if( SharedLibFunc( 0 ) != 5 );
+	ust::stdout_print( "SharedLibFuncTestZero - seems to be ok\n" );
+}

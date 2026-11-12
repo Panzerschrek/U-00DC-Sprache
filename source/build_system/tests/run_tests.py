@@ -1578,6 +1578,21 @@ def UnitTestsRunningForLibraryTest():
 	assert( stdout.find( "LibFuncTestZero - seems to be ok" ) != -1 )
 
 
+def UnitTestsRunningForSharedLibraryTest():
+	test_dir= "unit_tests_running_for_shared_library"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	assert( stdout.find( "Running 3 unit-tests..." ) != -1 )
+	assert( stdout.find( "Running test \"SharedLibFuncTestPositive\"." ) != -1 )
+	assert( stdout.find( "SharedLibFuncTestPositive - seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"SharedLibFuncTestNagative\"." ) != -1 )
+	assert( stdout.find( "SharedLibFuncTestNagative - seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"SharedLibFuncTestZero\"." ) != -1 )
+	assert( stdout.find( "LibFuncTestZero - seems to be ok" ) != -1 )
+
 #
 # End tests list
 #
@@ -1794,7 +1809,8 @@ def main():
 		TestExecutableInHostPackageTest,
 		TestExecutableSharesCommonCodeWithOutherTargetTest,
 		UnitTestsRunningTest,
-		UnitTestsRunningForLibraryTest
+		UnitTestsRunningForLibraryTest,
+		UnitTestsRunningForSharedLibraryTest
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
