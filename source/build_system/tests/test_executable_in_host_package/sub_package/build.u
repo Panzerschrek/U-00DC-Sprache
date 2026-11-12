@@ -9,6 +9,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.target_type = BK::BuildTargetType::Test,
 		.name= "subpackage_test",
 		.source_files= ust::make_array</ust::string8/>( "main.u" ),
+		.enable_unit_testing= false,
 	};
 
 	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };

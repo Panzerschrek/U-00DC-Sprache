@@ -10,6 +10,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.name= "lib",
 		.source_files= ust::make_array</ust::filesystem_path/>( "lib/src/lib.u" ),
 		.public_include_directories= ust::make_array</ust::filesystem_path/>( "lib/imports" ),
+		.enable_unit_testing= false,
 	};
 
 	var BK::BuildTarget mut exe_target
@@ -18,6 +19,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.name= "exe",
 		.source_files= ust::make_array</ust::filesystem_path/>( "exe/main.u" ),
 		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= lib_target.name } ),
+		.enable_unit_testing= false,
 	};
 
 	var BK::BuildTarget mut test_target
@@ -26,6 +28,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.name= "test",
 		.source_files= ust::make_array</ust::filesystem_path/>( "test/main.u" ),
 		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= lib_target.name } ),
+		.enable_unit_testing= false,
 	};
 
 	return BK::PackageInfo{ .build_targets= ust::make_array( move(lib_target), move(exe_target), move(test_target) ) };
