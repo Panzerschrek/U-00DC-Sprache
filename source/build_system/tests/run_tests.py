@@ -1610,6 +1610,31 @@ def UnitTestsRunningForObjectFileTest():
 	assert( stdout.find( "ObjFuncTestZero - seems to be ok" ) != -1 )
 
 
+def UnitTestsRunningForExecutableAndLibraryTest():
+	test_dir= "unit_tests_running_for_executable_and_library"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	# Should have tests for library.
+	assert( stdout.find( "Running 3 unit-tests..." ) != -1 )
+	assert( stdout.find( "Running test \"LibFuncTestNagative\"." ) != -1 )
+	assert( stdout.find( "LibFuncTestNagative - seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"LibFuncTestPositive\"." ) != -1 )
+	assert( stdout.find( "LibFuncTestPositive - seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"LibFuncTestZero\"." ) != -1 )
+	assert( stdout.find( "LibFuncTestZero - seems to be ok" ) != -1 )
+	# Should have tests for executable.
+	assert( stdout.find( "Running 2 unit-tests..." ) != -1 )
+	assert( stdout.find( "Running test \"ExeTest0\"." ) != -1 )
+	assert( stdout.find( "ExeTest0 seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"ExeTest1\"." ) != -1 )
+	assert( stdout.find( "ExeTest1 seems to be ok" ) != -1 )
+	# Should not run the executable itself.
+	assert( stdout.find( "Main executable" ) == -1 )
+
+
 #
 # End tests list
 #
@@ -1828,7 +1853,8 @@ def main():
 		UnitTestsRunningTest,
 		UnitTestsRunningForLibraryTest,
 		UnitTestsRunningForSharedLibraryTest,
-		UnitTestsRunningForObjectFileTest
+		UnitTestsRunningForObjectFileTest,
+		UnitTestsRunningForExecutableAndLibraryTest
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )

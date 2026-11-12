@@ -1,0 +1,22 @@
+import "/main_wrapper.iu"
+import "/stdout.iu"
+import "/lib/lib.iu"
+
+pretty_main
+{
+	ust::stdout_print( "Main executable!\n" );
+	halt if( LibFunc( 126 ) != 383 );
+	return 0;
+}
+
+fn_test( ExeTest0 )
+{
+	halt if( LibFunc( 78 ) != 239 );
+	ust::stdout_print( "ExeTest0 seems to be ok\n" );
+}
+
+fn_test( ExeTest1 )
+{
+	halt if( LibFunc( -1 ) != 2 );
+	ust::stdout_print( "ExeTest1 seems to be ok\n" );
+}
