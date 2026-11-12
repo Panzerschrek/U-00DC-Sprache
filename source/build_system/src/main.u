@@ -1784,7 +1784,18 @@ fn CreatePackageTargetBuildGraphNodes(
 		}
 
 		// Link unit-testing lib.
-		node.command_line.push_back( GetCompiledUnitTestingLibPath( root_package_build_directory ) );
+		{
+			var ust::filesystem_path unit_testing_lib_path= GetCompiledUnitTestingLibPath( root_package_build_directory );
+			node.command_line.push_back( unit_testing_lib_path );
+			node.input_files.push_back( unit_testing_lib_path );
+		}
+
+		// Link unit-testing lib entry (in form of an object file).
+		{
+			var ust::filesystem_path unit_testing_lib_entry_path= GetCompiledUnitTestingLibEntryPath( root_package_build_directory );
+			node.command_line.push_back( "-Wl," + unit_testing_lib_entry_path );
+			node.input_files.push_back( unit_testing_lib_entry_path );
+		}
 
 		// Generate table containing unit-tests. Hardcode here name used by the unit-testing library internally.
 		node.command_line.push_back( "--build-tests-table=__U_unit_tests_table" );
@@ -1798,8 +1809,9 @@ fn CreatePackageTargetBuildGraphNodes(
 		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
 		node.command_line.push_back( "-filetype=exe" );
 
-		// Run full internalization in order to export only "main".
+		// Run full internalization, but preserve entry point of the testing library.
 		node.command_line.push_back( "--internalize" );
+		node.command_line.push_back( "--internalize-preserve=unit_testing_main" );
 
 		if( !target_is_windows )
 		{
@@ -2074,6 +2086,11 @@ fn GetCompiledUnitTestingLibPath( ust::filesystem_path_view root_package_build_d
 	return ust::path::normalize( ust::path::join( root_package_build_directory, "unit_testing_lib.bc" ) );
 }
 
+fn GetCompiledUnitTestingLibEntryPath( ust::filesystem_path_view root_package_build_directory ) : ust::filesystem_path
+{
+	return ust::path::normalize( ust::path::join( root_package_build_directory, "unit_testing_lib_entry.o" ) );
+}
+
 fn CreateUnitTestingLibBuildGraphNodes(
 	BuildSystemPaths& build_system_paths,
 	ust::filesystem_path_view sysroot,
@@ -2083,96 +2100,187 @@ fn CreateUnitTestingLibBuildGraphNodes(
 	ust::string_view8 target_cpu,
 	BuildGraph &mut build_graph )
 {
-	var ust::filesystem_path out_file= GetCompiledUnitTestingLibPath( root_package_build_directory );
-
-	var BuildGraph::Node mut node
+	// Compile main code of the unit-testing library into a bitcode file.
+	// This code depends on ustlib.
 	{
-		.program= build_system_paths.compiler_executable_path,
-		.output_files= ust::make_array( out_file ),
-		.dep_file= GetDependencyFilePath( out_file ),
-		.comment= "unit_testing_lib",
-	};
+		var ust::filesystem_path out_file= GetCompiledUnitTestingLibPath( root_package_build_directory );
 
-	node.command_line.push_back( "-o" );
-	node.command_line.push_back( out_file );
-	node.command_line.push_back( "-filetype=bc" );
-
-	node.command_line.push_back( "-MF" );
-	node.command_line.push_back( node.dep_file );
-
-	node.command_line.push_back( "--source-dir" );
-	node.command_line.push_back( build_system_paths.unit_testing_lib_path );
-
-	// The only include directory that we require is "ustlib".
-	node.command_line.push_back( "--include-dir" );
-	node.command_line.push_back( ust::path::join( build_system_paths.ustlib_path, g_ustlib_imports_subpath ) );
-
-	// Forbid importing anything outside include directories and source directories.
-	node.command_line.push_back( "--prevent-imports-outside-given-directories" );
-
-	{
-		auto& source= "unit_testing_lib.u";
-		var ust::filesystem_path file_path=
-			ust::path::normalize( ust::path::join( build_system_paths.unit_testing_lib_path, source ) );
-		node.input_files.push_back( file_path );
-		node.command_line.push_back( file_path );
-	}
-
-	if( target_triple.operating_system != g_os_windows )
-	{
-		node.command_line.push_back( "--relocation-model" );
-		node.command_line.push_back( "pic" );
-	}
-
-	// Build configuration-dependent options.
-	switch( build_configuration_extended.build_configuration )
-	{
-		BuildConfiguration::Debug ->
+		var BuildGraph::Node mut node
 		{
-			// Generate debug information.
-			node.command_line.push_back( "-g" );
-			// No optimization at all - optimization makes debugging hard.
-			node.command_line.push_back( "-O0" );
-			// No LTO is used for debug builds.
-		},
-		BuildConfiguration::Release ->
+			.program= build_system_paths.compiler_executable_path,
+			.output_files= ust::make_array( out_file ),
+			.dep_file= GetDependencyFilePath( out_file ),
+			.comment= "unit_testing_lib",
+		};
+
+		node.command_line.push_back( "-o" );
+		node.command_line.push_back( out_file );
+		node.command_line.push_back( "-filetype=bc" );
+
+		node.command_line.push_back( "-MF" );
+		node.command_line.push_back( node.dep_file );
+
+		node.command_line.push_back( "--source-dir" );
+		node.command_line.push_back( build_system_paths.unit_testing_lib_path );
+
+		// The only include directory that we require is "ustlib".
+		node.command_line.push_back( "--include-dir" );
+		node.command_line.push_back( ust::path::join( build_system_paths.ustlib_path, g_ustlib_imports_subpath ) );
+
+		// Forbid importing anything outside include directories and source directories.
+		node.command_line.push_back( "--prevent-imports-outside-given-directories" );
+
 		{
-			// Run full optimizations.
-			switch( build_configuration_extended.release_optimization_level )
+			auto& source= "main.u";
+			var ust::filesystem_path file_path=
+				ust::path::normalize( ust::path::join( build_system_paths.unit_testing_lib_path, source ) );
+			node.input_files.push_back( file_path );
+			node.command_line.push_back( file_path );
+		}
+
+		if( target_triple.operating_system != g_os_windows )
+		{
+			node.command_line.push_back( "--relocation-model" );
+			node.command_line.push_back( "pic" );
+		}
+
+		// Build configuration-dependent options.
+		switch( build_configuration_extended.build_configuration )
+		{
+			BuildConfiguration::Debug ->
 			{
-				BuildConfigurationExtended::ReleaseOptimisationLevel::O2 -> { node.command_line.push_back( "-O2" ); },
-				BuildConfigurationExtended::ReleaseOptimisationLevel::O3 -> { node.command_line.push_back( "-O3" ); },
-			}
-			// Also prepare for further LTO.
-			node.command_line.push_back( "--lto-mode=prelink" );
-		},
-		BuildConfiguration::MinSizeRelease ->
-		{
-			// Run full optimization for size.
-			switch( build_configuration_extended.min_size_release_optimization_level )
+				// Generate debug information.
+				node.command_line.push_back( "-g" );
+				// No optimization at all - optimization makes debugging hard.
+				node.command_line.push_back( "-O0" );
+				// No LTO is used for debug builds.
+			},
+			BuildConfiguration::Release ->
 			{
-				BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Os -> { node.command_line.push_back( "-Os" ); },
-				BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Oz -> { node.command_line.push_back( "-Oz" ); },
-			}
-			// Also prepare for further LTO.
-			node.command_line.push_back( "--lto-mode=prelink" );
-		},
+				// Run full optimizations.
+				switch( build_configuration_extended.release_optimization_level )
+				{
+					BuildConfigurationExtended::ReleaseOptimisationLevel::O2 -> { node.command_line.push_back( "-O2" ); },
+					BuildConfigurationExtended::ReleaseOptimisationLevel::O3 -> { node.command_line.push_back( "-O3" ); },
+				}
+				// Also prepare for further LTO.
+				node.command_line.push_back( "--lto-mode=prelink" );
+			},
+			BuildConfiguration::MinSizeRelease ->
+			{
+				// Run full optimization for size.
+				switch( build_configuration_extended.min_size_release_optimization_level )
+				{
+					BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Os -> { node.command_line.push_back( "-Os" ); },
+					BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Oz -> { node.command_line.push_back( "-Oz" ); },
+				}
+				// Also prepare for further LTO.
+				node.command_line.push_back( "--lto-mode=prelink" );
+			},
+		}
+
+		if( !sysroot.empty() )
+		{
+			node.command_line.push_back( "--sysroot" );
+			node.command_line.push_back( sysroot );
+		}
+
+		AddTargetTripleCompilerFlags( target_triple, node.command_line );
+		SetTargetCPU( target_cpu, node.command_line );
+		SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
+
+		// Perform verification just to be sure nothing is broken.
+		node.command_line.push_back( "--verify-module" );
+
+		build_graph.nodes.push_back( move(node) );
 	}
 
-	if( !sysroot.empty() )
+	// Compile entry point of the unit-testing library into a separate object file.
+	// This is necessary in order to be able to provide proper "main" function at linking stage,
+	// after actual "main" (which is usually present for executable build targets) is internalized.
 	{
-		node.command_line.push_back( "--sysroot" );
-		node.command_line.push_back( sysroot );
+		var ust::filesystem_path out_file= GetCompiledUnitTestingLibEntryPath( root_package_build_directory );
+
+		var BuildGraph::Node mut node
+		{
+			.program= build_system_paths.compiler_executable_path,
+			.output_files= ust::make_array( out_file ),
+			.dep_file= GetDependencyFilePath( out_file ),
+			.comment= "unit_testing_lib_entry",
+		};
+
+		node.command_line.push_back( "-o" );
+		node.command_line.push_back( out_file );
+		node.command_line.push_back( "-filetype=obj" );
+
+		node.command_line.push_back( "-MF" );
+		node.command_line.push_back( node.dep_file );
+
+		node.command_line.push_back( "--source-dir" );
+		node.command_line.push_back( build_system_paths.unit_testing_lib_path );
+
+		// Forbid importing anything outside include directories and source directories.
+		node.command_line.push_back( "--prevent-imports-outside-given-directories" );
+
+		{
+			auto& source= "entry.u";
+			var ust::filesystem_path file_path=
+				ust::path::normalize( ust::path::join( build_system_paths.unit_testing_lib_path, source ) );
+			node.input_files.push_back( file_path );
+			node.command_line.push_back( file_path );
+		}
+
+		if( target_triple.operating_system != g_os_windows )
+		{
+			node.command_line.push_back( "--relocation-model" );
+			node.command_line.push_back( "pic" );
+		}
+
+		// Build configuration-dependent options.
+		switch( build_configuration_extended.build_configuration )
+		{
+			BuildConfiguration::Debug ->
+			{
+				// Generate debug information.
+				node.command_line.push_back( "-g" );
+				// No optimization at all - optimization makes debugging hard.
+				node.command_line.push_back( "-O0" );
+			},
+			BuildConfiguration::Release ->
+			{
+				// Run full optimizations.
+				switch( build_configuration_extended.release_optimization_level )
+				{
+					BuildConfigurationExtended::ReleaseOptimisationLevel::O2 -> { node.command_line.push_back( "-O2" ); },
+					BuildConfigurationExtended::ReleaseOptimisationLevel::O3 -> { node.command_line.push_back( "-O3" ); },
+				}
+			},
+			BuildConfiguration::MinSizeRelease ->
+			{
+				// Run full optimization for size.
+				switch( build_configuration_extended.min_size_release_optimization_level )
+				{
+					BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Os -> { node.command_line.push_back( "-Os" ); },
+					BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Oz -> { node.command_line.push_back( "-Oz" ); },
+				}
+			},
+		}
+
+		if( !sysroot.empty() )
+		{
+			node.command_line.push_back( "--sysroot" );
+			node.command_line.push_back( sysroot );
+		}
+
+		AddTargetTripleCompilerFlags( target_triple, node.command_line );
+		SetTargetCPU( target_cpu, node.command_line );
+		SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
+
+		// Perform verification just to be sure nothing is broken.
+		node.command_line.push_back( "--verify-module" );
+
+		build_graph.nodes.push_back( move(node) );
 	}
-
-	AddTargetTripleCompilerFlags( target_triple, node.command_line );
-	SetTargetCPU( target_cpu, node.command_line );
-	SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
-
-	// Perform verification just to be sure nothing is broken.
-	node.command_line.push_back( "--verify-module" );
-
-	build_graph.nodes.push_back( move(node) );
 }
 
 fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::string8/> &mut compiler_flags )

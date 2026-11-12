@@ -1,0 +1,10 @@
+// This file is compiled separately into an object file.
+// It should be just a tiny wrapper calling actual entry point (with name distinct from "main").
+// It should not depend on "ustlib".
+
+import "main.iu"
+
+fn nomangle main() unsafe call_conv( "C" ) : i32
+{
+	return unit_testing_main();
+}
