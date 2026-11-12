@@ -1661,6 +1661,24 @@ def UnitTestsRunningForTestBuildTargetTest():
 	assert( stdout.find( "Running test executable itself" ) != -1 )
 	assert( stdout.find( "Main unit-test" ) != -1 )
 
+
+def UnitTestsRunningForHostPackageTest():
+	test_dir= "unit_tests_running_for_host_package"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	assert( stdout.find( "Running 1 test executables." ) != -1 )
+	assert( stdout.find( "Running 2 unit-tests..." ) != -1 )
+	assert( stdout.find( "Running test \"SubpackageUnitTest0\"." ) != -1 )
+	assert( stdout.find( "SubpackageUnitTest0 seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"SubpackageUnitTest1\"." ) != -1 )
+	assert( stdout.find( "SubpackageUnitTest1 seems to be ok" ) != -1 )
+	# Should not run the executable itself.
+	assert( stdout.find( "Running a subpackage executable" ) == -1 )
+
+
 #
 # End tests list
 #
@@ -1883,6 +1901,7 @@ def main():
 		UnitTestsRunningForExecutableAndLibraryTest,
 		UnitTestsDisabledTest,
 		UnitTestsRunningForTestBuildTargetTest,
+		UnitTestsRunningForHostPackageTest,
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
