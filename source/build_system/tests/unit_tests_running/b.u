@@ -1,6 +1,15 @@
 import "inc.iu"
 
+fn BFunc() : i32
+{
+	return 222;
+}
+
 fn_test( BTest )
 {
 	ust::stdout_print( "B test.\n" );
+	halt if( AFunc() != 111 );
+	halt if( BFunc() != 222 );
+	halt if( MainFunc() != 333 );
+	halt if( IncFunc() != 444 );
 }

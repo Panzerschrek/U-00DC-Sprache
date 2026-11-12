@@ -6,7 +6,16 @@ fn nomangle main() call_conv( "C" ) : i32
 	return 0;
 }
 
+fn MainFunc() : i32
+{
+	return 333;
+}
+
 fn_test( MainTest )
 {
 	ust::stdout_print( "Main test.\n" );
+	halt if( AFunc() != 111 );
+	halt if( BFunc() != 222 );
+	halt if( MainFunc() != 333 );
+	halt if( IncFunc() != 444 );
 }
