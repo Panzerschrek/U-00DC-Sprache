@@ -1714,16 +1714,9 @@ fn CreatePackageTargetBuildGraphNodes(
 		}
 
 		// Link against system libraries required by "ustlib".
-		switch( target.target_type )
+		foreach( &lib : GetUstlibSystemLibrariesToLink( target_triple ) )
 		{
-			BuildTargetType::Executable, BuildTargetType::Test, BuildTargetType::SharedLibrary ->
-			{
-				foreach( &lib : GetUstlibSystemLibrariesToLink( target_triple ) )
-				{
-					node.command_line.push_back( "-Wl," + lib );
-				}
-			},
-			BuildTargetType::Library, BuildTargetType::ObjectFile -> {},
+			node.command_line.push_back( "-Wl," + lib );
 		}
 
 		// Link shared library dependencies.
