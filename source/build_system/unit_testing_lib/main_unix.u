@@ -15,163 +15,181 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 
 	var ust::array_view_imut</UnitTestsTableElement/> unit_tests_table= GetUnitTestsTable();
 
-	unsafe
+	ust::stdout_print_line( "Running ", unit_tests_table.size(), " unit-tests..." );
+
+	if( unit_tests_table.empty() )
 	{
+		safe( ust::stdout_print( "Done running unit-tests. Succeeded 0, failed 0.\n" ) );
+		return 0;
+	}
 
-		safe( ust::stdout_print_line( "Running ", unit_tests_table.size(), " unit-tests..." ) );
+	if( false /* TODO - allow changing this condition via command-line options */ )
+	{
+		// Run all tests in current process (and crash it on first fail).
+		// It may be useful for debugging.
 
-		if( unit_tests_table.empty() )
+		foreach( &el : unit_tests_table )
 		{
-			safe( ust::stdout_print( "Done running unit-tests. Succeeded 0, failed 0.\n" ) );
-			return 0;
+			ust::stdout_print_line( "Running test \"", unsafe( ust::string_view8( el.name_begin, el.name_size ) ), "\"." );
+			// If running this test fails, the whole process crashes.
+			el.function_pointer();
 		}
 
-		// Don't run tests "as is" in current process.
-		// Instead spawn a child process, so that if a test fails, we can run other tests and report overall results.
-		// Don't create a child process for each test, instead try running as many of them in single child process as possible.
-		// Only if the child process crashes, restart it.
-		// Doing so allows reducing overhead for process starting, which is in most cases isn't necessary if all or almost test don't fail.
+		// If this place is reached, no test has failed.
+		ust::stdout_print_line( "Done running unit-tests. Succeeded ", unit_tests_table.size(), ", failed 0." );
 
-		// Allocate a block of shared memory intended to be used for status indication by both parent and child processes.
-		var $(byte8) mut status_memory_block=
-			::mmap(
-				ust::nullptr</byte8/>(),
-				typeinfo</TestStatus/>.size_of * unit_tests_table.size(), // Allocate a status variable for each test.
-				PROT_READ | PROT_WRITE,
-				MAP_SHARED /* this flag enables sharing after "fork" call */ | MAP_ANONYMOUS,
-				-1,
-				::off_t_2U__(0) );
-
-		if( ust::is_nullptr( status_memory_block ) )
+		return 0;
+	}
+	else
+	{
+		unsafe
 		{
-			ust::stderr_print( "::mmap failed!\n" );
-			return -1;
-		}
+			// Spawn a child process, so that if a test fails, we can run other tests and report overall results.
+			// Don't create a child process for each test, instead try running as many of them in single child process as possible.
+			// Only if the child process crashes, restart it.
+			// Doing so allows reducing overhead for process starting, which is in most cases isn't necessary if all or almost test don't fail.
 
-		var ust::array_view_mut</TestStatus/> test_status_table(
-			ust::byte_ptr_cast</TestStatus/>( status_memory_block ), unit_tests_table.size() );
+			// Allocate a block of shared memory intended to be used for status indication by both parent and child processes.
+			var $(byte8) mut status_memory_block=
+				::mmap(
+					ust::nullptr</byte8/>(),
+					typeinfo</TestStatus/>.size_of * unit_tests_table.size(), // Allocate a status variable for each test.
+					PROT_READ | PROT_WRITE,
+					MAP_SHARED /* this flag enables sharing after "fork" call */ | MAP_ANONYMOUS,
+					-1,
+					::off_t_2U__(0) );
 
-		// Set initial status for all tests.
-		foreach( &mut status : test_status_table )
-		{
-			status= c_test_status_not_run;
-		}
-
-		// Perform several attemts of running a child process.
-		// Have some upper limit for retries, so that we don't launch thousands of processes if all or almost all tests fail.
-		var size_type c_max_retries= 128s; // A reasonable limit, which allows catching many fails without too much overhead.
-		for( auto mut try_index= 0s; try_index < c_max_retries; ++try_index )
-		{
-			// Spawn a child process.
-			var pid_t pid= ::fork();
-			if( pid < 0 )
+			if( ust::is_nullptr( status_memory_block ) )
 			{
-				safe( ust::stderr_print( "::fork failed!\n" ) );
+				ust::stderr_print( "::mmap failed!\n" );
 				return -1;
 			}
-			else if( pid == 0 )
+
+			var ust::array_view_mut</TestStatus/> test_status_table(
+				ust::byte_ptr_cast</TestStatus/>( status_memory_block ), unit_tests_table.size() );
+
+			// Set initial status for all tests.
+			foreach( &mut status : test_status_table )
 			{
-				// Child process - run tests which haven't been run yet.
+				status= c_test_status_not_run;
+			}
 
-				for( auto mut i= 0s; i < unit_tests_table.size(); ++i )
+			// Perform several attemts of running a child process.
+			// Have some upper limit for retries, so that we don't launch thousands of processes if all or almost all tests fail.
+			var size_type c_max_retries= 128s; // A reasonable limit, which allows catching many fails without too much overhead.
+			for( auto mut try_index= 0s; try_index < c_max_retries; ++try_index )
+			{
+				// Spawn a child process.
+				var pid_t pid= ::fork();
+				if( pid < 0 )
 				{
-					var TestStatus &mut status= test_status_table[i];
+					safe( ust::stderr_print( "::fork failed!\n" ) );
+					return -1;
+				}
+				else if( pid == 0 )
+				{
+					// Child process - run tests which haven't been run yet.
 
-					if( safe( ust::atomic_read( status ) ) != c_test_status_not_run )
+					for( auto mut i= 0s; i < unit_tests_table.size(); ++i )
 					{
-						// Ignore tests which are finished.
-						// Also ignore tests marked as started, since they are likely failed.
-						continue;
+						var TestStatus &mut status= test_status_table[i];
+
+						if( safe( ust::atomic_read( status ) ) != c_test_status_not_run )
+						{
+							// Ignore tests which are finished.
+							// Also ignore tests marked as started, since they are likely failed.
+							continue;
+						}
+
+						// Use atomic write for storing test status, so that it isn't reordered after a potential test crash.
+						safe( ust::atomic_write( status, c_test_status_started ) );
+
+						var UnitTestsTableElement& el= unit_tests_table[i];
+						var ust::string_view8 test_name( el.name_begin, el.name_size );
+
+						safe( ust::stdout_print_line( "Running test \"", test_name, "\"." ) );
+
+						// Execute the test.
+						// If it fails, this process crashes and test status remains "started".
+						safe( el.function_pointer() );
+
+						safe( ust::atomic_write( status, c_test_status_finished ) );
 					}
 
-					// Use atomic write for storing test status, so that it isn't reordered after a potential test crash.
-					safe( ust::atomic_write( status, c_test_status_started ) );
-
-					var UnitTestsTableElement& el= unit_tests_table[i];
-					var ust::string_view8 test_name( el.name_begin, el.name_size );
-
-					safe( ust::stdout_print_line( "Running test \"", test_name, "\"." ) );
-
-					// Execute the test.
-					// If it fails, this process crashes and test status remains "started".
-					safe( el.function_pointer() );
-
-					safe( ust::atomic_write( status, c_test_status_finished ) );
-				}
-
-				// All is fine - exit child process with zero code.
-				return 0;
-			}
-			else
-			{
-				// Parent process - wait for child process to finish.
-
-				var i32 mut status= -1;
-				::waitpid( pid, $<(status), 0 );
-				if( status == 0 )
-				{
-					break; // Finished all (remaining) tests with no problems.
+					// All is fine - exit child process with zero code.
+					return 0;
 				}
 				else
 				{
-					// Something failed.
-					// Continue execution of other tests after failed one.
-					continue;
+					// Parent process - wait for child process to finish.
+
+					var i32 mut status= -1;
+					::waitpid( pid, $<(status), 0 );
+					if( status == 0 )
+					{
+						break; // Finished all (remaining) tests with no problems.
+					}
+					else
+					{
+						// Something failed.
+						// Continue execution of other tests after failed one.
+						continue;
+					}
 				}
 			}
-		}
 
-		// Read status for each test from the shared memory block.
-		// It's safe to do this here, since the child process (which modifies it) is already finished and no race condition is possible.
+			// Read status for each test from the shared memory block.
+			// It's safe to do this here, since the child process (which modifies it) is already finished and no race condition is possible.
 
-		var size_type
-			mut num_tests_not_run= 0s,
-			mut num_tests_failed= 0s,
-			mut num_tests_finished= 0s,
-			mut num_tests_with_incorrect_status= 0s;
+			var size_type
+				mut num_tests_not_run= 0s,
+				mut num_tests_failed= 0s,
+				mut num_tests_finished= 0s,
+				mut num_tests_with_incorrect_status= 0s;
 
-		for( auto mut i= 0s; i < unit_tests_table.size(); ++i )
-		{
-			var UnitTestsTableElement& el= unit_tests_table[i];
-			var ust::string_view8 test_name( el.name_begin, el.name_size );
-
-			var TestStatus status= test_status_table[i];
-
-			switch( status )
+			for( auto mut i= 0s; i < unit_tests_table.size(); ++i )
 			{
-				c_test_status_not_run ->
+				var UnitTestsTableElement& el= unit_tests_table[i];
+				var ust::string_view8 test_name( el.name_begin, el.name_size );
+
+				var TestStatus status= test_status_table[i];
+
+				switch( status )
 				{
-					++num_tests_not_run;
-					safe( ust::stderr_print_line( "Test \"", test_name, "\" not run!" ) );
-				},
-				c_test_status_started ->
-				{
-					// If a test has been started, but isn't finished, it has crashed.
-					++num_tests_failed;
-					safe( ust::stderr_print_line( "Test \"", test_name, "\" failed!" ) );
-				},
-				c_test_status_finished ->
-				{
-					++num_tests_finished;
-				},
-				default ->
-				{
-					++num_tests_with_incorrect_status;
+					c_test_status_not_run ->
+					{
+						++num_tests_not_run;
+						safe( ust::stderr_print_line( "Test \"", test_name, "\" not run!" ) );
+					},
+					c_test_status_started ->
+					{
+						// If a test has been started, but isn't finished, it has crashed.
+						++num_tests_failed;
+						safe( ust::stderr_print_line( "Test \"", test_name, "\" failed!" ) );
+					},
+					c_test_status_finished ->
+					{
+						++num_tests_finished;
+					},
+					default ->
+					{
+						++num_tests_with_incorrect_status;
 						safe( ust::stderr_print_line( "Test \"", test_name, "\" has incorrect status!" ) );
+					}
 				}
 			}
+
+			safe( ust::stdout_print_line(
+				"Done running unit-tests. Succeeded ", num_tests_finished, ", failed ", num_tests_failed, "." ) );
+
+			var bool ok=
+				num_tests_not_run == 0s &&
+				num_tests_failed == 0s &&
+				num_tests_finished == unit_tests_table.size() &&
+				num_tests_with_incorrect_status == 0s;
+
+			return ( ok ? 0 : -1 );
 		}
-
-		safe( ust::stdout_print_line(
-			"Done running unit-tests. Succeeded ", num_tests_finished, ", failed ", num_tests_failed, "." ) );
-
-		var bool ok=
-			num_tests_not_run == 0s &&
-			num_tests_failed == 0s &&
-			num_tests_finished == unit_tests_table.size() &&
-			num_tests_with_incorrect_status == 0s;
-
-		return ( ok ? 0 : -1 );
 	}
 }
 
