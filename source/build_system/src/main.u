@@ -113,10 +113,10 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 			( options.ustlib_path.empty()
 				? ust::path::join( exe_directory, "../ustlib" ) // "ustlib" is located in the root of the Ü package.
 				: MakePathAbsolute(options.ustlib_path) ) ),
-		.build_system_imports_path= ust::path::normalize(
-			( options.build_system_imports_path.empty()
-				? ust::path::join( exe_directory, "../build_system/imports" ) // Build system imports are located in "/build_system/imports".
-				: MakePathAbsolute(options.build_system_imports_path) ) ),
+		.build_system_files_path= ust::path::normalize(
+			( options.build_system_files_path.empty()
+				? ust::path::join( exe_directory, "../build_system" ) // Build system files are located in "/build_system".
+				: MakePathAbsolute(options.build_system_files_path) ) ),
 		.packages_repository_directory=
 			ust::path::normalize(
 				MakePathAbsolute(
@@ -127,11 +127,6 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 		.root_package_source_directory= ust::path::normalize( MakePathAbsolute( options.root_package_directory ) ),
 	};
 
-	// TODO - allow specifying this path via command-line?
-	build_system_paths.unit_testing_lib_path=
-		ust::path::join(
-			ust::path::get_parent_path( build_system_paths.build_system_imports_path ).deref_or( ust::filesystem_path_view() ),
-			"unit_testing_lib" );
 
 	EnsureHasExeExtension( build_system_paths.build_system_executable_path );
 
@@ -655,7 +650,7 @@ fn BuildAndLoadPackageBuildScript(
 		compiler_args.push_back( ust::path::join( build_system_paths.ustlib_path, g_ustlib_imports_subpath ) );
 		// Provide path to declarations of the build system interface.
 		compiler_args.push_back( "--include-dir" );
-		compiler_args.push_back( build_system_paths.build_system_imports_path );
+		compiler_args.push_back( ust::path::join( build_system_paths.build_system_files_path, "imports" ) );
 		// Provide path to build script wrapper headers.
 		compiler_args.push_back( "--include-dir" );
 		compiler_args.push_back( build_script_wrapper_header_file_directory );
@@ -2112,6 +2107,9 @@ fn CreateUnitTestingLibBuildGraphNodes(
 	ust::string_view8 target_cpu,
 	BuildGraph &mut build_graph )
 {
+	var ust::filesystem_path unit_testing_lib_path=
+		ust::path::join( build_system_paths.build_system_files_path, "unit_testing_lib" );
+
 	// Compile main code of the unit-testing library into a bitcode file.
 	// This code depends on ustlib.
 	{
@@ -2133,7 +2131,7 @@ fn CreateUnitTestingLibBuildGraphNodes(
 		node.command_line.push_back( node.dep_file );
 
 		node.command_line.push_back( "--source-dir" );
-		node.command_line.push_back( build_system_paths.unit_testing_lib_path );
+		node.command_line.push_back( unit_testing_lib_path );
 
 		// The only include directory that we require is "ustlib".
 		node.command_line.push_back( "--include-dir" );
@@ -2143,9 +2141,7 @@ fn CreateUnitTestingLibBuildGraphNodes(
 		node.command_line.push_back( "--prevent-imports-outside-given-directories" );
 
 		{
-			auto& source= "main.u";
-			var ust::filesystem_path file_path=
-				ust::path::normalize( ust::path::join( build_system_paths.unit_testing_lib_path, source ) );
+			var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( unit_testing_lib_path, "main.u" ) );
 			node.input_files.push_back( file_path );
 			node.command_line.push_back( file_path );
 		}
@@ -2229,15 +2225,13 @@ fn CreateUnitTestingLibBuildGraphNodes(
 		node.command_line.push_back( node.dep_file );
 
 		node.command_line.push_back( "--source-dir" );
-		node.command_line.push_back( build_system_paths.unit_testing_lib_path );
+		node.command_line.push_back( unit_testing_lib_path );
 
 		// Forbid importing anything outside include directories and source directories.
 		node.command_line.push_back( "--prevent-imports-outside-given-directories" );
 
 		{
-			auto& source= "entry.u";
-			var ust::filesystem_path file_path=
-				ust::path::normalize( ust::path::join( build_system_paths.unit_testing_lib_path, source ) );
+			var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( unit_testing_lib_path, "entry.u" ) );
 			node.input_files.push_back( file_path );
 			node.command_line.push_back( file_path );
 		}
