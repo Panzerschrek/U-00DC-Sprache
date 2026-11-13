@@ -1648,10 +1648,12 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.input_files.push_back( source_file_to_compile.bc_file_full_path );
 		}
 
-		// Link public dependencies.
-		foreach( &public_dependency : target.public_dependencies_including_transitive )
+		// Link public and private dependencies.
+		foreach( &dependency :
+				target.public_dependencies_including_transitive.iter().chain(
+				target.private_dependencies_including_transitive_public_dependencies.iter() ) )
 		{
-			if( IsPublicDependencyOfDirectPublicSharedLibraryDependency( workspace, target, public_dependency ) )
+			if( IsPublicDependencyOfDirectPublicSharedLibraryDependency( workspace, target, dependency ) )
 			{
 				// An optimization for result binary size.
 				// If this dependency is also a public dependency of a direct shared library dependency,
@@ -1660,44 +1662,19 @@ fn CreatePackageTargetBuildGraphNodes(
 				continue;
 			}
 
-			if( workspace.build_targets[ public_dependency ].target_type == BuildTargetType::Library )
+			if( workspace.build_targets[ dependency ].target_type == BuildTargetType::Library )
 			{
 				var ust::filesystem_path mut lib_file=
 					ust::path::normalize( ust::concat(
-						GetPackageBuildDirectory( root_package_build_directory, public_dependency.package_name ),
+						GetPackageBuildDirectory( root_package_build_directory, dependency.package_name ),
 						"/",
-						public_dependency.name,
-						".bc" ) );
-
-				node.command_line.push_back( lib_file );
-				node.input_files.push_back( move(lib_file) );
-			}
-		}
-
-		// For private dependencies.
-		foreach( &private_dependency : target.private_dependencies_including_transitive_public_dependencies )
-		{
-			if( IsPublicDependencyOfSomeLinkedSharedLibrary( workspace, target, private_dependency ) )
-			{
-				// An optimization for result binary size.
-				// If this dependency is also a public dependency of some shared library, which is linked against this build target,
-				// we don't need to link this dependency, since all symbols of this dependency will be exposed and obtained from such shared library.
-				continue;
-			}
-
-			if( workspace.build_targets[ private_dependency ].target_type == BuildTargetType::Library )
-			{
-				var ust::filesystem_path mut lib_file=
-					ust::path::normalize( ust::concat(
-						GetPackageBuildDirectory( root_package_build_directory, private_dependency.package_name ),
-						"/",
-						private_dependency.name,
+						dependency.name,
 						".bc" ) );
 
 				node.command_line.push_back( lib_file );
 				node.input_files.push_back( lib_file );
 
-				// Internalize all functions from private dependencies.
+				// Internalize all functions from dependencies.
 				node.command_line.push_back( "--internalize-functions-from" );
 				node.command_line.push_back( move(lib_file) );
 			}
