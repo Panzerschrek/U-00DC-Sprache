@@ -11,21 +11,16 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 	ust::ignore_unused( argc );
 	ust::ignore_unused( argv );
 
-	var $(UnitTestsTableElement) unit_tests_table= GetUnitTestsTable();
+	var ust::array_view_imut</UnitTestsTableElement/> unit_tests_table= GetUnitTestsTable();
 
-	var size_type num_unit_tests= unsafe( GetUnitTestsTableSize( unit_tests_table ) );
+	ust::stdout_print_line( "Running ", unit_tests_table.size(), " unit-tests..." );
 
-	ust::stdout_print_line( "Running ", num_unit_tests, " unit-tests..." );
-
-	for( auto mut i= 0s; i < num_unit_tests; ++i )
+	foreach( &el : unit_tests_table )
 	{
 		unsafe
 		{
-			var UnitTestsTableElement& el= $>( unit_tests_table + i );
 			var ust::string_view8 test_name( el.name_begin, el.name_size );
-
 			safe( ust::stdout_print_line( "Running test \"", test_name, "\"." ) );
-
 			safe( el.function_pointer() );
 		}
 	}
