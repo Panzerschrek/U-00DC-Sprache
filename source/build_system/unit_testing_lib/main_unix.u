@@ -21,6 +21,12 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 
 		safe( ust::stdout_print_line( "Running ", num_unit_tests, " unit-tests..." ) );
 
+		if( num_unit_tests == 0s )
+		{
+			safe( ust::stdout_print( "Done running unit-tests. Succeeded 0, failed 0.\n" ) );
+			return 0;
+		}
+
 		// Don't run tests "as is" in current process.
 		// Instead spawn a child process, so that if a test fails, we can run other tests and report overall results.
 		// Don't create a child process for each test, instead try running as many of them in single child process as possible.
