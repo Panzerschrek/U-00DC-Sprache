@@ -258,6 +258,7 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 		DEPENDS BuildSystem${CURRENT_COMPILER_GENERATION}
 		DEPENDS ${TESTS_FILES}
 		DEPENDS ${USTLIB_FILES} # Build scripts and sources may import "ustlib". So, make sure we re-run tests if something in ustlib changes.
+		DEPENDS ${UNIT_TESTING_LIB_FILES}
 		DEPENDS BuildSystemTestsStaticLibrary${CURRENT_COMPILER_GENERATION}
 		DEPENDS BuildSystemTestsSharedLibrary${CURRENT_COMPILER_GENERATION}
 		DEPENDS BuildSystemTestFileGenerationTool${CURRENT_COMPILER_GENERATION}
