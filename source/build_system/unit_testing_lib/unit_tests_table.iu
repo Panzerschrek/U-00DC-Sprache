@@ -1,0 +1,33 @@
+import "/memory.iu"
+
+fn GetUnitTestsTable() : $(UnitTestsTableElement)
+{
+	return unsafe( $<( import var</ UnitTestsTableElement />( "__U_unit_tests_table" ) ) );
+}
+
+fn GetUnitTestsTableSize( $(UnitTestsTableElement) unit_tests_table ) unsafe : size_type
+{
+	// Unit-tests table is null-terminated.
+
+	var size_type mut size= 0s;
+	unsafe
+	{
+		while( !ust::is_nullptr( $>( unit_tests_table + size ).function_pointer ) )
+		{
+			++size;
+		}
+	}
+
+	return size;
+}
+
+// This struct should match the struct used by the compiler for unit-tests table elements.
+struct UnitTestsTableElement ordered
+{
+	( fn() ) function_pointer;
+	$(char8) name_begin;
+	size_type name_size;
+}
+
+// Should have size of exactly 3 pointers.
+static_assert( typeinfo</ UnitTestsTableElement />.size_of == typeinfo</ $(byte8) />.size_of * 3s, "Invalid size!" );
