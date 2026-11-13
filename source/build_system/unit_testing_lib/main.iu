@@ -1,1 +1,1 @@
-fn nomangle unit_testing_main() : i32;
+fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32;
