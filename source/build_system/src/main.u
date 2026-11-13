@@ -127,7 +127,6 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 		.root_package_source_directory= ust::path::normalize( MakePathAbsolute( options.root_package_directory ) ),
 	};
 
-
 	EnsureHasExeExtension( build_system_paths.build_system_executable_path );
 
 	// Make sure compiler executable on Windows has "exe" extension - this is necessary for later checking of its file timestamp.
@@ -1625,7 +1624,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			.program= build_system_paths.compiler_executable_path,
 			// Dep-files are needed only for cases where dependencies can't be specified statically, like for imports.
-			// For an end-target like an executable dep-files isn't necessary.
+			// For an end-target like an executable dep-files aren't necessary.
 			.dep_file= "",
 			.output_files= ust::make_array( result_target_file_path ),
 			.comment= target_name.name + ".test", // TODO - prefix with package name/path
@@ -1809,7 +1808,6 @@ fn CreatePackageTargetBuildGraphNodes(
 			},
 			BuildConfiguration::Release ->
 			{
-
 				// Run full optimization.
 				switch( build_configuration_extended.release_optimization_level )
 				{
@@ -1824,7 +1822,6 @@ fn CreatePackageTargetBuildGraphNodes(
 			},
 			BuildConfiguration::MinSizeRelease ->
 			{
-
 				// Run full optimization for size.
 				switch( build_configuration_extended.min_size_release_optimization_level )
 				{
