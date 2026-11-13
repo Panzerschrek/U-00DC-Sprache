@@ -1,0 +1,36 @@
+import "/stdout_ext.iu"
+import "/string.iu"
+import "main.iu"
+import "unit_tests_table.iu"
+
+// Don't use actual "main", since it may conflict with "main" defined in executable files.
+// Instead use custom entry point, which is called by proper "main" provided later (at linking stage).
+fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
+{
+	// TODO - parse args properly.
+	ust::ignore_unused( argc );
+	ust::ignore_unused( argv );
+
+	var $(UnitTestsTableElement) unit_tests_table= GetUnitTestsTable();
+
+	var size_type num_unit_tests= unsafe( GetUnitTestsTableSize( unit_tests_table ) );
+
+	ust::stdout_print_line( "Running ", num_unit_tests, " unit-tests..." );
+
+	for( auto mut i= 0s; i < num_unit_tests; ++i )
+	{
+		unsafe
+		{
+			var UnitTestsTableElement& el= $>( unit_tests_table + i );
+			var ust::string_view8 test_name( el.name_begin, el.name_size );
+
+			safe( ust::stdout_print_line( "Running test \"", test_name, "\"." ) );
+
+			safe( el.function_pointer() );
+		}
+	}
+
+	ust::stdout_print_line( "Done running unit-tests." );
+
+	return 0;
+}

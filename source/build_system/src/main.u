@@ -2108,7 +2108,12 @@ fn CreateUnitTestingLibBuildGraphNodes(
 		node.command_line.push_back( "--prevent-imports-outside-given-directories" );
 
 		{
-			var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( unit_testing_lib_path, "main.u" ) );
+			auto main_source=
+				( target_triple.operating_system == g_os_windows
+					? ust::string_view8( "main_windows.u" )
+					: ust::string_view8( "main_unix.u" ) );
+
+			var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( unit_testing_lib_path, main_source ) );
 			node.input_files.push_back( file_path );
 			node.command_line.push_back( file_path );
 		}
