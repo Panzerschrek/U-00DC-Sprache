@@ -42,7 +42,7 @@ if( TARGET BuildSystem AND TARGET lldCommon AND ${NEXT_COMPILER_GENERATION} GREA
 			BuildSystem build
 			--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
 			--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
-			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/../build_system/imports/
+			--build-system-files-path ${CMAKE_CURRENT_SOURCE_DIR}/../build_system/
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 			--project-directory ${CMAKE_CURRENT_SOURCE_DIR}
 			--build-directory ${BK_BUILD_DIR}

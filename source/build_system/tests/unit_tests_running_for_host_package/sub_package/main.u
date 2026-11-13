@@ -1,0 +1,18 @@
+import "/main_wrapper.iu"
+import "/stdout.iu"
+
+pretty_main
+{
+	ust::stdout_print( "Running a subpackage executable.\n" );
+	return 0;
+}
+
+fn_test( SubpackageUnitTest0 )
+{
+	ust::stdout_print( "SubpackageUnitTest0 seems to be ok\n" );
+}
+
+fn_test( SubpackageUnitTest1 )
+{
+	ust::stdout_print( "SubpackageUnitTest1 seems to be ok\n" );
+}

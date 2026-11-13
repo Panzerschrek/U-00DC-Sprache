@@ -80,10 +80,8 @@ Lambdas:
 *) Template lambdas
 
 Unit-testing:
-*) Create a library for running unit-tests
 *) Implement some sort of process-based isolation for unit-tests running, so that if one unit-test failed, other
 	tests can be still run and overall testing statistics can be reported
-*) Generate unit-test targets for all kinds of build targets in build system and run them if "test" command is specified
 *) Implement benchmarking functionality using similar to unit-testing approach
 
 Standart library:

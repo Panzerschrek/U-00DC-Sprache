@@ -62,6 +62,8 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 		.name= lib_name,
 		.public_include_directories= ust::make_array</ust::filesystem_path/>( "imports" ),
 		.generated_private_header_files= ust::make_array</ust::filesystem_path/>( keywords_file, code_builder_error_code_file ),
+		 // Can't build unit-tests, since this build target has implicit dependencies on external (LLVM) libraries.
+		.enable_unit_testing= false,
 	};
 
 	var [ ust::filesystem_path_view, 44 ] source_files

@@ -1,0 +1,25 @@
+import "/stdout.iu"
+import "/lib/lib.iu"
+
+fn LibFunc( i32 x ) : i32
+{
+	return x * 3 + 5;
+}
+
+fn_test( LibFuncTestPositive )
+{
+	halt if( LibFunc( 7 ) != 26 );
+	ust::stdout_print( "LibFuncTestPositive - seems to be ok\n" );
+}
+
+fn_test( LibFuncTestNagative )
+{
+	halt if( LibFunc( -219 ) != -652 );
+	ust::stdout_print( "LibFuncTestNagative - seems to be ok\n" );
+}
+
+fn_test( LibFuncTestZero )
+{
+	halt if( LibFunc( 0 ) != 5 );
+	ust::stdout_print( "LibFuncTestZero - seems to be ok\n" );
+}

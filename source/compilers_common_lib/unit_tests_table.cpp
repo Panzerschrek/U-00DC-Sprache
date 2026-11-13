@@ -2,7 +2,6 @@
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constants.h>
-#include <llvm/Linker/Linker.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib_common/assert.hpp"
@@ -11,15 +10,9 @@
 namespace U
 {
 
-bool BuildUnitTestsTable( llvm::Module& module, const llvm::StringRef table_name )
+void BuildUnitTestsTable( llvm::Module& module, const llvm::StringRef table_name )
 {
 	llvm::LLVMContext& llvm_context= module.getContext();
-
-	// Create unit-tests table using a separate module, then link it into the result module.
-	// Doing so allows the source module to have a table variable already declared (but with some stub type) to be replaced later with the correct one.
-	auto module_with_table= std::make_unique<llvm::Module>( "__U_tests_table_module", llvm_context );
-	module_with_table->setDataLayout( module.getDataLayout() );
-	module_with_table->setTargetTriple( module.getTargetTriple() );
 
 	const auto pointer_type= llvm::PointerType::get( llvm_context, 0u );
 	const auto size_type= module.getDataLayout().getIntPtrType( llvm_context );
@@ -57,7 +50,7 @@ bool BuildUnitTestsTable( llvm::Module& module, const llvm::StringRef table_name
 				names_table.emplace(
 					name_string_initializer,
 					new llvm::GlobalVariable(
-						*module_with_table, // Ownership is transferred to the result module.
+						module, // Ownership is transferred to the result module.
 						name_string_initializer->getType(),
 						true, // is constant,
 						llvm::GlobalValue::PrivateLinkage,
@@ -81,21 +74,23 @@ bool BuildUnitTestsTable( llvm::Module& module, const llvm::StringRef table_name
 
 	const auto table_type= llvm::ArrayType::get( table_element_type, table_initializers.size() );
 
-	new llvm::GlobalVariable(
-		*module_with_table, // Ownership is transferred to the result module.
-		table_type,
-		true, // is constant,
-		llvm::GlobalValue::ExternalLinkage,
-		llvm::ConstantArray::get( table_type, table_initializers ),
-		table_name );
+	const auto table_variable=
+		new llvm::GlobalVariable(
+			module, // Ownership is transferred to the result module.
+			table_type,
+			true, // is constant,
+			llvm::GlobalValue::ExternalLinkage,
+			llvm::ConstantArray::get( table_type, table_initializers ),
+			"" /* set name later */ );
 
-	const bool not_ok= llvm::Linker::linkModules( module, std::move(module_with_table) );
-	if( not_ok )
+	// In case if there is already a variable with this name, replace it and remove it.
+	if( const auto prev_variable= module.getNamedGlobal( table_name ) )
 	{
-		std::cerr << "Error linking tests table!" << std::endl;
-		return false;
+		prev_variable->replaceAllUsesWith( table_variable );
+		prev_variable->eraseFromParent();
 	}
-	return true;
+
+	table_variable->setName( table_name );
 }
 
 } // namespace U

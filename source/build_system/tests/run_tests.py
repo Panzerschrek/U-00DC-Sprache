@@ -11,7 +11,7 @@ g_tests_path = ""
 g_tests_build_root_path = ""
 g_build_system_executable = ""
 g_compiler_executable=  ""
-g_build_system_imports_path = ""
+g_build_system_files_path = ""
 g_ustlib_path = ""
 g_configuration_options_file_path = ""
 g_mangling_scheme = "itaniumabi"
@@ -29,7 +29,7 @@ def RunBuildSystemWithExplicitConfiguration( project_subdirectory, configuration
 		"-q",
 		"--build-configuration", configuration,
 		"--compiler-executable", g_compiler_executable,
-		"--build-system-imports-path", g_build_system_imports_path,
+		"--build-system-files-path", g_build_system_files_path,
 		"--ustlib-path", g_ustlib_path,
 		"--configuration-options", g_configuration_options_file_path,
 		"--project-directory", project_root,
@@ -61,7 +61,7 @@ def RunBuildSystemWithErrors( project_subdirectory ):
 		"build",
 		"-q",
 		"--compiler-executable", g_compiler_executable,
-		"--build-system-imports-path", g_build_system_imports_path,
+		"--build-system-files-path", g_build_system_files_path,
 		"--ustlib-path", g_ustlib_path,
 		"--configuration-options", g_configuration_options_file_path,
 		"--project-directory", project_root,
@@ -87,7 +87,7 @@ def RunBuildSystemWithTests( project_subdirectory ):
 		"test",
 		"--build-configuration", "release",
 		"--compiler-executable", g_compiler_executable,
-		"--build-system-imports-path", g_build_system_imports_path,
+		"--build-system-files-path", g_build_system_files_path,
 		"--ustlib-path", g_ustlib_path,
 		"--configuration-options", g_configuration_options_file_path,
 		"--project-directory", project_root,
@@ -187,7 +187,7 @@ def ConfigurationOptions0Test():
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory )
 	options_file_path = os.path.join( project_root, "options.json" )
-	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
+	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-files-path", g_build_system_files_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
 
 	if g_sysroot is not None:
 		build_system_args.append( "--sysroot" )
@@ -207,7 +207,7 @@ def ConfigurationOptions1Test():
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory )
 	options_file_path = os.path.join( project_root, "non_existing_file.json" )
-	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
+	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-files-path", g_build_system_files_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
 
 	if g_sysroot is not None:
 		build_system_args.append( "--sysroot" )
@@ -225,7 +225,7 @@ def ConfigurationOptions2Test():
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory )
 	options_file_path = os.path.join( project_root, "options.json" )
-	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
+	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-files-path", g_build_system_files_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
 
 	if g_sysroot is not None:
 		build_system_args.append( "--sysroot" )
@@ -828,7 +828,7 @@ def TargetCPUOptionTest():
 		"-q",
 		"--build-configuration", "release",
 		"--compiler-executable", g_compiler_executable,
-		"--build-system-imports-path", g_build_system_imports_path,
+		"--build-system-files-path", g_build_system_files_path,
 		"--ustlib-path", g_ustlib_path,
 		"--configuration-options", g_configuration_options_file_path,
 		"--project-directory", project_root,
@@ -859,7 +859,7 @@ def ReleaseOptimizationLevelOptionTest():
 		"-q",
 		"--build-configuration", "release",
 		"--compiler-executable", g_compiler_executable,
-		"--build-system-imports-path", g_build_system_imports_path,
+		"--build-system-files-path", g_build_system_files_path,
 		"--ustlib-path", g_ustlib_path,
 		"--configuration-options", g_configuration_options_file_path,
 		"--project-directory", project_root,
@@ -1423,7 +1423,7 @@ def CustomBuildStepFilePathIsNotAbsolute2Test():
 		"-q",
 		"--build-configuration", "release",
 		"--compiler-executable", g_compiler_executable,
-		"--build-system-imports-path", g_build_system_imports_path,
+		"--build-system-files-path", g_build_system_files_path,
 		"--ustlib-path", g_ustlib_path,
 		"--configuration-options", g_configuration_options_file_path,
 		"--project-directory", project_root,
@@ -1548,6 +1548,151 @@ def TestExecutableSharesCommonCodeWithOutherTargetTest():
 	RunExecutable( test_dir, "exe" ) # Other (non-test) build targets should be also built while running tests.
 
 
+def UnitTestsRunningTest():
+	test_dir= "unit_tests_running"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	assert( stdout.find( "Running 4 unit-tests..." ) != -1 )
+	assert( stdout.find( "A test" ) != -1 )
+	assert( stdout.find( "B test" ) != -1 )
+	assert( stdout.find( "Main test" ) != -1 )
+	assert( stdout.find( "Inc test" ) != -1 )
+
+
+def UnitTestsRunningForLibraryTest():
+	test_dir= "unit_tests_running_for_library"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	assert( stdout.find( "Running 3 unit-tests..." ) != -1 )
+	assert( stdout.find( "Running test \"LibFuncTestPositive\"." ) != -1 )
+	assert( stdout.find( "LibFuncTestPositive - seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"LibFuncTestNagative\"." ) != -1 )
+	assert( stdout.find( "LibFuncTestNagative - seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"LibFuncTestZero\"." ) != -1 )
+	assert( stdout.find( "LibFuncTestZero - seems to be ok" ) != -1 )
+
+
+def UnitTestsRunningForSharedLibraryTest():
+	test_dir= "unit_tests_running_for_shared_library"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	assert( stdout.find( "Running 3 unit-tests..." ) != -1 )
+	assert( stdout.find( "Running test \"SharedLibFuncTestPositive\"." ) != -1 )
+	assert( stdout.find( "SharedLibFuncTestPositive - seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"SharedLibFuncTestNagative\"." ) != -1 )
+	assert( stdout.find( "SharedLibFuncTestNagative - seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"SharedLibFuncTestZero\"." ) != -1 )
+	assert( stdout.find( "LibFuncTestZero - seems to be ok" ) != -1 )
+
+
+def UnitTestsRunningForObjectFileTest():
+	test_dir= "unit_tests_running_for_object_file"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	assert( stdout.find( "Running 3 unit-tests..." ) != -1 )
+	assert( stdout.find( "Running test \"ObjFuncTestPositive\"." ) != -1 )
+	assert( stdout.find( "ObjFuncTestPositive - seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"ObjFuncTestNagative\"." ) != -1 )
+	assert( stdout.find( "ObjFuncTestNagative - seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"ObjFuncTestZero\"." ) != -1 )
+	assert( stdout.find( "ObjFuncTestZero - seems to be ok" ) != -1 )
+
+
+def UnitTestsRunningForExecutableAndLibraryTest():
+	test_dir= "unit_tests_running_for_executable_and_library"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	# Should have tests for library.
+	assert( stdout.find( "Running 3 unit-tests..." ) != -1 )
+	assert( stdout.find( "Running test \"LibFuncTestNagative\"." ) != -1 )
+	assert( stdout.find( "LibFuncTestNagative - seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"LibFuncTestPositive\"." ) != -1 )
+	assert( stdout.find( "LibFuncTestPositive - seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"LibFuncTestZero\"." ) != -1 )
+	assert( stdout.find( "LibFuncTestZero - seems to be ok" ) != -1 )
+	# Should have tests for executable.
+	assert( stdout.find( "Running 2 unit-tests..." ) != -1 )
+	assert( stdout.find( "Running test \"ExeTest0\"." ) != -1 )
+	assert( stdout.find( "ExeTest0 seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"ExeTest1\"." ) != -1 )
+	assert( stdout.find( "ExeTest1 seems to be ok" ) != -1 )
+	# Should not run the executable itself.
+	assert( stdout.find( "Main executable" ) == -1 )
+
+
+def UnitTestsDisabledTest():
+	test_dir= "unit_tests_disabled"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	# Should have no tests to run at all
+	assert( stdout.find( "There are no tests to run." ) != -1 )
+	# Should not run unit-tests
+	assert( stdout.find( "Main test" ) == -1 )
+	# Should not run the executable itself.
+	assert( stdout.find( "Running main executable" ) == -1 )
+
+
+def UnitTestsRunningForTestBuildTargetTest():
+	test_dir= "unit_tests_running_for_test_build_target"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	assert( stdout.find( "Running 2 test executables." ) != -1 )
+	assert( stdout.find( "Running test executable itself" ) != -1 )
+	assert( stdout.find( "Main unit-test" ) != -1 )
+
+
+def UnitTestsRunningForHostPackageTest():
+	test_dir= "unit_tests_running_for_host_package"
+	res= RunBuildSystemWithTests( test_dir )
+	if res.returncode != 0:
+		print( str(res.stderr) )
+	assert( res.returncode == 0 )
+	stdout= str(res.stdout)
+	assert( stdout.find( "Running 1 test executables." ) != -1 )
+	assert( stdout.find( "Running 2 unit-tests..." ) != -1 )
+	assert( stdout.find( "Running test \"SubpackageUnitTest0\"." ) != -1 )
+	assert( stdout.find( "SubpackageUnitTest0 seems to be ok" ) != -1 )
+	assert( stdout.find( "Running test \"SubpackageUnitTest1\"." ) != -1 )
+	assert( stdout.find( "SubpackageUnitTest1 seems to be ok" ) != -1 )
+	# Should not run the executable itself.
+	assert( stdout.find( "Running a subpackage executable" ) == -1 )
+
+
+def UnitTestRunningFailedTest():
+	test_dir= "unit_tests_running_failed"
+	res= RunBuildSystemWithTests( test_dir )
+	assert( res.returncode != 0 )
+	stderr= str(res.stderr)
+	assert( stderr.find( "Running 1 unit-tests..." ) != -1 )
+	assert( stderr.find( "Running test \"TestWhichShouldFail\"." ) != -1 )
+	assert( stderr.find( "Process group DoWork error!" ) != -1 )
+	# Should not run the executable itself.
+	assert( stderr.find( "Executable target!" ) == -1 )
+	# The executable target itself should be fine.
+	RunExecutable( test_dir, "exe" )
+
+
 #
 # End tests list
 #
@@ -1559,7 +1704,7 @@ def main():
 	parser.add_argument( "--tests-build-root-path", help= "path to tests build root", type=str, required= True )
 	parser.add_argument( "--build-system-executable", help= "path to build system executable", type=str, required= True )
 	parser.add_argument( "--compiler-executable", help= "path to compiler executable", type=str, required= True )
-	parser.add_argument( "--build-system-imports-path", help= "path to build system imports", type=str, required= True )
+	parser.add_argument( "--build-system-files-path", help= "path to build system files", type=str, required= True )
 	parser.add_argument( "--ustlib-path", help= "path to ustlib", type=str, required= True )
 	parser.add_argument( "--configuration-options-file-path", help= "path to configuration options JSON file", type=str, required= True )
 	parser.add_argument( "--mangling-scheme", help= "mangling scheme - msvc or intaniumabi", type=str, default= "itaniumabi" )
@@ -1579,8 +1724,8 @@ def main():
 	global g_compiler_executable
 	g_compiler_executable= args.compiler_executable
 
-	global g_build_system_imports_path
-	g_build_system_imports_path= args.build_system_imports_path
+	global g_build_system_files_path
+	g_build_system_files_path= args.build_system_files_path
 
 	global g_ustlib_path
 	g_ustlib_path= args.ustlib_path
@@ -1762,7 +1907,16 @@ def main():
 		TestExecutableTest,
 		TestExecutableTestFail,
 		TestExecutableInHostPackageTest,
-		TestExecutableSharesCommonCodeWithOutherTargetTest
+		TestExecutableSharesCommonCodeWithOutherTargetTest,
+		UnitTestsRunningTest,
+		UnitTestsRunningForLibraryTest,
+		UnitTestsRunningForSharedLibraryTest,
+		UnitTestsRunningForObjectFileTest,
+		UnitTestsRunningForExecutableAndLibraryTest,
+		UnitTestsDisabledTest,
+		UnitTestsRunningForTestBuildTargetTest,
+		UnitTestsRunningForHostPackageTest,
+		UnitTestRunningFailedTest,
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )

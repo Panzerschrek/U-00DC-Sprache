@@ -113,10 +113,10 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 			( options.ustlib_path.empty()
 				? ust::path::join( exe_directory, "../ustlib" ) // "ustlib" is located in the root of the Ü package.
 				: MakePathAbsolute(options.ustlib_path) ) ),
-		.build_system_imports_path= ust::path::normalize(
-			( options.build_system_imports_path.empty()
-				? ust::path::join( exe_directory, "../build_system/imports" ) // Build system imports are located in "/build_system/imports".
-				: MakePathAbsolute(options.build_system_imports_path) ) ),
+		.build_system_files_path= ust::path::normalize(
+			( options.build_system_files_path.empty()
+				? ust::path::join( exe_directory, "../build_system" ) // Build system files are located in "/build_system".
+				: MakePathAbsolute(options.build_system_files_path) ) ),
 		.packages_repository_directory=
 			ust::path::normalize(
 				MakePathAbsolute(
@@ -649,7 +649,7 @@ fn BuildAndLoadPackageBuildScript(
 		compiler_args.push_back( ust::path::join( build_system_paths.ustlib_path, g_ustlib_imports_subpath ) );
 		// Provide path to declarations of the build system interface.
 		compiler_args.push_back( "--include-dir" );
-		compiler_args.push_back( build_system_paths.build_system_imports_path );
+		compiler_args.push_back( ust::path::join( build_system_paths.build_system_files_path, "imports" ) );
 		// Provide path to build script wrapper headers.
 		compiler_args.push_back( "--include-dir" );
 		compiler_args.push_back( build_script_wrapper_header_file_directory );
@@ -924,6 +924,27 @@ fn CreateWorkspaceBuildTargetsGraphNodes(
 			build_graph );
 	}
 
+	{
+		var bool mut unit_testing_required= false;
+		foreach( &target : workspace.build_targets )
+		{
+			unit_testing_required|= target.value().enable_unit_testing;
+		}
+
+		// Build "unit_testing_lib" only if it's required.
+		if( unit_testing_required )
+		{
+			CreateUnitTestingLibBuildGraphNodes(
+				build_system_paths,
+				sysroot,
+				root_package_build_directory,
+				build_configuration_extended,
+				target_triple,
+				target_cpu,
+				build_graph );
+		}
+	}
+
 	// Collect and sort a list of build target names,
 	// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
 	var ust::vector</BuildTargetAbsoluteName/> mut build_target_names;
@@ -1170,370 +1191,622 @@ fn CreatePackageTargetBuildGraphNodes(
 	}
 
 	// Combine multiple ".bc" files into single result.
-
-	var ust::filesystem_path mut result_target_file_path= package_build_directory;
-	ust::path::append( result_target_file_path, target_name.name );
-
-	switch( target.target_type )
 	{
-		BuildTargetType::Executable, BuildTargetType::Test ->
+		var ust::filesystem_path mut result_target_file_path= package_build_directory;
+		ust::path::append( result_target_file_path, target_name.name );
+
+		switch( target.target_type )
+		{
+			BuildTargetType::Executable, BuildTargetType::Test ->
+			{
+				if( target_is_windows )
+				{
+					result_target_file_path+= ".exe";
+				}
+			},
+			BuildTargetType::Library ->
+			{
+				result_target_file_path+= ".bc";
+			},
+			BuildTargetType::SharedLibrary ->
+			{
+				if( target_is_windows )
+				{
+					result_target_file_path+= ".dll";
+				}
+				else if( target_triple.vendor == g_vendor_apple )
+				{
+					result_target_file_path+= ".dylib";
+				}
+				else
+				{
+					result_target_file_path+= ".so";
+				}
+			},
+			BuildTargetType::ObjectFile ->
+			{
+				result_target_file_path+= ".o";
+			},
+		}
+
+		result_target_file_path= ust::path::normalize( result_target_file_path );
+
+		if( target.target_type == BuildTargetType::Test )
+		{
+			test_list_to_execute.push_back( result_target_file_path );
+		}
+
+		var BuildGraph::Node mut node
+		{
+			.program= build_system_paths.compiler_executable_path,
+			// Dep-files are needed only for cases where dependencies can't be specified statically, like for imports.
+			// For an end-target like an executable dep-files isn't necessary.
+			.dep_file= "",
+			.output_files= ust::make_array( result_target_file_path ),
+			.comment= target_name.name, // TODO - prefix with package name/path
+		};
+
+		if( !sysroot.empty() )
+		{
+			node.command_line.push_back( "--sysroot" );
+			node.command_line.push_back( sysroot );
+		}
+
+		if( target.target_type == BuildTargetType::SharedLibrary )
 		{
 			if( target_is_windows )
 			{
-				result_target_file_path+= ".exe";
-			}
-		},
-		BuildTargetType::Library ->
-		{
-			result_target_file_path+= ".bc";
-		},
-		BuildTargetType::SharedLibrary ->
-		{
-			if( target_is_windows )
-			{
-				result_target_file_path+= ".dll";
+				// Add also ".lib" file to outputs.
+				// This file is implicitly created by the linker.
+				var ust::filesystem_path lib_name = ust::path::normalize( ust::concat( package_build_directory, "/", target_name.name, ".lib" ) );
+				node.output_files.push_back( lib_name );
+
+				if( target_triple.environment == g_environment_gnu )
+				{
+					// MinGW linker requires a special option to produce such library.
+					node.command_line.push_back( "-Wl,--out-implib," + lib_name );
+				}
 			}
 			else if( target_triple.vendor == g_vendor_apple )
 			{
-				result_target_file_path+= ".dylib";
+				// Specify install name with "@rpath" prefix, so that this prefixed name is used in result executables/dynamic libraries, which depend on this shared library.
+				node.command_line.push_back( ust::concat( "-Wl,-dylib_install_name,@rpath/", target_name.name, ".dylib" ) );
 			}
 			else
 			{
-				result_target_file_path+= ".so";
+				// Specify soname, in order to load libraries using only name and not the full path to the library provided to the linker.
+				node.command_line.push_back( ust::concat( "-Wl,-soname,", target_name.name, ".so" ) );
 			}
-		},
-		BuildTargetType::ObjectFile ->
+		}
+
+		foreach( &source_file_to_compile : source_files_to_compile )
 		{
-			result_target_file_path+= ".o";
-		},
+			node.command_line.push_back( source_file_to_compile.bc_file_full_path );
+			node.input_files.push_back( source_file_to_compile.bc_file_full_path );
+		}
+
+		// Link public dependencies.
+		switch( target.target_type )
+		{
+			BuildTargetType::Executable,
+			BuildTargetType::Test,
+			BuildTargetType::SharedLibrary,
+			BuildTargetType::ObjectFile ->
+			{
+				// For executables, shared libraries and object files perform linking with all public dependency libraries.
+				foreach( &public_dependency : target.public_dependencies_including_transitive )
+				{
+					if( IsPublicDependencyOfDirectPublicSharedLibraryDependency( workspace, target, public_dependency ) )
+					{
+						// An optimization for result binary size.
+						// If this dependency is also a public dependency of a direct shared library dependency,
+						// we don't need to link this dependency, since all symbols of this dependency will be exposed and obtained from such shared library.
+						// Generally a deeper analysis is required here to remove unnecessary libraries in all cases.
+						continue;
+					}
+
+					if( workspace.build_targets[ public_dependency ].target_type == BuildTargetType::Library )
+					{
+						var ust::filesystem_path mut lib_file=
+							ust::path::normalize( ust::concat(
+								GetPackageBuildDirectory( root_package_build_directory, public_dependency.package_name ),
+								"/",
+								public_dependency.name,
+								".bc" ) );
+
+						node.command_line.push_back( lib_file );
+						node.input_files.push_back( move(lib_file) );
+					}
+				}
+			},
+			BuildTargetType::Library ->
+			{
+				// Do not link public dependencies in libraries.
+				// Instead propatage them to the terminal target - executable or shared library.
+			},
+		}
+
+		// For all build target types link private library dependencies.
+		// Link also all transitive public dependencies of these private dependencies.
+		// Exception are libraries which are also public dependencies of this build target, they are not listed here.
+		foreach( &private_dependency : target.private_dependencies_including_transitive_public_dependencies )
+		{
+			if( IsPublicDependencyOfSomeLinkedSharedLibrary( workspace, target, private_dependency ) )
+			{
+				// An optimization for result binary size.
+				// If this dependency is also a public dependency of some shared library, which is linked against this build target,
+				// we don't need to link this dependency, since all symbols of this dependency will be exposed and obtained from such shared library.
+				continue;
+			}
+
+			if( workspace.build_targets[ private_dependency ].target_type == BuildTargetType::Library )
+			{
+				var ust::filesystem_path mut lib_file=
+					ust::path::normalize( ust::concat(
+						GetPackageBuildDirectory( root_package_build_directory, private_dependency.package_name ),
+						"/",
+						private_dependency.name,
+						".bc" ) );
+
+				node.command_line.push_back( lib_file );
+				node.input_files.push_back( lib_file );
+
+				// Internalize all functions from private dependencies.
+				node.command_line.push_back( "--internalize-functions-from" );
+				node.command_line.push_back( move(lib_file) );
+			}
+		}
+
+		// Link ustlib.
+		switch( target.target_type )
+		{
+			BuildTargetType::Executable,
+			BuildTargetType::Test,
+			BuildTargetType::SharedLibrary,
+			BuildTargetType::ObjectFile ->
+			{
+				// Link ustlib into build targets with binary code.
+				var ust::filesystem_path mut bc_file= GetCompiledUstlibPath( root_package_build_directory );
+				node.command_line.push_back( bc_file );
+				node.input_files.push_back( bc_file );
+				// Internalize all functions from ustlib.
+				node.command_line.push_back( "--internalize-functions-from" );
+				node.command_line.push_back( move(bc_file) );
+			},
+			BuildTargetType::Library -> { /* It's not necessary to link bitcode libraries against ustlib. */ },
+		}
+
+		// Link against system libraries required by "ustlib".
+		switch( target.target_type )
+		{
+			BuildTargetType::Executable, BuildTargetType::Test, BuildTargetType::SharedLibrary ->
+			{
+				foreach( &lib : GetUstlibSystemLibrariesToLink( target_triple ) )
+				{
+					node.command_line.push_back( "-Wl," + lib );
+				}
+			},
+			BuildTargetType::Library, BuildTargetType::ObjectFile -> {},
+		}
+
+		// Link shared library dependencies.
+		switch( target.target_type )
+		{
+			BuildTargetType::Executable,
+			BuildTargetType::Test,
+			BuildTargetType::SharedLibrary ->
+			{
+				foreach( &shared_library_dependency : target.shared_library_dependencies_to_link )
+				{
+					var ust::filesystem_path mut file_to_link= ust::path::join(
+						GetPackageBuildDirectory( root_package_build_directory, shared_library_dependency.package_name ),
+						shared_library_dependency.name );
+
+					if( target_is_windows )
+					{
+						// Windows dynamic libraries aren't linked directly, a proxy static library is used instead.
+						var ust::filesystem_path mut lib_file= ust::path::normalize( file_to_link + ".lib" );
+						node.command_line.push_back( "-Wl," + lib_file );
+						node.input_files.push_back( move(lib_file) );
+					}
+					else if( target_triple.vendor == g_vendor_apple )
+					{
+						// Darwin shared libraries are specified directly.
+						var ust::filesystem_path mut dylib_file= ust::path::normalize( file_to_link + ".dylib" );
+						node.command_line.push_back( "-Wl," + dylib_file );
+						node.input_files.push_back( move(dylib_file) );
+					}
+					else
+					{
+						// Unix shared libraries are specified directly.
+						var ust::filesystem_path mut so_file= ust::path::normalize( file_to_link + ".so" );
+						node.command_line.push_back( "-Wl," + so_file );
+						node.input_files.push_back( move(so_file) );
+					}
+				}
+
+				if( !target.shared_library_dependencies_to_link.empty() )
+				{
+					if( target_is_windows )
+					{
+						// Windows doesn't support "rpath".
+					}
+					else if( target_triple.vendor == g_vendor_apple )
+					{
+						// For now set "rpath" to loader_path - in order to have possibility to load shared libraries from common directory with all build targets.
+						node.command_line.push_back( "-Wl,-rpath,@loader_path" );
+					}
+					else
+					{
+						// For now set "rpath" to origin - in order to have possibility to load shared libraries from common directory with all build targets.
+						node.command_line.push_back( "-Wl,-rpath,$ORIGIN" );
+					}
+				}
+			},
+			BuildTargetType::Library -> {}, // No need to link Ü libraries against shared libraries.
+			BuildTargetType::ObjectFile -> {}, // No need to link object files against shared libraries.
+		}
+
+		// Link external library dependencies.
+		switch( target.target_type )
+		{
+			BuildTargetType::Executable,
+			BuildTargetType::Test,
+			BuildTargetType::SharedLibrary ->
+			{
+				foreach( &external_library : target.all_external_libraries_to_link )
+				{
+					node.command_line.push_back( "-Wl," + external_library );
+					if( ust::path::is_absolute( external_library ) )
+					{
+						node.input_files.push_back( external_library );
+					}
+					else
+					{
+						// Assume that non-absolute external libraries are system libraries loaded from known system directories.
+						// Examples are "pthread", "kernel32".
+						// In such case we don't need to track changes in these files - assume they are immutable and thus no needed to be listed in input files.
+					}
+				}
+			},
+			BuildTargetType::Library -> {}, // No need to link Ü libraries against external libraries.
+			BuildTargetType::ObjectFile -> {}, // No need to link object files against external libraries.
+		}
+
+		node.command_line.push_back( "-o" );
+		node.command_line.push_back( result_target_file_path );
+
+		// Read LLVM bitcode files (use the Ü compiler as bitcode files compiler).
+		node.command_line.push_back( "--input-filetype=bc" );
+
+		switch( target.target_type )
+		{
+			BuildTargetType::Executable, BuildTargetType::Test ->
+			{
+				// This requires compiler to be built with internal LLD (for now we don't support external linkers).
+				node.command_line.push_back( "-filetype=exe" );
+			},
+			BuildTargetType::Library ->
+			{
+				// Produce bitcode file.
+				node.command_line.push_back( "-filetype=bc" );
+			},
+			BuildTargetType::SharedLibrary ->
+			{
+				// Produce shared librart file.
+				// This requires compiler to be built with internal LLD (for now we don't support external linkers).
+				node.command_line.push_back( "-filetype=dll" );
+			},
+			BuildTargetType::ObjectFile ->
+			{
+				// Produce object file.
+				node.command_line.push_back( "-filetype=obj" );
+			},
+		}
+
+		// Internalization.
+		switch( target.target_type )
+		{
+			BuildTargetType::Executable, BuildTargetType::Test ->
+			{
+				// Run full internalization in order to export only "main".
+				node.command_line.push_back( "--internalize" );
+			},
+			BuildTargetType::Library ->
+			{
+				// Internalize hidden functions - to hide functions which shouldn't be available outside this library.
+				node.command_line.push_back( "--internalize-hidden-functions" );
+			},
+			BuildTargetType::SharedLibrary ->
+			{
+				// Run internalization of hidden functions, preserve others in order to export them.
+				node.command_line.push_back( "--internalize-hidden-functions" );
+			},
+			BuildTargetType::ObjectFile ->
+			{
+				// Run internalization of hidden functions, preserve others, in order to access them by external code using this object file.
+				node.command_line.push_back( "--internalize-hidden-functions" );
+			},
+		}
+
+		if( !target_is_windows )
+		{
+			node.command_line.push_back( "--relocation-model" );
+			node.command_line.push_back( "pic" );
+		}
+
+		// Build configuration-dependent options.
+		switch( build_configuration_extended.build_configuration )
+		{
+			BuildConfiguration::Debug ->
+			{
+				// Generate debug information.
+				node.command_line.push_back( "-g" );
+				// No optimization at all - optimization makes debugging hard.
+				node.command_line.push_back( "-O0" );
+				// No LTO is used for debug builds.
+			},
+			BuildConfiguration::Release ->
+			{
+				if( target.target_type == BuildTargetType::Library )
+				{
+					// Do not run optimization for library targets.
+					// Individual optimization of their source files was performed earlier.
+					// Full optimization will be performed while using this library in some other target kind, like in executable.
+				}
+				else
+				{
+					// Run full optimization.
+					switch( build_configuration_extended.release_optimization_level )
+					{
+						BuildConfigurationExtended::ReleaseOptimisationLevel::O2 -> { node.command_line.push_back( "-O2" ); },
+						BuildConfigurationExtended::ReleaseOptimisationLevel::O3 -> { node.command_line.push_back( "-O3" ); },
+					}
+					// Also run LTO.
+					node.command_line.push_back( "--lto-mode=link" );
+
+					// Put symbols into sections and remove unnecessary ones.
+					AddGCSectionsCompilerFlags( target_triple, node.command_line );
+				}
+			},
+			BuildConfiguration::MinSizeRelease ->
+			{
+				if( target.target_type == BuildTargetType::Library )
+				{
+					// Do not run optimization for library targets.
+					// Individual optimization of their source files was performed earlier.
+					// Full optimization will be performed while using this library in some other target kind, like in executable.
+				}
+				else
+				{
+					// Run full optimization for size.
+					switch( build_configuration_extended.min_size_release_optimization_level )
+					{
+						BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Os -> { node.command_line.push_back( "-Os" ); },
+						BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Oz -> { node.command_line.push_back( "-Oz" ); },
+					}
+					// Also run LTO.
+					node.command_line.push_back( "--lto-mode=link" );
+
+					// Put symbols into sections and remove unnecessary ones.
+					AddGCSectionsCompilerFlags( target_triple, node.command_line );
+				}
+			},
+		}
+
+		AddTargetTripleCompilerFlags( target_triple, node.command_line );
+		SetTargetCPU( target_cpu, node.command_line );
+		SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
+
+		// Perform verification just to be sure nothing is broken.
+		node.command_line.push_back( "--verify-module" );
+
+		build_graph.nodes.push_back( move(node) );
 	}
 
-	result_target_file_path= ust::path::normalize( result_target_file_path );
-
-	if( target.target_type == BuildTargetType::Test )
+	// Combine multiple ".bc" files into a unit-test executable.
+	if( target.enable_unit_testing )
 	{
-		test_list_to_execute.push_back( result_target_file_path );
-	}
+		var ust::filesystem_path mut result_target_file_path= package_build_directory;
+		ust::path::append( result_target_file_path, target_name.name );
 
-	var BuildGraph::Node mut node
-	{
-		.program= build_system_paths.compiler_executable_path,
-		// Dep-files are needed only for cases where dependencies can't be specified statically, like for imports.
-		// For an end-target like an executable dep-files isn't necessary.
-		.dep_file= "",
-		.output_files= ust::make_array( result_target_file_path ),
-		.comment= target_name.name, // TODO - prefix with package name/path
-	};
-
-	if( !sysroot.empty() )
-	{
-		node.command_line.push_back( "--sysroot" );
-		node.command_line.push_back( sysroot );
-	}
-
-	if( target.target_type == BuildTargetType::SharedLibrary )
-	{
+		result_target_file_path+= ".test"; // Use suffix with "." to avoid name collisions.
 		if( target_is_windows )
 		{
-			// Add also ".lib" file to outputs.
-			// This file is implicitly created by the linker.
-			var ust::filesystem_path lib_name = ust::path::normalize( ust::concat( package_build_directory, "/", target_name.name, ".lib" ) );
-			node.output_files.push_back( lib_name );
-
-			if( target_triple.environment == g_environment_gnu )
-			{
-				// MinGW linker requires a special option to produce such library.
-				node.command_line.push_back( "-Wl,--out-implib," + lib_name );
-			}
-		}
-		else if( target_triple.vendor == g_vendor_apple )
-		{
-			// Specify install name with "@rpath" prefix, so that this prefixed name is used in result executables/dynamic libraries, which depend on this shared library.
-			node.command_line.push_back( ust::concat( "-Wl,-dylib_install_name,@rpath/", target_name.name, ".dylib" ) );
-		}
-		else
-		{
-			// Specify soname, in order to load libraries using only name and not the full path to the library provided to the linker.
-			node.command_line.push_back( ust::concat( "-Wl,-soname,", target_name.name, ".so" ) );
-		}
-	}
-
-	foreach( &source_file_to_compile : source_files_to_compile )
-	{
-		node.command_line.push_back( source_file_to_compile.bc_file_full_path );
-		node.input_files.push_back( source_file_to_compile.bc_file_full_path );
-	}
-
-	// Link public dependencies.
-	switch( target.target_type )
-	{
-		BuildTargetType::Executable,
-		BuildTargetType::Test,
-		BuildTargetType::SharedLibrary,
-		BuildTargetType::ObjectFile ->
-		{
-			// For executables, shared libraries and object files perform linking with all public dependency libraries.
-			foreach( &public_dependency : target.public_dependencies_including_transitive )
-			{
-				if( IsPublicDependencyOfDirectPublicSharedLibraryDependency( workspace, target, public_dependency ) )
-				{
-					// An optimization for result binary size.
-					// If this dependency is also a public dependency of a direct shared library dependency,
-					// we don't need to link this dependency, since all symbols of this dependency will be exposed and obtained from such shared library.
-					// Generally a deeper analysis is required here to remove unnecessary libraries in all cases.
-					continue;
-				}
-
-				if( workspace.build_targets[ public_dependency ].target_type == BuildTargetType::Library )
-				{
-					var ust::filesystem_path mut lib_file=
-						ust::path::normalize( ust::concat(
-							GetPackageBuildDirectory( root_package_build_directory, public_dependency.package_name ),
-							"/",
-							public_dependency.name,
-							".bc" ) );
-
-					node.command_line.push_back( lib_file );
-					node.input_files.push_back( move(lib_file) );
-				}
-			}
-		},
-		BuildTargetType::Library ->
-		{
-			// Do not link public dependencies in libraries.
-			// Instead propatage them to the terminal target - executable or shared library.
-		},
-	}
-
-	// For all build target types link private library dependencies.
-	// Link also all transitive public dependencies of these private dependencies.
-	// Exception are libraries which are also public dependencies of this build target, they are not listed here.
-	foreach( &private_dependency : target.private_dependencies_including_transitive_public_dependencies )
-	{
-		if( IsPublicDependencyOfSomeLinkedSharedLibrary( workspace, target, private_dependency ) )
-		{
-			// An optimization for result binary size.
-			// If this dependency is also a public dependency of some shared library, which is linked against this build target,
-			// we don't need to link this dependency, since all symbols of this dependency will be exposed and obtained from such shared library.
-			continue;
+			result_target_file_path+= ".exe";
 		}
 
-		if( workspace.build_targets[ private_dependency ].target_type == BuildTargetType::Library )
+		result_target_file_path= ust::path::normalize( result_target_file_path );
+
+		test_list_to_execute.push_back( result_target_file_path );
+
+		var BuildGraph::Node mut node
 		{
-			var ust::filesystem_path mut lib_file=
-				ust::path::normalize( ust::concat(
-					GetPackageBuildDirectory( root_package_build_directory, private_dependency.package_name ),
-					"/",
-					private_dependency.name,
-					".bc" ) );
+			.program= build_system_paths.compiler_executable_path,
+			// Dep-files are needed only for cases where dependencies can't be specified statically, like for imports.
+			// For an end-target like an executable dep-files aren't necessary.
+			.dep_file= "",
+			.output_files= ust::make_array( result_target_file_path ),
+			.comment= target_name.name + ".test", // TODO - prefix with package name/path
+		};
 
-			node.command_line.push_back( lib_file );
-			node.input_files.push_back( lib_file );
+		if( !sysroot.empty() )
+		{
+			node.command_line.push_back( "--sysroot" );
+			node.command_line.push_back( sysroot );
+		}
 
-			// Internalize all functions from private dependencies.
+		foreach( &source_file_to_compile : source_files_to_compile )
+		{
+			// Link all compiled source files, but internalize all symbols from them.
+			// It's needed to hide actual "main" function.
+			node.command_line.push_back( source_file_to_compile.bc_file_full_path );
 			node.command_line.push_back( "--internalize-functions-from" );
-			node.command_line.push_back( move(lib_file) );
-		}
-	}
+			node.command_line.push_back( source_file_to_compile.bc_file_full_path );
 
-	// Link ustlib.
-	switch( target.target_type )
-	{
-		BuildTargetType::Executable,
-		BuildTargetType::Test,
-		BuildTargetType::SharedLibrary,
-		BuildTargetType::ObjectFile ->
+			node.input_files.push_back( source_file_to_compile.bc_file_full_path );
+		}
+
+		// Link public and private dependencies.
+		foreach( &dependency :
+				target.public_dependencies_including_transitive.iter().chain(
+				target.private_dependencies_including_transitive_public_dependencies.iter() ) )
 		{
-			// Link ustlib into build targets with binary code.
+			if( IsPublicDependencyOfDirectPublicSharedLibraryDependency( workspace, target, dependency ) )
+			{
+				// An optimization for result binary size.
+				// If this dependency is also a public dependency of a direct shared library dependency,
+				// we don't need to link this dependency, since all symbols of this dependency will be exposed and obtained from such shared library.
+				// Generally a deeper analysis is required here to remove unnecessary libraries in all cases.
+				continue;
+			}
+
+			if( workspace.build_targets[ dependency ].target_type == BuildTargetType::Library )
+			{
+				var ust::filesystem_path mut lib_file=
+					ust::path::normalize( ust::concat(
+						GetPackageBuildDirectory( root_package_build_directory, dependency.package_name ),
+						"/",
+						dependency.name,
+						".bc" ) );
+
+				node.command_line.push_back( lib_file );
+				node.input_files.push_back( lib_file );
+
+				// Internalize all functions from dependencies.
+				node.command_line.push_back( "--internalize-functions-from" );
+				node.command_line.push_back( move(lib_file) );
+			}
+		}
+
+		// Link ustlib.
+		{
 			var ust::filesystem_path mut bc_file= GetCompiledUstlibPath( root_package_build_directory );
 			node.command_line.push_back( bc_file );
 			node.input_files.push_back( bc_file );
 			// Internalize all functions from ustlib.
 			node.command_line.push_back( "--internalize-functions-from" );
 			node.command_line.push_back( move(bc_file) );
-		},
-		BuildTargetType::Library -> { /* It's not necessary to link bitcode libraries against ustlib. */ },
-	}
+		}
 
-	// Link against system libraries required by "ustlib".
-	switch( target.target_type )
-	{
-		BuildTargetType::Executable, BuildTargetType::Test, BuildTargetType::SharedLibrary ->
+		// Link against system libraries required by "ustlib".
+		foreach( &lib : GetUstlibSystemLibrariesToLink( target_triple ) )
 		{
-			foreach( &lib : GetUstlibSystemLibrariesToLink( target_triple ) )
+			node.command_line.push_back( "-Wl," + lib );
+		}
+
+		// Link shared library dependencies.
+		foreach( &shared_library_dependency : target.shared_library_dependencies_to_link )
+		{
+			var ust::filesystem_path mut file_to_link= ust::path::join(
+				GetPackageBuildDirectory( root_package_build_directory, shared_library_dependency.package_name ),
+				shared_library_dependency.name );
+
+			if( target_is_windows )
 			{
-				node.command_line.push_back( "-Wl," + lib );
+				// Windows dynamic libraries aren't linked directly, a proxy static library is used instead.
+				var ust::filesystem_path mut lib_file= ust::path::normalize( file_to_link + ".lib" );
+				node.command_line.push_back( "-Wl," + lib_file );
+				node.input_files.push_back( move(lib_file) );
 			}
-		},
-		BuildTargetType::Library, BuildTargetType::ObjectFile -> {},
-	}
-
-	// Link shared library dependencies.
-	switch( target.target_type )
-	{
-		BuildTargetType::Executable,
-		BuildTargetType::Test,
-		BuildTargetType::SharedLibrary ->
-		{
-			foreach( &shared_library_dependency : target.shared_library_dependencies_to_link )
+			else if( target_triple.vendor == g_vendor_apple )
 			{
-				var ust::filesystem_path mut file_to_link= ust::path::join(
-					GetPackageBuildDirectory( root_package_build_directory, shared_library_dependency.package_name ),
-					shared_library_dependency.name );
-
-				if( target_is_windows )
-				{
-					// Windows dynamic libraries aren't linked directly, a proxy static library is used instead.
-					var ust::filesystem_path mut lib_file= ust::path::normalize( file_to_link + ".lib" );
-					node.command_line.push_back( "-Wl," + lib_file );
-					node.input_files.push_back( move(lib_file) );
-				}
-				else if( target_triple.vendor == g_vendor_apple )
-				{
-					// Darwin shared libraries are specified directly.
-					var ust::filesystem_path mut dylib_file= ust::path::normalize( file_to_link + ".dylib" );
-					node.command_line.push_back( "-Wl," + dylib_file );
-					node.input_files.push_back( move(dylib_file) );
-				}
-				else
-				{
-					// Unix shared libraries are specified directly.
-					var ust::filesystem_path mut so_file= ust::path::normalize( file_to_link + ".so" );
-					node.command_line.push_back( "-Wl," + so_file );
-					node.input_files.push_back( move(so_file) );
-				}
-			}
-
-			if( !target.shared_library_dependencies_to_link.empty() )
-			{
-				if( target_is_windows )
-				{
-					// Windows doesn't support "rpath".
-				}
-				else if( target_triple.vendor == g_vendor_apple )
-				{
-					// For now set "rpath" to loader_path - in order to have possibility to load shared libraries from common directory with all build targets.
-					node.command_line.push_back( "-Wl,-rpath,@loader_path" );
-				}
-				else
-				{
-					// For now set "rpath" to origin - in order to have possibility to load shared libraries from common directory with all build targets.
-					node.command_line.push_back( "-Wl,-rpath,$ORIGIN" );
-				}
-			}
-		},
-		BuildTargetType::Library -> {}, // No need to link Ü libraries against shared libraries.
-		BuildTargetType::ObjectFile -> {}, // No need to link object files against shared libraries.
-	}
-
-	// Link external library dependencies.
-	switch( target.target_type )
-	{
-		BuildTargetType::Executable,
-		BuildTargetType::Test,
-		BuildTargetType::SharedLibrary ->
-		{
-			foreach( &external_library : target.all_external_libraries_to_link )
-			{
-				node.command_line.push_back( "-Wl," + external_library );
-				if( ust::path::is_absolute( external_library ) )
-				{
-					node.input_files.push_back( external_library );
-				}
-				else
-				{
-					// Assume that non-absolute external libraries are system libraries loaded from known system directories.
-					// Examples are "pthread", "kernel32".
-					// In such case we don't need to track changes in these files - assume they are immutable and thus no needed to be listed in input files.
-				}
-			}
-		},
-		BuildTargetType::Library -> {}, // No need to link Ü libraries against external libraries.
-		BuildTargetType::ObjectFile -> {}, // No need to link object files against external libraries.
-	}
-
-	node.command_line.push_back( "-o" );
-	node.command_line.push_back( result_target_file_path );
-
-	// Read LLVM bitcode files (use the Ü compiler as bitcode files compiler).
-	node.command_line.push_back( "--input-filetype=bc" );
-
-	switch( target.target_type )
-	{
-		BuildTargetType::Executable, BuildTargetType::Test ->
-		{
-			// This requires compiler to be built with internal LLD (for now we don't support external linkers).
-			node.command_line.push_back( "-filetype=exe" );
-		},
-		BuildTargetType::Library ->
-		{
-			// Produce bitcode file.
-			node.command_line.push_back( "-filetype=bc" );
-		},
-		BuildTargetType::SharedLibrary ->
-		{
-			// Produce shared librart file.
-			// This requires compiler to be built with internal LLD (for now we don't support external linkers).
-			node.command_line.push_back( "-filetype=dll" );
-		},
-		BuildTargetType::ObjectFile ->
-		{
-			// Produce object file.
-			node.command_line.push_back( "-filetype=obj" );
-		},
-	}
-
-	// Internalization.
-	switch( target.target_type )
-	{
-		BuildTargetType::Executable, BuildTargetType::Test ->
-		{
-			// Run full internalization in order to export only "main".
-			node.command_line.push_back( "--internalize" );
-		},
-		BuildTargetType::Library ->
-		{
-			// Internalize hidden functions - to hide functions which shouldn't be available outside this library.
-			node.command_line.push_back( "--internalize-hidden-functions" );
-		},
-		BuildTargetType::SharedLibrary ->
-		{
-			// Run internalization of hidden functions, preserve others in order to export them.
-			node.command_line.push_back( "--internalize-hidden-functions" );
-		},
-		BuildTargetType::ObjectFile ->
-		{
-			// Run internalization of hidden functions, preserve others, in order to access them by external code using this object file.
-			node.command_line.push_back( "--internalize-hidden-functions" );
-		},
-	}
-
-	if( !target_is_windows )
-	{
-		node.command_line.push_back( "--relocation-model" );
-		node.command_line.push_back( "pic" );
-	}
-
-	// Build configuration-dependent options.
-	switch( build_configuration_extended.build_configuration )
-	{
-		BuildConfiguration::Debug ->
-		{
-			// Generate debug information.
-			node.command_line.push_back( "-g" );
-			// No optimization at all - optimization makes debugging hard.
-			node.command_line.push_back( "-O0" );
-			// No LTO is used for debug builds.
-		},
-		BuildConfiguration::Release ->
-		{
-			if( target.target_type == BuildTargetType::Library )
-			{
-				// Do not run optimization for library targets.
-				// Individual optimization of their source files was performed earlier.
-				// Full optimization will be performed while using this library in some other target kind, like in executable.
+				// Darwin shared libraries are specified directly.
+				var ust::filesystem_path mut dylib_file= ust::path::normalize( file_to_link + ".dylib" );
+				node.command_line.push_back( "-Wl," + dylib_file );
+				node.input_files.push_back( move(dylib_file) );
 			}
 			else
+			{
+				// Unix shared libraries are specified directly.
+				var ust::filesystem_path mut so_file= ust::path::normalize( file_to_link + ".so" );
+				node.command_line.push_back( "-Wl," + so_file );
+				node.input_files.push_back( move(so_file) );
+			}
+		}
+
+		if( !target.shared_library_dependencies_to_link.empty() )
+		{
+			if( target_is_windows )
+			{
+				// Windows doesn't support "rpath".
+			}
+			else if( target_triple.vendor == g_vendor_apple )
+			{
+				// For now set "rpath" to loader_path - in order to have possibility to load shared libraries from common directory with all build targets.
+				node.command_line.push_back( "-Wl,-rpath,@loader_path" );
+			}
+			else
+			{
+				// For now set "rpath" to origin - in order to have possibility to load shared libraries from common directory with all build targets.
+				node.command_line.push_back( "-Wl,-rpath,$ORIGIN" );
+			}
+		}
+
+		// Link external library dependencies.
+		foreach( &external_library : target.all_external_libraries_to_link )
+		{
+			node.command_line.push_back( "-Wl," + external_library );
+			if( ust::path::is_absolute( external_library ) )
+			{
+				node.input_files.push_back( external_library );
+			}
+			else
+			{
+				// Assume that non-absolute external libraries are system libraries loaded from known system directories.
+				// Examples are "pthread", "kernel32".
+				// In such case we don't need to track changes in these files - assume they are immutable and thus no needed to be listed in input files.
+			}
+		}
+
+		// Link unit-testing lib.
+		{
+			var ust::filesystem_path unit_testing_lib_path= GetCompiledUnitTestingLibPath( root_package_build_directory );
+			node.command_line.push_back( unit_testing_lib_path );
+			node.input_files.push_back( unit_testing_lib_path );
+		}
+
+		// Link unit-testing lib entry (in form of an object file).
+		{
+			var ust::filesystem_path unit_testing_lib_entry_path= GetCompiledUnitTestingLibEntryPath( root_package_build_directory );
+			node.command_line.push_back( "-Wl," + unit_testing_lib_entry_path );
+			node.input_files.push_back( unit_testing_lib_entry_path );
+		}
+
+		// Generate table containing unit-tests. Hardcode here name used by the unit-testing library internally.
+		node.command_line.push_back( "--build-tests-table=__U_unit_tests_table" );
+
+		node.command_line.push_back( "-o" );
+		node.command_line.push_back( result_target_file_path );
+
+		// Read LLVM bitcode files (use the Ü compiler as bitcode files compiler).
+		node.command_line.push_back( "--input-filetype=bc" );
+
+		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
+		node.command_line.push_back( "-filetype=exe" );
+
+		// Run full internalization, but preserve entry point of the testing library.
+		node.command_line.push_back( "--internalize" );
+		node.command_line.push_back( "--internalize-preserve=unit_testing_main" );
+
+		if( !target_is_windows )
+		{
+			node.command_line.push_back( "--relocation-model" );
+			node.command_line.push_back( "pic" );
+		}
+
+		// Build configuration-dependent options.
+		switch( build_configuration_extended.build_configuration )
+		{
+			BuildConfiguration::Debug ->
+			{
+				// Generate debug information.
+				node.command_line.push_back( "-g" );
+				// No optimization at all - optimization makes debugging hard.
+				node.command_line.push_back( "-O0" );
+				// No LTO is used for debug builds.
+			},
+			BuildConfiguration::Release ->
 			{
 				// Run full optimization.
 				switch( build_configuration_extended.release_optimization_level )
@@ -1546,17 +1819,8 @@ fn CreatePackageTargetBuildGraphNodes(
 
 				// Put symbols into sections and remove unnecessary ones.
 				AddGCSectionsCompilerFlags( target_triple, node.command_line );
-			}
-		},
-		BuildConfiguration::MinSizeRelease ->
-		{
-			if( target.target_type == BuildTargetType::Library )
-			{
-				// Do not run optimization for library targets.
-				// Individual optimization of their source files was performed earlier.
-				// Full optimization will be performed while using this library in some other target kind, like in executable.
-			}
-			else
+			},
+			BuildConfiguration::MinSizeRelease ->
 			{
 				// Run full optimization for size.
 				switch( build_configuration_extended.min_size_release_optimization_level )
@@ -1569,18 +1833,18 @@ fn CreatePackageTargetBuildGraphNodes(
 
 				// Put symbols into sections and remove unnecessary ones.
 				AddGCSectionsCompilerFlags( target_triple, node.command_line );
-			}
-		},
+			},
+		}
+
+		AddTargetTripleCompilerFlags( target_triple, node.command_line );
+		SetTargetCPU( target_cpu, node.command_line );
+		SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
+
+		// Perform verification just to be sure nothing is broken.
+		node.command_line.push_back( "--verify-module" );
+
+		build_graph.nodes.push_back( move(node) );
 	}
-
-	AddTargetTripleCompilerFlags( target_triple, node.command_line );
-	SetTargetCPU( target_cpu, node.command_line );
-	SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
-
-	// Perform verification just to be sure nothing is broken.
-	node.command_line.push_back( "--verify-module" );
-
-	build_graph.nodes.push_back( move(node) );
 }
 
 struct SourceFileToCompile
@@ -1789,6 +2053,207 @@ fn CreateUstlibBuildGraphNodes(
 	node.command_line.push_back( "--verify-module" );
 
 	build_graph.nodes.push_back( move(node) );
+}
+
+fn GetCompiledUnitTestingLibPath( ust::filesystem_path_view root_package_build_directory ) : ust::filesystem_path
+{
+	return ust::path::normalize( ust::path::join( root_package_build_directory, "unit_testing_lib.bc" ) );
+}
+
+fn GetCompiledUnitTestingLibEntryPath( ust::filesystem_path_view root_package_build_directory ) : ust::filesystem_path
+{
+	return ust::path::normalize( ust::path::join( root_package_build_directory, "unit_testing_lib_entry.o" ) );
+}
+
+fn CreateUnitTestingLibBuildGraphNodes(
+	BuildSystemPaths& build_system_paths,
+	ust::filesystem_path_view sysroot,
+	ust::filesystem_path_view root_package_build_directory,
+	BuildConfigurationExtended& build_configuration_extended,
+	TargetTriple& target_triple,
+	ust::string_view8 target_cpu,
+	BuildGraph &mut build_graph )
+{
+	var ust::filesystem_path unit_testing_lib_path=
+		ust::path::join( build_system_paths.build_system_files_path, "unit_testing_lib" );
+
+	// Compile main code of the unit-testing library into a bitcode file.
+	// This code depends on ustlib.
+	{
+		var ust::filesystem_path out_file= GetCompiledUnitTestingLibPath( root_package_build_directory );
+
+		var BuildGraph::Node mut node
+		{
+			.program= build_system_paths.compiler_executable_path,
+			.output_files= ust::make_array( out_file ),
+			.dep_file= GetDependencyFilePath( out_file ),
+			.comment= "unit_testing_lib",
+		};
+
+		node.command_line.push_back( "-o" );
+		node.command_line.push_back( out_file );
+		node.command_line.push_back( "-filetype=bc" );
+
+		node.command_line.push_back( "-MF" );
+		node.command_line.push_back( node.dep_file );
+
+		node.command_line.push_back( "--source-dir" );
+		node.command_line.push_back( unit_testing_lib_path );
+
+		// The only include directory that we require is "ustlib".
+		node.command_line.push_back( "--include-dir" );
+		node.command_line.push_back( ust::path::join( build_system_paths.ustlib_path, g_ustlib_imports_subpath ) );
+
+		// Forbid importing anything outside include directories and source directories.
+		node.command_line.push_back( "--prevent-imports-outside-given-directories" );
+
+		{
+			var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( unit_testing_lib_path, "main.u" ) );
+			node.input_files.push_back( file_path );
+			node.command_line.push_back( file_path );
+		}
+
+		if( target_triple.operating_system != g_os_windows )
+		{
+			node.command_line.push_back( "--relocation-model" );
+			node.command_line.push_back( "pic" );
+		}
+
+		// Build configuration-dependent options.
+		switch( build_configuration_extended.build_configuration )
+		{
+			BuildConfiguration::Debug ->
+			{
+				// Generate debug information.
+				node.command_line.push_back( "-g" );
+				// No optimization at all - optimization makes debugging hard.
+				node.command_line.push_back( "-O0" );
+				// No LTO is used for debug builds.
+			},
+			BuildConfiguration::Release ->
+			{
+				// Run full optimizations.
+				switch( build_configuration_extended.release_optimization_level )
+				{
+					BuildConfigurationExtended::ReleaseOptimisationLevel::O2 -> { node.command_line.push_back( "-O2" ); },
+					BuildConfigurationExtended::ReleaseOptimisationLevel::O3 -> { node.command_line.push_back( "-O3" ); },
+				}
+				// Also prepare for further LTO.
+				node.command_line.push_back( "--lto-mode=prelink" );
+			},
+			BuildConfiguration::MinSizeRelease ->
+			{
+				// Run full optimization for size.
+				switch( build_configuration_extended.min_size_release_optimization_level )
+				{
+					BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Os -> { node.command_line.push_back( "-Os" ); },
+					BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Oz -> { node.command_line.push_back( "-Oz" ); },
+				}
+				// Also prepare for further LTO.
+				node.command_line.push_back( "--lto-mode=prelink" );
+			},
+		}
+
+		if( !sysroot.empty() )
+		{
+			node.command_line.push_back( "--sysroot" );
+			node.command_line.push_back( sysroot );
+		}
+
+		AddTargetTripleCompilerFlags( target_triple, node.command_line );
+		SetTargetCPU( target_cpu, node.command_line );
+		SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
+
+		// Perform verification just to be sure nothing is broken.
+		node.command_line.push_back( "--verify-module" );
+
+		build_graph.nodes.push_back( move(node) );
+	}
+
+	// Compile entry point of the unit-testing library into a separate object file.
+	// This is necessary in order to be able to provide proper "main" function at linking stage,
+	// after actual "main" (which is usually present for executable build targets) is internalized.
+	{
+		var ust::filesystem_path out_file= GetCompiledUnitTestingLibEntryPath( root_package_build_directory );
+
+		var BuildGraph::Node mut node
+		{
+			.program= build_system_paths.compiler_executable_path,
+			.output_files= ust::make_array( out_file ),
+			.dep_file= GetDependencyFilePath( out_file ),
+			.comment= "unit_testing_lib_entry",
+		};
+
+		node.command_line.push_back( "-o" );
+		node.command_line.push_back( out_file );
+		node.command_line.push_back( "-filetype=obj" );
+
+		node.command_line.push_back( "-MF" );
+		node.command_line.push_back( node.dep_file );
+
+		node.command_line.push_back( "--source-dir" );
+		node.command_line.push_back( unit_testing_lib_path );
+
+		// Forbid importing anything outside include directories and source directories.
+		node.command_line.push_back( "--prevent-imports-outside-given-directories" );
+
+		{
+			var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( unit_testing_lib_path, "entry.u" ) );
+			node.input_files.push_back( file_path );
+			node.command_line.push_back( file_path );
+		}
+
+		if( target_triple.operating_system != g_os_windows )
+		{
+			node.command_line.push_back( "--relocation-model" );
+			node.command_line.push_back( "pic" );
+		}
+
+		// Build configuration-dependent options.
+		switch( build_configuration_extended.build_configuration )
+		{
+			BuildConfiguration::Debug ->
+			{
+				// Generate debug information.
+				node.command_line.push_back( "-g" );
+				// No optimization at all - optimization makes debugging hard.
+				node.command_line.push_back( "-O0" );
+			},
+			BuildConfiguration::Release ->
+			{
+				// Run full optimizations.
+				switch( build_configuration_extended.release_optimization_level )
+				{
+					BuildConfigurationExtended::ReleaseOptimisationLevel::O2 -> { node.command_line.push_back( "-O2" ); },
+					BuildConfigurationExtended::ReleaseOptimisationLevel::O3 -> { node.command_line.push_back( "-O3" ); },
+				}
+			},
+			BuildConfiguration::MinSizeRelease ->
+			{
+				// Run full optimization for size.
+				switch( build_configuration_extended.min_size_release_optimization_level )
+				{
+					BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Os -> { node.command_line.push_back( "-Os" ); },
+					BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Oz -> { node.command_line.push_back( "-Oz" ); },
+				}
+			},
+		}
+
+		if( !sysroot.empty() )
+		{
+			node.command_line.push_back( "--sysroot" );
+			node.command_line.push_back( sysroot );
+		}
+
+		AddTargetTripleCompilerFlags( target_triple, node.command_line );
+		SetTargetCPU( target_cpu, node.command_line );
+		SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
+
+		// Perform verification just to be sure nothing is broken.
+		node.command_line.push_back( "--verify-module" );
+
+		build_graph.nodes.push_back( move(node) );
+	}
 }
 
 fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::string8/> &mut compiler_flags )

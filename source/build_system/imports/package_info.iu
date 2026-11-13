@@ -76,6 +76,11 @@ struct BuildTarget
 
 	// Contains names or paths of external libraries to link, like system libraries or libraries built outside Ü built system.
 	ust::vector</ust::string8/> external_libraries;
+
+	// Flag for enabling/disabling building and running unit-tests for this build target.
+	// It's enabled by-default, set it to "false" if building/running unit-tests for this target isn't possible
+	// (like due to unresolved external dependencies).
+	bool enable_unit_testing= true;
 }
 
 enum BuildTargetType

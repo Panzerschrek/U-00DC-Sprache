@@ -1,0 +1,19 @@
+import "/stdout.iu"
+
+fn AFunc() : i32;
+fn BFunc() : i32;
+fn MainFunc() : i32;
+
+fn IncFunc() : i32
+{
+	return 444;
+}
+
+fn_test( IncTest )
+{
+	ust::stdout_print( "Inc test.\n" );
+	halt if( AFunc() != 111 );
+	halt if( BFunc() != 222 );
+	halt if( MainFunc() != 333 );
+	halt if( IncFunc() != 444 );
+}
