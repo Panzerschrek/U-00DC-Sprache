@@ -17,6 +17,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.source_files= ust::make_array</ ust::string8 />( "src/poll_waker.u", "src/runner.u", "src/tcp_listener.u", "src/tcp_stream.u", "src/udp_socket.u" ),
 		.public_include_directories= ust::make_array</ust::filesystem_path/>( "imports" ),
 		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= sys_library_target.name } ),
+		.enable_unit_testing= false, // Don't require unit-testsing, we have no them in this library anyway.
 	};
 
 	var BK::BuildTarget mut tests_target
@@ -25,6 +26,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.target_type = BK::BuildTargetType::Executable,
 		.source_files= ust::make_array</ ust::string8 />( "tests/main.u" ),
 		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= library_target.name } ),
+		.enable_unit_testing= false, // Don't require unit-testsing for an executable, which itself is a test.
 	};
 
 	var BK::BuildTarget mut http_server_example_target
