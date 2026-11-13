@@ -57,7 +57,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 					PROT_READ | PROT_WRITE,
 					MAP_SHARED /* this flag enables sharing after "fork" call */ | MAP_ANONYMOUS,
 					-1,
-					::off_t_2U__(0) );
+					::off_t(0) );
 
 			if( ust::is_nullptr( status_memory_block ) )
 			{
