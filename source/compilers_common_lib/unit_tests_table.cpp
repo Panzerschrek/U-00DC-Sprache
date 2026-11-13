@@ -83,9 +83,12 @@ void BuildUnitTestsTable( llvm::Module& module, const llvm::StringRef table_name
 			llvm::ConstantArray::get( table_type, table_initializers ),
 			"" /* set name later */ );
 
-	// In case if there is already a variable with this name, replace it.
+	// In case if there is already a variable with this name, replace it and remove it.
 	if( const auto prev_variable= module.getNamedGlobal( table_name ) )
+	{
 		prev_variable->replaceAllUsesWith( table_variable );
+		prev_variable->eraseFromParent();
+	}
 
 	table_variable->setName( table_name );
 }
