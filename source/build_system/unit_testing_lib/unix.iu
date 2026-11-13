@@ -1,0 +1,16 @@
+// This file contains some definitions from UNIX (pparticulary Linux) headers,
+// These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
+
+fn nomangle fork() unsafe call_conv( "C" ) : ::pid_t;
+fn nomangle mmap( $(byte8) addr_2U__, ::size_t len_2U__, i32 prot_2U__, i32 flags_2U__, i32 fd_2U__, ::off_t_2U__ offset_2U__ ) unsafe call_conv( "C" ) : $(byte8);
+fn nomangle waitpid( ::pid_t pid_2U__, $(i32) stat_loc_2U__, i32 options_2U__ ) unsafe call_conv( "C" ) : ::pid_t;
+
+type pid_t = i32;
+type size_t= size_type;
+type off_t_2U__ = ssize_type;
+
+auto constexpr MAP_SHARED = 1;
+auto constexpr MAP_ANONYMOUS = 32;
+
+auto constexpr PROT_READ = 1;
+auto constexpr PROT_WRITE = 2;
