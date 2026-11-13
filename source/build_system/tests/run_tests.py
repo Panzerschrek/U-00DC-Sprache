@@ -1679,6 +1679,20 @@ def UnitTestsRunningForHostPackageTest():
 	assert( stdout.find( "Running a subpackage executable" ) == -1 )
 
 
+def UnitTestRunningFailedTest():
+	test_dir= "unit_tests_running_failed"
+	res= RunBuildSystemWithTests( test_dir )
+	assert( res.returncode != 0 )
+	stderr= str(res.stderr)
+	assert( stderr.find( "Running 1 unit-tests..." ) != -1 )
+	assert( stderr.find( "Running test \"TestWhichShouldFail\"." ) != -1 )
+	assert( stderr.find( "Process group DoWork error!" ) != -1 )
+	# Should not run the executable itself.
+	assert( stderr.find( "Executable target!" ) == -1 )
+	# The executable target itself should be fine.
+	RunExecutable( test_dir, "exe" )
+
+
 #
 # End tests list
 #
@@ -1902,6 +1916,7 @@ def main():
 		UnitTestsDisabledTest,
 		UnitTestsRunningForTestBuildTargetTest,
 		UnitTestsRunningForHostPackageTest,
+		UnitTestRunningFailedTest,
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
