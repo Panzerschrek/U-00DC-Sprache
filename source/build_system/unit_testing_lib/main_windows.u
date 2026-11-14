@@ -53,7 +53,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 	{
 		// Debuggers can't properly debug child processes.
 		// So, if we detect a debugger, run all tests in current process.
-		ust::stdout_print( "Debugger presence detected, avoid spawning a separate process for running tests.\n" );
+		ust::stdout_print( "Debugger presence detected, avoid spawning a separate process for running unit-tests.\n" );
 
 		ust::stdout_print_line( "Running ", unit_tests_table.size(), " unit-tests..." );
 
@@ -80,9 +80,11 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 
 		unsafe
 		{
-			var ust::string16 file_mapping_name_nt= ust::stringify16( "U_test_mapping_", GetCurrentProcessId(), "\0" );
-
 			// Allocate a block of shared memory intended to be used for status indication by both parent and child processes.
+			// Use named shared memory.
+			// Generate name based on current process ID in order to prevent conflicts with other tests running parrallel to this one.
+			var ust::string16 file_mapping_name_nt= ust::stringify16( "U_shared_memory_for_unit_tests", GetCurrentProcessId(), "\0" );
+
 			var HANDLE memory_handle=
 				::CreateFileMappingW(
 					GetInvalidHandle(),
