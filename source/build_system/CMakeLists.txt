@@ -175,8 +175,12 @@ endif()
 file( GLOB BUILD_SYSTEM_IMPORTS "imports/*" )
 install( FILES ${BUILD_SYSTEM_IMPORTS} DESTINATION "build_system/imports" )
 
-file( GLOB UNIT_TESTING_LIB_FILES "unit_testing_lib/*" )
+file( GLOB UNIT_TESTING_LIB_FILES "unit_testing_lib/*.u" "unit_testing_lib/*.iu" )
+file( GLOB UNIT_TESTING_LIB_FILES_UNIX "unit_testing_lib/unix/*" )
+file( GLOB UNIT_TESTING_LIB_FILES_WINDOWS "unit_testing_lib/windows/*" )
 install( FILES ${UNIT_TESTING_LIB_FILES} DESTINATION "build_system/unit_testing_lib" )
+install( FILES ${UNIT_TESTING_LIB_FILES_UNIX} DESTINATION "build_system/unit_testing_lib/unix" )
+install( FILES ${UNIT_TESTING_LIB_FILES_WINDOWS} DESTINATION "build_system/unit_testing_lib/windows" )
 
 # The build system uses the compiler executable itself to produce shared libraries and executables.
 # This requires internal LLD.
@@ -258,7 +262,7 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 		DEPENDS BuildSystem${CURRENT_COMPILER_GENERATION}
 		DEPENDS ${TESTS_FILES}
 		DEPENDS ${USTLIB_FILES} # Build scripts and sources may import "ustlib". So, make sure we re-run tests if something in ustlib changes.
-		DEPENDS ${UNIT_TESTING_LIB_FILES}
+		DEPENDS ${UNIT_TESTING_LIB_FILES} ${UNIT_TESTING_LIB_FILES_UNIX} ${UNIT_TESTING_LIB_FILES_WINDOWS}
 		DEPENDS BuildSystemTestsStaticLibrary${CURRENT_COMPILER_GENERATION}
 		DEPENDS BuildSystemTestsSharedLibrary${CURRENT_COMPILER_GENERATION}
 		DEPENDS BuildSystemTestFileGenerationTool${CURRENT_COMPILER_GENERATION}

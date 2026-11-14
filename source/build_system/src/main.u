@@ -2110,8 +2110,8 @@ fn CreateUnitTestingLibBuildGraphNodes(
 		{
 			auto main_source=
 				( target_triple.operating_system == g_os_windows
-					? ust::string_view8( "main_windows.u" )
-					: ust::string_view8( "main_unix.u" ) );
+					? ust::string_view8( "windows/main.u" )
+					: ust::string_view8( "unix/main.u" ) );
 
 			var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( unit_testing_lib_path, main_source ) );
 			node.input_files.push_back( file_path );
@@ -2205,8 +2205,8 @@ fn CreateUnitTestingLibBuildGraphNodes(
 		{
 			auto entry_source=
 				( target_triple.operating_system == g_os_windows
-					? ust::string_view8( "entry_windows.u" )
-					: ust::string_view8( "entry_unix.u" ) );
+					? ust::string_view8( "windows/entry.u" )
+					: ust::string_view8( "unix/entry.u" ) );
 
 			var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( unit_testing_lib_path, entry_source ) );
 			node.input_files.push_back( file_path );

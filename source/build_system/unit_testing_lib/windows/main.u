@@ -1,9 +1,9 @@
 import "/atomic.iu"
 import "/stdout_ext.iu"
 import "/stringification.iu"
-import "main_windows.iu"
-import "test_status.iu"
-import "unit_tests_table.iu"
+import "../test_status.iu"
+import "../unit_tests_table.iu"
+import "main.iu"
 import "windows.iu"
 
 // Don't use actual "main", since it may conflict with "main" defined in executable files.

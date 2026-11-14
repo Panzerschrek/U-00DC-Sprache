@@ -2,7 +2,7 @@
 // It should be just a tiny wrapper calling actual entry point (with name distinct from "main").
 // It should not depend on "ustlib".
 
-import "main_windows.iu"
+import "main.iu"
 
 fn nomangle wmain( i32 argc, $($(char16)) argv ) unsafe call_conv( "C" ) : i32
 {
