@@ -10,6 +10,7 @@ import "windows.iu"
 // Instead use custom entry point, which is called by proper "main" provided later (at linking stage).
 fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 {
+	// Require at least one arg containing name of this executable.
 	if( argc == 0 )
 	{
 		ust::stderr_print( "Not enough command-line args!\n" );
@@ -17,8 +18,6 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 	}
 
 	var $(char16) module_name_ptr= unsafe( $>(argv) );
-
-	var ust::string_view16 child_process_option_name= "--child-process-with-shared-memory"u16;
 
 	var ust::optional</ust::string16/> mut shared_memory_object_name;
 
@@ -30,11 +29,11 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 			ust::stdout_print( g_help_message );
 			return 0;
 		}
-		else if( arg_str == child_process_option_name )
+		else if( arg_str == g_child_process_option_name )
 		{
 			if( i + 1 >= argc )
 			{
-				ust::stderr_print_line( "Missing argument value after \"", child_process_option_name, "\" option!" );
+				ust::stderr_print_line( "Missing argument value after \"", g_child_process_option_name, "\" option!" );
 				return -1;
 			}
 			++i;
@@ -49,8 +48,6 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 	}
 
 	var ust::array_view_imut</UnitTestsTableElement/> unit_tests_table= GetUnitTestsTable();
-
-	var DWORD c_memory_block_access_flags( STANDARD_RIGHTS_REQUIRED | SECTION_QUERY | SECTION_MAP_WRITE | SECTION_MAP_READ | SECTION_EXTEND_SIZE );
 
 	if( unsafe( IsDebuggerPresent() ) != 0 )
 	{
@@ -97,7 +94,8 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 
 			if( ust::is_nullptr( memory_handle ) )
 			{
-				ust::stderr_print_line( "Failed to create file mapping! Error: ", GetLastError() );
+				auto e= ::GetLastError();
+				safe( ust::stderr_print_line( "Failed to create file mapping! Error: ", e ) );
 				return -1;
 			}
 
@@ -111,7 +109,8 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 
 			if( ust::is_nullptr( status_memory_block ) )
 			{
-				ust::stderr_print_line( "Failed to map shared memory! Error: ", GetLastError() );
+				auto e= ::GetLastError();
+				safe( ust::stderr_print_line( "Failed to map shared memory! Error: ", e ) );
 				return -1;
 			}
 
@@ -131,7 +130,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 			command_line_nt+= NullTerminatedStringToStringView( module_name_ptr );
 			command_line_nt+= "\""u16;
 			command_line_nt+= " "u16;
-			command_line_nt+= child_process_option_name;
+			command_line_nt+= g_child_process_option_name;
 			command_line_nt+= " "u16;
 			command_line_nt+= "\""u16;
 			command_line_nt+= NullTerminatedStringToStringView( file_mapping_name_nt.range().data() );
@@ -164,14 +163,14 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 				if( res == 0 )
 				{
 					auto e= ::GetLastError();
-					ust::stderr_print_line( "Process creation error: ", e );
+					safe( ust::stderr_print_line( "Failed to create child process! Error ", e ) );
 					return -1;
 				}
 
 				if( ::WaitForSingleObject( process_information.hProcess, DWORD(INFINITE) ) != DWORD(WAIT_OBJECT_0) )
 				{
 					auto e= ::GetLastError();
-					ust::stderr_print_line( "WaitForSingleObject failed with error ", e );
+					safe( ust::stderr_print_line( "WaitForSingleObject failed with error ", e ) );
 					return -1;
 				}
 
@@ -179,7 +178,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 				if( ::GetExitCodeProcess( process_information.hProcess, $<(exit_code) ) == 0 )
 				{
 					auto e= ::GetLastError();
-					ust::stderr_print_line( "GetExitCodeProcess failed with error ", e );
+					safe( ust::stderr_print_line( "GetExitCodeProcess failed with error ", e ) );
 					return -1;
 				}
 
@@ -252,15 +251,17 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 	{
 		// Child process - run tests which haven't been run yet.
 
+		var ust::string16 shared_memory_object_name_nt= shared_memory_object_name.try_deref() + "\0"u16;
+
 		unsafe
 		{
-			var ust::string16 shared_memory_object_name_nt= shared_memory_object_name.try_deref() + "\0"u16;
 			var HANDLE memory_handle=
 				::OpenFileMappingW( c_memory_block_access_flags, BOOL(0), shared_memory_object_name_nt.range().data() );
 
 			if( ust::is_nullptr( memory_handle ) )
 			{
-				ust::stderr_print_line( "Failed to open file mapping! Error: ", GetLastError() );
+				auto e= ::GetLastError();
+				safe( ust::stderr_print_line( "Failed to open file mapping! Error: ", e ) );
 				return -1;
 			}
 
@@ -274,7 +275,8 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 
 			if( ust::is_nullptr( status_memory_block ) )
 			{
-				ust::stderr_print_line( "Failed to map shared memory! Error: ", GetLastError() );
+				auto e= ::GetLastError();
+				safe( ust::stderr_print_line( "Failed to map shared memory! Error: ", e ) );
 				return -1;
 			}
 
@@ -315,7 +317,11 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 
 auto g_help_message=
 	"OPTIONS:\n" +
-	"  -h, --help   - show this message\n";
+	"  -h, --help - show this message\n" +
+	"  --child-process-with-shared-memory <shared memory name>\n" +
+	"    - internal option for running a child process sharing memory with the parent process\n";
+
+auto& g_child_process_option_name= "--child-process-with-shared-memory"u16;
 
 fn NullTerminatedStringToStringView( $(char16) ptr ) unsafe : ust::string_view16
 {
@@ -330,6 +336,9 @@ fn NullTerminatedStringToStringView( $(char16) ptr ) unsafe : ust::string_view16
 		return ust::string_view16( ptr, size_type( p - ptr ) );
 	}
 }
+
+var DWORD c_memory_block_access_flags(
+	STANDARD_RIGHTS_REQUIRED | SECTION_QUERY | SECTION_MAP_WRITE | SECTION_MAP_READ | SECTION_EXTEND_SIZE );
 
 // Produces INVALID_HANDLE_VALUE.
 fn GetInvalidHandle() : HANDLE
