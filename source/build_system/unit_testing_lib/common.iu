@@ -42,6 +42,11 @@ fn PrintZeroUnitTestsMessage()
 	ust::stdout_print( "Done running unit-tests. Succeeded 0, failed 0.\n" );
 }
 
+fn PrintDebuggerDetectedMessage()
+{
+	ust::stdout_print( "Debugger presence detected, avoid spawning a separate process for running unit-tests.\n" );
+}
+
 fn PrintRunningTestMessage( ust::string_view8 test_name )
 {
 	ust::stdout_print_line( "Running test \"", test_name, "\"." );

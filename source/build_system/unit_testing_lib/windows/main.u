@@ -52,7 +52,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 	{
 		// Debuggers can't properly debug child processes.
 		// So, if we detect a debugger, run all tests in current process.
-		ust::stdout_print( "Debugger presence detected, avoid spawning a separate process for running unit-tests.\n" );
+		PrintDebuggerDetectedMessage();
 
 		PrintRunningUnitTestsMessage( unit_tests_table );
 

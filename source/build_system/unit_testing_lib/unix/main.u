@@ -18,8 +18,6 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 
 	var ust::array_view_imut</UnitTestsTableElement/> unit_tests_table= GetUnitTestsTable();
 
-	PrintRunningUnitTestsMessage( unit_tests_table );
-
 	if( unit_tests_table.empty() )
 	{
 		PrintZeroUnitTestsMessage();
@@ -30,7 +28,9 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 	{
 		// Debuggers can't properly debug child processes.
 		// So, if we detect a debugger, run all tests in current process.
-		ust::stdout_print( "Debugger presence detected, avoid spawning a separate process for running unit-tests.\n" );
+		PrintDebuggerDetectedMessage();
+
+		PrintRunningUnitTestsMessage( unit_tests_table );
 
 		unsafe( RunUnitTestsInCurrentProcess( unit_tests_table ) );
 
@@ -38,6 +38,8 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 	}
 	else
 	{
+		PrintRunningUnitTestsMessage( unit_tests_table );
+
 		unsafe
 		{
 			// Spawn a child process, so that if a test fails, we can run other tests and report overall results.
