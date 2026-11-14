@@ -1,5 +1,6 @@
+import "/atomic.iu"
 import "/stdout_ext.iu"
-import "/string.iu"
+import "/stringification.iu"
 import "main_windows.iu"
 import "unit_tests_table.iu"
 import "windows.iu"
@@ -14,9 +15,11 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 		return -1;
 	}
 
-	var ust::string_view16 module_name= unsafe( NullTerminatedStringToStringView( $>( argv ) ) );
+	var $(char16) module_name_ptr= unsafe( $>(argv) );
 
-	ust::stdout_print_line( "Module name is ", module_name );
+	var ust::string_view16 child_process_option_name= "--child-process-with-shared-memory"u16;
+
+	var ust::optional</ust::string16/> mut shared_memory_object_name;
 
 	for( var i32 mut i= 1; i < argc; ++i )
 	{
@@ -25,6 +28,17 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 		{
 			ust::stdout_print( g_help_message );
 			return 0;
+		}
+		else if( arg_str == child_process_option_name )
+		{
+			if( i + 1 >= argc )
+			{
+				ust::stderr_print_line( "Missing argument value after \"", child_process_option_name, "\" option!" );
+				return -1;
+			}
+			++i;
+
+			shared_memory_object_name= unsafe( NullTerminatedStringToStringView( $>( argv + i ) ) );
 		}
 		else
 		{
@@ -35,26 +49,256 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 
 	var ust::array_view_imut</UnitTestsTableElement/> unit_tests_table= GetUnitTestsTable();
 
-	ust::stdout_print_line( "Running ", unit_tests_table.size(), " unit-tests..." );
+	var DWORD c_memory_block_access_flags( STANDARD_RIGHTS_REQUIRED | SECTION_QUERY | SECTION_MAP_WRITE | SECTION_MAP_READ | SECTION_EXTEND_SIZE );
 
-	foreach( &el : unit_tests_table )
+	if( shared_memory_object_name.empty() )
 	{
+		// Spawn a child process, so that if a test fails, we can run other tests and report overall results.
+		// Don't create a child process for each test, instead try running as many of them in single child process as possible.
+		// Only if the child process crashes, restart it.
+		// Doing so allows reducing overhead for process starting, which is in most cases isn't necessary if all or almost test don't fail.
+
+		ust::stdout_print_line( "Running ", unit_tests_table.size(), " unit-tests..." );
+
 		unsafe
 		{
-			var ust::string_view8 test_name( el.name_begin, el.name_size );
-			safe( ust::stdout_print_line( "Running test \"", test_name, "\"." ) );
-			safe( el.function_pointer() );
+			var ust::string16 file_mapping_name_nt= ust::stringify16( "U_test_mapping_", GetCurrentProcessId(), "\0" );
+
+			// Allocate a block of shared memory intended to be used for status indication by both parent and child processes.
+			var HANDLE memory_handle=
+				::CreateFileMappingW(
+					GetInvalidHandle(),
+					ust::nullptr</::struct_::SECURITY_ATTRIBUTES_1U__/>(),
+					DWORD( PAGE_READWRITE ),
+					DWORD(0),
+					DWORD( unit_tests_table.size() * typeinfo</TestStatus/>.size_of ),
+					file_mapping_name_nt.range().data() );
+
+			if( ust::is_nullptr( memory_handle ) )
+			{
+				ust::stderr_print_line( "Failed to create file mapping! Error: ", GetLastError() );
+				return -1;
+			}
+
+			var $(byte8) status_memory_block=
+				::MapViewOfFile(
+					memory_handle,
+					c_memory_block_access_flags,
+					DWORD(0),
+					DWORD(0),
+					unit_tests_table.size() * typeinfo</TestStatus/>.size_of );
+
+			if( ust::is_nullptr( status_memory_block ) )
+			{
+				ust::stderr_print_line( "Failed to map shared memory! Error: ", GetLastError() );
+				return -1;
+			}
+
+			var ust::array_view_mut</TestStatus/> test_status_table(
+				ust::byte_ptr_cast</TestStatus/>( status_memory_block ), unit_tests_table.size() );
+
+			// Set initial status for all tests.
+			foreach( &mut status : test_status_table )
+			{
+				status= c_test_status_not_run;
+			}
+
+			// Perform several attemts of running a child process.
+
+			var ust::string16 mut command_line_nt;
+			command_line_nt+= "\""u16;
+			command_line_nt+= NullTerminatedStringToStringView( module_name_ptr );
+			command_line_nt+= "\""u16;
+			command_line_nt+= " "u16;
+			command_line_nt+= child_process_option_name;
+			command_line_nt+= " "u16;
+			command_line_nt+= "\""u16;
+			command_line_nt+= NullTerminatedStringToStringView( file_mapping_name_nt.range().data() );
+			command_line_nt+= "\""u16;
+			command_line_nt+= "\0"u16;
+
+			// Have some upper limit for retries, so that we don't launch thousands of processes if all or almost all tests fail.
+			var size_type c_max_retries= 32s; // A reasonable limit, which allows catching many fails without too much overhead.
+			for( auto mut try_index= 0s; try_index < c_max_retries; ++try_index )
+			{
+				// Spawn a child process.
+				var struct_::STARTUPINFOW_1U__ mut startup_info= zero_init;
+				startup_info.cb= DWORD( typeinfo</struct_::STARTUPINFOW_1U__/>.size_of );
+
+				var struct_::PROCESS_INFORMATION_1U__ mut process_information= zero_init;
+
+				var BOOL res=
+					::CreateProcessW(
+						module_name_ptr,
+						command_line_nt.range().data(),
+						ust::nullptr</struct_::SECURITY_ATTRIBUTES_1U__/>(),
+						ust::nullptr</struct_::SECURITY_ATTRIBUTES_1U__/>(),
+						0, // Inherit handles.
+						0u, // Flags
+						ust::nullptr</byte8/>(), // Environment
+						ust::nullptr</WCHAR/>(), // Current directory
+						$<(startup_info),
+						$<(process_information) );
+
+				if( res == 0 )
+				{
+					auto e= ::GetLastError();
+					ust::stderr_print_line( "Process creation error: ", e );
+					return -1;
+				}
+
+				if( ::WaitForSingleObject( process_information.hProcess, DWORD(INFINITE) ) != DWORD(WAIT_OBJECT_0) )
+				{
+					auto e= ::GetLastError();
+					ust::stderr_print_line( "WaitForSingleObject failed with error ", e );
+					return -1;
+				}
+
+				var DWORD mut exit_code(99999);
+				if( ::GetExitCodeProcess( process_information.hProcess, $<(exit_code) ) == 0 )
+				{
+					auto e= ::GetLastError();
+					ust::stderr_print_line( "GetExitCodeProcess failed with error ", e );
+					return -1;
+				}
+
+				if( exit_code == DWORD(0) )
+				{
+					break; // Finished all (remaining) tests with no problems.
+				}
+				else
+				{
+					// Something failed.
+					// Continue execution of other tests after failed one.
+					continue;
+				}
+			}
+
+			// Read status for each test from the shared memory block.
+			// It's safe to do this here, since the child process (which modifies it) is already finished and no race condition is possible.
+
+			var size_type
+				mut num_tests_not_run= 0s,
+				mut num_tests_failed= 0s,
+				mut num_tests_finished= 0s,
+				mut num_tests_with_incorrect_status= 0s;
+
+			for( auto mut i= 0s; i < unit_tests_table.size(); ++i )
+			{
+				var UnitTestsTableElement& el= unit_tests_table[i];
+				var ust::string_view8 test_name( el.name_begin, el.name_size );
+
+				var TestStatus status= test_status_table[i];
+
+				switch( status )
+				{
+					c_test_status_not_run ->
+					{
+						++num_tests_not_run;
+						safe( ust::stderr_print_line( "Test \"", test_name, "\" not run!" ) );
+					},
+					c_test_status_started ->
+					{
+						// If a test has been started, but isn't finished, it has crashed.
+						++num_tests_failed;
+						safe( ust::stderr_print_line( "Test \"", test_name, "\" failed!" ) );
+					},
+					c_test_status_finished ->
+					{
+						++num_tests_finished;
+					},
+					default ->
+					{
+						++num_tests_with_incorrect_status;
+						safe( ust::stderr_print_line( "Test \"", test_name, "\" has incorrect status!" ) );
+					}
+				}
+			}
+
+			safe( ust::stdout_print_line(
+				"Done running unit-tests. Succeeded ", num_tests_finished, ", failed ", num_tests_failed, "." ) );
+
+			var bool ok=
+				num_tests_not_run == 0s &&
+				num_tests_failed == 0s &&
+				num_tests_finished == unit_tests_table.size() &&
+				num_tests_with_incorrect_status == 0s;
+
+			return ( ok ? 0 : -1 );
 		}
 	}
+	else
+	{
+		// Child process - run tests which haven't been run yet.
 
-	ust::stdout_print_line( "Done running unit-tests." );
+		unsafe
+		{
+			var ust::string16 shared_memory_object_name_nt= shared_memory_object_name.try_deref() + "\0"u16;
+			var HANDLE memory_handle=
+				::OpenFileMappingW( c_memory_block_access_flags, BOOL(0), shared_memory_object_name_nt.range().data() );
 
-	return 0;
+			if( ust::is_nullptr( memory_handle ) )
+			{
+				ust::stderr_print_line( "Failed to open file mapping! Error: ", GetLastError() );
+				return -1;
+			}
+
+			var $(byte8) status_memory_block=
+				::MapViewOfFile(
+					memory_handle,
+					c_memory_block_access_flags,
+					DWORD(0),
+					DWORD(0),
+					unit_tests_table.size() * typeinfo</TestStatus/>.size_of );
+
+			if( ust::is_nullptr( status_memory_block ) )
+			{
+				ust::stderr_print_line( "Failed to map shared memory! Error: ", GetLastError() );
+				return -1;
+			}
+
+			var ust::array_view_mut</TestStatus/> test_status_table(
+				ust::byte_ptr_cast</TestStatus/>( status_memory_block ), unit_tests_table.size() );
+
+			for( auto mut i= 0s; i < unit_tests_table.size(); ++i )
+			{
+				var TestStatus &mut status= test_status_table[i];
+
+				if( safe( ust::atomic_read( status ) ) != c_test_status_not_run )
+				{
+					// Ignore tests which are finished.
+					// Also ignore tests marked as started, since they are likely failed.
+					continue;
+				}
+
+				// Use atomic write for storing test status, so that it isn't reordered after a potential test crash.
+				safe( ust::atomic_write( status, c_test_status_started ) );
+
+				var UnitTestsTableElement& el= unit_tests_table[i];
+				var ust::string_view8 test_name( el.name_begin, el.name_size );
+
+				safe( ust::stdout_print_line( "Running test \"", test_name, "\"." ) );
+
+				// Execute the test.
+				// If it fails, this process crashes and test status remains "started".
+				safe( el.function_pointer() );
+
+				safe( ust::atomic_write( status, c_test_status_finished ) );
+			}
+
+			// All is fine - exit child process with zero code.
+			return 0;
+		}
+	}
 }
 
 auto g_help_message=
 	"OPTIONS:\n" +
 	"  -h, --help   - show this message\n";
+
+// TODO - remove copypaste.
+type TestStatus= u8;
+var TestStatus c_test_status_not_run(0), c_test_status_started(1), c_test_status_finished(2);
 
 fn NullTerminatedStringToStringView( $(char16) ptr ) unsafe : ust::string_view16
 {
@@ -68,4 +312,23 @@ fn NullTerminatedStringToStringView( $(char16) ptr ) unsafe : ust::string_view16
 
 		return ust::string_view16( ptr, size_type( p - ptr ) );
 	}
+}
+
+// Produces INVALID_HANDLE_VALUE.
+fn GetInvalidHandle() : HANDLE
+{
+	static_assert( typeinfo</ size_type />.size_of == typeinfo</HANDLE/>.size_of );
+
+	// Make -1.
+	var size_type mut s(0);
+	--s;
+
+	var HANDLE mut handle= zero_init;
+
+	unsafe( ust::memory_copy(
+		ust::ptr_cast_to_byte8( $<(handle) ),
+		ust::ptr_cast_to_byte8( $<(s) ),
+		typeinfo</ HANDLE />.size_of ) );
+
+	return handle;
 }

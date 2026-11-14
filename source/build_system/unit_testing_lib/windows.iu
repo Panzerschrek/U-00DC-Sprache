@@ -5,6 +5,7 @@ fn nomangle CreateFileMappingW( ::HANDLE hFile, ::LPSECURITY_ATTRIBUTES lpFileMa
 fn nomangle CreateProcessW( ::LPCWSTR lpApplicationName, ::LPWSTR lpCommandLine, ::LPSECURITY_ATTRIBUTES lpProcessAttributes, ::LPSECURITY_ATTRIBUTES lpThreadAttributes, ::BOOL bInheritHandles, ::DWORD dwCreationFlags, ::LPVOID lpEnvironment, ::LPCWSTR lpCurrentDirectory, ::LPSTARTUPINFOW lpStartupInfo, ::LPPROCESS_INFORMATION lpProcessInformation ) unsafe call_conv( "system" ) : ::BOOL;
 fn nomangle GetExitCodeProcess( ::HANDLE hProcess, ::LPDWORD lpExitCode ) unsafe call_conv( "system" ) : ::BOOL;
 fn nomangle GetLastError() unsafe call_conv( "system" ) : ::DWORD;
+fn nomangle GetCurrentProcessId() unsafe call_conv( "system" ) : ::DWORD;
 fn nomangle MapViewOfFile( ::HANDLE hFileMappingObject, ::DWORD dwDesiredAccess, ::DWORD dwFileOffsetHigh, ::DWORD dwFileOffsetLow, ::SIZE_T dwNumberOfBytesToMap ) unsafe call_conv( "system" ) : ::LPVOID;
 fn nomangle OpenFileMappingW( ::DWORD dwDesiredAccess, ::BOOL bInheritHandle, ::LPCWSTR lpName ) unsafe call_conv( "system" ) : ::HANDLE;
 fn nomangle WaitForSingleObject( ::HANDLE hHandle, ::DWORD dwMilliseconds ) unsafe call_conv( "system" ) : ::DWORD;
