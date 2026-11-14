@@ -12,7 +12,7 @@ import "unix.iu"
 // Instead use custom entry point, which is called by proper "main" provided later (at linking stage).
 fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 {
-	// TODO - parse args properly.
+	// Don't require parsing args.
 	ust::ignore_unused( argc );
 	ust::ignore_unused( argv );
 
@@ -114,6 +114,8 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 						safe( ust::atomic_write( status, c_test_status_finished ) );
 					}
 
+					// Don't care unmapping status memory block here, since	we exit anyway.
+
 					// All is fine - exit child process with zero code.
 					return 0;
 				}
@@ -138,6 +140,8 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 
 			// Read status for each test from the shared memory block.
 			// It's safe to do this here, since the child process (which modifies it) is already finished and no race condition is possible.
+
+			// Don't care unmapping status memory block here, since	we exit anyway.
 
 			return ( CheckUnitTestsStatus( unit_tests_table, test_status_table ) ? 0 : -1 );
 		}

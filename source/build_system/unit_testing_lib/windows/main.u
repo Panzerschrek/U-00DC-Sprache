@@ -16,6 +16,8 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 		return -1;
 	}
 
+	// Parse args.
+
 	var $(char16) module_name_ptr= unsafe( $>(argv) );
 
 	var ust::optional</ust::string16/> mut shared_memory_object_name;
@@ -88,7 +90,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 					ust::nullptr</::struct_::SECURITY_ATTRIBUTES_1U__/>(),
 					DWORD( PAGE_READWRITE ),
 					DWORD(0),
-					DWORD( unit_tests_table.size() * typeinfo</TestStatus/>.size_of ),
+					DWORD( unit_tests_table.size() * typeinfo</TestStatus/>.size_of ), // Allocate a status variable for each test.
 					file_mapping_name_nt.range().data() );
 
 			if( ust::is_nullptr( memory_handle ) )
@@ -122,8 +124,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 				status= c_test_status_not_run;
 			}
 
-			// Perform several attemts of running a child process.
-
+			// Prepare command-line for child process.
 			var ust::string16 mut command_line_nt;
 			command_line_nt+= "\""u16;
 			command_line_nt+= NullTerminatedStringToStringView( module_name_ptr );
@@ -136,6 +137,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 			command_line_nt+= "\""u16;
 			command_line_nt+= "\0"u16;
 
+			// Perform several attemts of running a child process.
 			// Have some upper limit for retries, so that we don't launch thousands of processes if all or almost all tests fail.
 			var size_type c_max_retries= 32s; // A reasonable limit, which allows catching many fails without too much overhead.
 			for( auto mut try_index= 0s; try_index < c_max_retries; ++try_index )
@@ -166,6 +168,8 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 					return -1;
 				}
 
+				// Wait for child process to finish and get exit code.
+
 				if( ::WaitForSingleObject( process_information.hProcess, DWORD(INFINITE) ) != DWORD(WAIT_OBJECT_0) )
 				{
 					auto e= ::GetLastError();
@@ -195,6 +199,8 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 
 			// Read status for each test from the shared memory block.
 			// It's safe to do this here, since the child process (which modifies it) is already finished and no race condition is possible.
+
+			// Don't care unmapping status memory block here, since	we exit anyway.
 
 			return ( CheckUnitTestsStatus( unit_tests_table, test_status_table ) ? 0 : -1 );
 		}
@@ -260,6 +266,8 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 
 				safe( ust::atomic_write( status, c_test_status_finished ) );
 			}
+
+			// Don't care unmapping status memory block here, since	we exit anyway.
 
 			// All is fine - exit child process with zero code.
 			return 0;
