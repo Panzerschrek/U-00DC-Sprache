@@ -1,7 +1,7 @@
 import "/atomic.iu"
 import "/stdout_ext.iu"
 import "/string.iu"
-import "main.iu"
+import "main_unix.iu"
 import "unit_tests_table.iu"
 import "unix.iu"
 

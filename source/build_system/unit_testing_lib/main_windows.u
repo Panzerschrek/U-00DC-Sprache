@@ -1,11 +1,11 @@
 import "/stdout_ext.iu"
 import "/string.iu"
-import "main.iu"
+import "main_windows.iu"
 import "unit_tests_table.iu"
 
 // Don't use actual "main", since it may conflict with "main" defined in executable files.
 // Instead use custom entry point, which is called by proper "main" provided later (at linking stage).
-fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
+fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 {
 	// TODO - parse args properly.
 	ust::ignore_unused( argc );
