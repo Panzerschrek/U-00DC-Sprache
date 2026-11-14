@@ -2,7 +2,6 @@ import "/atomic.iu"
 import "/stdout_ext.iu"
 import "/stringification.iu"
 import "../test_status.iu"
-import "../unit_tests_table.iu"
 import "main.iu"
 import "windows.iu"
 
@@ -199,54 +198,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 			// Read status for each test from the shared memory block.
 			// It's safe to do this here, since the child process (which modifies it) is already finished and no race condition is possible.
 
-			var size_type
-				mut num_tests_not_run= 0s,
-				mut num_tests_failed= 0s,
-				mut num_tests_finished= 0s,
-				mut num_tests_with_incorrect_status= 0s;
-
-			for( auto mut i= 0s; i < unit_tests_table.size(); ++i )
-			{
-				var UnitTestsTableElement& el= unit_tests_table[i];
-				var ust::string_view8 test_name( el.name_begin, el.name_size );
-
-				var TestStatus status= test_status_table[i];
-
-				switch( status )
-				{
-					c_test_status_not_run ->
-					{
-						++num_tests_not_run;
-						safe( ust::stderr_print_line( "Test \"", test_name, "\" not run!" ) );
-					},
-					c_test_status_started ->
-					{
-						// If a test has been started, but isn't finished, it has crashed.
-						++num_tests_failed;
-						safe( ust::stderr_print_line( "Test \"", test_name, "\" failed!" ) );
-					},
-					c_test_status_finished ->
-					{
-						++num_tests_finished;
-					},
-					default ->
-					{
-						++num_tests_with_incorrect_status;
-						safe( ust::stderr_print_line( "Test \"", test_name, "\" has incorrect status!" ) );
-					}
-				}
-			}
-
-			safe( ust::stdout_print_line(
-				"Done running unit-tests. Succeeded ", num_tests_finished, ", failed ", num_tests_failed, "." ) );
-
-			var bool ok=
-				num_tests_not_run == 0s &&
-				num_tests_failed == 0s &&
-				num_tests_finished == unit_tests_table.size() &&
-				num_tests_with_incorrect_status == 0s;
-
-			return ( ok ? 0 : -1 );
+			return ( CheckUnitTestsStatus( unit_tests_table, test_status_table ) ? 0 : -1 );
 		}
 	}
 	else
