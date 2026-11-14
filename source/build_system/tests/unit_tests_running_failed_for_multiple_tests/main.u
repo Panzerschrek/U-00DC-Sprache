@@ -1,0 +1,73 @@
+import "/main_wrapper.iu"
+import "/stdout.iu"
+
+pretty_main
+{
+	ust::stdout_print( "Executable target!\n" );
+	return 0;
+}
+
+fn_test( Test0 )
+{
+	halt if( true );
+}
+
+fn_test( Test1 )
+{
+	halt if( true );
+}
+
+fn_test( Test2 )
+{
+	halt if( false );
+}
+
+fn_test( Test3 )
+{
+	halt if( false );
+}
+
+fn_test( Test4 )
+{
+	halt if( true );
+}
+
+fn_test( Test5 )
+{
+	halt if( true );
+}
+
+fn_test( Test6 )
+{
+	halt if( true );
+}
+
+fn_test( Test7 )
+{
+	halt if( false );
+}
+
+fn_test( Test8 )
+{
+	halt if( false );
+}
+
+fn_test( Test9 )
+{
+	halt if( false );
+}
+
+fn_test( Test10 )
+{
+	halt if( true );
+}
+
+fn_test( Test11 )
+{
+	halt if( false );
+}
+
+fn_test( Test12 )
+{
+	halt if( false );
+}
