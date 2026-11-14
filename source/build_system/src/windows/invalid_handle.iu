@@ -5,17 +5,5 @@ import "windows.iu"
 fn GetInvalidHandle() : HANDLE
 {
 	static_assert( typeinfo</ size_type />.size_of == typeinfo</HANDLE/>.size_of );
-
-	// Make -1.
-	var size_type mut s(0);
-	--s;
-
-	var HANDLE mut handle= zero_init;
-
-	unsafe( ust::memory_copy(
-		ust::ptr_cast_to_byte8( $<(handle) ),
-		ust::ptr_cast_to_byte8( $<(s) ),
-		typeinfo</ HANDLE />.size_of ) );
-
-	return handle;
+	return unsafe( ust::int_to_ptr</byte8/>( ~0s /* all ones pattern */ ) );
 }
