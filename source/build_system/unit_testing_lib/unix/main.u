@@ -1,6 +1,9 @@
 import "/atomic.iu"
+import "/file.iu"
+import "/number_parsing.iu"
 import "/stdout_ext.iu"
 import "/string.iu"
+import "/vector.iu"
 import "../common.iu"
 import "main.iu"
 import "unix.iu"
@@ -23,10 +26,11 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 		return 0;
 	}
 
-	if( false /* TODO - allow changing this condition via command-line options */ )
+	if( IsDebuggerPresent() )
 	{
-		// Run all tests in current process (and crash it on first fail).
-		// It may be useful for debugging.
+		// Debuggers can't properly debug child processes.
+		// So, if we detect a debugger, run all tests in current process.
+		ust::stdout_print( "Debugger presence detected, avoid spawning a separate process for running unit-tests.\n" );
 
 		unsafe( RunUnitTestsInCurrentProcess( unit_tests_table ) );
 
@@ -135,5 +139,127 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 
 			return ( CheckUnitTestsStatus( unit_tests_table, test_status_table ) ? 0 : -1 );
 		}
+	}
+}
+
+fn IsDebuggerPresent() : bool
+{
+	if( !ust::constexpr_string_equals( compiler::target::os, "linux" ) )
+	{
+		// TODO - implement detecting debugger on Unix systems other than Linux - OS X, FreeBSD.
+		return false;
+	}
+
+	// On Linux there is a file /proc/self/status.
+	// It contains line-by-line info.
+	// We search for "TracerPid:".
+	// If it's present and value for it is not zero - a debugger is likely present.
+
+	if_var( &proc_status_contents : ReadProcStatus() )
+	{
+		foreach( &line : SplitStringIntoLines( proc_status_contents ) )
+		{
+			auto mut line_trimmed= line.range();
+			TrimLeadingWhitespaces( line_trimmed );
+
+			auto& tracer_pid= "TracerPid";
+			if( line_trimmed.starts_with( tracer_pid ) )
+			{
+				line_trimmed= line_trimmed.subrange_start( ust::array_size( tracer_pid ) );
+
+				TrimLeadingWhitespaces( line_trimmed );
+
+				if( line_trimmed.starts_with( ":" ) )
+				{
+					line_trimmed= line_trimmed.subrange_start( 1s );
+
+					TrimLeadingWhitespaces( line_trimmed );
+
+					if_var( pid : ust::parse_and_extract_number</i32/>( line_trimmed ) )
+					{
+						return pid != 0;
+					}
+				}
+
+				break;
+			}
+		}
+	}
+
+	return false;
+}
+
+fn ReadProcStatus() : ust::optional</ust::string8/>
+{
+	auto mut file_res= ust::file_readable::open( "/proc/self/status" );
+	if( file_res.is_error() )
+	{
+		return ust::null_optional;
+	}
+
+	auto &mut file= file_res.try_deref();
+
+	var ust::string8 mut result;
+
+	var size_type c_chunk_size= 4096s;
+
+	loop
+	{
+		var size_type old_size= result.size();
+		result.resize( old_size + c_chunk_size, '\0' );
+
+		result_match( file.read( result.range().subrange_start( old_size ).to_byte8_range() ) )
+		{
+			Ok( actual_read_size ) ->
+			{
+				if( actual_read_size < c_chunk_size )
+				{
+					result.resize( old_size + actual_read_size, '\0' );
+					break;
+				}
+			},
+			Err( e ) ->
+			{
+				ust::ignore_unused(e);
+				break;
+			}
+		}
+	}
+
+	return result;
+}
+
+fn SplitStringIntoLines( ust::string_view8 s ) : ust::vector</ust::string8/>
+{
+	var ust::vector</ust::string8/> mut result;
+
+	var size_type mut line_start= 0s;
+	for( auto mut i= 0s; i < s.size(); ++i )
+	{
+		var char8 c= s[i];
+		if( c == '\n' )
+		{
+			if( line_start < i )
+			{
+				result.push_back( s.subrange( line_start, i ) );
+			}
+
+			line_start= i + 1s;
+		}
+	}
+
+	if( line_start < s.size() )
+	{
+		result.push_back( s.subrange_start( line_start ) );
+	}
+
+	return result;
+}
+
+fn TrimLeadingWhitespaces( ust::string_view8 &mut s )
+{
+	while( !s.empty() && ( s.front() == ' ' || s.front() == '\t' ) )
+	{
+		s.drop_front();
 	}
 }
