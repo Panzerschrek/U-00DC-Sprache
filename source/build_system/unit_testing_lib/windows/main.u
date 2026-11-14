@@ -1,7 +1,7 @@
 import "/atomic.iu"
 import "/stdout_ext.iu"
 import "/stringification.iu"
-import "../test_status.iu"
+import "../common.iu"
 import "main.iu"
 import "windows.iu"
 
@@ -54,17 +54,9 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 		// So, if we detect a debugger, run all tests in current process.
 		ust::stdout_print( "Debugger presence detected, avoid spawning a separate process for running unit-tests.\n" );
 
-		ust::stdout_print_line( "Running ", unit_tests_table.size(), " unit-tests..." );
+		PrintRunningUnitTestsMessage( unit_tests_table );
 
-		foreach( &el : unit_tests_table )
-		{
-			ust::stdout_print_line( "Running test \"", unsafe( ust::string_view8( el.name_begin, el.name_size ) ), "\"." );
-			// If running this test fails, the whole process crashes.
-			el.function_pointer();
-		}
-
-		// If this place is reached, no test has failed.
-		ust::stdout_print_line( "Done running unit-tests. Succeeded ", unit_tests_table.size(), ", failed 0." );
+		unsafe( RunUnitTestsInCurrentProcess( unit_tests_table ) );
 
 		return 0;
 	}
@@ -75,7 +67,13 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 		// Only if the child process crashes, restart it.
 		// Doing so allows reducing overhead for process starting, which is in most cases isn't necessary if all or almost test don't fail.
 
-		ust::stdout_print_line( "Running ", unit_tests_table.size(), " unit-tests..." );
+		PrintRunningUnitTestsMessage( unit_tests_table );
+
+		if( unit_tests_table.empty() )
+		{
+			PrintZeroUnitTestsMessage();
+			return 0;
+		}
 
 		unsafe
 		{
@@ -254,7 +252,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 				var UnitTestsTableElement& el= unit_tests_table[i];
 				var ust::string_view8 test_name( el.name_begin, el.name_size );
 
-				safe( ust::stdout_print_line( "Running test \"", test_name, "\"." ) );
+				safe( PrintRunningTestMessage( test_name ) );
 
 				// Execute the test.
 				// If it fails, this process crashes and test status remains "started".

@@ -1,7 +1,7 @@
 import "/atomic.iu"
 import "/stdout_ext.iu"
 import "/string.iu"
-import "../test_status.iu"
+import "../common.iu"
 import "main.iu"
 import "unix.iu"
 
@@ -15,11 +15,11 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 
 	var ust::array_view_imut</UnitTestsTableElement/> unit_tests_table= GetUnitTestsTable();
 
-	ust::stdout_print_line( "Running ", unit_tests_table.size(), " unit-tests..." );
+	PrintRunningUnitTestsMessage( unit_tests_table );
 
 	if( unit_tests_table.empty() )
 	{
-		safe( ust::stdout_print( "Done running unit-tests. Succeeded 0, failed 0.\n" ) );
+		PrintZeroUnitTestsMessage();
 		return 0;
 	}
 
@@ -28,15 +28,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 		// Run all tests in current process (and crash it on first fail).
 		// It may be useful for debugging.
 
-		foreach( &el : unit_tests_table )
-		{
-			ust::stdout_print_line( "Running test \"", unsafe( ust::string_view8( el.name_begin, el.name_size ) ), "\"." );
-			// If running this test fails, the whole process crashes.
-			el.function_pointer();
-		}
-
-		// If this place is reached, no test has failed.
-		ust::stdout_print_line( "Done running unit-tests. Succeeded ", unit_tests_table.size(), ", failed 0." );
+		unsafe( RunUnitTestsInCurrentProcess( unit_tests_table ) );
 
 		return 0;
 	}
@@ -107,7 +99,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
 						var UnitTestsTableElement& el= unit_tests_table[i];
 						var ust::string_view8 test_name( el.name_begin, el.name_size );
 
-						safe( ust::stdout_print_line( "Running test \"", test_name, "\"." ) );
+						safe( PrintRunningTestMessage( test_name ) );
 
 						// Execute the test.
 						// If it fails, this process crashes and test status remains "started".

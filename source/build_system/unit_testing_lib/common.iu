@@ -1,0 +1,119 @@
+import "/stdout_ext.iu"
+import "/string.iu"
+
+fn GetUnitTestsTable() : ust::array_view_imut</UnitTestsTableElement/>
+{
+	unsafe
+	{
+		auto table_ptr= $<( import var</ UnitTestsTableElement />( "__U_unit_tests_table" ) );
+
+		// Unit-tests table is null-terminated. Find this null to determine table size.
+		var size_type mut size= 0s;
+		while( !ust::is_nullptr( $>( table_ptr + size ).function_pointer ) )
+		{
+			++size;
+		}
+
+		return ust::array_view_imut</UnitTestsTableElement/>( table_ptr, size );
+	}
+}
+
+// This struct should match the struct used by the compiler for unit-tests table elements.
+struct UnitTestsTableElement ordered
+{
+	( fn() ) function_pointer;
+	$(char8) name_begin;
+	size_type name_size;
+}
+
+// Should have size of exactly 3 pointers.
+static_assert( typeinfo</ UnitTestsTableElement />.size_of == typeinfo</ $(byte8) />.size_of * 3s, "Invalid size!" );
+
+type TestStatus= u8;
+var TestStatus c_test_status_not_run(0), c_test_status_started(1), c_test_status_finished(2);
+
+fn PrintRunningUnitTestsMessage( ust::array_view_imut</UnitTestsTableElement/> unit_tests_table )
+{
+	ust::stdout_print_line( "Running ", unit_tests_table.size(), " unit-tests..." );
+}
+
+fn PrintZeroUnitTestsMessage()
+{
+	ust::stdout_print( "Done running unit-tests. Succeeded 0, failed 0.\n" );
+}
+
+fn PrintRunningTestMessage( ust::string_view8 test_name )
+{
+	ust::stdout_print_line( "Running test \"", test_name, "\"." );
+}
+
+// Given unit-tests table should be correct!
+fn RunUnitTestsInCurrentProcess( ust::array_view_imut</UnitTestsTableElement/> unit_tests_table ) unsafe
+{
+	foreach( &el : unit_tests_table )
+	{
+		ust::stdout_print_line( "Running test \"", unsafe( ust::string_view8( el.name_begin, el.name_size ) ), "\"." );
+		// If running this test fails, the whole process crashes.
+		el.function_pointer();
+	}
+
+	// If this place is reached, no test has failed.
+	ust::stdout_print_line( "Done running unit-tests. Succeeded ", unit_tests_table.size(), ", failed 0." );
+}
+
+// Given unit-tests table should be correct!
+fn nodiscard CheckUnitTestsStatus(
+	ust::array_view_imut</UnitTestsTableElement/> unit_tests_table,
+	ust::array_view_imut</TestStatus/> test_status_table ) unsafe : bool
+{
+	halt if( unit_tests_table.size() != test_status_table.size() );
+
+	var size_type
+		mut num_tests_not_run= 0s,
+		mut num_tests_failed= 0s,
+		mut num_tests_finished= 0s,
+		mut num_tests_with_incorrect_status= 0s;
+
+	for( auto mut i= 0s; i < unit_tests_table.size(); ++i )
+	{
+		var UnitTestsTableElement& el= unit_tests_table[i];
+		auto test_name= unsafe( ust::string_view8( el.name_begin, el.name_size ) );
+
+		var TestStatus status= test_status_table[i];
+
+		switch( status )
+		{
+			c_test_status_not_run ->
+			{
+				// A test may be not run if a limit for the number of retries has been reached.
+				++num_tests_not_run;
+				ust::stderr_print_line( "Test \"", test_name, "\" not run!" );
+			},
+			c_test_status_started ->
+			{
+				// If a test has been started, but isn't finished, it has crashed.
+				++num_tests_failed;
+				ust::stderr_print_line( "Test \"", test_name, "\" failed!" );
+			},
+			c_test_status_finished ->
+			{
+				++num_tests_finished;
+			},
+			default ->
+			{
+				// Just in case if something went wrong, count tests with incorrect status.
+				++num_tests_with_incorrect_status;
+				ust::stderr_print_line( "Test \"", test_name, "\" has incorrect status!" );
+			}
+		}
+	}
+
+	ust::stdout_print_line(
+		"Done running unit-tests. Succeeded ", num_tests_finished, ", failed ", num_tests_failed, "." );
+
+	return
+		num_tests_not_run == 0s &&
+		num_tests_failed == 0s &&
+		num_tests_finished == unit_tests_table.size() &&
+		num_tests_with_incorrect_status == 0s;
+}
