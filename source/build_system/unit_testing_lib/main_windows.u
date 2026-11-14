@@ -7,9 +7,30 @@ import "unit_tests_table.iu"
 // Instead use custom entry point, which is called by proper "main" provided later (at linking stage).
 fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 {
-	// TODO - parse args properly.
-	ust::ignore_unused( argc );
-	ust::ignore_unused( argv );
+	if( argc == 0 )
+	{
+		ust::stderr_print( "Not enough command-line args!\n" );
+		return -1;
+	}
+
+	var ust::string_view16 module_name= unsafe( NullTerminatedStringToStringView( $>( argv ) ) );
+
+	ust::stdout_print_line( "Module name is ", module_name );
+
+	for( var i32 mut i= 1; i < argc; ++i )
+	{
+		var ust::string_view16 arg_str= unsafe( NullTerminatedStringToStringView( $>( argv + i ) ) );
+		if( arg_str == "-h"u16 || arg_str == "--help"u16 )
+		{
+			ust::stdout_print( g_help_message );
+			return 0;
+		}
+		else
+		{
+			ust::stderr_print_line( "Unrecognized command-line arg \"", arg_str, "\"!" );
+			return -1;
+		}
+	}
 
 	var ust::array_view_imut</UnitTestsTableElement/> unit_tests_table= GetUnitTestsTable();
 
@@ -28,4 +49,22 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 	ust::stdout_print_line( "Done running unit-tests." );
 
 	return 0;
+}
+
+auto g_help_message=
+	"OPTIONS:\n" +
+	"  -h, --help   - show this message\n";
+
+fn NullTerminatedStringToStringView( $(char16) ptr ) unsafe : ust::string_view16
+{
+	unsafe
+	{
+		auto mut p= ptr;
+		while( $>(p) != '\0'c16 )
+		{
+			++p;
+		}
+
+		return ust::string_view16( ptr, size_type( p - ptr ) );
+	}
 }
