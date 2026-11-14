@@ -1,3 +1,4 @@
+import "/atomic.iu"
 import "/stdout_ext.iu"
 import "/string.iu"
 
@@ -57,13 +58,49 @@ fn RunUnitTestsInCurrentProcess( ust::array_view_imut</UnitTestsTableElement/> u
 {
 	foreach( &el : unit_tests_table )
 	{
-		ust::stdout_print_line( "Running test \"", unsafe( ust::string_view8( el.name_begin, el.name_size ) ), "\"." );
+		PrintRunningTestMessage( unsafe( ust::string_view8( el.name_begin, el.name_size ) ) );
 		// If running this test fails, the whole process crashes.
 		el.function_pointer();
 	}
 
 	// If this place is reached, no test has failed.
 	ust::stdout_print_line( "Done running unit-tests. Succeeded ", unit_tests_table.size(), ", failed 0." );
+}
+
+// This function crashes if it fails to run a test and exits normally if all is fine.
+// Execute it in a child process.
+// Given unit-tests table should be correct!
+fn RunUnitTestsWithNotRunStatus(
+	ust::array_view_imut</UnitTestsTableElement/> unit_tests_table,
+	ust::array_view_mut</TestStatus/> test_status_table ) unsafe
+{
+	halt if( unit_tests_table.size() != test_status_table.size() );
+
+	for( auto mut i= 0s; i < unit_tests_table.size(); ++i )
+	{
+		var TestStatus &mut status= test_status_table[i];
+
+		if( safe( ust::atomic_read( status ) ) != c_test_status_not_run )
+		{
+			// Ignore tests which are finished.
+			// Also ignore tests marked as started, since they are likely failed.
+			continue;
+		}
+
+		// Use atomic write for storing test status, so that it isn't reordered after a potential test crash.
+		ust::atomic_write( status, c_test_status_started );
+
+		var UnitTestsTableElement& el= unit_tests_table[i];
+
+		PrintRunningTestMessage( unsafe( ust::string_view8( el.name_begin, el.name_size ) ) );
+
+		// Execute the test.
+		// If it fails, this process crashes and test status remains "started".
+		el.function_pointer();
+
+		ust::atomic_write( status, c_test_status_finished );
+	}
+
 }
 
 // Given unit-tests table should be correct!

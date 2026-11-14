@@ -1,4 +1,3 @@
-import "/atomic.iu"
 import "/stdout_ext.iu"
 import "/stringification.iu"
 import "../common.iu"
@@ -52,6 +51,12 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 
 	if( unsafe( IsDebuggerPresent() ) != 0 )
 	{
+		if( unit_tests_table.empty() )
+		{
+			PrintZeroUnitTestsMessage();
+			return 0;
+		}
+
 		// Debuggers can't properly debug child processes.
 		// So, if we detect a debugger, run all tests in current process.
 		PrintDebuggerDetectedMessage();
@@ -69,13 +74,13 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 		// Only if the child process crashes, restart it.
 		// Doing so allows reducing overhead for process starting, which is in most cases isn't necessary if all or almost test don't fail.
 
-		PrintRunningUnitTestsMessage( unit_tests_table );
-
 		if( unit_tests_table.empty() )
 		{
 			PrintZeroUnitTestsMessage();
 			return 0;
 		}
+
+		PrintRunningUnitTestsMessage( unit_tests_table );
 
 		unsafe
 		{
@@ -241,31 +246,7 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 			var ust::array_view_mut</TestStatus/> test_status_table(
 				ust::byte_ptr_cast</TestStatus/>( status_memory_block ), unit_tests_table.size() );
 
-			for( auto mut i= 0s; i < unit_tests_table.size(); ++i )
-			{
-				var TestStatus &mut status= test_status_table[i];
-
-				if( safe( ust::atomic_read( status ) ) != c_test_status_not_run )
-				{
-					// Ignore tests which are finished.
-					// Also ignore tests marked as started, since they are likely failed.
-					continue;
-				}
-
-				// Use atomic write for storing test status, so that it isn't reordered after a potential test crash.
-				safe( ust::atomic_write( status, c_test_status_started ) );
-
-				var UnitTestsTableElement& el= unit_tests_table[i];
-				var ust::string_view8 test_name( el.name_begin, el.name_size );
-
-				safe( PrintRunningTestMessage( test_name ) );
-
-				// Execute the test.
-				// If it fails, this process crashes and test status remains "started".
-				safe( el.function_pointer() );
-
-				safe( ust::atomic_write( status, c_test_status_finished ) );
-			}
+			RunUnitTestsWithNotRunStatus( unit_tests_table, test_status_table );
 
 			// Don't care unmapping status memory block here, since	we exit anyway.
 
