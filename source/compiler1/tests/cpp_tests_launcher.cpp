@@ -253,6 +253,15 @@ bool HasError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErr
 	return false;
 }
 
+enum class TestStatus : uint8_t
+{
+	NotRun,
+	InProgress,
+	Filtered,
+	Disabled,
+	Finished,
+};
+
 } // namespace U
 
 // Entry point for tests executable.
@@ -269,27 +278,44 @@ int main( const int argc, const char** argv )
 
 		std::cout << "Run " << funcs_container.size() << " Ü tests" << std::endl << std::endl;
 
-		uint32_t passed= 0u;
-		uint32_t disabled= 0u;
-		uint32_t failed= 0u;
-		uint32_t filtered= 0u;
+		const std::wstring file_mapping_name= L"U_test_mapping_" + std::to_wstring( GetCurrentProcessId() );
 
-		std::unordered_map<HANDLE, size_t> process_handle_to_index;
+		const HANDLE memory_handle=
+			CreateFileMappingW(
+				INVALID_HANDLE_VALUE,
+				nullptr,
+				PAGE_READWRITE,
+				0,
+				DWORD( funcs_container.size() * sizeof(TestStatus) ),
+				file_mapping_name.data() );
 
-		std::cout << "Starting processes" << std::endl;
-
-		for( size_t i= 0; i < funcs_container.size(); ++i )
+		if( memory_handle == nullptr )
 		{
-			const TestFuncData& func_data= funcs_container[ i ];
+			std::cerr << "Failed to create file mapping!" << std::endl;
+			return -1;
+		}
 
-			if( !FilterTest( func_data.name ) )
-			{
-				++filtered;
-				continue;
-			}
+		void* const memory_mapped=
+			MapViewOfFile( memory_handle, FILE_MAP_ALL_ACCESS, 0, 0, funcs_container.size() * sizeof(TestStatus) );
 
-			std::wstring command_line= std::wstring(L"\"") + module_name + L"\" " + std::to_wstring( i );
+		if( memory_mapped == nullptr )
+		{
+			std::cerr << "Failed to map shared memory!" << std::endl;
+			return -1;
+		}
 
+		const auto shared_test_status_values= static_cast<TestStatus*>( memory_mapped );
+
+		// Set initial status for all tests.
+		for( size_t i= 0; i < funcs_container.size(); ++i )
+			shared_test_status_values[i]= TestStatus::NotRun;
+
+		// Perform several attemts of running a child process.
+		std::wstring command_line= std::wstring(L"\"") + module_name + L"\" \"" + file_mapping_name + L"\"";
+
+		const size_t c_max_retries= 32;
+		for( size_t try_index= 0; try_index < c_max_retries; ++try_index )
+		{
 			STARTUPINFOW startup_info{};
 			startup_info.cb= sizeof(STARTUPINFOW);
 
@@ -315,47 +341,65 @@ int main( const int argc, const char** argv )
 				return -1;
 			}
 
-			process_handle_to_index.emplace( process_information.hProcess, i );
-		}
-
-		std::cout << "Waiting for all proceses to finish" << std::endl;
-
-		{
-			std::vector<HANDLE> handles;
-
-			for( const auto& pair : process_handle_to_index )
+			if( WaitForSingleObject( process_information.hProcess, INFINITE ) != WAIT_OBJECT_0 )
 			{
-				handles.push_back( pair.first );
-
-				if( handles.size() >= MAXIMUM_WAIT_OBJECTS )
-				{
-					WaitForMultipleObjects( DWORD( handles.size() ), handles.data(), 1, INFINITE );
-					handles.clear();
-				}
+				const auto e= GetLastError();
+				std::cerr << "WaitForSingleObject failed with error " << e << std::endl;
+				return -1;
 			}
-
-			if( !handles.empty() )
-			{
-				WaitForMultipleObjects( DWORD( handles.size() ), handles.data(), 1, INFINITE );
-				handles.clear();
-			}
-
-			std::cout << "Retrieving exit codes" << std::endl;
-		}
-
-		for( const auto& pair : process_handle_to_index )
-		{
-			const TestFuncData& func_data= funcs_container[ pair.second ];
 
 			DWORD exit_code= 99999;
-			GetExitCodeProcess( pair.first, &exit_code );
+			if( GetExitCodeProcess( process_information.hProcess, &exit_code ) == 0 )
+			{
+				const auto e= GetLastError();
+				std::cerr << "GetExitCodeProcess failed with error " << e << std::endl;
+				return -1;
+			}
 
 			if( exit_code == 0 )
-				++passed;
+			{
+				break; // Finished all (remaining) tests with no problems.
+			}
 			else
 			{
-				std::cout << "Test " << func_data.name << " exited with code " << exit_code << std::endl;
+				// Something failed.
+				// Continue execution of other tests after failed one.
+				std::cout << "Tests failure detected (exit code " << exit_code << "), re-run the child process, retries remained: " << c_max_retries - try_index << std::endl;
+				continue;
+			}
+		}
+
+		// Read status for each test from the shared memory.
+		// It's safe to do here, since the child process (which modifies it) is already finished.
+
+		uint32_t passed= 0u;
+		uint32_t disabled= 0u;
+		uint32_t failed= 0u;
+		uint32_t filtered= 0u;
+
+		for( size_t i= 0; i < funcs_container.size(); ++i )
+		{
+			const TestFuncData& func_data= funcs_container[i];
+			switch( shared_test_status_values[i] )
+			{
+			case TestStatus::NotRun:
+				std::cout << "Test " << func_data.name << " not run  - wtf?" << std::endl;
 				++failed;
+				break;
+			case TestStatus::InProgress:
+				std::cout << "Test " << func_data.name << " failed" << std::endl;
+				++failed;
+				break;
+			case TestStatus::Filtered:
+				++filtered;
+				break;
+			case TestStatus::Finished:
+				++passed;
+				break;
+			case TestStatus::Disabled:
+				std::cout << "Test " << func_data.name << " disabled" << std::endl;
+				++disabled;
+				break;
 			}
 		}
 
@@ -365,46 +409,87 @@ int main( const int argc, const char** argv )
 			filtered << " tests filtered\n" <<
 			failed << " tests failed" << std::endl;
 
-		return -int(failed);
+		// Don't care unmapping shared memory and closing mapping, we exit anyway.
+
+		return ( failed == 0 ? 0 : -1 );
 	}
 	else
 	{
-		const size_t test_index= std::atoi( argv[1] );
-		const TestFuncData& func_data= funcs_container[ test_index ];
+		const HANDLE memory_handle= OpenFileMappingA( FILE_MAP_ALL_ACCESS, FALSE, argv[1] );
 
-		try
+		if( memory_handle == nullptr )
 		{
-			func_data.func();
-		}
-		catch( const DisableTestException& )
-		{
-			llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
-			std::cout << "Test " << func_data.name << " disabled\n";
-			return -1;
-		}
-		catch( const TestException& ex )
-		{
-			llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
-			std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
-			return -1;
-		}
-		catch( const HaltException& )
-		{
-			llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
-			std::cout << "Test " << func_data.name << " halted" << std::endl;
-			return -1;
-		}
-		catch( const ExecutionEngineException& ex )
-		{
-			llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
-			std::cout << "Test " << func_data.name << " failed:";
-			for( const std::string& e : ex.errors )
-				std::cout << "\n" << e;
-			std::cout << std::endl;
+			std::cerr << "Failed to open file mapping!" << std::endl;
 			return -1;
 		}
 
-		llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
-		return 0;
+		void* const memory_mapped=
+			MapViewOfFile( memory_handle, FILE_MAP_ALL_ACCESS, 0, 0, funcs_container.size() * sizeof(TestStatus) );
+
+		if( memory_mapped == nullptr )
+		{
+			std::cerr << "Failed to map shared memory!" << std::endl;
+			return -1;
+		}
+
+		const auto shared_test_status_values= static_cast<TestStatus*>( memory_mapped );
+
+		for( size_t i= 0; i < funcs_container.size(); ++i )
+		{
+			TestStatus& status= shared_test_status_values[i];
+
+			if( status != TestStatus::NotRun )
+			{
+				// Ignore tests which are finished.
+				// Also ignore tests marked as "in progress", since they are likely failed.
+				continue;
+			}
+
+			status= TestStatus::InProgress;
+
+			const TestFuncData& func_data= funcs_container[i];
+
+			if( !FilterTest( func_data.name ) )
+			{
+				status= TestStatus::Filtered;
+				continue;
+			}
+
+			try
+			{
+				func_data.func();
+
+				llvm::llvm_shutdown(); // We must kill ALL static internal llvm variables after each test.
+
+				status= TestStatus::Finished;
+			}
+			catch( const DisableTestException& )
+			{
+				std::cout << "Test " << func_data.name << " disabled\n";
+				status= TestStatus::Disabled;
+			}
+			catch( const TestException& ex )
+			{
+				std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
+				return -1;
+			}
+			catch( const HaltException& )
+			{
+				std::cout << "Test " << func_data.name << " halted" << std::endl;
+				return -1;
+			}
+			catch( const ExecutionEngineException& ex )
+			{
+				std::cout << "Test " << func_data.name << " failed:";
+				for( const std::string& e : ex.errors )
+					std::cout << "\n" << e;
+				std::cout << std::endl;
+				return -1;
+			}
+		}
+
+		// Don't care unmapping shared memory and closing mapping, we exit anyway.
+
+		return 0; // All is fine - exit with zero code.
 	}
 }
