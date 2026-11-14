@@ -2,6 +2,7 @@ import "/stdout_ext.iu"
 import "/string.iu"
 import "main_windows.iu"
 import "unit_tests_table.iu"
+import "windows.iu"
 
 // Don't use actual "main", since it may conflict with "main" defined in executable files.
 // Instead use custom entry point, which is called by proper "main" provided later (at linking stage).

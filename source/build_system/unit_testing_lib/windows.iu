@@ -1,0 +1,81 @@
+// This file contains some definitions from windows headers.
+// These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
+
+fn nomangle CreateFileMappingW( ::HANDLE hFile, ::LPSECURITY_ATTRIBUTES lpFileMappingAttributes, ::DWORD flProtect, ::DWORD dwMaximumSizeHigh, ::DWORD dwMaximumSizeLow, ::LPCWSTR lpName ) unsafe call_conv( "system" ) : ::HANDLE;
+fn nomangle CreateProcessW( ::LPCWSTR lpApplicationName, ::LPWSTR lpCommandLine, ::LPSECURITY_ATTRIBUTES lpProcessAttributes, ::LPSECURITY_ATTRIBUTES lpThreadAttributes, ::BOOL bInheritHandles, ::DWORD dwCreationFlags, ::LPVOID lpEnvironment, ::LPCWSTR lpCurrentDirectory, ::LPSTARTUPINFOW lpStartupInfo, ::LPPROCESS_INFORMATION lpProcessInformation ) unsafe call_conv( "system" ) : ::BOOL;
+fn nomangle GetExitCodeProcess( ::HANDLE hProcess, ::LPDWORD lpExitCode ) unsafe call_conv( "system" ) : ::BOOL;
+fn nomangle GetLastError() unsafe call_conv( "system" ) : ::DWORD;
+fn nomangle MapViewOfFile( ::HANDLE hFileMappingObject, ::DWORD dwDesiredAccess, ::DWORD dwFileOffsetHigh, ::DWORD dwFileOffsetLow, ::SIZE_T dwNumberOfBytesToMap ) unsafe call_conv( "system" ) : ::LPVOID;
+fn nomangle OpenFileMappingW( ::DWORD dwDesiredAccess, ::BOOL bInheritHandle, ::LPCWSTR lpName ) unsafe call_conv( "system" ) : ::HANDLE;
+fn nomangle WaitForSingleObject( ::HANDLE hHandle, ::DWORD dwMilliseconds ) unsafe call_conv( "system" ) : ::DWORD;
+
+type wchar_t = char16; // Changed manually from "u16" in order to be able to use ust::string16.
+type BOOL = i32;
+type BYTE = u8;
+type DWORD = u32;
+type HANDLE = $(byte8);
+type LPBYTE = $(::BYTE);
+type LPCWSTR = $(WCHAR);
+type LPDWORD = $(::DWORD);
+type LPPROCESS_INFORMATION = $(::struct_::PROCESS_INFORMATION_1U__);
+type LPSECURITY_ATTRIBUTES = $(::struct_::SECURITY_ATTRIBUTES_1U__);
+type LPSTARTUPINFOW = $(::struct_::STARTUPINFOW_1U__);
+type LPVOID = $(byte8);
+type LPWSTR = $(::WCHAR);
+type SIZE_T = size_type;
+type WCHAR = wchar_t;
+type WORD = u16;
+
+namespace struct_
+{
+
+struct PROCESS_INFORMATION_1U__ ordered
+{
+	::HANDLE hProcess;
+	::HANDLE hThread;
+	::DWORD dwProcessId;
+	::DWORD dwThreadId;
+}
+
+struct SECURITY_ATTRIBUTES_1U__ ordered
+{
+	::DWORD nLength;
+	::LPVOID lpSecurityDescriptor;
+	::BOOL bInheritHandle;
+}
+
+struct STARTUPINFOW_1U__ ordered
+{
+	::DWORD cb;
+	::LPWSTR lpReserved;
+	::LPWSTR lpDesktop;
+	::LPWSTR lpTitle;
+	::DWORD dwX;
+	::DWORD dwY;
+	::DWORD dwXSize;
+	::DWORD dwYSize;
+	::DWORD dwXCountChars;
+	::DWORD dwYCountChars;
+	::DWORD dwFillAttribute;
+	::DWORD dwFlags;
+	::WORD wShowWindow;
+	::WORD cbReserved2;
+	::LPBYTE lpReserved2;
+	::HANDLE hStdInput;
+	::HANDLE hStdOutput;
+	::HANDLE hStdError;
+}
+
+}
+
+auto constexpr INFINITE = -1;
+
+auto constexpr PAGE_READWRITE = 4;
+
+auto constexpr SECTION_QUERY = 0x0001;
+auto constexpr SECTION_MAP_WRITE = 0x0002;
+auto constexpr SECTION_MAP_READ = 0x0004;
+auto constexpr SECTION_EXTEND_SIZE = 0x0010;
+auto constexpr STANDARD_RIGHTS_REQUIRED = 0x000F0000;
+
+auto constexpr WAIT_OBJECT_0 = 0;
