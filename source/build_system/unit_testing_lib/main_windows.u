@@ -52,7 +52,27 @@ fn nomangle unit_testing_main( i32 argc, $($(char16)) argv ) unsafe : i32
 
 	var DWORD c_memory_block_access_flags( STANDARD_RIGHTS_REQUIRED | SECTION_QUERY | SECTION_MAP_WRITE | SECTION_MAP_READ | SECTION_EXTEND_SIZE );
 
-	if( shared_memory_object_name.empty() )
+	if( unsafe( IsDebuggerPresent() ) != 0 )
+	{
+		// Debuggers can't properly debug child processes.
+		// So, if we detect a debugger, run all tests in current process.
+		ust::stdout_print( "Debugger presence detected, avoid spawning a separate process for running tests.\n" );
+
+		ust::stdout_print_line( "Running ", unit_tests_table.size(), " unit-tests..." );
+
+		foreach( &el : unit_tests_table )
+		{
+			ust::stdout_print_line( "Running test \"", unsafe( ust::string_view8( el.name_begin, el.name_size ) ), "\"." );
+			// If running this test fails, the whole process crashes.
+			el.function_pointer();
+		}
+
+		// If this place is reached, no test has failed.
+		ust::stdout_print_line( "Done running unit-tests. Succeeded ", unit_tests_table.size(), ", failed 0." );
+
+		return 0;
+	}
+	else if( shared_memory_object_name.empty() )
 	{
 		// Spawn a child process, so that if a test fails, we can run other tests and report overall results.
 		// Don't create a child process for each test, instead try running as many of them in single child process as possible.
