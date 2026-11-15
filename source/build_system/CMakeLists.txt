@@ -55,6 +55,13 @@ if( TARGET lldCommon AND "${CURRENT_COMPILER_GENERATION}" GREATER_EQUAL 1 )
 		endif()
 	endif()
 
+	# If tests are enabled, run unit-tests for the build system. Otherwise just build it.
+	if( U_BUILD_BUILD_SYSTEM_TESTS )
+		set( BUILD_AND_TEST_COMMAND "build" )
+	else()
+		set( BUILD_AND_TEST_COMMAND "test" )
+	endif()
+
 	if( MINGW )
 		# We need to provide path to MinGW libraries for linking.
 		# Detect MinGW installation using g++ path.
@@ -75,7 +82,7 @@ if( TARGET lldCommon AND "${CURRENT_COMPILER_GENERATION}" GREATER_EQUAL 1 )
 		DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
 		DEPENDS ${BUILD_SYSTEM_FOR_BUILD}
 		COMMAND
-			${BUILD_SYSTEM_FOR_BUILD} build
+			${BUILD_SYSTEM_FOR_BUILD} ${BUILD_AND_TEST_COMMAND}
 			--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
 			--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
 			--build-system-files-path ${CMAKE_CURRENT_SOURCE_DIR}/
