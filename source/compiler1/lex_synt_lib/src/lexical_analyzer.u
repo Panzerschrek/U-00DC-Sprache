@@ -1,3 +1,4 @@
+import "/assert.iu"
 import "/math.iu"
 import "/stringification.iu"
 import "/utf.iu"
@@ -839,6 +840,56 @@ fn GetLineLimitMessage() : ust::string8
 fn GetColumnLimitMessage() : ust::string8
 {
 	return ust::stringify8( "Lexical error: column limit reached, max is ", SrcLoc::c_max_column, "." );
+}
+
+fn_test( LexicalAnalyzerInputLimitTest )
+{
+	var ust::string8 str( c_max_input_size + 2s, ' ' );
+	var LexicalAnalysisResult res= LexicalAnalysis( str );
+	assert( !res.errors.empty() );
+}
+
+fn_test( LexicalAnalyzerLexemLimitTest )
+{
+	// Generate many "@" lexems.
+	var ust::string8 mut str( c_max_lexems * 2s - 10s, '@' );
+	for( auto mut i= 0s; i < str.size(); i+= 1024s )
+	{
+		str[i]= '\n';
+	}
+
+	var LexicalAnalysisResult res= LexicalAnalysis( str );
+	assert( !res.errors.empty() );
+	assert( res.lexems.size() >= c_max_lexems - 2s );
+	assert( res.lexems.size() <= c_max_lexems + 2s );
+}
+
+fn_test( LexicalAnalyzerErrorLimitTest )
+{
+	// Use # as filler, it's for now unused.
+	var ust::string8 str( 1024s, '#' );
+
+	var LexicalAnalysisResult res= LexicalAnalysis( str );
+	assert( !res.errors.empty() );
+	assert( res.errors.size() <= c_max_errors_to_report + 2s );
+}
+
+fn_test( LexicalAnalyzerColumnLimitTest )
+{
+	var ust::string8 mut str( size_type( SrcLoc::c_max_column ) + 3s, ' ' );
+	str.back()= '+';
+
+	var LexicalAnalysisResult res= LexicalAnalysis( str );
+	assert( !res.errors.empty() );
+}
+
+fn_test( LexicalAnalyzerLineLimitTest )
+{
+	var ust::string8 mut str( size_type( SrcLoc::c_max_line ) + 3s, '\n' );
+	str.back()= '+';
+
+	var LexicalAnalysisResult res= LexicalAnalysis( str );
+	assert( !res.errors.empty() );
 }
 
 } // namespace U1
