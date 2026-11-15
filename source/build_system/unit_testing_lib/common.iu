@@ -40,7 +40,8 @@ fn PrintRunningUnitTestsMessage( ust::array_view_imut</UnitTestsTableElement/> u
 
 fn PrintZeroUnitTestsMessage()
 {
-	ust::stdout_print( "Done running unit-tests. Succeeded 0, failed 0.\n" );
+	PrintRunningUnitTestsMessage( ust::empty_range );
+	PrintDoneRunningTestsMessage( 0s, 0s );
 }
 
 fn PrintDebuggerDetectedMessage()
@@ -51,6 +52,11 @@ fn PrintDebuggerDetectedMessage()
 fn PrintRunningTestMessage( ust::string_view8 test_name )
 {
 	ust::stdout_print_line( "Running test \"", test_name, "\"." );
+}
+
+fn PrintDoneRunningTestsMessage( size_type succeeded, size_type failed )
+{
+	ust::stdout_print_line( "Done running unit-tests. Succeeded ", succeeded, ", failed ", failed, "." );
 }
 
 // Given unit-tests table should be correct!
@@ -64,7 +70,7 @@ fn RunUnitTestsInCurrentProcess( ust::array_view_imut</UnitTestsTableElement/> u
 	}
 
 	// If this place is reached, no test has failed.
-	ust::stdout_print_line( "Done running unit-tests. Succeeded ", unit_tests_table.size(), ", failed 0." );
+	PrintDoneRunningTestsMessage( unit_tests_table.size(), 0s );
 }
 
 // This function crashes if it fails to run a test and exits normally if all is fine.
@@ -150,8 +156,7 @@ fn nodiscard CheckUnitTestsStatus(
 		}
 	}
 
-	ust::stdout_print_line(
-		"Done running unit-tests. Succeeded ", num_tests_finished, ", failed ", num_tests_failed, "." );
+	PrintDoneRunningTestsMessage( num_tests_finished, num_tests_failed );
 
 	return
 		num_tests_not_run == 0s &&
