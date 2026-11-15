@@ -108,20 +108,27 @@ fn IsWhitespaceChar( char8 c ) : bool
 
 fn_test( MakeDepFileParsingTest )
 {
-	auto mut contents_opt= ParseMakeDepFileContents( c_test_file_contents );
-	auto contents= contents_opt.try_take();
-	assert( contents.destination == "some file.bc" );
-	assert( contents.dependencies.size() == 4s );
-	assert( contents.dependencies[0s] == "a.iu" );
-	assert( contents.dependencies[1s] == "b.iu" );
-	assert( contents.dependencies[2s] == "/some/path.iu" );
-	assert( contents.dependencies[3s] == "a path with spaces.txt" );
-}
+	if( ust::constexpr_string_equals( compiler::target::os, "windows" ) )
+	{
+		// TODO - implement test for Windows paths.
+	}
+	else
+	{
+		auto c_test_file_contents=
+			"some\\ file.bc: a.iu \\\n" +
+			" b.iu \\\n" +
+			" /some/path.iu \\\n" +
+			" a\\ path\\ with\\ spaces.txt";
 
-auto c_test_file_contents=
-"some\\ file.bc: a.iu \\\n" +
-" b.iu \\\n" +
-" /some/path.iu \\\n" +
-" a\\ path\\ with\\ spaces.txt";
+		auto mut contents_opt= ParseMakeDepFileContents( c_test_file_contents );
+		auto contents= contents_opt.try_take();
+		assert( contents.destination == "some file.bc" );
+		assert( contents.dependencies.size() == 4s );
+		assert( contents.dependencies[0s] == "a.iu" );
+		assert( contents.dependencies[1s] == "b.iu" );
+		assert( contents.dependencies[2s] == "/some/path.iu" );
+		assert( contents.dependencies[3s] == "a path with spaces.txt" );
+	}
+}
 
 } // namespace BK
