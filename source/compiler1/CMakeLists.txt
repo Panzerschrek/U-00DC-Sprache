@@ -187,7 +187,7 @@ else()
 		ERROR_CODE_TO_STRING_LIST
 		${ERRORS_LIST_CONTENT} )
 
-	configure_file( code_builder_lib/imports/code_builder_error_code.iu.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_error_code.iu )
+	configure_file( code_builder_lib/src/code_builder_error_code.iu.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_error_code.iu )
 
 	#
 	# CodeBuilderLib
