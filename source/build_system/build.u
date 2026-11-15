@@ -9,6 +9,7 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 		.name= "BuildSystemInterface",
 		.target_type= BK::BuildTargetType::Library,
 		.public_include_directories= ust::make_array</ust::string8/>( "imports" ),
+		.enable_unit_testing= false, // There are no tests for this library.
 	};
 
 	var BK::BuildTarget mut target
