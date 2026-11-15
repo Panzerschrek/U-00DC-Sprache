@@ -16,6 +16,13 @@ if( TARGET BuildSystem AND TARGET lldCommon AND ${NEXT_COMPILER_GENERATION} GREA
 		set( BUILD_SYSTEM_BUILD_CONFIGURATION "release" )
 	endif()
 
+	# If tests are enabled, run unit-tests for the build system. Otherwise just build it.
+	if( U_BUILD_TESTS )
+		set( BUILD_AND_TEST_COMMAND "test" )
+	else()
+		set( BUILD_AND_TEST_COMMAND "build" )
+	endif()
+
 	if( MINGW )
 		# We need to provide path to MinGW libraries for linking.
 		# Detect MinGW installation using g++ path.
@@ -39,7 +46,7 @@ if( TARGET BuildSystem AND TARGET lldCommon AND ${NEXT_COMPILER_GENERATION} GREA
 		DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
 		DEPENDS BuildSystem
 		COMMAND
-			BuildSystem build
+			BuildSystem ${BUILD_AND_TEST_COMMAND}
 			--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
 			--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
 			--build-system-files-path ${CMAKE_CURRENT_SOURCE_DIR}/../build_system/
