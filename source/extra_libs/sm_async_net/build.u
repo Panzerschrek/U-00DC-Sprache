@@ -23,7 +23,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	var BK::BuildTarget mut tests_target
 	{
 		.name= "tests",
-		.target_type = BK::BuildTargetType::Executable,
+		.target_type = BK::BuildTargetType::Test,
 		.source_files= ust::make_array</ ust::string8 />( "tests/main.u" ),
 		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= library_target.name } ),
 		.enable_unit_testing= false, // Don't require unit-testsing for an executable, which itself is a test.
