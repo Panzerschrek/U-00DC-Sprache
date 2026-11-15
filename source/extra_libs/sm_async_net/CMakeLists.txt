@@ -65,7 +65,7 @@ add_custom_command(
 
 # Add custom target for tests executable.
 add_custom_target(
-	SmAsyncNetTests${CURRENT_COMPILER_GENERATION} ALL
+	sm_async_net_tests${CURRENT_COMPILER_GENERATION} ALL
 	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${BUILD_SYSTEM_BUILD_CONFIGURATION}/tests
 	SOURCES ${ALL_LIB_SOURCES}
 	)
