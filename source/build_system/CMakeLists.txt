@@ -57,9 +57,9 @@ if( TARGET lldCommon AND "${CURRENT_COMPILER_GENERATION}" GREATER_EQUAL 1 )
 
 	# If tests are enabled, run unit-tests for the build system. Otherwise just build it.
 	if( U_BUILD_BUILD_SYSTEM_TESTS )
-		set( BUILD_AND_TEST_COMMAND "build" )
-	else()
 		set( BUILD_AND_TEST_COMMAND "test" )
+	else()
+		set( BUILD_AND_TEST_COMMAND "build" )
 	endif()
 
 	if( MINGW )
