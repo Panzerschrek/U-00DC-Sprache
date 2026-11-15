@@ -80,8 +80,7 @@ Lambdas:
 *) Template lambdas
 
 Unit-testing:
-*) Implement some sort of process-based isolation for unit-tests running, so that if one unit-test failed, other
-	tests can be still run and overall testing statistics can be reported
+*) Consider implementing running unit-tests with name-based filter
 *) Implement benchmarking functionality using similar to unit-testing approach
 
 Standart library:
@@ -221,6 +220,10 @@ C++ header converter:
 *) Consider adding typedefs for structs/unions/enums while processing a header in C++ mode
 
 Ü Build system:
+*) Implement a workaround for command line size limit for process running on Windows. It may be reached, for example,
+	while linking a build target having many source files (in order of hundreds) having long absolute paths.
+	Consider using response files (files containing command line passed with @ prefix) for this, since LLVM command-line
+	parser already supports them.
 *) Implement a workaround allowing running tests (and maybe other executables) having dependencies on shared libraries
 	located outside executable's directory (shared library targets from other projects or external shared libraries)
 *) Support building "ustlib" into a shared library (dll/so)
