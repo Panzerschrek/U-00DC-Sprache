@@ -1,0 +1,246 @@
+import "/file.iu"
+import "/number_parsing.iu"
+import "/stdout_ext.iu"
+import "/string.iu"
+import "/vector.iu"
+import "../common.iu"
+import "main.iu"
+import "unix.iu"
+
+// Don't use actual "main", since it may conflict with "main" defined in executable files.
+// Instead use custom entry point, which is called by proper "main" provided later (at linking stage).
+fn nomangle unit_testing_main( i32 argc, $($(char8)) argv ) unsafe : i32
+{
+	// Don't require parsing args.
+	ust::ignore_unused( argc );
+	ust::ignore_unused( argv );
+
+	var ust::array_view_imut</UnitTestsTableElement/> unit_tests_table= GetUnitTestsTable();
+
+	if( unit_tests_table.empty() )
+	{
+		PrintZeroUnitTestsMessage();
+		return 0;
+	}
+
+	if( IsDebuggerPresent() )
+	{
+		// Debuggers can't properly debug child processes.
+		// So, if we detect a debugger, run all tests in current process.
+		PrintDebuggerDetectedMessage();
+
+		PrintRunningUnitTestsMessage( unit_tests_table );
+
+		unsafe( RunUnitTestsInCurrentProcess( unit_tests_table ) );
+
+		return 0;
+	}
+	else
+	{
+		PrintRunningUnitTestsMessage( unit_tests_table );
+
+		unsafe
+		{
+			// Spawn a child process, so that if a test fails, we can run other tests and report overall results.
+			// Don't create a child process for each test, instead try running as many of them in single child process as possible.
+			// Only if the child process crashes, restart it.
+			// Doing so allows reducing overhead for process starting, which is in most cases isn't necessary if all or almost test don't fail.
+
+			// Allocate a block of shared memory intended to be used for status indication by both parent and child processes.
+			var $(byte8) mut status_memory_block=
+				::mmap(
+					ust::nullptr</byte8/>(),
+					typeinfo</TestStatus/>.size_of * unit_tests_table.size(), // Allocate a status variable for each test.
+					PROT_READ | PROT_WRITE,
+					MAP_SHARED /* this flag enables sharing after "fork" call */ | MAP_ANONYMOUS,
+					-1,
+					::off_t(0) );
+
+			if( ust::is_nullptr( status_memory_block ) )
+			{
+				ust::stderr_print( "::mmap failed!\n" );
+				return -1;
+			}
+
+			var ust::array_view_mut</TestStatus/> test_status_table(
+				ust::byte_ptr_cast</TestStatus/>( status_memory_block ), unit_tests_table.size() );
+
+			// Set initial status for all tests.
+			foreach( &mut status : test_status_table )
+			{
+				status= c_test_status_not_run;
+			}
+
+			// Perform several attemts of running a child process.
+			// Have some upper limit for retries, so that we don't launch thousands of processes if all or almost all tests fail.
+			var size_type c_max_retries= 128s; // A reasonable limit, which allows catching many fails without too much overhead.
+			for( auto mut try_index= 0s; try_index < c_max_retries; ++try_index )
+			{
+				// Spawn a child process.
+				var pid_t pid= ::fork();
+				if( pid < 0 )
+				{
+					safe( ust::stderr_print( "::fork failed!\n" ) );
+					return -1;
+				}
+				else if( pid == 0 )
+				{
+					// Child process - run tests which haven't been run yet.
+
+					RunUnitTestsWithNotRunStatus( unit_tests_table, test_status_table );
+
+					// Don't care unmapping status memory block here, since	we exit anyway.
+
+					// All is fine - exit child process with zero code.
+					return 0;
+				}
+				else
+				{
+					// Parent process - wait for child process to finish.
+
+					var i32 mut status= -1;
+					::waitpid( pid, $<(status), 0 );
+					if( status == 0 )
+					{
+						break; // Finished all (remaining) tests with no problems.
+					}
+					else
+					{
+						// Something failed.
+						// Continue execution of other tests after failed one.
+						continue;
+					}
+				}
+			}
+
+			// Read status for each test from the shared memory block.
+			// It's safe to do this here, since the child process (which modifies it) is already finished and no race condition is possible.
+
+			// Don't care unmapping status memory block here, since	we exit anyway.
+
+			return ( CheckUnitTestsStatus( unit_tests_table, test_status_table ) ? 0 : -1 );
+		}
+	}
+}
+
+fn IsDebuggerPresent() : bool
+{
+	if( !ust::constexpr_string_equals( compiler::target::os, "linux" ) )
+	{
+		// TODO - implement detecting debugger on Unix systems other than Linux - OS X, FreeBSD.
+		return false;
+	}
+
+	// On Linux there is a file /proc/self/status.
+	// It contains line-by-line info.
+	// We search for "TracerPid:".
+	// If it's present and value for it is not zero - a debugger is likely present.
+
+	if_var( &proc_status_contents : ReadProcStatus() )
+	{
+		foreach( &line : SplitStringIntoLines( proc_status_contents ) )
+		{
+			auto mut line_trimmed= line.range();
+			TrimLeadingWhitespaces( line_trimmed );
+
+			auto& tracer_pid= "TracerPid";
+			if( line_trimmed.starts_with( tracer_pid ) )
+			{
+				line_trimmed= line_trimmed.subrange_start( ust::array_size( tracer_pid ) );
+
+				TrimLeadingWhitespaces( line_trimmed );
+
+				if( line_trimmed.starts_with( ":" ) )
+				{
+					line_trimmed= line_trimmed.subrange_start( 1s );
+
+					TrimLeadingWhitespaces( line_trimmed );
+
+					if_var( pid : ust::parse_and_extract_number</i32/>( line_trimmed ) )
+					{
+						return pid != 0;
+					}
+				}
+
+				break;
+			}
+		}
+	}
+
+	return false;
+}
+
+fn ReadProcStatus() : ust::optional</ust::string8/>
+{
+	auto mut file_res= ust::file_readable::open( "/proc/self/status" );
+	if( file_res.is_error() )
+	{
+		return ust::null_optional;
+	}
+
+	auto &mut file= file_res.try_deref();
+
+	var ust::string8 mut result;
+
+	var size_type c_chunk_size= 4096s;
+
+	loop
+	{
+		var size_type old_size= result.size();
+		result.resize( old_size + c_chunk_size, '\0' );
+
+		result_match( file.read( result.range().subrange_start( old_size ).to_byte8_range() ) )
+		{
+			Ok( actual_read_size ) ->
+			{
+				if( actual_read_size < c_chunk_size )
+				{
+					result.resize( old_size + actual_read_size, '\0' );
+					break;
+				}
+			},
+			Err( e ) ->
+			{
+				ust::ignore_unused(e);
+				break;
+			}
+		}
+	}
+
+	return result;
+}
+
+fn SplitStringIntoLines( ust::string_view8 s ) : ust::vector</ust::string8/>
+{
+	var ust::vector</ust::string8/> mut result;
+
+	var size_type mut line_start= 0s;
+	for( auto mut i= 0s; i < s.size(); ++i )
+	{
+		var char8 c= s[i];
+		if( c == '\n' )
+		{
+			if( line_start < i )
+			{
+				result.push_back( s.subrange( line_start, i ) );
+			}
+
+			line_start= i + 1s;
+		}
+	}
+
+	if( line_start < s.size() )
+	{
+		result.push_back( s.subrange_start( line_start ) );
+	}
+
+	return result;
+}
+
+fn TrimLeadingWhitespaces( ust::string_view8 &mut s )
+{
+	while( !s.empty() && ( s.front() == ' ' || s.front() == '\t' ) )
+	{
+		s.drop_front();
+	}
+}

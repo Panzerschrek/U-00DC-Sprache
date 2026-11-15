@@ -1560,6 +1560,7 @@ def UnitTestsRunningTest():
 	assert( stdout.find( "B test" ) != -1 )
 	assert( stdout.find( "Main test" ) != -1 )
 	assert( stdout.find( "Inc test" ) != -1 )
+	assert( stdout.find( "Done running unit-tests. Succeeded 4, failed 0." ) != -1 )
 
 
 def UnitTestsRunningForLibraryTest():
@@ -1576,6 +1577,7 @@ def UnitTestsRunningForLibraryTest():
 	assert( stdout.find( "LibFuncTestNagative - seems to be ok" ) != -1 )
 	assert( stdout.find( "Running test \"LibFuncTestZero\"." ) != -1 )
 	assert( stdout.find( "LibFuncTestZero - seems to be ok" ) != -1 )
+	assert( stdout.find( "Done running unit-tests. Succeeded 3, failed 0." ) != -1 )
 
 
 def UnitTestsRunningForSharedLibraryTest():
@@ -1592,6 +1594,7 @@ def UnitTestsRunningForSharedLibraryTest():
 	assert( stdout.find( "SharedLibFuncTestNagative - seems to be ok" ) != -1 )
 	assert( stdout.find( "Running test \"SharedLibFuncTestZero\"." ) != -1 )
 	assert( stdout.find( "LibFuncTestZero - seems to be ok" ) != -1 )
+	assert( stdout.find( "Done running unit-tests. Succeeded 3, failed 0." ) != -1 )
 
 
 def UnitTestsRunningForObjectFileTest():
@@ -1608,6 +1611,7 @@ def UnitTestsRunningForObjectFileTest():
 	assert( stdout.find( "ObjFuncTestNagative - seems to be ok" ) != -1 )
 	assert( stdout.find( "Running test \"ObjFuncTestZero\"." ) != -1 )
 	assert( stdout.find( "ObjFuncTestZero - seems to be ok" ) != -1 )
+	assert( stdout.find( "Done running unit-tests. Succeeded 3, failed 0." ) != -1 )
 
 
 def UnitTestsRunningForExecutableAndLibraryTest():
@@ -1625,12 +1629,14 @@ def UnitTestsRunningForExecutableAndLibraryTest():
 	assert( stdout.find( "LibFuncTestPositive - seems to be ok" ) != -1 )
 	assert( stdout.find( "Running test \"LibFuncTestZero\"." ) != -1 )
 	assert( stdout.find( "LibFuncTestZero - seems to be ok" ) != -1 )
+	assert( stdout.find( "Done running unit-tests. Succeeded 3, failed 0." ) != -1 )
 	# Should have tests for executable.
 	assert( stdout.find( "Running 2 unit-tests..." ) != -1 )
 	assert( stdout.find( "Running test \"ExeTest0\"." ) != -1 )
 	assert( stdout.find( "ExeTest0 seems to be ok" ) != -1 )
 	assert( stdout.find( "Running test \"ExeTest1\"." ) != -1 )
 	assert( stdout.find( "ExeTest1 seems to be ok" ) != -1 )
+	assert( stdout.find( "Done running unit-tests. Succeeded 2, failed 0." ) != -1 )
 	# Should not run the executable itself.
 	assert( stdout.find( "Main executable" ) == -1 )
 
@@ -1660,6 +1666,7 @@ def UnitTestsRunningForTestBuildTargetTest():
 	assert( stdout.find( "Running 2 test executables." ) != -1 )
 	assert( stdout.find( "Running test executable itself" ) != -1 )
 	assert( stdout.find( "Main unit-test" ) != -1 )
+	assert( stdout.find( "Done running unit-tests. Succeeded 1, failed 0." ) != -1 )
 
 
 def UnitTestsRunningForHostPackageTest():
@@ -1675,6 +1682,7 @@ def UnitTestsRunningForHostPackageTest():
 	assert( stdout.find( "SubpackageUnitTest0 seems to be ok" ) != -1 )
 	assert( stdout.find( "Running test \"SubpackageUnitTest1\"." ) != -1 )
 	assert( stdout.find( "SubpackageUnitTest1 seems to be ok" ) != -1 )
+	assert( stdout.find( "Done running unit-tests. Succeeded 2, failed 0." ) != -1 )
 	# Should not run the executable itself.
 	assert( stdout.find( "Running a subpackage executable" ) == -1 )
 
@@ -1686,6 +1694,49 @@ def UnitTestRunningFailedTest():
 	stderr= str(res.stderr)
 	assert( stderr.find( "Running 1 unit-tests..." ) != -1 )
 	assert( stderr.find( "Running test \"TestWhichShouldFail\"." ) != -1 )
+	assert( stderr.find( "Test \"TestWhichShouldFail\" failed!" ) != -1 )
+	assert( stderr.find( "Done running unit-tests. Succeeded 0, failed 1." ) != -1 )
+	assert( stderr.find( "Process group DoWork error!" ) != -1 )
+	# Should not run the executable itself.
+	assert( stderr.find( "Executable target!" ) == -1 )
+	# The executable target itself should be fine.
+	RunExecutable( test_dir, "exe" )
+
+
+def UnitTestRunningFailedForMultipleTestsTest():
+	test_dir= "unit_tests_running_failed_for_multiple_tests"
+	res= RunBuildSystemWithTests( test_dir )
+	assert( res.returncode != 0 )
+	stderr= str(res.stderr)
+	# Should run all tests and report failed ones.
+	assert( stderr.find( "Running 13 unit-tests..." ) != -1 )
+	assert( stderr.find( "Running test \"Test0\"." ) != -1 )
+	assert( stderr.find( "Running test \"Test1\"." ) != -1 )
+	assert( stderr.find( "Running test \"Test2\"." ) != -1 )
+	assert( stderr.find( "Running test \"Test3\"." ) != -1 )
+	assert( stderr.find( "Running test \"Test4\"." ) != -1 )
+	assert( stderr.find( "Running test \"Test5\"." ) != -1 )
+	assert( stderr.find( "Running test \"Test6\"." ) != -1 )
+	assert( stderr.find( "Running test \"Test7\"." ) != -1 )
+	assert( stderr.find( "Running test \"Test8\"." ) != -1 )
+	assert( stderr.find( "Running test \"Test9\"." ) != -1 )
+	assert( stderr.find( "Running test \"Test10\"." ) != -1 )
+	assert( stderr.find( "Running test \"Test11\"." ) != -1 )
+	assert( stderr.find( "Running test \"Test12\"." ) != -1 )
+	assert( stderr.find( "Test \"Test0\" failed!" ) != -1 )
+	assert( stderr.find( "Test \"Test1\" failed!" ) != -1 )
+	assert( stderr.find( "Test \"Test2\" failed!" ) == -1 )
+	assert( stderr.find( "Test \"Test3\" failed!" ) == -1 )
+	assert( stderr.find( "Test \"Test4\" failed!" ) != -1 )
+	assert( stderr.find( "Test \"Test5\" failed!" ) != -1 )
+	assert( stderr.find( "Test \"Test6\" failed!" ) != -1 )
+	assert( stderr.find( "Test \"Test7\" failed!" ) == -1 )
+	assert( stderr.find( "Test \"Test8\" failed!" ) == -1 )
+	assert( stderr.find( "Test \"Test9\" failed!" ) == -1 )
+	assert( stderr.find( "Test \"Test10\" failed!" ) != -1 )
+	assert( stderr.find( "Test \"Test11\" failed!" ) == -1 )
+	assert( stderr.find( "Test \"Test12\" failed!" ) == -1 )
+	assert( stderr.find( "Done running unit-tests. Succeeded 7, failed 6." ) != -1 )
 	assert( stderr.find( "Process group DoWork error!" ) != -1 )
 	# Should not run the executable itself.
 	assert( stderr.find( "Executable target!" ) == -1 )
@@ -1917,6 +1968,7 @@ def main():
 		UnitTestsRunningForTestBuildTargetTest,
 		UnitTestsRunningForHostPackageTest,
 		UnitTestRunningFailedTest,
+		UnitTestRunningFailedForMultipleTestsTest,
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )

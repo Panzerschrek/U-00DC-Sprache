@@ -4,7 +4,7 @@
 
 import "main.iu"
 
-fn nomangle main() unsafe call_conv( "C" ) : i32
+fn nomangle wmain( i32 argc, $($(char16)) argv ) unsafe call_conv( "C" ) : i32
 {
-	return unit_testing_main();
+	return unsafe( unit_testing_main( argc, argv ) );
 }
