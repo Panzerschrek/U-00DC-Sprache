@@ -110,7 +110,20 @@ fn_test( MakeDepFileParsingTest )
 {
 	if( ust::constexpr_string_equals( compiler::target::os, "windows" ) )
 	{
-		// TODO - implement test for Windows paths.
+		auto c_test_file_contents=
+			"D:\\\\some\\ file.bc: a.iu \\\n" +
+			" b.iu \\\n" +
+			" C:\\\\some\\\\path.iu \\\n" +
+			" a\\ path\\ with\\ spaces.txt";
+
+		auto mut contents_opt= ParseMakeDepFileContents( c_test_file_contents );
+		auto contents= contents_opt.try_take();
+		assert( contents.destination == "D:\\some file.bc" );
+		assert( contents.dependencies.size() == 4s );
+		assert( contents.dependencies[0s] == "a.iu" );
+		assert( contents.dependencies[1s] == "b.iu" );
+		assert( contents.dependencies[2s] == "C:\\some\\path.iu" );
+		assert( contents.dependencies[3s] == "a path with spaces.txt" );
 	}
 	else
 	{
