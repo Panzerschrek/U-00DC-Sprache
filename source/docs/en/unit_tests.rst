@@ -21,4 +21,4 @@ Also names of unit-tests can't be referenced (a unit-test can't be called manual
 
 Unit-test functions are always compiled together with a file where they are defined.
 Normally they are ignored at linking stage and optimized-out, so that result binaries don't contain unit-tests.
-But they are used when testing is requested (see the corresponding page).
+But they are used when testing is requested, see :doc:`testing` for more details.
