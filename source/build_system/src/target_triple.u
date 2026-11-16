@@ -1,3 +1,4 @@
+import "/assert.iu"
 import "target_triple.iu"
 
 namespace BK
@@ -146,5 +147,42 @@ fn NormalizeTargetTripleComponent( ust::string8 &mut component )
 }
 
 auto constexpr g_target_triple_separator= '-';
+
+fn_test( TargetTripleParsingTest )
+{
+	// Basic parsing.
+	assert(
+		ParseTargetTriple( "x86_64-pc-windows-msvc" ) ==
+		TargetTriple{ .architecture= "x86_64", .vendor= "pc", .operating_system= "windows", .environment= "msvc" } );
+
+	// Case is switched to lower.
+	assert(
+		ParseTargetTriple( "AArch64-unKnown-LINUX-gnu" ) ==
+		TargetTriple{ .architecture= "aarch64", .vendor= "unknown", .operating_system= "linux", .environment= "gnu" } );
+
+	// Environment isn't necessary.
+	assert(
+		ParseTargetTriple( "z80-spectrum-baremetal" ) ==
+		TargetTriple{ .architecture= "z80", .vendor= "spectrum", .operating_system= "baremetal" } );
+
+	// Not enough components.
+	assert( ParseTargetTriple( "x86_64-pc" ).empty() );
+
+	// Spaces instead of proper separators.
+	assert( ParseTargetTriple( "x86 unknown linux gnu" ).empty() );
+}
+
+fn_test( TargetTripleStringificationTest )
+{
+	assert(
+		TargetTripleToString(
+			TargetTriple{ .architecture= "amd64", .vendor= "apple", .operating_system= "windows", .environment= "gnu" } ) ==
+			"amd64-apple-windows-gnu" );
+
+	// Environment is ignored.
+	assert(
+		TargetTripleToString( TargetTriple{ .architecture= "x86", .vendor= "pc", .operating_system= "freebsd" } ) ==
+		"x86-pc-freebsd" );
+}
 
 } // namespace BK

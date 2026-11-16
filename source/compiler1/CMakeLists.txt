@@ -1,8 +1,8 @@
 message( STATUS "Build compiler ${NEXT_COMPILER_GENERATION}")
 
-file( GLOB_RECURSE CODE_BUILDER_LIB_CPP_SOURCES "src/*.cpp" )
-file( GLOB_RECURSE CODE_BUILDER_LIB_HEADERS "src/*.iu" "imports/*.iu" )
-file( GLOB_RECURSE CODE_BUILDER_LIB_SOURCES "src/*.u" )
+file( GLOB_RECURSE CODE_BUILDER_LIB_CPP_SOURCES "code_builder_lib/*.cpp" )
+file( GLOB_RECURSE CODE_BUILDER_LIB_HEADERS "lex_synt_lib/*.iu" "code_builder_lib/*.iu" )
+file( GLOB_RECURSE CODE_BUILDER_LIB_SOURCES "lex_synt_lib/*.u" "code_builder_lib/*.u" )
 
 if( TARGET BuildSystem AND TARGET lldCommon AND ${NEXT_COMPILER_GENERATION} GREATER_EQUAL 2 )
 
@@ -14,6 +14,13 @@ if( TARGET BuildSystem AND TARGET lldCommon AND ${NEXT_COMPILER_GENERATION} GREA
 		set( BUILD_SYSTEM_BUILD_CONFIGURATION "debug" )
 	else()
 		set( BUILD_SYSTEM_BUILD_CONFIGURATION "release" )
+	endif()
+
+	# If tests are enabled, run unit-tests for the build system. Otherwise just build it.
+	if( U_BUILD_TESTS )
+		set( BUILD_AND_TEST_COMMAND "test" )
+	else()
+		set( BUILD_AND_TEST_COMMAND "build" )
 	endif()
 
 	if( MINGW )
@@ -39,7 +46,7 @@ if( TARGET BuildSystem AND TARGET lldCommon AND ${NEXT_COMPILER_GENERATION} GREA
 		DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
 		DEPENDS BuildSystem
 		COMMAND
-			BuildSystem build
+			BuildSystem ${BUILD_AND_TEST_COMMAND}
 			--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
 			--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
 			--build-system-files-path ${CMAKE_CURRENT_SOURCE_DIR}/../build_system/
@@ -101,12 +108,13 @@ else()
 					--verify-module
 					${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/imports
-					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
-					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/imports/::CodeBuilderLib
+					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib/imports::LexSyntLib
+					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib/imports/::CodeBuilderLib
 					--include-dir ${CMAKE_CURRENT_BINARY_DIR}/::CodeBuilderLib
 					# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 					# DO NOT list here the directory "imports", since it contains declarations of publically-available symbols.
-					--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/src
+					--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib/src/
+					--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib/src/
 					--source-dir ${CMAKE_CURRENT_BINARY_DIR}/
 					--prevent-imports-outside-given-directories
 				${DEPFILE_OPTION}
@@ -127,12 +135,14 @@ else()
 					${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 					--data-sections --function-sections # Put symbols into sections in order to remove unused functions during linking.
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/imports
-					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
-					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/imports/::CodeBuilderLib
+					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib/imports::LexSyntLib
+					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib/imports/::CodeBuilderLib
+					--include-dir ${CMAKE_CURRENT_BINARY_DIR}/::LexSyntLib
 					--include-dir ${CMAKE_CURRENT_BINARY_DIR}/::CodeBuilderLib
 					# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 					# DO NOT list here the directory "imports", since it contains declarations of publically-available symbols.
-					--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
+					--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib/src/
+					--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib/src/
 					--source-dir ${CMAKE_CURRENT_BINARY_DIR}/
 					--prevent-imports-outside-given-directories
 				${DEPFILE_OPTION}
@@ -177,7 +187,7 @@ else()
 		ERROR_CODE_TO_STRING_LIST
 		${ERRORS_LIST_CONTENT} )
 
-	configure_file( src/code_builder_lib/code_builder_error_code.iu.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_error_code.iu )
+	configure_file( code_builder_lib/src/code_builder_error_code.iu.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_error_code.iu )
 
 	#
 	# CodeBuilderLib
@@ -190,7 +200,7 @@ else()
 		KEYWORDS_LIST
 		${KEYWORDS_LIST_CONTENT} )
 
-	configure_file( src/lex_synt_lib/keywords.iu.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.iu )
+	configure_file( lex_synt_lib/imports/keywords.iu.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.iu )
 
 	set( CODE_BUILDER_LIB_HEADERS_GENERATED
 		${CMAKE_CURRENT_BINARY_DIR}/keywords.iu

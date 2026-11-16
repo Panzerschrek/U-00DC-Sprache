@@ -80,6 +80,7 @@ Lambdas:
 *) Template lambdas
 
 Unit-testing:
+*) Write documentation for unit-testing
 *) Consider implementing running unit-tests with name-based filter
 *) Implement benchmarking functionality using similar to unit-testing approach
 
@@ -224,6 +225,8 @@ C++ header converter:
 	while linking a build target having many source files (in order of hundreds) having long absolute paths.
 	Consider using response files (files containing command line passed with @ prefix) for this, since LLVM command-line
 	parser already supports them.
+*) Make sure dead code is removed even in debug builds, so that machine code generation doesn't take too long for build
+	targets with a lot of code which should be optimized-out (like unit-test executables)
 *) Implement a workaround allowing running tests (and maybe other executables) having dependencies on shared libraries
 	located outside executable's directory (shared library targets from other projects or external shared libraries)
 *) Support building "ustlib" into a shared library (dll/so)
