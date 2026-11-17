@@ -599,6 +599,21 @@ fn WriteQuotedString( ust::string_base</C/> &mut dst, ust::array_view_imut</C/> 
 	dst.push_back( quote ); // Push closing quote.
 }
 
+fn_test( WindowsCommandLineArgumentsQuotingTest )
+{
+	var ust::string_view8 src_string=
+		" this is A string \\ with\\many\\ slashes\\\\\\ and \" quotes \"\"\" aND their \\\\\\\\\" combinations";
+	var ust::string_view8 expected_quoted_string=
+		"\" this is A string \\ with\\many\\ slashes\\\\\\ and \\\" quotes \\\"\\\"\\\" aND their \\\\\\\\\\\\\\\\\\\" combinations\"";
+
+	var ust::string8 mut str;
+	WriteQuotedString(
+		str,
+		ust::string_view8( " this is A string \\ with\\many\\ slashes\\\\\\ and \" quotes \"\"\" aND their \\\\\\\\\" combinations" ) );
+
+	assert( str == expected_quoted_string, "Incorrect quoting!" );
+}
+
 fn WaitForProcessAndCloseIt( HANDLE process_handle ) unsafe : DWORD
 {
 	// TODO - check if wait fails.
