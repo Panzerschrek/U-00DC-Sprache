@@ -24,11 +24,10 @@ fn nodiscard RunExecutable(
 	return process_opt.try_take().Finish( logger );
 }
 
-fn CreateProcessGroup( ResponseFileManager response_file_manager, Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
+fn CreateProcessGroup( ResponseFileManager mut response_file_manager, Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
 {
 	ust::ignore_unused(logger);
-	ust::ignore_unused( response_file_manager ); // For now don't need it.
-	return ust::make_box( ProcessGroup() );
+	return ust::make_box( ProcessGroup( move(response_file_manager) ) );
 }
 
 class Process
@@ -263,6 +262,11 @@ private:
 
 class ProcessGroup final : ProcessGroupInterface
 {
+public:
+	fn constructor( ResponseFileManager mut response_file_manager )
+		( response_file_manager_= move(response_file_manager) )
+	{}
+
 public: // ProcessGroupInterface
 	fn virtual final StartProcess(
 		mut this,
@@ -271,7 +275,60 @@ public: // ProcessGroupInterface
 		ust::filesystem_path_view exe_path,
 		ust::array_view_imut</ust::string8/> command_line ) : bool
 	{
-		auto mut process_opt= Process::Start( logger, process_id, exe_path, command_line );
+		var size_type mut estimated_command_line_length= 0s;
+		foreach( &arg : command_line )
+		{
+			estimated_command_line_length+= arg.size();
+			estimated_command_line_length+= 10s; // An esitmation for null-terminators, quotes and (maybe) escape sequences.
+		}
+
+		// It's not a true limit, since we need also some space for environment variables.
+		var size_type args_size_estimated_limit= 4096s / 2s; // TODO - read it from system properties?
+
+		var ust::optional</Process/> mut process_opt;
+		if( estimated_command_line_length >= args_size_estimated_limit )
+		{
+			// Estimated command line is too long. Create a response file instead (containing all args).
+			// Replace command line with one having single argument - path to this file.
+
+			var ust::string8 mut response_file_contents;
+			foreach( &arg : command_line )
+			{
+				response_file_contents.push_back( '"' );
+
+				foreach( c : arg )
+				{
+					if( c == '\\' | c == '"' )
+					{
+						response_file_contents.push_back( '\\' );
+					}
+					response_file_contents.push_back( c );
+				}
+				response_file_contents.push_back( '"' );
+
+				response_file_contents.push_back( ' ' );
+			}
+
+			if_var( &response_file_path : response_file_manager_.CreateNewResponseFile( response_file_contents, logger ) )
+			{
+				process_opt=
+					Process::Start(
+						logger,
+						process_id,
+						exe_path,
+						ust::make_array</ust::string8/>( ust::stringify8( '@', response_file_path ) ) );
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			process_opt= Process::Start( logger, process_id, exe_path, command_line );
+		}
+
+
 		if( process_opt.empty() )
 		{
 			return false;
@@ -358,6 +415,8 @@ public: // ProcessGroupInterface
 	}
 
 private:
+	ResponseFileManager response_file_manager_;
+
 	ust::vector</Process/> running_processes_;
 	ust::vector</ProcessId/> finished_processes_;
 }
