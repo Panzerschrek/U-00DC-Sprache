@@ -1631,7 +1631,7 @@ void CodeBuilder::BuildFuncCode(
 			// Since names of unit-test functions are generated and include file path hash/line/column,
 			// only unit-test functions originated from the exact same file will have identical comdat name and thus will be deduplicated.
 			if( target_triple_.getObjectFormat() == llvm::Triple::MachO )
-				llvm_function->setLinkage( llvm::GlobalValue::LinkOnceODRLinkage );
+				llvm_function->setLinkage( llvm::GlobalValue::WeakODRLinkage );
 			else
 			{
 				llvm::Comdat* const comdat= module_->getOrInsertComdat( llvm_function->getName() );

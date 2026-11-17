@@ -1293,7 +1293,7 @@ fn CodeBuilder::BuildFuncCode(
 			}
 			else
 			{
-				unsafe( LLVMSetLinkage( llvm_function, LLVMLinkOnceODRLinkage ) );
+				unsafe( LLVMSetLinkage( llvm_function, LLVMWeakODRLinkage ) );
 			}
 		}
 
