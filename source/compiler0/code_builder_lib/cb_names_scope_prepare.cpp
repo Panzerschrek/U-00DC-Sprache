@@ -82,6 +82,11 @@ void CodeBuilder::NamesScopeFill(
 		if( IsKeyword( func_name ) )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration->src_loc );
 
+		// Prohibit placing unit-tests within templates.
+		// It's mostly useless and we can't generate unique names for such unit-tests anyway.
+		if( names_scope.IsInsideTemplate() )
+			REPORT_ERROR( UnitTestWithinTemplate, names_scope.GetErrors(), function_declaration->src_loc );
+
 		const std::string internal_name= GetUnitTestFunctionName( *function_declaration );
 
 		if( base_class != nullptr )

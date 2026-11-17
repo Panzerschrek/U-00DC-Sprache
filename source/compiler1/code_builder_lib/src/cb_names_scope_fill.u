@@ -76,6 +76,14 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 			return;
 		}
 
+		// Prohibit placing unit-tests within templates.
+		// It's mostly useless and we can't generate unique names for such unit-tests anyway.
+		if( names_scope_ptr.lock_imut().deref().IsInsideTemplate() )
+		{
+			REPORT_ERROR( UnitTestWithinTemplate, names_scope_ptr, function.deref().src_loc )
+			return;
+		}
+
 		var ust::string8 internal_name= GetUnitTestFunctionName( function.deref() );
 
 		with( mut names_scope_lock : names_scope_ptr.lock_mut() )
