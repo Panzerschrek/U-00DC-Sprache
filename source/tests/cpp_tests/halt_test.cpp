@@ -303,7 +303,7 @@ U_TEST( FinishedAsyncFunctionInAwaitHalt_Test0 )
 	U_TEST_ASSERT(false);
 }
 
-U_TEST( HaltInUnitTest )
+U_TEST( HaltInUnitTest0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -311,6 +311,34 @@ U_TEST( HaltInUnitTest )
 		{
 			halt; // "halt" in unit-tests should work as usual.
 		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_test_fn_TestWhichAlwaysFails_b14a7b8059d9c055954c92674ce60032_2_11_" );
+	U_TEST_ASSERT( function != nullptr );
+
+	try
+	{
+		engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	}
+	catch( const HaltException& )
+	{
+		U_TEST_ASSERT(true);
+		return;
+	}
+	U_TEST_ASSERT( false );
+}
+
+U_TEST( HaltInUnitTest1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn_test( TestWhichAlwaysFails )
+		{
+			Foo(); // "halt" executed indirectly in unit-tests should work as usual.
+		}
+		fn Foo() { Bar(); }
+		fn Bar() { halt; }
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
