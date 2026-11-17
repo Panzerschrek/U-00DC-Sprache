@@ -10,5 +10,6 @@
    standard_library
    compiler
    build_system
+   testing
    language_server
    cpp_header_converter
