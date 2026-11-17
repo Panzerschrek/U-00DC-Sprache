@@ -291,6 +291,9 @@ public: // ProcessGroupInterface
 			// Estimated command line is too long. Create a response file instead (containing all args).
 			// Replace command line with one having single argument - path to this file.
 
+			// Assume that the executable launched supports response files.
+			// But if it's not the case, do it anyway, since there is nothing else we can do when hitting command-line length limit.
+
 			var ust::string8 mut response_file_contents;
 			foreach( &arg : command_line )
 			{
