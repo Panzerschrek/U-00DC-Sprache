@@ -4,7 +4,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 {
 	ust::ignore_unused( build_system_interface );
 
-	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Test };
+	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Test, .enable_unit_testing= false };
 	target.source_files.push_back( "main.u" );
 	target.name= "test";
 

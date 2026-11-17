@@ -1,3 +1,4 @@
+import "/assert.iu"
 import "/hash_set.iu"
 import "/number_parsing.iu"
 import "/stdout.iu"
@@ -43,7 +44,7 @@ auto constexpr g_help_message=
 	"  --build-directory <path>               - custom path to the build directory. Default value is \"build\" subdirectory of the root package.\n" +
 	"  --compiler-executable <path>           - custom path to the compiler executable\n" +
 	"  --ustlib-path <path>                   - custom path to the ustlib directory\n" +
-	"  --build-system-imports-path <path>     - custom path to the build system imports directory\n" +
+	"  --build-system-files-path <path>       - custom path to the build system files directory\n" +
 	"  --packages-repository-directory <path> - provide path to packages repository directory\n" +
 	"  --sysroot <path>                       - provide sysroot directory for the compiler (in order to find system libraries for linking)\n" +
 	"  --host-sysroot <path>                  - provide sysroot directory for the compiler while compiling for host target triple (in order to find system libraries for linking)\n" +
@@ -130,7 +131,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 		options_parser.AddOption( "--build-directory", res.build_directory );
 		options_parser.AddOption( "--project-directory", res.root_package_directory );
 		options_parser.AddOption( "--ustlib-path", res.ustlib_path );
-		options_parser.AddOption( "--build-system-imports-path", res.build_system_imports_path );
+		options_parser.AddOption( "--build-system-files-path", res.build_system_files_path );
 		options_parser.AddOption( "--packages-repository-directory", res.packages_repository_directory );
 		options_parser.AddOption( "--sysroot", res.sysroot );
 		options_parser.AddOption( "--host-sysroot", res.host_sysroot );
@@ -321,6 +322,88 @@ private:
 private:
 	ust::vector</StringOption/> @("a") string_options_;
 	ust::vector</BoolFlagOption/> @("a") bool_flag_options_;
+}
+
+fn_test( OptionsParsingTest_Help )
+{
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "help" ) ).try_deref().command == Options::Command::Help );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "--help" ) ).try_deref().command == Options::Command::Help );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-h" ) ).try_deref().help );
+}
+
+fn_test( OptionsParsingTest_Command )
+{
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "help" ) ).try_deref().command == Options::Command::Help );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build" ) ).try_deref().command == Options::Command::Build );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build_single", "some" ) ).try_deref().command == Options::Command::BuildSingle );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "test" ) ).try_deref().command == Options::Command::Test );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "init" ) ).try_deref().command == Options::Command::Init );
+}
+
+fn_test( OptionsParsingTest_OutputFlags )
+{
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-q" ) ).try_deref().quiet );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-v" ) ).try_deref().verbose );
+}
+
+fn_test( OptionsParsingTest_NumberOfJobs )
+{
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-j", "1" ) ).try_deref().number_of_jobs == 1u );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-j", "5" ) ).try_deref().number_of_jobs == 5u );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-j", "2123" ) ).try_deref().number_of_jobs == 2123u );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-j", "notanumber" ) ).empty() );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-j" /* missing value */ ) ).empty() );
+}
+
+fn_test( OptionsParsingTest_NumberOfJobs )
+{
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-j", "1" ) ).try_deref().number_of_jobs == 1u );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-j", "5" ) ).try_deref().number_of_jobs == 5u );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-j", "2123" ) ).try_deref().number_of_jobs == 2123u );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-j", "notanumber" ) ).empty() );
+	assert( ParseOptions( ust::make_array</ust::string_view8/>( "build", "-j" /* missing value */ ) ).empty() );
+}
+
+fn_test( OptionsParsingTest_StringOptions )
+{
+	var [ ust::string_view8, 31 ] args
+	[
+		"build",
+		"--configuration-options", "some.json",
+		"--target-triple", "amd64-pc-windows-gnu",
+		"--target-cpu", "ryzen",
+		"--project-directory", "/proj dir",
+		"--build-directory", "build_dir",
+		"--compiler-executable", "Compiler3.exe",
+		"--ustlib-path", "/usr/share/ustlib",
+		"--build-system-files-path", "../build_system",
+		"--packages-repository-directory", "repo",
+		"--sysroot", "/target/sysroot",
+		"--host-sysroot", "/host/sysroot",
+		"--build-configuration", "debug",
+		"--release-optimization-level", "O3",
+		"--min-size-release-optimization-level", "Oz",
+		"--halt-mode", "abort",
+	];
+
+	auto mut options_opt= ParseOptions( args );
+	auto options= options_opt.try_take();
+
+	assert( options.configuration_options_file == "some.json" );
+	assert( options.target_triple == "amd64-pc-windows-gnu" );
+	assert( options.target_cpu == "ryzen" );
+	assert( options.root_package_directory == "/proj dir" );
+	assert( options.build_directory == "build_dir" );
+	assert( options.compiler_executable_path == "Compiler3.exe" );
+	assert( options.ustlib_path == "/usr/share/ustlib" );
+	assert( options.build_system_files_path == "../build_system" );
+	assert( options.packages_repository_directory == "repo" );
+	assert( options.sysroot == "/target/sysroot" );
+	assert( options.host_sysroot == "/host/sysroot" );
+	assert( options.build_configuration_extended.build_configuration == BuildConfiguration::Debug );
+	assert( options.build_configuration_extended.release_optimization_level == BuildConfigurationExtended::ReleaseOptimisationLevel::O3 );
+	assert( options.build_configuration_extended.min_size_release_optimization_level == BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Oz );
+	assert( options.build_configuration_extended.halt_mode == BuildConfigurationExtended::HaltMode::abort );
 }
 
 } // namespace BK

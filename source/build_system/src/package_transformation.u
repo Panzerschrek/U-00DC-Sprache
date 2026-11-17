@@ -40,7 +40,11 @@ fn nodiscard TransformAndValidatePackageInfo(
 			ok= false;
 		}
 
-		var WorkspaceInfo::BuildTarget mut out_build_target{ .target_type= build_target.target_type };
+		var WorkspaceInfo::BuildTarget mut out_build_target
+		{
+			.target_type= build_target.target_type,
+			.enable_unit_testing= build_target.enable_unit_testing,
+		};
 
 		// Process sources.
 

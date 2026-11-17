@@ -8,6 +8,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	{
 		.name= "sm_async_net_sys",
 		.target_type= BK::BuildTargetType::Library,
+		.enable_unit_testing= false, // Don't require unit-testing, we have no them in this library anyway.
 	};
 
 	var BK::BuildTarget mut library_target
@@ -17,14 +18,16 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.source_files= ust::make_array</ ust::string8 />( "src/poll_waker.u", "src/runner.u", "src/tcp_listener.u", "src/tcp_stream.u", "src/udp_socket.u" ),
 		.public_include_directories= ust::make_array</ust::filesystem_path/>( "imports" ),
 		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= sys_library_target.name } ),
+		.enable_unit_testing= false, // Don't require unit-testing, we have no them in this library anyway.
 	};
 
 	var BK::BuildTarget mut tests_target
 	{
 		.name= "tests",
-		.target_type = BK::BuildTargetType::Executable,
+		.target_type = BK::BuildTargetType::Test,
 		.source_files= ust::make_array</ ust::string8 />( "tests/main.u" ),
 		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= library_target.name } ),
+		.enable_unit_testing= false, // Don't require unit-testing for an executable, which itself is a test.
 	};
 
 	var BK::BuildTarget mut http_server_example_target
@@ -33,6 +36,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.target_type = BK::BuildTargetType::Executable,
 		.source_files= ust::make_array</ ust::string8 />( "http_server_example/main.u" ),
 		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= library_target.name } ),
+		.enable_unit_testing= false, // Don't require unit-testing, we have no them in this executable anyway.
 	};
 
 	if( target_trple.operating_system == "linux" )

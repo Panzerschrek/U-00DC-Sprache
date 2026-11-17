@@ -1,0 +1,25 @@
+import "/stdout.iu"
+import "/obj/obj.iu"
+
+fn ObjFunc( i32 x ) : i32
+{
+	return x * 3 + 5;
+}
+
+fn_test( ObjFuncTestPositive )
+{
+	halt if( ObjFunc( 7 ) != 26 );
+	ust::stdout_print( "ObjFuncTestPositive - seems to be ok\n" );
+}
+
+fn_test( ObjFuncTestNagative )
+{
+	halt if( ObjFunc( -219 ) != -652 );
+	ust::stdout_print( "ObjFuncTestNagative - seems to be ok\n" );
+}
+
+fn_test( ObjFuncTestZero )
+{
+	halt if( ObjFunc( 0 ) != 5 );
+	ust::stdout_print( "ObjFuncTestZero - seems to be ok\n" );
+}

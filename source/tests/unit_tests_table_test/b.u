@@ -1,0 +1,9 @@
+import "inc.iu"
+
+fn_test( BTest )
+{
+	unsafe
+	{
+		b_called= true;
+	}
+}

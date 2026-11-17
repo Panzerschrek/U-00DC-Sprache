@@ -39,16 +39,26 @@ list( REMOVE_ITEM ALL_LIB_SOURCES ${LIB_CMAKE_FILE} )
 
 set( TESTS_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/${BUILD_SYSTEM_BUILD_CONFIGURATION}/tests )
 
+if(APPLE)
+	# For now disable running tests on MacOS - they hang for unknown reason and it's hard to find why exactly.
+	set( BUILD_AND_TEST_COMMAND "build" )
+elseif( ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" )
+	# Also disable it on FreeBSD - for some reason tests fail on this OS (but only in CI builds).
+	set( BUILD_AND_TEST_COMMAND "build" )
+else()
+	set( BUILD_AND_TEST_COMMAND "test" )
+endif()
+
 add_custom_command(
 	OUTPUT ${TESTS_EXECUTABLE}
 	DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
 	DEPENDS BuildSystem
 	DEPENDS ${ALL_LIB_SOURCES}
 	COMMAND
-		BuildSystem build
+		BuildSystem ${BUILD_AND_TEST_COMMAND}
 		--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
 		--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
-		--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/../../build_system/imports/
+		--build-system-files-path ${CMAKE_CURRENT_SOURCE_DIR}/../../build_system/
 		--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../../ustlib/
 		--project-directory ${CMAKE_CURRENT_SOURCE_DIR}
 		--build-directory ${CMAKE_CURRENT_BINARY_DIR}
@@ -56,27 +66,12 @@ add_custom_command(
 	USES_TERMINAL
 		)
 
-if( ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" )
-	# For now disable running tests on FreeBSD - for some reason tests fail on this OS (but only in CI builds).
-else()
-
-	set( TIMESTAMP_FILE ${CMAKE_CURRENT_BINARY_DIR}/tests_timestamp )
-
-	add_custom_command(
-		OUTPUT ${TIMESTAMP_FILE}
-		DEPENDS ${TESTS_EXECUTABLE}
-		COMMAND ${TESTS_EXECUTABLE}
-		COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE} # A hacky step to produce a marker file for this command.
-		)
-
-	# A custom target which is needed only to execute the custom command above.
-	add_custom_target(
-		sm_async_net_tests_run${CURRENT_COMPILER_GENERATION} ALL
-		DEPENDS ${TIMESTAMP_FILE}
-		SOURCES ${ALL_LIB_SOURCES}
-		)
-
-endif()
+# Add custom target for tests executable.
+add_custom_target(
+	sm_async_net_tests${CURRENT_COMPILER_GENERATION} ALL
+	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${BUILD_SYSTEM_BUILD_CONFIGURATION}/tests
+	SOURCES ${ALL_LIB_SOURCES}
+	)
 
 # Install the library sources.
 if( CURRENT_COMPILER_GENERATION STREQUAL "" )

@@ -39,8 +39,6 @@ General:
 *) Inverstigate possibility to add "with" operator (or something similar) in expression context
 *) Allow "nodiscard" flag for async functions to affect result of a call via "await"
 *) Consider making "nodiscard" flag presence configurable - based on a constant expression
-*) Support unit-testing - add function-like unit tests global objects, which are compiled if special compiler flag
-	is provided, support building and running such unit-tests in the build system
 *) Allow variables decomposition in constructions "with" and "if_coro_advance"
 *) Provide more information in typeinfo about member function templates for structs/classes, like calling convention or
 	mutability/reference modifiers for params and return values
@@ -80,6 +78,11 @@ Lambdas:
 *) Conversion of lambdas with zero captures into function pointers
 *) Simplified lambdas syntax for lambdas consisting of single return statement
 *) Template lambdas
+
+Unit-testing:
+*) Consider implementing running unit-tests with name-based filter
+*) Implement benchmarking functionality using similar to unit-testing approach
+*) Consider allowing running unit-tests in current process via a special command-line option (to simplify debugging)
 
 Standart library:
 *) Support types with references inside in some containers (variant, result, hash_map)
@@ -218,6 +221,12 @@ C++ header converter:
 *) Consider adding typedefs for structs/unions/enums while processing a header in C++ mode
 
 Ü Build system:
+*) Implement a workaround for command line size limit for process running on Windows. It may be reached, for example,
+	while linking a build target having many source files (in order of hundreds) having long absolute paths.
+	Consider using response files (files containing command line passed with @ prefix) for this, since LLVM command-line
+	parser already supports them.
+*) Make sure dead code is removed even in debug builds, so that machine code generation doesn't take too long for build
+	targets with a lot of code which should be optimized-out (like unit-test executables)
 *) Implement a workaround allowing running tests (and maybe other executables) having dependencies on shared libraries
 	located outside executable's directory (shared library targets from other projects or external shared libraries)
 *) Support building "ustlib" into a shared library (dll/so)

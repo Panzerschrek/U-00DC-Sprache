@@ -1,0 +1,103 @@
+import "inc.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	unsafe
+	{
+		// Access unit-tests table in generated global variable.
+		var $(TableElement) table_start= $<( import var</ TableElement />( "my_pretty_tests_table" ) );
+
+		// Count how many entries we have.
+
+		var size_type mut num_functions= 0s;
+		var ( fn() ) zero_fn= zero_init;
+		while( $>( table_start + num_functions ).function_pointer != zero_fn )
+		{
+			++num_functions;
+		}
+
+		halt if( num_functions != 4s );
+
+		// Check if all expected test names are present.
+
+		var bool mut a_found= false, mut b_found= false, mut main_found= false, mut inc_found= false;
+
+		for( auto mut i= 0s; i < num_functions; ++i )
+		{
+			var TableElement& el= $>( table_start + i );
+			halt if( el.name_size == 0s );
+
+			a_found|= StringsAreEqual( "ATest", el.name_begin, el.name_size );
+			b_found|= StringsAreEqual( "BTest", el.name_begin, el.name_size );
+			main_found|= StringsAreEqual( "MainTest", el.name_begin, el.name_size );
+			inc_found|= StringsAreEqual( "IncTest", el.name_begin, el.name_size );
+		}
+
+		halt if( !a_found );
+		halt if( !b_found );
+		halt if( !main_found );
+		halt if( !inc_found );
+
+		// Call all tests.
+
+		halt if( a_called );
+		halt if( b_called );
+		halt if( main_called );
+		halt if( inc_called );
+
+		for( auto mut i= 0s; i < num_functions; ++i )
+		{
+			var TableElement& el= $>( table_start + i );
+			el.function_pointer();
+		}
+
+		// Make sure actual tests are called and no some other functions.
+		halt if( !a_called );
+		halt if( !b_called );
+		halt if( !main_called );
+		halt if( !inc_called );
+	}
+
+	return 0;
+}
+
+// This struct should match the struct used by the compiler for unit-tests table elements.
+struct TableElement ordered
+{
+	( fn() ) function_pointer;
+	$(char8) name_begin;
+	size_type name_size;
+}
+
+// Should have size of exactly 3 pointers.
+static_assert( typeinfo</ TableElement />.size_of == typeinfo</ $(byte8) />.size_of * 3s, "Invalid size!" );
+
+template</ size_type S />
+fn StringsAreEqual( [ char8, S ]& expected, $(char8) got_begin, size_type got_size ) unsafe : bool
+{
+	if( got_size != S )
+	{
+		return false;
+	}
+
+	unsafe
+	{
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			if( $>( got_begin + i ) != expected[i] )
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+fn_test( MainTest )
+{
+	unsafe
+	{
+		main_called= true;
+	}
+}

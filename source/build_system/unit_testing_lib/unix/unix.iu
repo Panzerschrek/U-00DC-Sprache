@@ -1,0 +1,20 @@
+// This file contains some definitions from UNIX (pparticulary Linux) headers,
+// These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
+import "/type_traits.iu"
+
+fn nomangle fork() unsafe call_conv( "C" ) : ::pid_t;
+fn nomangle mmap( $(byte8) addr, ::size_t len, i32 prot, i32 flags, i32 fd, ::off_t offset ) unsafe call_conv( "C" ) : $(byte8);
+fn nomangle waitpid( ::pid_t pid, $(i32) stat_loc, i32 options ) unsafe call_conv( "C" ) : ::pid_t;
+
+type off_t = i64;
+type pid_t = i32;
+type size_t= size_type;
+
+auto constexpr MAP_SHARED = 1;
+auto constexpr MAP_ANONYMOUS = ( unix_is_freebsd | unix_is_darwin ? 4096 : 32 );
+
+auto constexpr PROT_READ = 1;
+auto constexpr PROT_WRITE = 2;
+
+var bool constexpr unix_is_freebsd= ust::constexpr_string_starts_with( compiler::target::os, "freebsd" );
+var bool constexpr unix_is_darwin= ust::constexpr_string_equals( compiler::target::vendor, "apple" ); // TODO - detect Darwin properly.

@@ -128,3 +128,4 @@ package
 module
 mixin
 thread_local
+fn_test

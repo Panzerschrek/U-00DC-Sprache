@@ -1,0 +1,15 @@
+import "inc.iu"
+
+fn AFunc() : i32
+{
+	return 111;
+}
+
+fn_test( ATest )
+{
+	ust::stdout_print( "A test.\n" );
+	halt if( AFunc() != 111 );
+	halt if( BFunc() != 222 );
+	halt if( MainFunc() != 333 );
+	halt if( IncFunc() != 444 );
+}

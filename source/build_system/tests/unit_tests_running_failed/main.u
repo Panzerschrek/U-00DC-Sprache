@@ -1,0 +1,13 @@
+import "/main_wrapper.iu"
+import "/stdout.iu"
+
+pretty_main
+{
+	ust::stdout_print( "Executable target!\n" );
+	return 0;
+}
+
+fn_test( TestWhichShouldFail )
+{
+	halt;
+}

@@ -41,7 +41,7 @@ struct Options
 	ust::filesystem_path build_directory;
 	ust::filesystem_path root_package_directory;
 	ust::filesystem_path ustlib_path;
-	ust::filesystem_path build_system_imports_path;
+	ust::filesystem_path build_system_files_path;
 	ust::filesystem_path packages_repository_directory;
 	ust::filesystem_path sysroot;
 	ust::filesystem_path host_sysroot;

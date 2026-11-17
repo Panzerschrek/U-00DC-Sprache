@@ -43,6 +43,7 @@
    lambdas
    mixins
    embed
+   unit_tests
    compiler_generated_prelude
    c_interaction
    alloca

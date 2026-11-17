@@ -1,0 +1,1 @@
+fn ObjFunc( i32 x ) : i32;

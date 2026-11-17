@@ -55,6 +55,13 @@ if( TARGET lldCommon AND "${CURRENT_COMPILER_GENERATION}" GREATER_EQUAL 1 )
 		endif()
 	endif()
 
+	# If tests are enabled, run unit-tests for the build system. Otherwise just build it.
+	if( U_BUILD_BUILD_SYSTEM_TESTS )
+		set( BUILD_AND_TEST_COMMAND "test" )
+	else()
+		set( BUILD_AND_TEST_COMMAND "build" )
+	endif()
+
 	if( MINGW )
 		# We need to provide path to MinGW libraries for linking.
 		# Detect MinGW installation using g++ path.
@@ -75,10 +82,10 @@ if( TARGET lldCommon AND "${CURRENT_COMPILER_GENERATION}" GREATER_EQUAL 1 )
 		DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
 		DEPENDS ${BUILD_SYSTEM_FOR_BUILD}
 		COMMAND
-			${BUILD_SYSTEM_FOR_BUILD} build
+			${BUILD_SYSTEM_FOR_BUILD} ${BUILD_AND_TEST_COMMAND}
 			--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
 			--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
-			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports/
+			--build-system-files-path ${CMAKE_CURRENT_SOURCE_DIR}/
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 			--project-directory ${CMAKE_CURRENT_SOURCE_DIR}
 			--build-directory ${BK_BUILD_DIR}
@@ -175,6 +182,13 @@ endif()
 file( GLOB BUILD_SYSTEM_IMPORTS "imports/*" )
 install( FILES ${BUILD_SYSTEM_IMPORTS} DESTINATION "build_system/imports" )
 
+file( GLOB UNIT_TESTING_LIB_FILES "unit_testing_lib/*.u" "unit_testing_lib/*.iu" )
+file( GLOB UNIT_TESTING_LIB_FILES_UNIX "unit_testing_lib/unix/*" )
+file( GLOB UNIT_TESTING_LIB_FILES_WINDOWS "unit_testing_lib/windows/*" )
+install( FILES ${UNIT_TESTING_LIB_FILES} DESTINATION "build_system/unit_testing_lib" )
+install( FILES ${UNIT_TESTING_LIB_FILES_UNIX} DESTINATION "build_system/unit_testing_lib/unix" )
+install( FILES ${UNIT_TESTING_LIB_FILES_WINDOWS} DESTINATION "build_system/unit_testing_lib/windows" )
+
 # The build system uses the compiler executable itself to produce shared libraries and executables.
 # This requires internal LLD.
 # So, if no LLD is linked, disable build system tests.
@@ -246,7 +260,7 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 			--tests-build-root-path ${CMAKE_CURRENT_BINARY_DIR}/tests
 			--build-system-executable ${BUILD_SYSTEM_EXECUTABLE_FILE}
 			--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
-			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports
+			--build-system-files-path ${CMAKE_CURRENT_SOURCE_DIR}/
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib
 			--configuration-options ${CONFIGURATION_OPTIONS_FILE}
 			--mangling-scheme ${MANGLING_SCHEME}
@@ -255,6 +269,7 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 		DEPENDS BuildSystem${CURRENT_COMPILER_GENERATION}
 		DEPENDS ${TESTS_FILES}
 		DEPENDS ${USTLIB_FILES} # Build scripts and sources may import "ustlib". So, make sure we re-run tests if something in ustlib changes.
+		DEPENDS ${UNIT_TESTING_LIB_FILES} ${UNIT_TESTING_LIB_FILES_UNIX} ${UNIT_TESTING_LIB_FILES_WINDOWS}
 		DEPENDS BuildSystemTestsStaticLibrary${CURRENT_COMPILER_GENERATION}
 		DEPENDS BuildSystemTestsSharedLibrary${CURRENT_COMPILER_GENERATION}
 		DEPENDS BuildSystemTestFileGenerationTool${CURRENT_COMPILER_GENERATION}

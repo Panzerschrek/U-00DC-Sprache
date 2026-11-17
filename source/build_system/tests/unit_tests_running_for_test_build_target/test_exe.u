@@ -1,0 +1,21 @@
+import "/stdout.iu"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	ust::stdout_print( "Running test executable itself.\n" );
+	halt if( SomeFunc( -1 ) != 5 );
+	return 0;
+}
+
+fn_test( MainTest )
+{
+	ust::stdout_print( "Main unit-test!\n" );
+	halt if( SomeFunc( 0 ) != 7 );
+	halt if( SomeFunc( 1 ) != 15 );
+	halt if( SomeFunc( 10 ) != 357 );
+}
+
+fn SomeFunc( i32 x ) : i32
+{
+	return 3 * x * x + 5 * x + 7;
+}
