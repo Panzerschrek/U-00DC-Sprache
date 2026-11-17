@@ -80,9 +80,9 @@ Lambdas:
 *) Template lambdas
 
 Unit-testing:
-*) Write documentation for unit-testing
 *) Consider implementing running unit-tests with name-based filter
 *) Implement benchmarking functionality using similar to unit-testing approach
+*) Consider allowing running unit-tests in current process via a special command-line option (to simplify debugging)
 
 Standart library:
 *) Support types with references inside in some containers (variant, result, hash_map)
