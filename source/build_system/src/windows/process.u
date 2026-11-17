@@ -507,35 +507,65 @@ fn ConstructCommandLineNullTerminated(
 	WideStringView exe_path,
 	ust::array_view_imut</ust::string8/> command_line ) : WideString
 {
+	// http://msdn.microsoft.com/en-us/library/windows/desktop/17w5ykft(v=vs.85).aspx.
+
 	var WideStringView space =" "u16;
 	var WideStringView quote = "\""u16;
 
 	var WideString mut command_line_combined;
-	command_line_combined+= quote;
-	command_line_combined+= exe_path; // Repeat exe path in command line - it's necessary to fill argv[0]
-	command_line_combined+= quote;
+
+	// Repeat exe path in command line - it's necessary to fill argv[0]
+	WriteQuotedString( command_line_combined, exe_path );
 
 	foreach( &arg : command_line )
 	{
 		command_line_combined+= space;
-		command_line_combined+= quote;
-
-		// Escape quotes and backspashes in args. TODO - check if it's correct.
-		foreach( c : UTF8ToWideString( arg ) )
-		{
-			if( c == WCHAR('\\') || c == WCHAR('"') )
-			{
-				command_line_combined.push_back( WCHAR('\\') );
-			}
-			command_line_combined.push_back( c );
-		}
-
-		command_line_combined+= quote;
+		WriteQuotedString( command_line_combined, UTF8ToWideString( arg ) );
 	}
 
 	command_line_combined.push_back( WCHAR(0) );
 
 	return command_line_combined;
+}
+
+fn WriteQuotedString( WideString &mut dst, WideStringView src )
+{
+	// See https://learn.microsoft.com/en-us/previous-versions//17w5ykft(v=vs.85).
+
+	var WCHAR quote( '"' );
+
+	dst.push_back( quote ); // Push opening quote.
+
+	var size_type mut num_prev_backslashes= 0s;
+
+	foreach( c : src )
+	{
+		if( c == WCHAR( '\\' ) )
+		{
+			// Backslashes are usually not escaped. But we need to count them.
+			++num_prev_backslashes;
+		}
+		else
+		{
+			if( c == WCHAR( '"' ) )
+			{
+				// Escape quote.
+				// If there are backslashes before it - escape them too.
+				var size_type new_size_with_added_backslashes=
+					dst.size() +
+					num_prev_backslashes + // An escaped backslash for each previous backslash
+					1s; // Escape symbol for quote itself.
+
+				dst.resize( new_size_with_added_backslashes, WCHAR( '\\' ) );
+			}
+
+			num_prev_backslashes= 0s; // Reset backslashes counter if encounted non-backslash symbol.
+		}
+
+		dst.push_back( c );
+	}
+
+	dst.push_back( quote ); // Push closing quote.
 }
 
 fn WaitForProcessAndCloseIt( HANDLE process_handle ) unsafe : DWORD
