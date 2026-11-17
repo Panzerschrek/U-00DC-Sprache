@@ -232,6 +232,33 @@ public: // ProcessGroupInterface
 
 		var WideString mut command_line_combined= ConstructCommandLineNullTerminated( exe_path_wide, command_line );
 
+		var size_type c_max_command_line_length= 32767s; // Some dumb Windows limitation.
+		var size_type c_max_command_line_length_with_margin= c_max_command_line_length * 3s / 4s; // Add some margin just in case something is wrong.
+
+		if( command_line_combined.size() >= c_max_command_line_length_with_margin )
+		{
+			// Command line is too long. Create a response file instead (containing all args).
+			// Replace command line with one having single argument - path to this file.
+
+			var ust::string8 mut response_file_contents;
+			foreach( &arg : command_line )
+			{
+				WriteQuotedString( response_file_contents, arg.range() );
+				response_file_contents.push_back( ' ' );
+			}
+
+			if_var( &response_file_path : response_file_manager_.CreateNewResponseFile( response_file_contents, logger ) )
+			{
+				command_line_combined=
+					ConstructCommandLineNullTerminated(
+						exe_path_wide, ust::make_array</ust::string8/>( ust::stringify8( '@', response_file_path ) ) );
+			}
+			else
+			{
+				return false;
+			}
+		}
+
 		ust::ignore_unused( response_file_manager_ ); // TODO - use it.
 
 		// Setup standard streams redirection for child process.
@@ -489,7 +516,7 @@ private:
 
 private:
 	HANDLE imut io_port_;
-	ResponseFileManager mut response_file_manager_;
+	ResponseFileManager response_file_manager_;
 
 	ust::vector</ProcessPtr/> runnung_processes_;
 	ust::vector</ProcessId/> finished_processes_;
@@ -523,7 +550,7 @@ fn ConstructCommandLineNullTerminated(
 	foreach( &arg : command_line )
 	{
 		command_line_combined+= space;
-		WriteQuotedString( command_line_combined, UTF8ToWideString( arg ) );
+		WriteQuotedString( command_line_combined, UTF8ToWideString( arg ).range() );
 	}
 
 	command_line_combined.push_back( WCHAR(0) );
@@ -531,11 +558,12 @@ fn ConstructCommandLineNullTerminated(
 	return command_line_combined;
 }
 
-fn WriteQuotedString( WideString &mut dst, WideStringView src )
+template</ type C />
+fn WriteQuotedString( ust::string_base</C/> &mut dst, ust::array_view_imut</C/> src )
 {
 	// See https://learn.microsoft.com/en-us/previous-versions//17w5ykft(v=vs.85).
 
-	var WCHAR quote( '"' );
+	var C quote( '"' );
 
 	dst.push_back( quote ); // Push opening quote.
 
@@ -543,14 +571,14 @@ fn WriteQuotedString( WideString &mut dst, WideStringView src )
 
 	foreach( c : src )
 	{
-		if( c == WCHAR( '\\' ) )
+		if( c == C( '\\' ) )
 		{
 			// Backslashes are usually not escaped. But we need to count them.
 			++num_prev_backslashes;
 		}
 		else
 		{
-			if( c == WCHAR( '"' ) )
+			if( c == C( '"' ) )
 			{
 				// Escape quote.
 				// If there are backslashes before it - escape them too.
@@ -559,7 +587,7 @@ fn WriteQuotedString( WideString &mut dst, WideStringView src )
 					num_prev_backslashes + // An escaped backslash for each previous backslash
 					1s; // Escape symbol for quote itself.
 
-				dst.resize( new_size_with_added_backslashes, WCHAR( '\\' ) );
+				dst.resize( new_size_with_added_backslashes, C( '\\' ) );
 			}
 
 			num_prev_backslashes= 0s; // Reset backslashes counter if encounted non-backslash symbol.
