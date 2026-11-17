@@ -1,6 +1,7 @@
 import "/box_nullable.iu"
 import "/path.iu"
 import "logger.iu"
+import "response_file_manager.iu"
 
 namespace BK
 {
@@ -41,6 +42,6 @@ class ProcessGroupInterface interface
 }
 
 // Crete process group. Returns empty box on error.
-fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>;
+fn CreateProcessGroup( ResponseFileManager response_file_manager, Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>;
 
 } // namespace BK

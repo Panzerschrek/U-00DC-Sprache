@@ -425,7 +425,12 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 	bsi.LogVerbose( ust::stringify8( "Building using ", max_number_of_parallel_jobs, " threads." ) );
 
 	// This executes the build.
-	if( !PerformGraphBuild( bsi.logger_, build_graph, prev_build_graph.as_ref(), max_number_of_parallel_jobs ) )
+	if( !PerformGraphBuild(
+			bsi.logger_,
+			build_graph,
+			root_package_build_directory_base,
+			prev_build_graph.as_ref(),
+			max_number_of_parallel_jobs ) )
 	{
 		bsi.logger_.LogError( "Build failed." );
 		main_result= -1;
@@ -463,7 +468,8 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 	// Run tests if "test" command is requested and only if building was successfull.
 	if( options.command == Options::Command::Test )
 	{
-		if( !ExecuteTests( test_list_to_execute, bsi.logger_, max_number_of_parallel_jobs ) )
+		if( !ExecuteTests(
+				test_list_to_execute, root_package_build_directory_base, bsi.logger_, max_number_of_parallel_jobs ) )
 		{
 			main_result= -1;
 		}

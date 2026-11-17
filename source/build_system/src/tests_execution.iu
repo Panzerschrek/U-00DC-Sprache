@@ -10,6 +10,7 @@ type TestListToExecute= ust::vector</ust::filesystem_path/>;
 // Returns "true" on success.
 fn nodiscard ExecuteTests(
 	TestListToExecute& test_list_to_execute,
+	ust::filesystem_path_view build_directory,
 	Logger &mut logger,
 	u32 max_number_of_parallel_jobs ) : bool;
 

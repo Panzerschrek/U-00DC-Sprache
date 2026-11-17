@@ -49,9 +49,9 @@ fn nodiscard RunExecutable(
 	return unsafe( WaitForProcessAndCloseIt( process_information.hProcess ) ) == 0u;
 }
 
-fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
+fn CreateProcessGroup( ResponseFileManager mut response_file_manager, Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
 {
-	auto mut process_group_opt= ProcessGroup::Create( logger );
+	auto mut process_group_opt= ProcessGroup::Create( move(response_file_manager), logger );
 	if( process_group_opt.empty() )
 	{
 		return ust::box_nullable</ProcessGroupInterface/>();
@@ -62,7 +62,7 @@ fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInt
 class ProcessGroup final : ProcessGroupInterface
 {
 public:
-	fn Create( Logger &mut logger ) : ust::optional</ProcessGroup/>
+	fn Create( ResponseFileManager mut response_file_manager, Logger &mut logger ) : ust::optional</ProcessGroup/>
 	{
 		var HANDLE io_port=
 			unsafe( ::CreateIoCompletionPort(
@@ -77,14 +77,14 @@ public:
 			return ust::null_optional;
 		}
 
-		return unsafe( ProcessGroup( io_port ) );
+		return unsafe( ProcessGroup( io_port, move( response_file_manager ) ) );
 	}
 
 	fn constructor()= delete;
 
 	// constructor for internal usage
-	fn constructor( HANDLE io_port ) unsafe
-		( io_port_= io_port )
+	fn constructor( HANDLE io_port, ResponseFileManager mut response_file_manager ) unsafe
+		( io_port_= io_port, response_file_manager_= move(response_file_manager) )
 	{
 		assert( !ust::is_nullptr( io_port_ ) );
 	}
@@ -231,6 +231,8 @@ public: // ProcessGroupInterface
 		exe_path_null_terminated.push_back( WCHAR(0) );
 
 		var WideString mut command_line_combined= ConstructCommandLineNullTerminated( exe_path_wide, command_line );
+
+		ust::ignore_unused( response_file_manager_ ); // TODO - use it.
 
 		// Setup standard streams redirection for child process.
 		var STARTUPINFOW mut startup_info = zero_init;
@@ -487,6 +489,7 @@ private:
 
 private:
 	HANDLE imut io_port_;
+	ResponseFileManager mut response_file_manager_;
 
 	ust::vector</ProcessPtr/> runnung_processes_;
 	ust::vector</ProcessId/> finished_processes_;
