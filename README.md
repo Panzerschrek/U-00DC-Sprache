@@ -38,6 +38,7 @@ Below are listed important features present in Ü:
 * Lambdas (functions declared locally with context capturing)
 * Coroutines (async functions, generators)
 * C interaction support (in both directions)
+* Built-in unit-testing
 
 Ü has both strong safety/reliability guarantees and many necessary and easy to use features and abstractions.
 Other comparable languages are unsafe and/or have some important for effective programming features missing.
