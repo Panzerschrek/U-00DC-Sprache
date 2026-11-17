@@ -294,25 +294,9 @@ public: // ProcessGroupInterface
 			// Assume that the executable launched supports response files.
 			// But if it's not the case, do it anyway, since there is nothing else we can do when hitting command-line length limit.
 
-			var ust::string8 mut response_file_contents;
-			foreach( &arg : command_line )
-			{
-				response_file_contents.push_back( '"' );
-
-				foreach( c : arg )
-				{
-					if( c == '\\' | c == '"' )
-					{
-						response_file_contents.push_back( '\\' );
-					}
-					response_file_contents.push_back( c );
-				}
-				response_file_contents.push_back( '"' );
-
-				response_file_contents.push_back( ' ' );
-			}
-
-			if_var( &response_file_path : response_file_manager_.CreateNewResponseFile( response_file_contents, logger ) )
+			if_var( &response_file_path :
+					response_file_manager_.CreateNewResponseFile(
+						CreateResponseFileContents( command_line ), logger ) )
 			{
 				process_opt=
 					Process::Start(
@@ -437,6 +421,46 @@ fn GetMaxCommandLineLength() : size_type
 	// Take actual system limit and divide it by 2 in order to take into account,
 	// that this limit affects not only command-line, but also environment variables.
 	return size_type( raw_limit ) / 2s;
+}
+
+fn CreateResponseFileContents( ust::array_view_imut</ust::string8/> command_line ) : ust::string8
+{
+	var ust::string8 mut response_file_contents;
+	foreach( &arg : command_line )
+	{
+		response_file_contents.push_back( '"' );
+
+		foreach( c : arg )
+		{
+			if( c == '\\' | c == '"' )
+			{
+				response_file_contents.push_back( '\\' );
+			}
+			response_file_contents.push_back( c );
+		}
+		response_file_contents.push_back( '"' );
+
+		response_file_contents.push_back( ' ' );
+	}
+
+	return response_file_contents;
+}
+
+fn_test( CreateResponseFileContentsTest )
+{
+	var [ ust::string8, 5 ] args
+	[
+		"foo",
+		"bar",
+		" some string",
+		"some string with internal \" quotes",
+		" STRING WITH \\ BACKSLASHES\\INSIDE",
+	];
+
+	var ust::string_view8 expected=
+		"\"foo\" \"bar\" \" some string\" \"some string with internal \\\" quotes\" \" STRING WITH \\\\ BACKSLASHES\\\\INSIDE\" ";
+	var ust::string8 got= CreateResponseFileContents( args );
+	assert( got == expected, "Incorrect response file generation!" );
 }
 
 // Returns value of external variable, declared in C code like this:
