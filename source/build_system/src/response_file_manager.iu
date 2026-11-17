@@ -1,0 +1,28 @@
+import "/path.iu"
+import "/vector.iu"
+import "logger.iu"
+
+namespace BK
+{
+
+// This class allows creating response files.
+// It creates them in the given directory.
+// All files are removed upon destruction of this class.
+class ResponseFileManager
+{
+public:
+	fn constructor( ust::filesystem_path response_files_path );
+	fn destructor();
+
+	// Creates response file with given contents.
+	// Returns path to it or empty optional in case of failure.
+	fn CreateNewResponseFile( mut this, ust::string_view8 contents, Logger &mut logger )
+		: ust::optional</ust::filesystem_path_view/> @( ust::reference_notation::return_inner_references::param0 );
+
+private:
+	ust::filesystem_path imut response_files_path_;
+	size_type next_file_index_;
+	ust::vector</ust::filesystem_path/> response_files_;
+}
+
+} // namespace BK

@@ -1,0 +1,49 @@
+import "/file_helpers.iu"
+import "/filesystem.iu"
+import "/path_utils.iu"
+import "/stringification.iu"
+import "response_file_manager.iu"
+
+namespace BK
+{
+
+fn ResponseFileManager::constructor( ust::filesystem_path mut response_files_path )
+	( response_files_path_= move(response_files_path), next_file_index_= 1s )
+{}
+
+fn ResponseFileManager::destructor()
+{
+	foreach( &file_path : response_files_ )
+	{
+		auto res= ust::remove_file( file_path );
+		ust::ignore_unused(res);
+	}
+}
+
+fn ResponseFileManager::CreateNewResponseFile( mut this, ust::string_view8 contents, Logger &mut logger )
+	: ust::optional</ust::filesystem_path_view/> @( ust::reference_notation::return_inner_references::param0 )
+{
+	// Just number response files sequentially (so that they are all unique within a build).
+	response_files_.push_back( ust::path::normalize( ust::stringify8( response_files_path_, '/', next_file_index_ ) ) );
+	++next_file_index_;
+
+	var ust::filesystem_path_view file_path= response_files_.back();
+
+	result_match( ust::write_string_view_to_file( file_path, contents ) )
+	{
+		Ok(v) ->
+		{
+			ust::ignore_unused(v);
+			return file_path;
+		},
+		Err(e) ->
+		{
+			logger.LogError( ust::stringify8( "Failed to write response file \"", file_path, "\"! Error: ", e ) );
+			// Even in case of writing error preserve this file in internal container.
+			// It's needed in order to be able to remove it in case if it was partially-written.
+			return ust::null_optional;
+		},
+	}
+}
+
+} // namespace BK
