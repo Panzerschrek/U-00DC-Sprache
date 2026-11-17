@@ -24,7 +24,7 @@ fn ResponseFileManager::CreateNewResponseFile( mut this, ust::string_view8 conte
 	: ust::optional</ust::filesystem_path_view/> @( ust::reference_notation::return_inner_references::param0 )
 {
 	// Just number response files sequentially (so that they are all unique within a build).
-	response_files_.push_back( ust::path::normalize( ust::stringify8( response_files_path_, '/', next_file_index_ ) ) );
+	response_files_.push_back( ust::path::normalize( ust::stringify8( response_files_path_, "/response_file_", next_file_index_, ".txt" ) ) );
 	++next_file_index_;
 
 	var ust::filesystem_path_view file_path= response_files_.back();
