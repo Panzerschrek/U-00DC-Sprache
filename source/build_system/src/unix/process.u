@@ -24,9 +24,10 @@ fn nodiscard RunExecutable(
 	return process_opt.try_take().Finish( logger );
 }
 
-fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
+fn CreateProcessGroup( ResponseFileManager response_file_manager, Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
 {
 	ust::ignore_unused(logger);
+	ust::ignore_unused( response_file_manager ); // For now don't need it.
 	return ust::make_box( ProcessGroup() );
 }
 
