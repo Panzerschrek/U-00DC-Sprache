@@ -1,6 +1,8 @@
 // This file contains some definitions from UNIX (pparticulary Linux) headers, which are used inside the build system.
 // These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
 
+import "/type_traits.iu"
+
 fn nomangle close( i32 fd__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle dlerror() unsafe call_conv( "C" ) : $(char8);
 fn nomangle dlopen( $(char8) file__, i32 mode__ ) unsafe call_conv( "C" ) : $(byte8);
@@ -20,6 +22,7 @@ fn nomangle posix_spawnattr_setflags( $(posix_spawnattr_t) attr__, i16 flags__ )
 fn nomangle posix_spawnp( $(pid_t) pid__, $(char8) file__, $(posix_spawn_file_actions_t) file_actions__, $(posix_spawnattr_t) attrp__, $($(char8)) argv__, $($(char8)) envp__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle read( i32 fd__, $(byte8) buf__, size_t nbytes__ ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle readlink( $(char8) path__, $(char8) buf__, size_t len__ ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle sysconf( i32 name_2U__ ) unsafe call_conv( "C" ) : i64;
 fn nomangle waitpid( pid_t__ pid__, $(i32) stat_loc__, i32 options__ ) unsafe call_conv( "C" ) : pid_t__;
 
 struct pollfd ordered
@@ -95,3 +98,8 @@ auto constexpr RTLD_NODELETE = 4096;
 auto constexpr STDIN_FILENO = 0;
 auto constexpr STDOUT_FILENO = 1;
 auto constexpr STDERR_FILENO = 2;
+
+auto constexpr SC_ARG_MAX = ( unix_is_freebsd | unix_is_darwin ? 1 : 0 );
+
+var bool constexpr unix_is_freebsd= ust::constexpr_string_starts_with( compiler::target::os, "freebsd" );
+var bool constexpr unix_is_darwin= ust::constexpr_string_equals( compiler::target::vendor, "apple" ); // TODO - detect Darwin properly.

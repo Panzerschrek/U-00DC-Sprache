@@ -264,7 +264,10 @@ class ProcessGroup final : ProcessGroupInterface
 {
 public:
 	fn constructor( ResponseFileManager mut response_file_manager )
-		( response_file_manager_= move(response_file_manager) )
+		(
+			response_file_manager_= move(response_file_manager),
+			max_command_line_length_= GetMaxCommandLineLength(),
+		)
 	{}
 
 public: // ProcessGroupInterface
@@ -282,11 +285,8 @@ public: // ProcessGroupInterface
 			estimated_command_line_length+= 10s; // An esitmation for null-terminators, quotes and (maybe) escape sequences.
 		}
 
-		// It's not a true limit, since we need also some space for environment variables.
-		var size_type args_size_estimated_limit= 4096s / 2s; // TODO - read it from system properties?
-
 		var ust::optional</Process/> mut process_opt;
-		if( estimated_command_line_length >= args_size_estimated_limit )
+		if( estimated_command_line_length >= max_command_line_length_ )
 		{
 			// Estimated command line is too long. Create a response file instead (containing all args).
 			// Replace command line with one having single argument - path to this file.
@@ -416,9 +416,24 @@ public: // ProcessGroupInterface
 
 private:
 	ResponseFileManager response_file_manager_;
+	size_type imut max_command_line_length_;
 
 	ust::vector</Process/> running_processes_;
 	ust::vector</ProcessId/> finished_processes_;
+}
+
+fn GetMaxCommandLineLength() : size_type
+{
+	auto raw_limit= unsafe( ::sysconf( SC_ARG_MAX ) );
+	if( i64( raw_limit ) <= 0i64 )
+	{
+		// There is no limit. But return something reasonably-large, but finite.
+		return 1s << 20;
+	}
+
+	// Take actual system limit and divide it by 2 in order to take into account,
+	// that this limit affects not only command-line, but also environment variables.
+	return size_type( raw_limit ) / 2s;
 }
 
 // Returns value of external variable, declared in C code like this:
