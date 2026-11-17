@@ -49,9 +49,9 @@ fn nodiscard RunExecutable(
 	return unsafe( WaitForProcessAndCloseIt( process_information.hProcess ) ) == 0u;
 }
 
-fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
+fn CreateProcessGroup( ResponseFileManager mut response_file_manager, Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
 {
-	auto mut process_group_opt= ProcessGroup::Create( logger );
+	auto mut process_group_opt= ProcessGroup::Create( move(response_file_manager), logger );
 	if( process_group_opt.empty() )
 	{
 		return ust::box_nullable</ProcessGroupInterface/>();
@@ -62,7 +62,7 @@ fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInt
 class ProcessGroup final : ProcessGroupInterface
 {
 public:
-	fn Create( Logger &mut logger ) : ust::optional</ProcessGroup/>
+	fn Create( ResponseFileManager mut response_file_manager, Logger &mut logger ) : ust::optional</ProcessGroup/>
 	{
 		var HANDLE io_port=
 			unsafe( ::CreateIoCompletionPort(
@@ -77,14 +77,14 @@ public:
 			return ust::null_optional;
 		}
 
-		return unsafe( ProcessGroup( io_port ) );
+		return unsafe( ProcessGroup( io_port, move( response_file_manager ) ) );
 	}
 
 	fn constructor()= delete;
 
 	// constructor for internal usage
-	fn constructor( HANDLE io_port ) unsafe
-		( io_port_= io_port )
+	fn constructor( HANDLE io_port, ResponseFileManager mut response_file_manager ) unsafe
+		( io_port_= io_port, response_file_manager_= move(response_file_manager) )
 	{
 		assert( !ust::is_nullptr( io_port_ ) );
 	}
@@ -231,6 +231,38 @@ public: // ProcessGroupInterface
 		exe_path_null_terminated.push_back( WCHAR(0) );
 
 		var WideString mut command_line_combined= ConstructCommandLineNullTerminated( exe_path_wide, command_line );
+
+		var size_type c_max_command_line_length= 32767s; // Some dumb Windows limitation.
+		var size_type c_max_command_line_length_with_margin= c_max_command_line_length * 3s / 4s; // Add some margin just in case something is wrong.
+
+		if( command_line_combined.size() >= c_max_command_line_length_with_margin )
+		{
+			// Command line is too long. Create a response file instead (containing all args).
+			// Replace command line with one having single argument - path to this file.
+
+			// Assume that the executable launched supports response files.
+			// But if it's not the case, do it anyway, since there is nothing else we can do when hitting command-line length limit.
+
+			var ust::string8 mut response_file_contents;
+			foreach( &arg : command_line )
+			{
+				WriteQuotedString( response_file_contents, arg.range() );
+				response_file_contents.push_back( ' ' );
+			}
+
+			if_var( &response_file_path : response_file_manager_.CreateNewResponseFile( response_file_contents, logger ) )
+			{
+				command_line_combined=
+					ConstructCommandLineNullTerminated(
+						exe_path_wide, ust::make_array</ust::string8/>( ust::stringify8( '@', response_file_path ) ) );
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		ust::ignore_unused( response_file_manager_ ); // TODO - use it.
 
 		// Setup standard streams redirection for child process.
 		var STARTUPINFOW mut startup_info = zero_init;
@@ -487,6 +519,7 @@ private:
 
 private:
 	HANDLE imut io_port_;
+	ResponseFileManager response_file_manager_;
 
 	ust::vector</ProcessPtr/> runnung_processes_;
 	ust::vector</ProcessId/> finished_processes_;
@@ -507,35 +540,78 @@ fn ConstructCommandLineNullTerminated(
 	WideStringView exe_path,
 	ust::array_view_imut</ust::string8/> command_line ) : WideString
 {
-	var WideStringView space =" "u16;
-	var WideStringView quote = "\""u16;
-
 	var WideString mut command_line_combined;
-	command_line_combined+= quote;
-	command_line_combined+= exe_path; // Repeat exe path in command line - it's necessary to fill argv[0]
-	command_line_combined+= quote;
+
+	// Repeat exe path in command line - it's necessary to fill argv[0].
+	WriteQuotedString( command_line_combined, exe_path );
 
 	foreach( &arg : command_line )
 	{
-		command_line_combined+= space;
-		command_line_combined+= quote;
+		 // Push spaces to separate arguments and first argument from exe path.
+		command_line_combined.push_back( WCHAR( ' ' ) );
 
-		// Escape quotes and backspashes in args. TODO - check if it's correct.
-		foreach( c : UTF8ToWideString( arg ) )
-		{
-			if( c == WCHAR('\\') || c == WCHAR('"') )
-			{
-				command_line_combined.push_back( WCHAR('\\') );
-			}
-			command_line_combined.push_back( c );
-		}
-
-		command_line_combined+= quote;
+		WriteQuotedString( command_line_combined, UTF8ToWideString( arg ).range() );
 	}
 
 	command_line_combined.push_back( WCHAR(0) );
 
 	return command_line_combined;
+}
+
+template</ type C />
+fn WriteQuotedString( ust::string_base</C/> &mut dst, ust::array_view_imut</C/> src )
+{
+	// See https://learn.microsoft.com/en-us/previous-versions//17w5ykft(v=vs.85).
+
+	var C quote( '"' );
+
+	dst.push_back( quote ); // Push opening quote.
+
+	var size_type mut num_prev_backslashes= 0s;
+
+	foreach( c : src )
+	{
+		if( c == C( '\\' ) )
+		{
+			// Backslashes are usually not escaped. But we need to count them.
+			++num_prev_backslashes;
+		}
+		else
+		{
+			if( c == C( '"' ) )
+			{
+				// Escape quote.
+				// If there are backslashes before it - escape them too.
+				var size_type new_size_with_added_backslashes=
+					dst.size() +
+					num_prev_backslashes + // An escaped backslash for each previous backslash
+					1s; // Escape symbol for quote itself.
+
+				dst.resize( new_size_with_added_backslashes, C( '\\' ) );
+			}
+
+			num_prev_backslashes= 0s; // Reset backslashes counter if encounted non-backslash symbol.
+		}
+
+		dst.push_back( c );
+	}
+
+	dst.push_back( quote ); // Push closing quote.
+}
+
+fn_test( WindowsCommandLineArgumentsQuotingTest )
+{
+	var ust::string_view8 src_string=
+		" this is A string \\ with\\many\\ slashes\\\\\\ and \" quotes \"\"\" aND their \\\\\\\\\" combinations";
+	var ust::string_view8 expected_quoted_string=
+		"\" this is A string \\ with\\many\\ slashes\\\\\\ and \\\" quotes \\\"\\\"\\\" aND their \\\\\\\\\\\\\\\\\\\" combinations\"";
+
+	var ust::string8 mut str;
+	WriteQuotedString(
+		str,
+		ust::string_view8( " this is A string \\ with\\many\\ slashes\\\\\\ and \" quotes \"\"\" aND their \\\\\\\\\" combinations" ) );
+
+	assert( str == expected_quoted_string, "Incorrect quoting!" );
 }
 
 fn WaitForProcessAndCloseIt( HANDLE process_handle ) unsafe : DWORD

@@ -15,6 +15,7 @@ namespace BK
 fn nodiscard PerformGraphBuild(
 	Logger &mut logger,
 	BuildGraph& build_graph,
+	ust::filesystem_path_view build_directory,
 	ust::optional_ref_imut</BuildGraph/> prev_build_graph_opt,
 	u32 max_number_of_parallel_jobs ) : bool
 {
@@ -251,7 +252,10 @@ fn nodiscard PerformGraphBuild(
 
 		logger.LogVerbose( ust::stringify8( "Has ", num_nodes_to_rebuild, " nodes to rebuild." ) );
 
-		auto mut process_group_opt= CreateProcessGroup( logger );
+		auto mut process_group_opt= CreateProcessGroup(
+			ResponseFileManager( build_directory ), // Put response files in root build directory. It's fine to do so.
+			logger );
+
 		if( process_group_opt.empty() )
 		{
 			logger.LogError( "Failed to create process group!" );

@@ -7,6 +7,7 @@ namespace BK
 
 fn nodiscard ExecuteTests(
 	TestListToExecute& test_list_to_execute,
+	ust::filesystem_path_view build_directory,
 	Logger &mut logger,
 	u32 max_number_of_parallel_jobs ) : bool
 {
@@ -18,7 +19,10 @@ fn nodiscard ExecuteTests(
 
 	logger.LogInfo( ust::stringify8( "Running ", test_list_to_execute.size(), " test executables." ) );
 
-	auto mut process_group_opt= CreateProcessGroup( logger );
+	auto mut process_group_opt= CreateProcessGroup(
+		ResponseFileManager( build_directory ), // Put response files in root build directory. It's fine to do so.
+		logger );
+
 	if( process_group_opt.empty() )
 	{
 		logger.LogError( "Failed to create process group!" );

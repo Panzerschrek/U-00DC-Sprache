@@ -24,10 +24,10 @@ fn nodiscard RunExecutable(
 	return process_opt.try_take().Finish( logger );
 }
 
-fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
+fn CreateProcessGroup( ResponseFileManager mut response_file_manager, Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
 {
 	ust::ignore_unused(logger);
-	return ust::make_box( ProcessGroup() );
+	return ust::make_box( ProcessGroup( move(response_file_manager) ) );
 }
 
 class Process
@@ -262,6 +262,14 @@ private:
 
 class ProcessGroup final : ProcessGroupInterface
 {
+public:
+	fn constructor( ResponseFileManager mut response_file_manager )
+		(
+			response_file_manager_= move(response_file_manager),
+			max_command_line_length_= GetMaxCommandLineLength(),
+		)
+	{}
+
 public: // ProcessGroupInterface
 	fn virtual final StartProcess(
 		mut this,
@@ -270,7 +278,44 @@ public: // ProcessGroupInterface
 		ust::filesystem_path_view exe_path,
 		ust::array_view_imut</ust::string8/> command_line ) : bool
 	{
-		auto mut process_opt= Process::Start( logger, process_id, exe_path, command_line );
+		var size_type mut estimated_command_line_length= 0s;
+		foreach( &arg : command_line )
+		{
+			estimated_command_line_length+= arg.size();
+			estimated_command_line_length+= 10s; // An esitmation for null-terminators, quotes and (maybe) escape sequences.
+		}
+
+		var ust::optional</Process/> mut process_opt;
+		if( estimated_command_line_length >= max_command_line_length_ )
+		{
+			// Estimated command line is too long. Create a response file instead (containing all args).
+			// Replace command line with one having single argument - path to this file.
+
+			// Assume that the executable launched supports response files.
+			// But if it's not the case, do it anyway, since there is nothing else we can do when hitting command-line length limit.
+
+			if_var( &response_file_path :
+					response_file_manager_.CreateNewResponseFile(
+						CreateResponseFileContents( command_line ), logger ) )
+			{
+				process_opt=
+					Process::Start(
+						logger,
+						process_id,
+						exe_path,
+						ust::make_array</ust::string8/>( ust::stringify8( '@', response_file_path ) ) );
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			process_opt= Process::Start( logger, process_id, exe_path, command_line );
+		}
+
+
 		if( process_opt.empty() )
 		{
 			return false;
@@ -357,8 +402,65 @@ public: // ProcessGroupInterface
 	}
 
 private:
+	ResponseFileManager response_file_manager_;
+	size_type imut max_command_line_length_;
+
 	ust::vector</Process/> running_processes_;
 	ust::vector</ProcessId/> finished_processes_;
+}
+
+fn GetMaxCommandLineLength() : size_type
+{
+	auto raw_limit= unsafe( ::sysconf( SC_ARG_MAX ) );
+	if( i64( raw_limit ) <= 0i64 )
+	{
+		// There is no limit. But return something reasonably-large, but finite.
+		return 1s << 20;
+	}
+
+	// Take actual system limit and divide it by 2 in order to take into account,
+	// that this limit affects not only command-line, but also environment variables.
+	return size_type( raw_limit ) / 2s;
+}
+
+fn CreateResponseFileContents( ust::array_view_imut</ust::string8/> command_line ) : ust::string8
+{
+	var ust::string8 mut response_file_contents;
+	foreach( &arg : command_line )
+	{
+		response_file_contents.push_back( '"' );
+
+		foreach( c : arg )
+		{
+			if( c == '\\' | c == '"' )
+			{
+				response_file_contents.push_back( '\\' );
+			}
+			response_file_contents.push_back( c );
+		}
+		response_file_contents.push_back( '"' );
+
+		response_file_contents.push_back( ' ' );
+	}
+
+	return response_file_contents;
+}
+
+fn_test( CreateResponseFileContentsTest )
+{
+	var [ ust::string8, 5 ] args
+	[
+		"foo",
+		"bar",
+		" some string",
+		"some string with internal \" quotes",
+		" STRING WITH \\ BACKSLASHES\\INSIDE",
+	];
+
+	var ust::string_view8 expected=
+		"\"foo\" \"bar\" \" some string\" \"some string with internal \\\" quotes\" \" STRING WITH \\\\ BACKSLASHES\\\\INSIDE\" ";
+	var ust::string8 got= CreateResponseFileContents( args );
+	assert( got == expected, "Incorrect response file generation!" );
 }
 
 // Returns value of external variable, declared in C code like this:

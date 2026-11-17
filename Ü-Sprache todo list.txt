@@ -221,10 +221,6 @@ C++ header converter:
 *) Consider adding typedefs for structs/unions/enums while processing a header in C++ mode
 
 Ü Build system:
-*) Implement a workaround for command line size limit for process running on Windows. It may be reached, for example,
-	while linking a build target having many source files (in order of hundreds) having long absolute paths.
-	Consider using response files (files containing command line passed with @ prefix) for this, since LLVM command-line
-	parser already supports them.
 *) Make sure dead code is removed even in debug builds, so that machine code generation doesn't take too long for build
 	targets with a lot of code which should be optimized-out (like unit-test executables)
 *) Implement a workaround allowing running tests (and maybe other executables) having dependencies on shared libraries
