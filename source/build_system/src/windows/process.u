@@ -537,19 +537,16 @@ fn ConstructCommandLineNullTerminated(
 	WideStringView exe_path,
 	ust::array_view_imut</ust::string8/> command_line ) : WideString
 {
-	// http://msdn.microsoft.com/en-us/library/windows/desktop/17w5ykft(v=vs.85).aspx.
-
-	var WideStringView space =" "u16;
-	var WideStringView quote = "\""u16;
-
 	var WideString mut command_line_combined;
 
-	// Repeat exe path in command line - it's necessary to fill argv[0]
+	// Repeat exe path in command line - it's necessary to fill argv[0].
 	WriteQuotedString( command_line_combined, exe_path );
 
 	foreach( &arg : command_line )
 	{
-		command_line_combined+= space;
+		 // Push spaces to separate arguments and first argument from exe path.
+		command_line_combined.push_back( WCHAR( ' ' ) );
+
 		WriteQuotedString( command_line_combined, UTF8ToWideString( arg ).range() );
 	}
 
