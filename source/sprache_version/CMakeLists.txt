@@ -1,4 +1,4 @@
-set( SPRACHE_VERSION "0.10" )
+set( SPRACHE_VERSION "0.11" )
 
 option( U_EMBED_GIT_REVISION "Embed git resivion into compiler executable." YES )
 
