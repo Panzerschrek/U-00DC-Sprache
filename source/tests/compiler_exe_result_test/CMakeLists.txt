@@ -25,9 +25,9 @@ else()
 endif()
 
 if( WIN32 )
-	set( COMPILER_EXE_RESULT_TEST_SYSTEM_LIBS_TO_LINK -Wl,Ws2_32.lib )
+	set( COMPILER_EXE_RESULT_TEST_SYSTEM_LIBS_TO_LINK -Wl Ws2_32.lib )
 else()
-	set( COMPILER_EXE_RESULT_TEST_SYSTEM_LIBS_TO_LINK -Wl,-lpthread )
+	set( COMPILER_EXE_RESULT_TEST_SYSTEM_LIBS_TO_LINK -Wl -lpthread )
 endif()
 
 set( COMPILER_EXE_RESULT_TEST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/compiler_exe_result_test.u )
