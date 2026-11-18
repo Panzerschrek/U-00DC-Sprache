@@ -736,7 +736,8 @@ fn BuildAndLoadPackageBuildScript(
 		if( ust::string_view8( compiler::target::environment ) == g_environment_msvc )
 		{
 			// Do not generate ".lib" file - it's unnecessary, since we load the DLL dynamically.
-			compiler_args.push_back( "-Wl,/NOIMPLIB" );
+			compiler_args.push_back( "-Wl" );
+			compiler_args.push_back( "/NOIMPLIB" );
 		}
 
 		// Perform verification just to be sure nothing is broken.
@@ -1455,12 +1456,18 @@ fn CreatePackageTargetBuildGraphNodes(
 					else if( target_triple.vendor == g_vendor_apple )
 					{
 						// For now set "rpath" to loader_path - in order to have possibility to load shared libraries from common directory with all build targets.
-						node.command_line.push_back( "-Wl,-rpath,@loader_path" );
+						node.command_line.push_back( "-Wl" );
+						node.command_line.push_back( "-rpath" );
+						node.command_line.push_back( "-Wl" );
+						node.command_line.push_back( "@loader_path" );
 					}
 					else
 					{
 						// For now set "rpath" to origin - in order to have possibility to load shared libraries from common directory with all build targets.
-						node.command_line.push_back( "-Wl,-rpath,$ORIGIN" );
+						node.command_line.push_back( "-Wl" );
+						node.command_line.push_back( "-rpath" );
+						node.command_line.push_back( "-Wl" );
+						node.command_line.push_back( "$ORIGIN" );
 					}
 				}
 			},
@@ -1760,12 +1767,18 @@ fn CreatePackageTargetBuildGraphNodes(
 			else if( target_triple.vendor == g_vendor_apple )
 			{
 				// For now set "rpath" to loader_path - in order to have possibility to load shared libraries from common directory with all build targets.
-				node.command_line.push_back( "-Wl,-rpath,@loader_path" );
+				node.command_line.push_back( "-Wl" );
+				node.command_line.push_back( "-rpath" );
+				node.command_line.push_back( "-Wl" );
+				node.command_line.push_back( "@loader_path" );
 			}
 			else
 			{
 				// For now set "rpath" to origin - in order to have possibility to load shared libraries from common directory with all build targets.
-				node.command_line.push_back( "-Wl,-rpath,$ORIGIN" );
+				node.command_line.push_back( "-Wl" );
+				node.command_line.push_back( "-rpath" );
+				node.command_line.push_back( "-Wl" );
+				node.command_line.push_back( "$ORIGIN" );
 			}
 		}
 
@@ -2336,7 +2349,8 @@ fn AddGCSectionsCompilerFlags( TargetTriple& target_triple, ust::vector</ust::st
 	{
 		if( target_triple.vendor != g_vendor_apple )
 		{
-			compiler_flags.push_back( "-Wl,--gc-sections" );
+			compiler_flags.push_back( "-Wl" );
+			compiler_flags.push_back( "--gc-sections" );
 		}
 	}
 }
