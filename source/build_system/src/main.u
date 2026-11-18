@@ -663,13 +663,15 @@ fn BuildAndLoadPackageBuildScript(
 		compiler_args.push_back( build_script_wrapper_file_path );  // The file to buld.
 
 		// Link against "ustlib" previously built into an object file.
-		compiler_args.push_back( ust::concat( "-Wl,", ustlib_compiled_for_build_scripts_path ) );
+		compiler_args.push_back( "-Wl" );
+		compiler_args.push_back( ustlib_compiled_for_build_scripts_path );
 
 		var TargetTriple host_target_triple= GetHostTargetTriple();
 
 		foreach( &lib : GetUstlibSystemLibrariesToLink( host_target_triple ) )
 		{
-			compiler_args.push_back( "-Wl," + lib );
+			compiler_args.push_back( "-Wl" );
+			compiler_args.push_back( lib );
 		}
 
 		// Output.
