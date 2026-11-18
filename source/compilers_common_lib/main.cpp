@@ -909,6 +909,14 @@ int Main( int argc, const char* argv[] )
 		auto add_start_passes_callback=
 				[](llvm::ModulePassManager& module_pass_manager, const llvm::OptimizationLevel o )
 				{
+					if( o == llvm::OptimizationLevel::O0 )
+					{
+						// With optimizations disabled still perform dead code removal.
+						// We assume that it's faster to remove dead code than to process it further (generate machine code, write result files).
+						// Typical Ü contains many pieces of dead code, like unused methods of template classes.
+						module_pass_manager.addPass( llvm::GlobalDCEPass() );
+					}
+
 					// Internalize (if needed).
 					if( Options::internalize )
 						module_pass_manager.addPass( llvm::InternalizePass( MustPreserveGlobalValue ) );
@@ -944,7 +952,6 @@ int Main( int argc, const char* argv[] )
 		else if( Options::lto_mode == Options::LTOMode::PreLink )
 		{
 			pass_builder.registerPipelineStartEPCallback( add_start_passes_callback );
-
 			module_pass_manager= pass_builder.buildLTOPreLinkDefaultPipeline( optimization_level );
 		}
 		else if( Options::lto_mode == Options::LTOMode::Link )
