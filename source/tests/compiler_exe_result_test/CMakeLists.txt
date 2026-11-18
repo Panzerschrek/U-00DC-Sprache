@@ -45,7 +45,7 @@ add_custom_command(
 		--verify-module
 		--internalize
 		${SYSROOT_OPTION}
-		-Wl,$<TARGET_FILE:ustlib${CURRENT_COMPILER_GENERATION}>
+		-Wl $<TARGET_FILE:ustlib${CURRENT_COMPILER_GENERATION}>
 		${COMPILER_EXE_RESULT_TEST_SYSTEM_LIBS_TO_LINK}
 	)
 
