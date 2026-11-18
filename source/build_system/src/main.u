@@ -1394,7 +1394,8 @@ fn CreatePackageTargetBuildGraphNodes(
 			{
 				foreach( &lib : GetUstlibSystemLibrariesToLink( target_triple ) )
 				{
-					node.command_line.push_back( "-Wl," + lib );
+					node.command_line.push_back( "-Wl" );
+					node.command_line.push_back( lib );
 				}
 			},
 			BuildTargetType::Library, BuildTargetType::ObjectFile -> {},
@@ -1417,21 +1418,24 @@ fn CreatePackageTargetBuildGraphNodes(
 					{
 						// Windows dynamic libraries aren't linked directly, a proxy static library is used instead.
 						var ust::filesystem_path mut lib_file= ust::path::normalize( file_to_link + ".lib" );
-						node.command_line.push_back( "-Wl," + lib_file );
+						node.command_line.push_back( "-Wl" );
+						node.command_line.push_back( lib_file );
 						node.input_files.push_back( move(lib_file) );
 					}
 					else if( target_triple.vendor == g_vendor_apple )
 					{
 						// Darwin shared libraries are specified directly.
 						var ust::filesystem_path mut dylib_file= ust::path::normalize( file_to_link + ".dylib" );
-						node.command_line.push_back( "-Wl," + dylib_file );
+						node.command_line.push_back( "-Wl" );
+						node.command_line.push_back( dylib_file );
 						node.input_files.push_back( move(dylib_file) );
 					}
 					else
 					{
 						// Unix shared libraries are specified directly.
 						var ust::filesystem_path mut so_file= ust::path::normalize( file_to_link + ".so" );
-						node.command_line.push_back( "-Wl," + so_file );
+						node.command_line.push_back( "-Wl" );
+						node.command_line.push_back( so_file );
 						node.input_files.push_back( move(so_file) );
 					}
 				}
@@ -1467,7 +1471,8 @@ fn CreatePackageTargetBuildGraphNodes(
 			{
 				foreach( &external_library : target.all_external_libraries_to_link )
 				{
-					node.command_line.push_back( "-Wl," + external_library );
+					node.command_line.push_back( "-Wl" );
+					node.command_line.push_back( external_library );
 					if( ust::path::is_absolute( external_library ) )
 					{
 						node.input_files.push_back( external_library );
@@ -1703,7 +1708,8 @@ fn CreatePackageTargetBuildGraphNodes(
 		// Link against system libraries required by "ustlib".
 		foreach( &lib : GetUstlibSystemLibrariesToLink( target_triple ) )
 		{
-			node.command_line.push_back( "-Wl," + lib );
+			node.command_line.push_back( "-Wl" );
+			node.command_line.push_back( lib );
 		}
 
 		// Link shared library dependencies.
@@ -1717,21 +1723,24 @@ fn CreatePackageTargetBuildGraphNodes(
 			{
 				// Windows dynamic libraries aren't linked directly, a proxy static library is used instead.
 				var ust::filesystem_path mut lib_file= ust::path::normalize( file_to_link + ".lib" );
-				node.command_line.push_back( "-Wl," + lib_file );
+				node.command_line.push_back( "-Wl" );
+				node.command_line.push_back( lib_file );
 				node.input_files.push_back( move(lib_file) );
 			}
 			else if( target_triple.vendor == g_vendor_apple )
 			{
 				// Darwin shared libraries are specified directly.
 				var ust::filesystem_path mut dylib_file= ust::path::normalize( file_to_link + ".dylib" );
-				node.command_line.push_back( "-Wl," + dylib_file );
+				node.command_line.push_back( "-Wl" );
+				node.command_line.push_back( dylib_file );
 				node.input_files.push_back( move(dylib_file) );
 			}
 			else
 			{
 				// Unix shared libraries are specified directly.
 				var ust::filesystem_path mut so_file= ust::path::normalize( file_to_link + ".so" );
-				node.command_line.push_back( "-Wl," + so_file );
+				node.command_line.push_back( "-Wl" );
+				node.command_line.push_back( so_file );
 				node.input_files.push_back( move(so_file) );
 			}
 		}
@@ -1757,7 +1766,8 @@ fn CreatePackageTargetBuildGraphNodes(
 		// Link external library dependencies.
 		foreach( &external_library : target.all_external_libraries_to_link )
 		{
-			node.command_line.push_back( "-Wl," + external_library );
+			node.command_line.push_back( "-Wl" );
+			node.command_line.push_back( external_library );
 			if( ust::path::is_absolute( external_library ) )
 			{
 				node.input_files.push_back( external_library );
@@ -1780,7 +1790,8 @@ fn CreatePackageTargetBuildGraphNodes(
 		// Link unit-testing lib entry (in form of an object file).
 		{
 			var ust::filesystem_path unit_testing_lib_entry_path= GetCompiledUnitTestingLibEntryPath( root_package_build_directory );
-			node.command_line.push_back( "-Wl," + unit_testing_lib_entry_path );
+			node.command_line.push_back( "-Wl" );
+			node.command_line.push_back( unit_testing_lib_entry_path );
 			node.input_files.push_back( unit_testing_lib_entry_path );
 		}
 
@@ -2555,7 +2566,8 @@ fn nodiscard BuildSingleFileProgram(
 	// Link against system libraries required by "ustlib".
 	foreach( &lib : GetUstlibSystemLibrariesToLink( target_triple ) )
 	{
-		compiler_args.push_back( "-Wl," + lib );
+		compiler_args.push_back( "-Wl" );
+		compiler_args.push_back( lib );
 	}
 
 	// The only include directory that we require is "ustlib".
