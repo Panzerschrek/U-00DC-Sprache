@@ -185,7 +185,8 @@ def DoSuccessTest( file_path ):
 		compiler_args= compiler_args + [ "-mcpu=skylake" ]
 
 	for library in g_additional_libraries_to_link:
-		compiler_args.append( "-Wl," + library )
+		compiler_args.append( "-Wl" )
+		compiler_args.append( library )
 
 	if g_sysroot is not None:
 		compiler_args.append( "--sysroot" )
