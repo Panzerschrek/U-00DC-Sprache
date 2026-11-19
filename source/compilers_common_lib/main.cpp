@@ -298,11 +298,10 @@ cl::opt< LTOMode > lto_mode(
 
 cl::list<std::string> linker_args(
 	"Wl",
-	cl::value_desc("linker args"),
-	cl::desc("Pass a comma-separated list of arguments to the internal linker (LLD). Used only if the internal linker is used (for executable or shared library output)."),
+	cl::value_desc("linker"),
+	cl::desc("Pass an option to the internal linker (LLD). Used only if the internal linker is used (for executable or shared library output)."),
 	cl::ZeroOrMore,
 	cl::Prefix,
-	cl::CommaSeparated,
 	cl::cat(options_category) );
 
 cl::opt<std::string> sysroot(

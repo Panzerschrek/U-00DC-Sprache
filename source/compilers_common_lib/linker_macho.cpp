@@ -64,7 +64,7 @@ bool RunLinkerMachO(
 	args.push_back( input_temp_file_path.data() );
 
 	// Set some reasonable defaults.
-	// This can be overriden with something like -Wl,-platform_version,macos,14.0.0,14.0.
+	// This can be overriden with something like -Wl -platform_version -Wl macos -WL 14.0.0 -Wl 14.0.
 	args.push_back( "-platform_version" );
 	args.push_back( "macos" );
 	args.push_back( "15.0.0" ); // min_version
