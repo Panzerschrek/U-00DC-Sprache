@@ -90,6 +90,12 @@ So, if a test checks 1000 conditions sequentially and condition #0 fails, remain
 If such a granular approach isn't possible, like in a test looping over a table containing test data, it's recommended to print parameters of each loop invocation into *stdout*.
 This can simplify detecting which particular case triggers a failure.
 
+If a project contains some unit-tests and running them is necessary, avoid using options *--halt-mode=unreachable* or *--halt-mode=configurable_handler* with a handler doing something other than terminating the process.
+Since ``halt`` is used as primary mechanism for performing test checks, effectively turning it off will lead to test failures not being detected and reported properly.
+
+Avoid using in unit-tests system functions exiting process with zero exit code.
+This exit code is treated as success of all unit-tests running in the same process and thus no further unit-tests will be launched and potential failures in them will not be detected.
+
 
 ********************
 *Test build targets*
