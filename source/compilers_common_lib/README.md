@@ -80,7 +80,7 @@ Compiler test.u -o test.so --filetype=dll
 It's possible to specify options for internal LLD via `-Wl` option:
 
 ```
-Compiler test.u -o test.exe --filetype=exe -Wl=-lpthread
+Compiler test.u -o test.exe --filetype=exe -Wl -lpthread
 ```
 
 Run the compiler with --help option to know all supported options.
